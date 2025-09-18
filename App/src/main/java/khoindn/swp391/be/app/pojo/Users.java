@@ -50,6 +50,7 @@ public class Users {
         this.gplx = gplx;
 
     }
+    
 
     // Getters and Setters
     public int getId() {

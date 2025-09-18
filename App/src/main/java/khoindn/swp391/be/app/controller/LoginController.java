@@ -1,10 +1,14 @@
 package khoindn.swp391.be.app.controller;
 
 
+import jakarta.validation.Valid;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IAuthenticationRepository;
+import khoindn.swp391.be.app.service.IAuthenticationService;
+import khoindn.swp391.be.app.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,11 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 
 public class LoginController {
- private final IAuthenticationRepository iAuthenticationRepository;
- @PostMapping("/login")
- public ResponseEntity<String> login(@RequestBody Users user ) {
-     return iAuthenticationRepository.findByEmailAndPassword(user.getEmail(),user.getPassword())
-             .map(u-> ResponseEntity.ok("Login successful"))
-             .orElse(ResponseEntity.status(401).body("Invalid email or password"));
- }
+
+    @Autowired
+    private IAuthenticationService iAuthenticationService;
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login( String userEmail, String userPassword) {
+
+        return ResponseEntity.ok(iAuthenticationService.findByEmailAndPassword(userEmail, userPassword)
+                .map(users -> "Login successful")
+                .orElse("Invalid email or password"));
+    }
 }
