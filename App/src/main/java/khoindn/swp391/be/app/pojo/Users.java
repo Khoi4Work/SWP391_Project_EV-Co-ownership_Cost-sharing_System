@@ -34,8 +34,9 @@ public class Users {
     @Column(name = "GPLX", nullable = false, unique = true)
     private String gplx;  // Changed to match Java naming conventions
 
-    @Column(name = "Role_ID", nullable = false)
-    private int role_id; // Default role ID for regular users
+    @ManyToOne
+    @JoinColumn(name = "Role_ID", nullable = false)
+    private UserRole role_id; // Default role ID for regular users
 
     public Users() {
     }
@@ -52,7 +53,6 @@ public class Users {
         this.password = password;
         this.cccd = cccd;
         this.gplx = gplx;
-
     }
 
 
