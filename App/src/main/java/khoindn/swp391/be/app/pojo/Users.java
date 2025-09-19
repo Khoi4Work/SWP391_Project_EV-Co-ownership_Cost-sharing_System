@@ -1,10 +1,11 @@
 package khoindn.swp391.be.app.pojo;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
 @Entity // Changed from [user] to Users
 public class Users {
@@ -29,28 +30,30 @@ public class Users {
 
     @Column(name = "GPLX", nullable = false, unique = true)
     private String gplx;  // Changed to match Java naming conventions
-
-    @Column(name = "Role_ID", nullable = false)
-    private int role_id; // Default role ID for regular users
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "roleID", nullable = false)
+    private UserRole role;
 
     public Users() {
     }
 
-    public Users(int id,
-                 String hovaTen,
-                 String email,
-                 String password,
-                 String cccd,
-                 String gplx) {
-        this.id = id;
+    public Users(String hovaTen, String email, String password, String cccd, String gplx, UserRole role) {
         this.hovaTen = hovaTen;
         this.email = email;
         this.password = password;
         this.cccd = cccd;
         this.gplx = gplx;
+        this.role = role;
 
     }
-    
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
 
     // Getters and Setters
     public int getId() {
