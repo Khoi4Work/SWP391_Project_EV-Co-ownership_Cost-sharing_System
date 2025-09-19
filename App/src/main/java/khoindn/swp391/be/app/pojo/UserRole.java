@@ -1,25 +1,32 @@
 package khoindn.swp391.be.app.pojo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Entity
+@Table
+
 @Getter
 @Setter
 public class UserRole {
     @Id
-    private int roleID;
-    @Column(nullable = false, unique = true, length = 50)
+
+    @Column
+    private int role_id;
+    @Column(unique = true)
     private String roleName;
+
     public UserRole() {
     }
 
-    public UserRole(int roleID, String roleName) {
-        this.roleID = roleID;
+    public UserRole(int role_id, String roleName) {
+        this.role_id = role_id;
         this.roleName = roleName;
     }
 }
