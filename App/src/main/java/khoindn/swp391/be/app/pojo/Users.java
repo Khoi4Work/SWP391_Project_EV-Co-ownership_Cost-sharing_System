@@ -1,12 +1,16 @@
 package khoindn.swp391.be.app.pojo;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
+
 
 @Entity // Changed from [user] to Users
 @Getter
@@ -34,25 +38,22 @@ public class Users {
     @Column(name = "GPLX", nullable = false, unique = true)
     private String gplx;  // Changed to match Java naming conventions
 
+
     @ManyToOne
     @JoinColumn(name = "Role_ID", nullable = false)
     private UserRole role_id; // Default role ID for regular users
 
+
     public Users() {
     }
 
-    public Users(int id,
-                 String hovaTen,
-                 String email,
-                 String password,
-                 String cccd,
-                 String gplx) {
-        this.id = id;
+    public Users(String hovaTen, String email, String password, String cccd, String gplx, UserRole role) {
         this.hovaTen = hovaTen;
         this.email = email;
         this.password = password;
         this.cccd = cccd;
         this.gplx = gplx;
+
     }
 
 

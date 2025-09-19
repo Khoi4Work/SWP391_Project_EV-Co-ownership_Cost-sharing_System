@@ -14,7 +14,7 @@ public class UserService implements IUserService {
     private IUserRepository iUserRepository;
 
     @Override
-    public Optional<Users> findUserById(int id)   {
+    public Optional<Users> findUserById(int id) {
         return iUserRepository.findById(id);
     }
 
@@ -31,13 +31,13 @@ public class UserService implements IUserService {
     @Override
     public Users updateUser(Users users, int id) {
         Users u = iUserRepository.getReferenceById(id);
-        if(u != null){
+        if (u != null) {
             u.setEmail(users.getEmail());
             u.setPassword(users.getPassword());
             u.setHovaTen(users.getHovaTen());
             u.setCccd(users.getCccd());
             u.setGplx(users.getGplx());
-
+            u.setRole(users.getRole());
         }
         return null;
     }

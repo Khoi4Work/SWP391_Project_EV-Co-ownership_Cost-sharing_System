@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -10,10 +11,12 @@ import lombok.Setter;
 
 @Entity
 @Table
+
 @Getter
 @Setter
 public class UserRole {
     @Id
+
     @Column
     private int role_id;
     @Column(unique = true)

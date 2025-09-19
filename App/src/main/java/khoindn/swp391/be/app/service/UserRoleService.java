@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserRoleService implements IUserRoleService{
 
+public class UserRoleService implements IUserRoleService {
 
     @Autowired
     private IUserRoleRepository iUserRoleRepository;
