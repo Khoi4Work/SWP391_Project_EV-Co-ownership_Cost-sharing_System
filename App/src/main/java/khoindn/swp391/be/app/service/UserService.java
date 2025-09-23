@@ -37,7 +37,7 @@ public class UserService implements IUserService {
             u.setHovaTen(users.getHovaTen());
             u.setCccd(users.getCccd());
             u.setGplx(users.getGplx());
-            u.setRole(users.getRole());
+            u.setRole_id(users.getRole_id());
         }
         return null;
     }

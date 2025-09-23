@@ -71,8 +71,6 @@
             <version>1.18.32</version> <!-- hoặc bản mới nhất -->
             <scope>provided</scope>
         </dependency>
-
-
     </dependencies>
 
     <build>
