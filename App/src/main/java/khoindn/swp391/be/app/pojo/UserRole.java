@@ -2,31 +2,23 @@ package khoindn.swp391.be.app.pojo;
 
 
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.List;
 
 @Entity
 @Table
-
-@Getter
-@Setter
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserRole {
     @Id
-
     @Column
     private int role_id;
     @Column(unique = true)
     private String roleName;
+    @OneToMany(mappedBy = "role_id", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    List<Users> users;
 
-    public UserRole() {
-    }
-
-    public UserRole(int role_id, String roleName) {
-        this.role_id = role_id;
-        this.roleName = roleName;
-    }
 }

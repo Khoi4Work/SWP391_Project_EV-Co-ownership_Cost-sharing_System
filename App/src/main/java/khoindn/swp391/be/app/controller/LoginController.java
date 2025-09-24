@@ -1,7 +1,7 @@
 package khoindn.swp391.be.app.controller;
 
 
-import khoindn.swp391.be.app.dto.LoginUser;
+import khoindn.swp391.be.app.model.loginRequest.LoginUser;
 import khoindn.swp391.be.app.service.IAuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

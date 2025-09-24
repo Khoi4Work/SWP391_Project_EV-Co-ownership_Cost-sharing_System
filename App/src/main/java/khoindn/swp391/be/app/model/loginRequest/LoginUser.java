@@ -1,11 +1,8 @@
-package khoindn.swp391.be.app.pojo;
+package khoindn.swp391.be.app.model.loginRequest;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import khoindn.swp391.be.app.pojo.UserRole;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Data
 public class LoginUser {
