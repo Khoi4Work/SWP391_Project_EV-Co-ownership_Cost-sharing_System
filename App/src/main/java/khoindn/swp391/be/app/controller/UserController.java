@@ -25,11 +25,11 @@ public class UserController {
         return ResponseEntity.ok(iUserService.findUserById(id));
     }
 
-    @PostMapping("/")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<Users> addUser(@RequestBody Users users) {
-        return ResponseEntity.ok(iUserService.addUser(users));
-    }
+//    @PostMapping("/")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public ResponseEntity<Users> addUser(@RequestBody Users users) {
+//        return ResponseEntity.ok(iUserService.addUser(users));
+//    }
 
     @PutMapping("/{id}")
     public ResponseEntity<Users> updateUser(@RequestBody Users users,

@@ -1,4 +1,4 @@
-package khoindn.swp391.be.app.model.loginRequest;
+package khoindn.swp391.be.app.model.Request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

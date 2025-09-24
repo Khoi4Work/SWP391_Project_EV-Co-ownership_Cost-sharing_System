@@ -1,9 +1,13 @@
 package khoindn.swp391.be.app.controller;
 
 
-import khoindn.swp391.be.app.model.loginRequest.LoginUser;
-import khoindn.swp391.be.app.service.IAuthenticationService;
+import jakarta.validation.Valid;
+import khoindn.swp391.be.app.model.Request.LoginUser;
+import khoindn.swp391.be.app.model.Response.UsersResponse;
+import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,12 +18,20 @@ import org.springframework.web.bind.annotation.*;
 
 
 public class LoginController {
-    private final IAuthenticationService iAuthenticationService;
+    @Autowired
+    AuthenticationService authenticationService;
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginUser LoginUser) {
-        return iAuthenticationService.findByEmailAndPassword(LoginUser.getEmail(), LoginUser.getPassword())
-                .map(users -> ResponseEntity.ok("Login successful"))
-                .orElse(ResponseEntity.status(401).body("Invalid email or password"));
+    @PostMapping("api/register")
+    public ResponseEntity register(@Valid @RequestBody Users users) {
+        // get request from FE
+        // send to AuthenticationService
+        Users newAccount = authenticationService.register(users);
+        return ResponseEntity.ok(newAccount);
+    }
+
+    @PostMapping("api/login")
+    public ResponseEntity login(@RequestBody @Valid LoginUser loginUser) {
+        UsersResponse usersResponse = authenticationService.login(loginUser);
+        return ResponseEntity.ok(usersResponse);
     }
 }
