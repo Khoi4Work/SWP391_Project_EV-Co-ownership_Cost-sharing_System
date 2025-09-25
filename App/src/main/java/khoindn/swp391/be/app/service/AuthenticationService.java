@@ -46,14 +46,15 @@ public class AuthenticationService implements UserDetailsService {
         // logic and authorized
 
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginUser.getEmail()
-                        , loginUser.getPassword()));
+                new UsernamePasswordAuthenticationToken(
+                        loginUser.getEmail(),
+                        loginUser.getPassword()));
         Users users = (Users) authentication.getPrincipal();
         //map account --> accountResponse
-        UsersResponse accountResponse = modelMapper.map(users, UsersResponse.class);
+        UsersResponse usersResponse = modelMapper.map(users, UsersResponse.class);
 //        String token = tokenService.generateToken(account);
 //        accountResponse.setToken(token);
-        return accountResponse;
+        return usersResponse;
     }
 
 

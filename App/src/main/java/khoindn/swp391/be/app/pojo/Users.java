@@ -1,16 +1,11 @@
 package khoindn.swp391.be.app.pojo;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -52,7 +47,7 @@ public class Users implements UserDetails {
     public Users() {
     }
 
-    public Users(String hovaTen, String email, String password, String cccd, String gplx, UserRole role) {
+    public Users(String hovaTen, String email, String password, String cccd, String gplx) {
         this.hovaTen = hovaTen;
         this.email = email;
         this.password = password;
