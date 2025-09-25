@@ -47,7 +47,7 @@ export default function Register() {
             .matches(/^[a-zA-Z0-9][\w.-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Email không hợp lệ"),
         phone: Yup.string()
             .required("Vui lòng nhập số điện thoại")
-            .matches(/^1\d{10}$/, "Số điện thoại phải có 11 chữ số và bắt đầu bằng số 1"),
+            .matches(/^0\d{9}$/, "Số điện thoại phải có 10 chữ số và bắt đầu bằng số 0"),
         cccd: Yup.string()
             .required("Vui lòng nhập số CCCD")
             .matches(/^0\d{11}$/, "CCCD phải có 12 số và bắt đầu bằng số 0"),

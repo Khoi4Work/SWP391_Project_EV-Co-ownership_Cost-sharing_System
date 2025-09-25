@@ -20,6 +20,10 @@ export default function VerifyOTP() {
   const { toast } = useToast();
 
   const userInfo = location.state as { phone?: string; email?: string; fullName?: string };
+  if (!userInfo) {
+    navigate("/register");
+    return null;
+  }
 
   const formatPhoneToE164 = (phone?: string) => {
     if (!phone) return "";
@@ -31,7 +35,7 @@ export default function VerifyOTP() {
   const generateOtp = async () => {
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setOtp(randomOtp);
-    setTime(60);
+    setTime(30);
     setExpired(false);
 
     console.log("OTP (debug):", randomOtp);
@@ -246,7 +250,7 @@ export default function VerifyOTP() {
                 <Button
                   type="submit"
                   className="w-full bg-gradient-primary hover:shadow-glow"
-                  disabled={values.otp.length !== 6}
+                  disabled={!!errors.otp || values.otp.length !== 6}
                 >
                   Xác thực OTP
                 </Button>
