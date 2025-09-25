@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -7,11 +7,11 @@ import { Car, ArrowLeft, MessageSquare, Mail, Clock } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
-
 export default function VerifyOTP() {
+  const didRun = useRef(false);
   const [otp, setOtp] = useState("");
   const [isResending, setIsResending] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<"sms" | "email">("sms");
+  const [selectedMethod, setSelectedMethod] = useState<"sms" | "email">("email");
   const [time, setTime] = useState(30);
   const [expired, setExpired] = useState(false);
   const [initialDelayDone, setInitialDelayDone] = useState(false);
@@ -33,6 +33,14 @@ export default function VerifyOTP() {
   };
 
   const generateOtp = async (method: "sms" | "email") => {
+    // tránh sinh OTP 2 lần trong Strict Mode (dev only)
+    if (!didRun.current) {
+      didRun.current = true;
+    } else {
+      // chỉ bỏ qua lần gọi thừa khi Strict Mode chạy effect 2 lần
+      if (process.env.NODE_ENV === "development") return;
+    }
+
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setOtp(randomOtp);
     setTime(30);
@@ -41,7 +49,7 @@ export default function VerifyOTP() {
     console.log("OTP (debug):", randomOtp);
 
     try {
-      if (selectedMethod === "email" && userInfo?.email) {
+      if (method === "email" && userInfo?.email) {
         const response = await fetch("http://localhost:5000/send-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -56,7 +64,7 @@ export default function VerifyOTP() {
           title: "OTP đã được tạo",
           description: `Mã xác thực đã gửi qua Email: ${userInfo.email}`,
         });
-      } else if (selectedMethod === "sms" && userInfo?.phone) {
+      } else if (method === "sms" && userInfo?.phone) {
         const formattedPhone = formatPhoneToE164(userInfo.phone);
         const response = await fetch("http://localhost:5000/send-otp", {
           method: "POST",
@@ -89,22 +97,27 @@ export default function VerifyOTP() {
     }
   };
 
-  useEffect(() => {
-    if (!initialDelayDone) return; // chỉ bắt đầu đếm khi đã gửi OTP lần đầu
-    if (time <= 0) {
-      setExpired(true);
-      return;
-    }
-    const timer = setTimeout(() => setTime(prev => prev - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [time, initialDelayDone]);
 
-  // khi user đổi phương thức SAU lần đầu thì gửi lại ngay
+  // gửi OTP lần đầu sau 5s, và gửi lại khi đổi phương thức
   useEffect(() => {
-    if (initialDelayDone) {
+    if (!initialDelayDone) {
+      const timer = setTimeout(() => {
+        generateOtp(selectedMethod);
+        setInitialDelayDone(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else {
+      // chỉ chạy khi user đổi phương thức sau lần đầu
       generateOtp(selectedMethod);
     }
   }, [selectedMethod, initialDelayDone]);
+
+  // countdown timer
+  useEffect(() => {
+    if (!initialDelayDone || time <= 0) return;
+    const timer = setTimeout(() => setTime(prev => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [time, initialDelayDone]);
 
   const otpSchema = Yup.object().shape({
     otp: Yup.string()

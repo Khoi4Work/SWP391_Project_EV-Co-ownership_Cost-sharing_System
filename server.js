@@ -42,7 +42,10 @@ const vonage =
     ? new Vonage({
       apiKey: VONAGE_API_KEY,
       apiSecret: VONAGE_API_SECRET,
-    })
+    },
+      {
+        apiHost: "https://api.nexmo.com",
+      })
     : null;
 
 function normalizeE164(phone) {
@@ -96,7 +99,7 @@ app.post("/send-otp", async (req, res) => {
       }
 
       console.log("📲 [/send-otp] Sending SMS via Vonage", {
-        from: VONAGE_BRAND_NAME || "EcoShare",
+        from: VONAGE_BRAND_NAME || "84926711233",
         to,
         otp,
       });
@@ -104,8 +107,8 @@ app.post("/send-otp", async (req, res) => {
       try {
         const response = await vonage.sms.send({
           to,
-          from: VONAGE_BRAND_NAME || "EcoShare",
-          text: `EcoShare OTP: ${otp}`,
+          from: VONAGE_BRAND_NAME || "84926711233",
+          text: `Vonage OTP: ${otp}`,
         });
 
         console.log("✅ [/send-otp] Vonage result:", response);
