@@ -12,9 +12,9 @@ export default function VerifyOTP() {
   const [otp, setOtp] = useState("");
   const [isResending, setIsResending] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<"sms" | "email">("sms");
-  const [time, setTime] = useState(60);
+  const [time, setTime] = useState(30);
   const [expired, setExpired] = useState(false);
-
+  const [initialDelayDone, setInitialDelayDone] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -32,7 +32,7 @@ export default function VerifyOTP() {
     return phone;
   };
 
-  const generateOtp = async () => {
+  const generateOtp = async (method: "sms" | "email") => {
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setOtp(randomOtp);
     setTime(30);
@@ -90,18 +90,21 @@ export default function VerifyOTP() {
   };
 
   useEffect(() => {
-    generateOtp();
-  }, [selectedMethod]);
-
-  // Countdown 60s
-  useEffect(() => {
+    if (!initialDelayDone) return; // chỉ bắt đầu đếm khi đã gửi OTP lần đầu
     if (time <= 0) {
       setExpired(true);
       return;
     }
     const timer = setTimeout(() => setTime(prev => prev - 1), 1000);
     return () => clearTimeout(timer);
-  }, [time]);
+  }, [time, initialDelayDone]);
+
+  // khi user đổi phương thức SAU lần đầu thì gửi lại ngay
+  useEffect(() => {
+    if (initialDelayDone) {
+      generateOtp(selectedMethod);
+    }
+  }, [selectedMethod, initialDelayDone]);
 
   const otpSchema = Yup.object().shape({
     otp: Yup.string()
@@ -125,12 +128,15 @@ export default function VerifyOTP() {
 
   const handleMethodChange = (method: "sms" | "email") => {
     setSelectedMethod(method);
+    if (!initialDelayDone) {
+      setSelectedMethod(method); // cập nhật lựa chọn để 5s sau gửi đúng
+    }
   };
 
   const handleResendOTP = () => {
     setIsResending(true);
     setTimeout(() => {
-      generateOtp();
+      generateOtp(selectedMethod);
       setIsResending(false);
     }, 2000);
   };

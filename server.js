@@ -2,23 +2,23 @@
 import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
-import twilio from "twilio";
 import dotenv from "dotenv";
+import { Vonage } from "@vonage/server-sdk";
 
 dotenv.config();
 const {
   MAILTRAP_USER,
   MAILTRAP_PASS,
-  TWILIO_ACCOUNT_SID,
-  TWILIO_AUTH_TOKEN,
-  TWILIO_PHONE,
+  VONAGE_API_KEY,
+  VONAGE_API_SECRET,
+  VONAGE_BRAND_NAME, // tên hiển thị người gửi
   PORT = 5000,
 } = process.env;
 console.log("🔍 ENV check:", {
   hasMail: !!MAILTRAP_USER,
-  hasTwilioSid: !!TWILIO_ACCOUNT_SID,
-  hasTwilioToken: !!TWILIO_AUTH_TOKEN,
-  twilioPhone: TWILIO_PHONE,
+  hasVonageKey: !!VONAGE_API_KEY,
+  hasVonageSecret: !!VONAGE_API_SECRET,
+  vonageBrand: VONAGE_BRAND_NAME,
 });
 
 
@@ -36,10 +36,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// --- Twilio setup ---
-const twilioClient =
-  TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN
-    ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+// --- Vonage setup ---
+const vonage =
+  VONAGE_API_KEY && VONAGE_API_SECRET
+    ? new Vonage({
+      apiKey: VONAGE_API_KEY,
+      apiSecret: VONAGE_API_SECRET,
+    })
     : null;
 
 function normalizeE164(phone) {
@@ -75,13 +78,12 @@ app.post("/send-otp", async (req, res) => {
       return res.json({ success: true, channel: "email" });
     }
 
-    // --- SMS ---
     if (method === "sms") {
-      if (!twilioClient) {
-        console.error("❌ [/send-otp] Twilio client not configured");
+      if (!vonage) {
+        console.error("❌ [/send-otp] Vonage client not configured");
         return res
           .status(500)
-          .json({ success: false, error: "Twilio not configured on server" });
+          .json({ success: false, error: "Vonage not configured on server" });
       }
 
       const to = normalizeE164(destination);
@@ -93,39 +95,31 @@ app.post("/send-otp", async (req, res) => {
         });
       }
 
-      console.log("📲 [/send-otp] Sending SMS", {
-        from: TWILIO_PHONE,
+      console.log("📲 [/send-otp] Sending SMS via Vonage", {
+        from: VONAGE_BRAND_NAME || "EcoShare",
         to,
         otp,
       });
 
       try {
-        const result = await twilioClient.messages.create({
-          body: `EcoShare OTP: ${otp}`,
-          from: TWILIO_PHONE,
+        const response = await vonage.sms.send({
           to,
+          from: VONAGE_BRAND_NAME || "EcoShare",
+          text: `EcoShare OTP: ${otp}`,
         });
-        console.log("✅ [/send-otp] Twilio result:", {
-          sid: result.sid,
-          status: result.status,
-        });
+
+        console.log("✅ [/send-otp] Vonage result:", response);
         return res.json({
           success: true,
           channel: "sms",
-          sid: result.sid,
-          status: result.status,
+          response,
         });
-      } catch (twilioErr) {
-        console.error("❌ [/send-otp] Twilio error (full):", twilioErr);
+      } catch (vonageErr) {
+        console.error("❌ [/send-otp] Vonage error (full):", vonageErr);
         return res.status(500).json({
           success: false,
-          error: "Twilio error",
-          twilio: {
-            message: twilioErr.message,
-            code: twilioErr.code,
-            moreInfo: twilioErr.moreInfo,
-            status: twilioErr.status,
-          },
+          error: "Vonage error",
+          details: vonageErr,
         });
       }
     }
