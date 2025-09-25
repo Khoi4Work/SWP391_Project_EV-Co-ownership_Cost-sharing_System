@@ -7,22 +7,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useState } from "react";
-import { useEffect } from "react";
-import { useRef } from "react";
-import axios from "axios";
+import { useState, useEffect, useRef } from "react";
+import Tesseract from "tesseract.js";
 
 export default function Register() {
     const navigate = useNavigate();
     const { toast } = useToast();
     const [showTerms, setShowTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<{ [key: string]: string }>({});
+    const [ocrLoadingCccd, setOcrLoadingCccd] = useState(false);
+    const [ocrLoadingGplx, setOcrLoadingGplx] = useState(false);
     const errorTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
+
+    // Hàm show lỗi tạm thời
     const showError = (field: string, message: string) => {
         setErrorMessage((prev) => ({ ...prev, [field]: message }));
-        if (errorTimeouts.current[field]) {
-            clearTimeout(errorTimeouts.current[field]);
-        }
+        if (errorTimeouts.current[field]) clearTimeout(errorTimeouts.current[field]);
         errorTimeouts.current[field] = setTimeout(() => {
             setErrorMessage((prev) => {
                 const newErrors = { ...prev };
@@ -32,12 +32,58 @@ export default function Register() {
             delete errorTimeouts.current[field];
         }, 1000);
     };
+
     useEffect(() => {
-        // Clear all timeouts khi unmount
-        return () => {
-            Object.values(errorTimeouts.current).forEach(clearTimeout);
-        };
+        return () => Object.values(errorTimeouts.current).forEach(clearTimeout);
     }, []);
+
+    // OCR CCCD
+    const handleUploadCccd = async (e: React.ChangeEvent<HTMLInputElement>, setFieldValue: (field: string, value: any) => void) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setOcrLoadingCccd(true);
+        try {
+            const { data } = await Tesseract.recognize(file, "vie", {
+                logger: (m) => console.log("CCCD OCR:", m),
+            });
+            const text = data.text.replace(/\s+/g, "");
+            const match = text.match(/0\d{11}/); // Regex 12 số bắt đầu bằng 0
+            if (match) {
+                setFieldValue("cccd", match[0]);
+                toast({ title: "CCCD nhận diện thành công", description: match[0] });
+            } else {
+                toast({ title: "Không nhận diện được CCCD", variant: "destructive" });
+            }
+        } catch (err) {
+            console.error("OCR CCCD error:", err);
+            toast({ title: "Lỗi OCR", description: "Có lỗi xảy ra", variant: "destructive" });
+        } finally {
+            setOcrLoadingCccd(false);
+        }
+    };
+
+    // OCR GPLX
+    const handleUploadGplx = async (e, setFieldValue) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const { data } = await Tesseract.recognize(file, "eng");
+            const text = data.text.replace(/\s+/g, "");
+
+            // Lấy cả chữ in hoa và số, 8 ký tự trở lên
+            const match = text.match(/[A-Z0-9]{8,}/i);
+            if (match) {
+                setFieldValue("gplx", match[0].toUpperCase()); // in hoa cho chuẩn
+                console.log("GPLX OCR:", match[0]);
+            } else {
+                console.log("Không nhận diện được GPLX");
+            }
+        } catch (err) {
+            console.error("OCR GPLX lỗi:", err);
+        }
+    };
+
     const validationSchema = Yup.object({
         hovaTen: Yup.string()
             .required("Vui lòng nhập họ và tên")
@@ -95,9 +141,8 @@ export default function Register() {
                         validateOnBlur={false}
                         onSubmit={async (values, { setSubmitting }) => {
                             try {
-                                // Build object sạch, loại bỏ confirmPassword
                                 const userObject = {
-                                    role_id: { role_id: 1 },    // gán mặc định
+                                    role_id: { role_id: 1 },
                                     hovaTen: values.hovaTen,
                                     email: values.email,
                                     phone: values.phone,
@@ -105,44 +150,27 @@ export default function Register() {
                                     gplx: values.gplx,
                                     password: values.password,
                                 };
-
-                                // Điều hướng sang VerifyOTP và truyền object
                                 navigate("/verify-otp", { state: userObject });
-                                toast({
-                                    title: "Đăng ký thành công",
-                                    description: "Vui lòng xác thực tài khoản bằng mã OTP",
-                                });
+                                toast({ title: "Đăng ký thành công", description: "Vui lòng xác thực tài khoản bằng mã OTP" });
                             } catch (err: any) {
-                                toast({
-                                    title: "Lỗi đăng ký",
-                                    description: err?.response?.data?.message || "Đã có lỗi xảy ra",
-                                    variant: "destructive",
-                                });
+                                toast({ title: "Lỗi đăng ký", description: err?.response?.data?.message || "Đã có lỗi xảy ra", variant: "destructive" });
                             } finally {
                                 setSubmitting(false);
                             }
                         }}
-
                         validate={(values) => {
-                            // Xử lý lỗi realtime khi nhập
                             try {
                                 validationSchema.validateSync(values, { abortEarly: false });
                                 setErrorMessage({});
                                 return {};
                             } catch (err: any) {
                                 const errors: { [key: string]: string } = {};
-                                if (err.inner) {
-                                    err.inner.forEach((e: any) => {
-                                        errors[e.path] = e.message;
-                                        showError(e.path, e.message);
-                                    });
-                                }
+                                if (err.inner) err.inner.forEach((e: any) => { errors[e.path] = e.message; showError(e.path, e.message); });
                                 return errors;
                             }
                         }}
                     >
-
-                        {({ isSubmitting, }) => (
+                        {({ isSubmitting, setFieldValue }) => (
                             <Form className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="hovaTen">Họ và tên*</Label>
@@ -171,31 +199,27 @@ export default function Register() {
                                         {errorMessage.email || <ErrorMessage name="email" />}
                                     </div>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <Label htmlFor="cccd">CCCD*</Label>
-                                    <Field
-                                        as={Input}
-                                        id="cccd"
-                                        name="cccd"
-                                        type="text"
-                                        placeholder="Nhập số CCCD (12 số, bắt đầu bằng 0)"
-                                    />
-                                    <div className="text-red-500 text-xs">
-                                        {errorMessage.cccd || <ErrorMessage name="cccd" />}
+                                    <div className="relative">
+                                        <Field as={Input} id="cccd" name="cccd" type="text" placeholder="Chỉ upload ảnh để điền CCCD" readOnly />
+                                        <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
+                                            {ocrLoadingCccd ? "⏳" : "📷"}
+                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadCccd(e, setFieldValue)} />
+                                        </label>
                                     </div>
+                                    <div className="text-red-500 text-xs">{errorMessage.cccd || <ErrorMessage name="cccd" />}</div>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <Label htmlFor="gplx">Giấy phép lái xe*</Label>
-                                    <Field
-                                        as={Input}
-                                        id="gplx"
-                                        name="gplx"
-                                        type="text"
-                                        placeholder="Nhập số giấy phép lái xe"
-                                    />
-                                    <div className="text-red-500 text-xs">
-                                        {errorMessage.gplx || <ErrorMessage name="gplx" />}
+                                    <div className="relative">
+                                        <Field as={Input} id="gplx" name="gplx" type="text" placeholder="Chỉ upload ảnh để điền GPLX" readOnly />
+                                        <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
+                                            {ocrLoadingGplx ? "⏳" : "📷"}
+                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadGplx(e, setFieldValue)} />
+                                        </label>
                                     </div>
+                                    <div className="text-red-500 text-xs">{errorMessage.gplx || <ErrorMessage name="gplx" />}</div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="phone">Số điện thoại*</Label>
