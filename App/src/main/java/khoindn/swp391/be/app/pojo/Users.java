@@ -38,6 +38,8 @@ public class Users implements UserDetails {
     @Column(name = "GPLX", nullable = false, unique = true)
     private String gplx;  // Changed to match Java naming conventions
 
+    @Column(name = "phone", nullable = false, unique = true)
+    private String phone;
 
     @ManyToOne
     @JoinColumn(name = "Role_ID", nullable = false)
