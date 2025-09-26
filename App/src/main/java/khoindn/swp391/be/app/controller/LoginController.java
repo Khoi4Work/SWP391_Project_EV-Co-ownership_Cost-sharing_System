@@ -21,7 +21,7 @@ public class LoginController {
     @Autowired
     AuthenticationService authenticationService;
 
-    @PostMapping("api/register")
+    @PostMapping("/register")
     public ResponseEntity register(@Valid @RequestBody Users users) {
         // get request from FE
         // send to AuthenticationService
@@ -29,7 +29,7 @@ public class LoginController {
         return ResponseEntity.ok(newAccount);
     }
 
-    @PostMapping("api/login")
+    @PostMapping("/login")
     public ResponseEntity login(@RequestBody @Valid LoginUser loginUser) {
         UsersResponse usersResponse = authenticationService.login(loginUser);
         return ResponseEntity.ok(usersResponse);
