@@ -1,3 +1,4 @@
+declare const window: any;
 import { useNavigate, Link } from "react-router-dom";
 import { Car, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,55 @@ import * as Yup from "yup";
 import { useState, useEffect, useRef } from "react";
 import Tesseract from "tesseract.js";
 import axios from "axios";
+import { waitForCvReady } from "@/lib/opencvHelpers";
+async function preprocessWithOpenCV(file: File): Promise<string> {
+    await waitForCvReady(); // helper ở trên
+    const cv = (window as any).cv;
+
+    // Load image -> canvas
+    const imgURL = URL.createObjectURL(file);
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+        const i = new Image();
+        i.onload = () => res(i);
+        i.onerror = rej;
+        i.src = imgURL;
+    });
+
+    const canvas = document.createElement("canvas");
+    const maxW = 1200;
+    const scale = img.width > maxW ? maxW / img.width : 1;
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    // OpenCV processing
+    const src = cv.imread(canvas);
+    const gray = new cv.Mat();
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+    const blurred = new cv.Mat();
+    cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
+    const thresh = new cv.Mat();
+    cv.adaptiveThreshold(blurred, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 8);
+
+    // invert so text black-on-white if needed
+    const inverted = new cv.Mat();
+    cv.bitwise_not(thresh, inverted);
+
+    // write to canvas
+    const out = new cv.Mat();
+    cv.cvtColor(inverted, out, cv.COLOR_GRAY2RGBA);
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = out.cols;
+    outCanvas.height = out.rows;
+    const imgData = new ImageData(new Uint8ClampedArray(out.data), out.cols, out.rows);
+    outCanvas.getContext("2d")!.putImageData(imgData, 0, 0);
+
+    // cleanup
+    src.delete(); gray.delete(); blurred.delete(); thresh.delete(); inverted.delete(); out.delete();
+
+    return outCanvas.toDataURL("image/png");
+}
 
 export default function Register() {
     const navigate = useNavigate();
@@ -61,9 +111,8 @@ export default function Register() {
         if (!file) return;
         setOcrLoadingCccd(true);
         try {
-            const { data } = await Tesseract.recognize(file, "vie", {
-                logger: (m) => console.log("CCCD OCR:", m),
-            });
+            const preprocessed = await preprocessWithOpenCV(file);
+            const { data } = await Tesseract.recognize(preprocessed, "eng", { logger: m => console.log(m) });
             const text = data.text.replace(/\s+/g, "");
             const match = text.match(/0\d{11}/); // Regex 12 số bắt đầu bằng 0
             if (match) {
@@ -84,13 +133,14 @@ export default function Register() {
     const handleUploadGplx = async (e, setFieldValue) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
+        setOcrLoadingGplx(true);
         try {
-            const { data } = await Tesseract.recognize(file, "eng");
+            const preprocessed = await preprocessWithOpenCV(file);
+            const { data } = await Tesseract.recognize(preprocessed, "eng", { logger: m => console.log(m) });
             const text = data.text.replace(/\s+/g, "");
-
             // Lấy cả chữ in hoa và số, 8 ký tự trở lên
-            const match = text.match(/[A-Z0-9]{8,}/i);
+            // Lấy chuỗi số dài 8–12 chữ số
+            const match = text.match(/\d{8,12}/);
             if (match) {
                 setFieldValue("gplx", match[0].toUpperCase()); // in hoa cho chuẩn
                 console.log("GPLX OCR:", match[0]);
@@ -99,6 +149,8 @@ export default function Register() {
             }
         } catch (err) {
             console.error("OCR GPLX lỗi:", err);
+        } finally {
+            setOcrLoadingGplx(false);
         }
     };
 
@@ -117,7 +169,7 @@ export default function Register() {
             .matches(/^0\d{11}$/, "CCCD phải có 12 số và bắt đầu bằng số 0"),
         gplx: Yup.string()
             .required("Vui lòng nhập số giấy phép lái xe")
-            .min(8, "Giấy phép lái xe phải từ 8 ký tự trở lên"),
+            .matches(/^\d{12}$/, "GPLX phải có 12 chữ số"),
         password: Yup.string()
             .required("Vui lòng nhập mật khẩu")
             .min(6, "Mật khẩu phải từ 6 đến 20 ký tự")
@@ -249,7 +301,7 @@ export default function Register() {
                                 <div className="space-y-2 relative">
                                     <Label htmlFor="cccd">CCCD*</Label>
                                     <div className="relative">
-                                        <Field as={Input} id="cccd" name="cccd" type="text" placeholder="Chỉ upload ảnh để điền CCCD" readOnly />
+                                        <Field as={Input} id="cccd" name="cccd" type="text" placeholder="Chỉ upload ảnh để điền CCCD" />
                                         <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
                                             {ocrLoadingCccd ? "⏳" : "📷"}
                                             <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadCccd(e, setFieldValue)} />
@@ -260,7 +312,7 @@ export default function Register() {
                                 <div className="space-y-2 relative">
                                     <Label htmlFor="gplx">Giấy phép lái xe*</Label>
                                     <div className="relative">
-                                        <Field as={Input} id="gplx" name="gplx" type="text" placeholder="Chỉ upload ảnh để điền GPLX" readOnly />
+                                        <Field as={Input} id="gplx" name="gplx" type="text" placeholder="Chỉ upload ảnh để điền GPLX" />
                                         <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
                                             {ocrLoadingGplx ? "⏳" : "📷"}
                                             <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadGplx(e, setFieldValue)} />

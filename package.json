@@ -96,7 +96,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.19"
+    "vite": "^7.1.7"
   },
   "description": "Đây là file README đã hợp nhất nội dung từ cả FE và firstBranch.",
   "main": "eslint.config.js",
