@@ -9,6 +9,7 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useState, useEffect, useRef } from "react";
 import Tesseract from "tesseract.js";
+import axios from "axios";
 
 export default function Register() {
     const navigate = useNavigate();
@@ -19,6 +20,23 @@ export default function Register() {
     const [ocrLoadingGplx, setOcrLoadingGplx] = useState(false);
     const errorTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
+    const createUser = async (userData: {
+        hovaTen: string;
+        email: string;
+        phone: string;
+        cccd: string;
+        gplx: string;
+        password: string;
+    }) => {
+        try {
+            // Thay đổi URL này thành endpoint backend thực tế của bạn
+            const response = await axios.post("https://68ca27d4430c4476c34861d4.mockapi.io/user", userData);
+            console.log("Kết quả backend trả về:", response.data);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    };
     // Hàm show lỗi tạm thời
     const showError = (field: string, message: string) => {
         setErrorMessage((prev) => ({ ...prev, [field]: message }));
@@ -139,24 +157,48 @@ export default function Register() {
                         validationSchema={validationSchema}
                         validateOnChange={true}
                         validateOnBlur={false}
-                        onSubmit={async (values, { setSubmitting }) => {
-                            try {
-                                const userObject = {
-                                    role_id: { role_id: 1 },
-                                    hovaTen: values.hovaTen,
-                                    email: values.email,
-                                    phone: values.phone,
-                                    cccd: values.cccd,
-                                    gplx: values.gplx,
-                                    password: values.password,
-                                };
-                                navigate("/verify-otp", { state: userObject });
-                                toast({ title: "Đăng ký thành công", description: "Vui lòng xác thực tài khoản bằng mã OTP" });
-                            } catch (err: any) {
-                                toast({ title: "Lỗi đăng ký", description: err?.response?.data?.message || "Đã có lỗi xảy ra", variant: "destructive" });
-                            } finally {
-                                setSubmitting(false);
-                            }
+                        onSubmit={async (values, { setSubmitting, setErrors }) => {
+                            validationSchema
+                                .validate(values, { abortEarly: false })
+                                .then(async () => {
+                                    const userObject = {
+                                        role_id: { role_id: 1 }, // giữ giống đoạn mới
+                                        hovaTen: values.hovaTen,
+                                        email: values.email,
+                                        phone: values.phone,
+                                        cccd: values.cccd,
+                                        gplx: values.gplx,
+                                        password: values.password,
+                                    };
+                                    try {
+                                        // gọi backend tạo user
+                                        await createUser(userObject);
+
+                                        navigate("/verify-otp", { state: userObject });
+                                        toast({
+                                            title: "Đăng ký thành công",
+                                            description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                        });
+                                    } catch (err: any) {
+                                        toast({
+                                            title: "Lỗi đăng ký",
+                                            description: err?.response?.data?.message || "Đã có lỗi xảy ra",
+                                            variant: "destructive",
+                                        });
+                                    }
+                                    setSubmitting(false);
+                                })
+                                .catch((err) => {
+                                    if (err.inner) {
+                                        const formErrors: { [key: string]: string } = {};
+                                        err.inner.forEach((e: any) => {
+                                            formErrors[e.path] = e.message;
+                                            showError(e.path, e.message);
+                                        });
+                                        setErrors(formErrors);
+                                    }
+                                    setSubmitting(false);
+                                });
                         }}
                         validate={(values) => {
                             try {
@@ -165,7 +207,12 @@ export default function Register() {
                                 return {};
                             } catch (err: any) {
                                 const errors: { [key: string]: string } = {};
-                                if (err.inner) err.inner.forEach((e: any) => { errors[e.path] = e.message; showError(e.path, e.message); });
+                                if (err.inner) {
+                                    err.inner.forEach((e: any) => {
+                                        errors[e.path] = e.message;
+                                        showError(e.path, e.message);
+                                    });
+                                }
                                 return errors;
                             }
                         }}
