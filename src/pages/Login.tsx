@@ -28,11 +28,12 @@ export default function Login() {
     }
     try {
       // Thay đổi URL này thành endpoint backend thực tế của bạn
-      const response = await axios.post("http://localhost:8080/login", {
+      const response = await axios.post("http://localhost:8080/Users/login", {
         email,
         password,
         userType: userTypes[0],
       });
+      console.log(response.data)
       // Xử lý response backend trả về
       toast({
         title: "Đăng nhập thành công",
