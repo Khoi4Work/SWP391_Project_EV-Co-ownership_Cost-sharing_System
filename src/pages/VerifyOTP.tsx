@@ -220,7 +220,7 @@ export default function VerifyOTP() {
               }
               if (values.otp === otp) {
                 await sendUserInfoToBackend();
-                navigate("/co-owner/vehicle-registration");
+                navigate("/co-owner/dashboard");
                 toast({
                   title: "Xác thực thành công",
                   description: "Tài khoản đã được tạo thành công!",
