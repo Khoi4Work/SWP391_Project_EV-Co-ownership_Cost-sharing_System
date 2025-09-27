@@ -1,7 +1,13 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.model.Request.RegisterVehicleReq;
+import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
+import khoindn.swp391.be.app.model.Response.UsersResponse;
+import khoindn.swp391.be.app.pojo.Group;
+import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IUserRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +18,9 @@ public class UserService implements IUserService {
 
     @Autowired
     private IUserRepository iUserRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public Optional<Users> findUserById(int id) {
@@ -41,4 +50,6 @@ public class UserService implements IUserService {
         }
         return null;
     }
+
+
 }
