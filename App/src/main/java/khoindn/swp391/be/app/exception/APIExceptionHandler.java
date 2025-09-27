@@ -1,4 +1,5 @@
 package khoindn.swp391.be.app.exception;
+import khoindn.swp391.be.app.exception.exceptions.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -25,10 +26,10 @@ public class APIExceptionHandler {
         return ResponseEntity.status(401).body("Username or password invalid!");
     }
 
-//    @ExceptionHandler(AuthenticationException.class)
-//    public ResponseEntity handleAuthenticationException(AuthenticationException exception) {
-//        return ResponseEntity.status(401).body(exception.getMessage());
-//    }
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity handleAuthenticationException(AuthenticationException exception) {
+        return ResponseEntity.status(401).body(exception.getMessage());
+    }
 
     @ExceptionHandler(InternalAuthenticationServiceException.class)
     public ResponseEntity handleInternalAuthenticationServiceException(InternalAuthenticationServiceException exception) {

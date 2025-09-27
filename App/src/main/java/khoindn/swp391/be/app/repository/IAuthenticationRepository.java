@@ -9,5 +9,7 @@ import java.util.Optional;
 public interface IAuthenticationRepository extends JpaRepository<Users, Integer> {
     Users findUsersByEmail(String email);
 
+    Users findUserById(int id);
+
 
 }

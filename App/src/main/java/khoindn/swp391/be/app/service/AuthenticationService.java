@@ -28,6 +28,8 @@ public class AuthenticationService implements UserDetailsService {
     AuthenticationManager authenticationManager;
     @Autowired
     ModelMapper modelMapper;
+    @Autowired
+    TokenService tokenService;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -52,8 +54,8 @@ public class AuthenticationService implements UserDetailsService {
         Users users = (Users) authentication.getPrincipal();
         //map account --> accountResponse
         UsersResponse usersResponse = modelMapper.map(users, UsersResponse.class);
-//        String token = tokenService.generateToken(account);
-//        accountResponse.setToken(token);
+        String token = tokenService.generateToken(users);
+        usersResponse.setToken(token);
         return usersResponse;
     }
 

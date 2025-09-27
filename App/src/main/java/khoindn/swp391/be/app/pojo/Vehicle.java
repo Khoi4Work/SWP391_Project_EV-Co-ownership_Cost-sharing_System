@@ -37,4 +37,7 @@ public class Vehicle {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @ManyToOne
+    @JoinColumn(name = "group_id")
+    private Group group_id;
 }

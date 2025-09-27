@@ -18,8 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     @Autowired
     AuthenticationService authenticationService;
-//    @Autowired
-//    Filter filter;
+    @Autowired
+    Filter filter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -43,9 +43,9 @@ public class SecurityConfig {
                                 .anyRequest()
                                 .authenticated()
 
-                ).build();
-//                .userDetailsService(authenticationService)
-//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class).build();
+                )
+                .userDetailsService(authenticationService)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class).build();
     }
 }

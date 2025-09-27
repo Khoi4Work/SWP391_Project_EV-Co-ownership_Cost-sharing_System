@@ -1,23 +1,29 @@
 package khoindn.swp391.be.app.pojo;
 
 
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 
 @Entity // Changed from [user] to Users
 @Data
+@Table(name = "users")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Users implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private int id;
 
     @NotNull
@@ -45,9 +51,8 @@ public class Users implements UserDetails {
     @JoinColumn(name = "Role_ID", nullable = false)
     private UserRole role_id; // Default role ID for regular users
 
-
-    public Users() {
-    }
+    @OneToMany(mappedBy = "users")
+    private List<GroupMember> userOfGroupMember = new ArrayList<>();
 
     public Users(String hovaTen, String email, String password, String cccd, String gplx) {
         this.hovaTen = hovaTen;
