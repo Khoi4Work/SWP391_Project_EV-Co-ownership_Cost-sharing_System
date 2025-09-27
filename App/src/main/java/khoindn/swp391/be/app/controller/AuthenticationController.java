@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "http://localhost:8081")
 
 
-public class LoginController {
+public class AuthenticationController {
     @Autowired
     AuthenticationService authenticationService;
 
