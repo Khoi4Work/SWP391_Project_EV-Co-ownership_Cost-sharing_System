@@ -18,12 +18,22 @@ export default function VerifyOTP() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-
-  const userInfo = location.state as { phone?: string; email?: string; fullName?: string };
-  if (!userInfo) {
-    navigate("/register");
-    return null;
-  }
+  const [userData, setUserData] = useState<any>(null)
+  useEffect(() => {
+    // ưu tiên lấy từ location.state (điều hướng từ Register qua)
+    if (location.state) {
+      setUserData(location.state);
+      localStorage.setItem("userInfo", JSON.stringify(location.state));
+    } else {
+      // nếu reload thì lấy từ localStorage
+      const storedUser = localStorage.getItem("userInfo");
+      if (storedUser) {
+        setUserData(JSON.parse(storedUser));
+      } else {
+        navigate("/register"); // không có gì thì về lại Register
+      }
+    }
+  }, [location.state, navigate]);
 
   const formatPhoneToE164 = (phone?: string) => {
     if (!phone) return "";
@@ -49,23 +59,23 @@ export default function VerifyOTP() {
     console.log("OTP (debug):", randomOtp);
 
     try {
-      if (method === "email" && userInfo?.email) {
+      if (method === "email" && userData?.email) {
         const response = await fetch("http://localhost:5000/send-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             method: "email",
-            destination: userInfo.email,
+            destination: userData.email,
             otp: randomOtp,
           }),
         });
         if (!response.ok) throw new Error("Send OTP failed");
         toast({
           title: "OTP đã được tạo",
-          description: `Mã xác thực đã gửi qua Email: ${userInfo.email}`,
+          description: `Mã xác thực đã gửi qua Email: ${userData.email}`,
         });
-      } else if (method === "sms" && userInfo?.phone) {
-        const formattedPhone = formatPhoneToE164(userInfo.phone);
+      } else if (method === "sms" && userData?.phone) {
+        const formattedPhone = formatPhoneToE164(userData.phone);
         const response = await fetch("http://localhost:5000/send-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -126,11 +136,30 @@ export default function VerifyOTP() {
   });
   const sendUserInfoToBackend = async () => {
     try {
+      // lấy danh sách user trước
+      const checkRes = await fetch("https://68ca27d4430c4476c34861d4.mockapi.io/user");
+      const users = await checkRes.json();
+
+      const exists = users.find(
+        (u: any) => u.email === userData.email || u.cccd === userData.cccd || u.gplx === userData.gplx
+      );
+
+      if (exists) {
+        toast({
+          title: "Đăng ký thất bại",
+          description: "Email/CCCD/GPLX đã tồn tại trong hệ thống",
+          variant: "destructive",
+        });
+        return; // không tạo nữa
+      }
+
+      // nếu không trùng -> mới tạo user
       const response = await fetch("https://68ca27d4430c4476c34861d4.mockapi.io/user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userInfo),
+        body: JSON.stringify(userData),
       });
+
       if (!response.ok) throw new Error("Failed to create user");
       const data = await response.json();
       console.log("User created:", data);
@@ -153,11 +182,18 @@ export default function VerifyOTP() {
       setIsResending(false);
     }, 2000);
   };
-
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userInfo");
+    if (storedUser) {
+      setUserData(JSON.parse(storedUser));
+    } else {
+      navigate("/register"); // nếu không có thì quay lại đăng ký
+    }
+  }, [navigate]);
   const maskedContact =
     selectedMethod === "sms"
-      ? userInfo?.phone?.replace(/(\d{3})\d{4}(\d{3})/, "$1****$2")
-      : userInfo?.email?.replace(/(.{2}).*(@.*)/, "$1****$2");
+      ? userData?.phone?.replace(/(\d{3})\d{4}(\d{3})/, "$1****$2")
+      : userData?.email?.replace(/(.{2}).*(@.*)/, "$1****$2");
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">

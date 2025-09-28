@@ -65,10 +65,19 @@ export default function Register() {
     const navigate = useNavigate();
     const { toast } = useToast();
     const [showTerms, setShowTerms] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<{ [key: string]: string }>({});
     const [ocrLoadingCccd, setOcrLoadingCccd] = useState(false);
     const [ocrLoadingGplx, setOcrLoadingGplx] = useState(false);
-    const errorTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
+    // check uniqueness API backend host:http://localhost:8080/users/check?${field}=${value} 
+    const checkDuplicate = async (field: string, value: string) => {
+        try {
+            const res = await axios.get("https://68ca27d4430c4476c34861d4.mockapi.io/user");
+            const users = res.data;
+            return users.some((u: any) => u[field] === value);
+        } catch (err) {
+            console.error("Check duplicate error:", err);
+            return false; // nếu lỗi thì coi như không trùng
+        }
+    };
 
     const createUser = async (userData: {
         hovaTen: string;
@@ -78,32 +87,16 @@ export default function Register() {
         gplx: string;
         password: string;
     }) => {
+        //http://localhost:8080/Users/register: kết quả ở backend (dùng khi test chính thức)
         try {
             // Thay đổi URL này thành endpoint backend thực tế của bạn
-            const response = await axios.post("http://localhost:8080/Users/register", userData);
+            const response = await axios.post("https://68ca27d4430c4476c34861d4.mockapi.io/user", userData);
             console.log("Kết quả backend trả về:", response.data);
             return response.data;
         } catch (error) {
             throw error;
         }
     };
-    // Hàm show lỗi tạm thời
-    const showError = (field: string, message: string) => {
-        setErrorMessage((prev) => ({ ...prev, [field]: message }));
-        if (errorTimeouts.current[field]) clearTimeout(errorTimeouts.current[field]);
-        errorTimeouts.current[field] = setTimeout(() => {
-            setErrorMessage((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors[field];
-                return newErrors;
-            });
-            delete errorTimeouts.current[field];
-        }, 1000);
-    };
-
-    useEffect(() => {
-        return () => Object.values(errorTimeouts.current).forEach(clearTimeout);
-    }, []);
 
     // OCR CCCD
     const handleUploadCccd = async (e: React.ChangeEvent<HTMLInputElement>, setFieldValue: (field: string, value: any) => void) => {
@@ -142,7 +135,7 @@ export default function Register() {
             // Lấy chuỗi số dài 8–12 chữ số
             const match = text.match(/\d{8,12}/);
             if (match) {
-                setFieldValue("gplx", match[0].toUpperCase()); // in hoa cho chuẩn
+                setFieldValue("gplx", match[0]);
                 console.log("GPLX OCR:", match[0]);
             } else {
                 console.log("Không nhận diện được GPLX");
@@ -176,11 +169,10 @@ export default function Register() {
             .max(20, "Mật khẩu phải từ 6 đến 20 ký tự"),
         confirmPassword: Yup.string()
             .required("Vui lòng xác nhận mật khẩu")
-            .oneOf([Yup.ref("password")], "Mật khẩu xác nhận không khớp"),
+            .oneOf([Yup.ref("password"), null], "Mật khẩu xác nhận không khớp"),
         acceptTerms: Yup.boolean()
             .oneOf([true], "Bạn phải đồng ý với các điều khoản"),
     });
-
     return (
         <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
             <Card className="w-full max-w-md shadow-glow border-0">
@@ -208,13 +200,28 @@ export default function Register() {
                         }}
                         validationSchema={validationSchema}
                         validateOnChange={true}
-                        validateOnBlur={false}
+                        validateOnBlur={true}
                         onSubmit={async (values, { setSubmitting, setErrors }) => {
                             validationSchema
                                 .validate(values, { abortEarly: false })
                                 .then(async () => {
+                                    // Kiểm tra trùng lặp
+                                    const emailExists = await checkDuplicate("email", values.email);
+                                    const cccdExists = await checkDuplicate("cccd", values.cccd);
+                                    const gplxExists = await checkDuplicate("gplx", values.gplx);
+                                    if (emailExists || cccdExists || gplxExists) {
+                                        console.log("Trùng lặp:", { emailExists, cccdExists, gplxExists });
+                                    }
+                                    if (emailExists || cccdExists || gplxExists) {
+                                        const errors: any = {};
+                                        if (emailExists) errors.email = "Email đã tồn tại trong hệ thống";
+                                        if (cccdExists) errors.cccd = "CCCD đã tồn tại trong hệ thống";
+                                        if (gplxExists) errors.gplx = "GPLX đã tồn tại trong hệ thống";
+                                        setErrors(errors);
+                                        setSubmitting(false);
+                                        return;
+                                    }
                                     const userObject = {
-                                        role_id: { role_id: 1 }, // giữ giống đoạn mới
                                         hovaTen: values.hovaTen,
                                         email: values.email,
                                         phone: values.phone,
@@ -222,22 +229,12 @@ export default function Register() {
                                         gplx: values.gplx,
                                         password: values.password,
                                     };
-                                    try {
-                                        // gọi backend tạo user
-                                        await createUser(userObject);
-
-                                        navigate("/verify-otp", { state: userObject });
-                                        toast({
-                                            title: "Đăng ký thành công",
-                                            description: "Vui lòng xác thực tài khoản bằng mã OTP",
-                                        });
-                                    } catch (err: any) {
-                                        toast({
-                                            title: "Lỗi đăng ký",
-                                            description: err?.response?.data?.message || "Đã có lỗi xảy ra",
-                                            variant: "destructive",
-                                        });
-                                    }
+                                    console.log("Điều hướng sang verify-otp với:", userObject);
+                                    navigate("/verify-otp", { state: userObject });
+                                    toast({
+                                        title: "Thông tin hợp lệ",
+                                        description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                    });
                                     setSubmitting(false);
                                 })
                                 .catch((err) => {
@@ -245,7 +242,6 @@ export default function Register() {
                                         const formErrors: { [key: string]: string } = {};
                                         err.inner.forEach((e: any) => {
                                             formErrors[e.path] = e.message;
-                                            showError(e.path, e.message);
                                         });
                                         setErrors(formErrors);
                                     }
@@ -255,14 +251,12 @@ export default function Register() {
                         validate={(values) => {
                             try {
                                 validationSchema.validateSync(values, { abortEarly: false });
-                                setErrorMessage({});
                                 return {};
                             } catch (err: any) {
                                 const errors: { [key: string]: string } = {};
                                 if (err.inner) {
                                     err.inner.forEach((e: any) => {
                                         errors[e.path] = e.message;
-                                        showError(e.path, e.message);
                                     });
                                 }
                                 return errors;
@@ -281,7 +275,7 @@ export default function Register() {
                                         placeholder="Nhập họ và tên đầy đủ"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {errorMessage.hovaTen || <ErrorMessage name="hovaTen" />}
+                                        {<ErrorMessage name="hovaTen" />}
                                     </div>
                                 </div>
 
@@ -295,7 +289,7 @@ export default function Register() {
                                         placeholder="Nhập email của bạn"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {errorMessage.email || <ErrorMessage name="email" />}
+                                        {<ErrorMessage name="email" />}
                                     </div>
                                 </div>
                                 <div className="space-y-2 relative">
@@ -307,7 +301,7 @@ export default function Register() {
                                             <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadCccd(e, setFieldValue)} />
                                         </label>
                                     </div>
-                                    <div className="text-red-500 text-xs">{errorMessage.cccd || <ErrorMessage name="cccd" />}</div>
+                                    <div className="text-red-500 text-xs">{<ErrorMessage name="cccd" />}</div>
                                 </div>
                                 <div className="space-y-2 relative">
                                     <Label htmlFor="gplx">Giấy phép lái xe*</Label>
@@ -318,7 +312,7 @@ export default function Register() {
                                             <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadGplx(e, setFieldValue)} />
                                         </label>
                                     </div>
-                                    <div className="text-red-500 text-xs">{errorMessage.gplx || <ErrorMessage name="gplx" />}</div>
+                                    <div className="text-red-500 text-xs">{<ErrorMessage name="gplx" />}</div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="phone">Số điện thoại*</Label>
@@ -330,7 +324,7 @@ export default function Register() {
                                         placeholder="Nhập số điện thoại"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {errorMessage.phone || <ErrorMessage name="phone" />}
+                                        {<ErrorMessage name="phone" />}
                                     </div>
                                 </div>
 
@@ -344,7 +338,7 @@ export default function Register() {
                                         placeholder="Nhập mật khẩu"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {errorMessage.password || <ErrorMessage name="password" />}
+                                        {<ErrorMessage name="password" />}
                                     </div>
                                 </div>
 
@@ -358,7 +352,7 @@ export default function Register() {
                                         placeholder="Nhập lại mật khẩu"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {errorMessage.confirmPassword || <ErrorMessage name="confirmPassword" />}
+                                        {<ErrorMessage name="confirmPassword" />}
                                     </div>
                                 </div>
                                 <div style={{ height: 5 }} />
@@ -380,7 +374,7 @@ export default function Register() {
                                     </Label>
                                 </div>
                                 <div className="text-red-500 text-xs">
-                                    {errorMessage.acceptTerms || <ErrorMessage name="acceptTerms" />}
+                                    {<ErrorMessage name="acceptTerms" />}
                                 </div>
                                 <Button
                                     type="submit"

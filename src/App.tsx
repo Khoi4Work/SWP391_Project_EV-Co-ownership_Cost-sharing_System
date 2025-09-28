@@ -16,7 +16,6 @@ import GroupDetail from "./pages/co-owner/GroupDetail";
 import Contracts from "./pages/co-owner/Contracts";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/ui/footnote";
-
 const queryClient = new QueryClient();
 
 const App = () => (
