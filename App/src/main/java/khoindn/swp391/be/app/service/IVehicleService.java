@@ -12,4 +12,5 @@ public interface IVehicleService {
     public List<Vehicle> findAll();
 
     public Vehicle findVehicleById(int id);
+
 }

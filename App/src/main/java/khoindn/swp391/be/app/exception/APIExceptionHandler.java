@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.exception;
 
 import khoindn.swp391.be.app.exception.exceptions.AuthenticationException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleNotBelongException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -46,6 +47,10 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity handleNullPointerException(NullPointerException ex) {
-        return ResponseEntity.status(400).body("Car dose not belong to this group");
+        return ResponseEntity.status(400).body("Car does not register to any group");
+    }
+    @ExceptionHandler(VehicleNotBelongException.class)
+    public ResponseEntity handleVehicleNotBelongException(VehicleNotBelongException ex) {
+        return ResponseEntity.status(400).body("Car does not belong to this group");
     }
 }

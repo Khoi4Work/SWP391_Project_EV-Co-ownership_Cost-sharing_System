@@ -19,10 +19,9 @@ public class RegisterController {
     private GroupService groupService;
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterVehicleRes> registerUser
+    public ResponseEntity<RegisterVehicleRes> registerCar
             (@RequestBody @Valid RegisterVehicleReq request) {
         RegisterVehicleRes group = groupService.addMemberToGroup(request);
-
         return ResponseEntity.ok(group);
     }
 }

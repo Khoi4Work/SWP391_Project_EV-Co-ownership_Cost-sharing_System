@@ -27,5 +27,7 @@ public class Group {
     private LocalDateTime createdAt = LocalDateTime.now();
     @OneToMany(mappedBy = "group")
     private List<GroupMember> groupMembers = new ArrayList<>();
+    @OneToMany(mappedBy = "group")
+    private  List<Vehicle> vehicles = new ArrayList<>();
 
 }

@@ -3,6 +3,8 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.model.Request.RegisterVehicleReq;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
+import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
+import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
@@ -47,7 +49,7 @@ public class GroupService implements IGroupService {
         }
 
         // 2. Check vehicle đã có group chưa
-        if (vehicle.getGroup_id() != null) {
+        if (vehicle.getGroup() != null) {
             throw new RuntimeException("Vehicle already belongs to a group");
         }
 
@@ -59,26 +61,26 @@ public class GroupService implements IGroupService {
         group = iGroupRepository.save(group);
 
         // 4. Gán group vào vehicle
-        vehicle.setGroup_id(group);
+        vehicle.setGroup(group);
         iVehicleRepository.save(vehicle);
 
         // 5. Tạo group members từ emails
-        List<UsersResponse> owners = new ArrayList<>();
-        for (String email : request.getEmail()) {
-            Users user = iUserRepository.findByEmail(email);
+        List<ResponseVehicleRegisteration> owners = new ArrayList<>();
+        for (CoOwner_Info member : request.getMember()) {
+            Users user = iUserRepository.findByEmail(member.getEmail());
             if (user == null) {
-                throw new RuntimeException("User not found with email: " + email);
+                throw new RuntimeException("User not found with email: " + member.getEmail());
             }
 
             GroupMember gm = new GroupMember();
             gm.setGroup(group);
             gm.setUsers(user);
             gm.setRoleInGroup("Member");
-            gm.setOwnershipPercentage(request.getOwnership_percentage());
+            gm.setOwnershipPercentage(member.getOwnershipPercentage());
             gm.setCreatedAt(LocalDateTime.now());
             iGroupMemberRepository.save(gm);
 
-            owners.add(modelMapper.map(user, UsersResponse.class));
+            owners.add(modelMapper.map(user, ResponseVehicleRegisteration.class));
         }
 
         // 6. Build response

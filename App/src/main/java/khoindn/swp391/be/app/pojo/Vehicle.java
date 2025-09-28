@@ -39,5 +39,5 @@ public class Vehicle {
 
     @ManyToOne
     @JoinColumn(name = "group_id")
-    private Group group_id;
+    private Group group;
 }

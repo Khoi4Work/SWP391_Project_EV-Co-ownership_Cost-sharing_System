@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.exception.exceptions.VehicleNotBelongException;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -38,14 +39,14 @@ public class ScheduleService implements IScheduleService {
 
         Vehicle vehicle = iVehicleRepository.findVehicleByVehicleId(req.getVehicleId());
         // check car in group
-        if (vehicle.getGroup_id().getGroupId() != (req.getGroupId())) {
-            throw new RuntimeException("Vehicle does not belong to this group");
+        if (vehicle.getGroup().getGroupId() != (req.getGroupId())) {
+            throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
 
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
-        schedule.setStatus(req.getStatus());
+        schedule.setStatus("pending");
         schedule.setGroupMember(gm);
 
         Schedule saved = iScheduleRepository.save(schedule);
@@ -65,7 +66,10 @@ public class ScheduleService implements IScheduleService {
                     ScheduleRes res = modelMapper.map(s, ScheduleRes.class);
                     res.setUserId(s.getGroupMember().getUsers().getId());
                     res.setGroupId(s.getGroupMember().getGroup().getGroupId());
-                    res.setVehicleId(0);
+                    Vehicle vehicle = iVehicleRepository.findByGroup(s.getGroupMember().getGroup());
+                    if (vehicle != null) {
+                        res.setVehicleId(vehicle.getVehicleId());
+                    }
                     return res;
                 })
                 .collect(Collectors.toList());

@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.model.Response;
 
+import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.pojo.Users;
@@ -14,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterVehicleRes {
-    private List<UsersResponse> owners;
+    private List<ResponseVehicleRegisteration> owners;
 
     int vehicleId;
     String plateNo;
