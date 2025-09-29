@@ -1,6 +1,8 @@
 package khoindn.swp391.be.app.exception;
 
 import khoindn.swp391.be.app.exception.exceptions.AuthenticationException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsRegisteredException;
 import khoindn.swp391.be.app.exception.exceptions.VehicleNotBelongException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -42,15 +44,24 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity handleNoSuchElementException(NoSuchElementException ex) {
-        return ResponseEntity.status(400).body("User does not exist in this group");
+        return ResponseEntity.status(400).body("This user does not exist in this group");
     }
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity handleNullPointerException(NullPointerException ex) {
-        return ResponseEntity.status(400).body("Car does not register to any group");
+        return ResponseEntity.status(400).body("This car does not register to any group");
     }
     @ExceptionHandler(VehicleNotBelongException.class)
     public ResponseEntity handleVehicleNotBelongException(VehicleNotBelongException ex) {
-        return ResponseEntity.status(400).body("Car does not belong to this group");
+        return ResponseEntity.status(400).body("This car does not belong to this group");
     }
+    @ExceptionHandler(VehicleIsRegisteredException.class)
+    public ResponseEntity handleVehicleIsRegisteredException(VehicleIsRegisteredException ex) {
+        return ResponseEntity.status(400).body("This car already belong to other group");
+    }
+    @ExceptionHandler(VehicleIsNotExistedException.class)
+    public ResponseEntity handleVehicleIsNotExistedException(VehicleIsNotExistedException ex) {
+        return ResponseEntity.status(400).body("This car is not existed");
+    }
+
 }

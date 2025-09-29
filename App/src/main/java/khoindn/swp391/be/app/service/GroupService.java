@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsRegisteredException;
 import khoindn.swp391.be.app.model.Request.RegisterVehicleReq;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
@@ -50,7 +51,8 @@ public class GroupService implements IGroupService {
 
         // 2. Check vehicle đã có group chưa
         if (vehicle.getGroup() != null) {
-            throw new RuntimeException("Vehicle already belongs to a group");
+            throw new VehicleIsRegisteredException(
+                    "Vehicle already belongs to a group" + vehicle.getGroup().getGroupName());
         }
 
         // 3. Tạo group mới
