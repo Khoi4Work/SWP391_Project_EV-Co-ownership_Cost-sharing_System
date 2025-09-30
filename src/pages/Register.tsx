@@ -203,7 +203,7 @@ export default function Register() {
                                         cccd: values.cccd,
                                         gplx: values.gplx,
                                         password: values.password,
-                                        role: { role_id: 1 }
+                                        role_id: { role_id: 1 }
                                     };
 
                                     try {
