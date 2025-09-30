@@ -70,7 +70,7 @@ export default function Register() {
     // check uniqueness API backend host:http://localhost:8080/users/check?${field}=${value} 
     const checkDuplicate = async (field: string, value: string) => {
         try {
-            const res = await axios.get("https://68ca27d4430c4476c34861d4.mockapi.io/user");
+            const res = await axios.get("http://localhost:8080/Users/register");
             const users = res.data;
             return users.some((u: any) => u[field] === value);
         } catch (err) {
