@@ -109,7 +109,7 @@ export default function VerifyOTP() {
   const sendUserInfoToBackend = async () => {
     try {
       // lấy danh sách user trước
-      const checkRes = await fetch("https://68ca27d4430c4476c34861d4.mockapi.io/user");
+      const checkRes = await fetch("http://localhost:8080/Users/register");
       const users = await checkRes.json();
 
       const exists = users.find(
@@ -126,7 +126,7 @@ export default function VerifyOTP() {
       }
 
       // nếu không trùng -> mới tạo user
-      const response = await fetch("https://68ca27d4430c4476c34861d4.mockapi.io/user", {
+      const response = await fetch("http://localhost:8080/Users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
