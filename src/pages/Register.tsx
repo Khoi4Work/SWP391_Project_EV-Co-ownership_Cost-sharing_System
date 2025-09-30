@@ -224,8 +224,23 @@ export default function Register() {
 
                                         if (!res.ok || !data.success) {
                                             // backend báo lỗi hoặc không có success = true
-                                            const field = data.field || "email"; // fallback nếu backend không chỉ rõ field
-                                            setErrors({ [field]: data.message || "Đăng ký thất bại" });
+                                            let field: string | undefined;
+
+                                            if (data.field) {
+                                                field = data.field;
+                                            } else if (data.message?.toLowerCase().includes("email")) {
+                                                field = "email";
+                                            } else if (data.message?.toLowerCase().includes("phone")) {
+                                                field = "phone";
+                                            } else if (data.message?.toLowerCase().includes("cccd")) {
+                                                field = "cccd";
+                                            } else if (data.message?.toLowerCase().includes("gplx")) {
+                                                field = "gplx";
+                                            }
+
+                                            if (field) {
+                                                setErrors({ [field]: data.message });
+                                            }
 
                                             toast({
                                                 title: "Đăng ký thất bại",
