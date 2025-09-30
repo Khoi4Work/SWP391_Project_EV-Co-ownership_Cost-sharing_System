@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.exception.exceptions.CCCDDuplicatedException;
 import khoindn.swp391.be.app.exception.exceptions.EmailDuplicatedException;
 import khoindn.swp391.be.app.exception.exceptions.GPLXDuplicatedException;
+import khoindn.swp391.be.app.exception.exceptions.PhoneDuplicatedException;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
 import khoindn.swp391.be.app.pojo.Users;
@@ -57,7 +58,8 @@ public class AuthenticationService implements UserDetailsService {
 
         // Kiểm tra phone
         if (iAuthenticationRepository.existsByPhone((users.getPhone()))){
-            throw new IllegalArgumentException("Số điện thoại đã được sử dụng");
+            throw new PhoneDuplicatedException( "Số điện thoại đã được sử dụng");
+
         }
 
         //process login from register controller
