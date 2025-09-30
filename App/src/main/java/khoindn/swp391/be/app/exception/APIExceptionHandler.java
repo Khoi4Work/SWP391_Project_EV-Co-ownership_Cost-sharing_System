@@ -1,9 +1,6 @@
 package khoindn.swp391.be.app.exception;
 
-import khoindn.swp391.be.app.exception.exceptions.AuthenticationException;
-import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
-import khoindn.swp391.be.app.exception.exceptions.VehicleIsRegisteredException;
-import khoindn.swp391.be.app.exception.exceptions.VehicleNotBelongException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -16,52 +13,74 @@ import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class APIExceptionHandler {
-    // run once program have faults
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity handleBadRequest(MethodArgumentNotValidException exception) {
         String message = "";
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
             message += fieldError.getField() + ":" + fieldError.getDefaultMessage() + "\n";
         }
-        return ResponseEntity.badRequest().body(message);
+        return ResponseEntity.badRequest().body(message); // 400
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity handleBadCredentialsException(BadCredentialsException exception) {
-
-        return ResponseEntity.status(401).body("Username or password invalid!");
+        return ResponseEntity.status(401).body("Username or password invalid!"); // 401
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity handleAuthenticationException(AuthenticationException exception) {
-        return ResponseEntity.status(401).body(exception.getMessage());
+        return ResponseEntity.status(401).body(exception.getMessage()); // 401
     }
 
     @ExceptionHandler(InternalAuthenticationServiceException.class)
     public ResponseEntity handleInternalAuthenticationServiceException(InternalAuthenticationServiceException exception) {
-        return ResponseEntity.status(401).body("Username or password invalid!");
+        return ResponseEntity.status(401).body("Username or password invalid!"); // 401
     }
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity handleNoSuchElementException(NoSuchElementException ex) {
-        return ResponseEntity.status(400).body("This user does not exist in this group");
+        return ResponseEntity.status(404).body("This user does not exist in this group"); // 404
     }
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity handleNullPointerException(NullPointerException ex) {
-        return ResponseEntity.status(400).body("This car does not register to any group");
-    }
-    @ExceptionHandler(VehicleNotBelongException.class)
-    public ResponseEntity handleVehicleNotBelongException(VehicleNotBelongException ex) {
-        return ResponseEntity.status(400).body("This car does not belong to this group");
-    }
-    @ExceptionHandler(VehicleIsRegisteredException.class)
-    public ResponseEntity handleVehicleIsRegisteredException(VehicleIsRegisteredException ex) {
-        return ResponseEntity.status(400).body("This car already belong to other group");
-    }
-    @ExceptionHandler(VehicleIsNotExistedException.class)
-    public ResponseEntity handleVehicleIsNotExistedException(VehicleIsNotExistedException ex) {
-        return ResponseEntity.status(400).body("This car is not existed");
+        return ResponseEntity.status(404).body("This car does not register to any group"); // 404
     }
 
+    @ExceptionHandler(VehicleNotBelongException.class)
+    public ResponseEntity handleVehicleNotBelongException(VehicleNotBelongException ex) {
+        return ResponseEntity.status(403).body("This car does not belong to this group"); // 403
+    }
+
+    @ExceptionHandler(VehicleIsRegisteredException.class)
+    public ResponseEntity handleVehicleIsRegisteredException(VehicleIsRegisteredException ex) {
+        return ResponseEntity.status(409).body("This car already belong to other group"); // 409
+    }
+
+    @ExceptionHandler(VehicleIsNotExistedException.class)
+    public ResponseEntity handleVehicleIsNotExistedException(VehicleIsNotExistedException ex) {
+        return ResponseEntity.status(404).body("This car is not existed"); // 404
+    }
+
+    @ExceptionHandler(EmailDuplicatedException.class)
+    public ResponseEntity handleEmailDuplicatedException(EmailDuplicatedException ex) {
+        return ResponseEntity.status(409).body("Email is existed!"); // 409
+    }
+
+    @ExceptionHandler(CCCDDuplicatedException.class)
+    public ResponseEntity handleCCCDDuplicatedException(CCCDDuplicatedException ex) {
+        return ResponseEntity.status(409).body("CCCD is existed!"); // 409
+    }
+
+    @ExceptionHandler(GPLXDuplicatedException.class)
+    public ResponseEntity handleGPLXDuplicatedException(GPLXDuplicatedException ex) {
+        return ResponseEntity.status(409).body("GPLX is existed!"); // 409
+    }
+
+    @ExceptionHandler(PhoneDuplicatedException.class)
+    public ResponseEntity handlePhoneDuplicatedException(PhoneDuplicatedException ex) {
+        return ResponseEntity.status(409).body("Phone is existed!"); // 409
+    }
 }
+

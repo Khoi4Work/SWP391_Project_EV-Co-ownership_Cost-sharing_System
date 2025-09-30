@@ -20,10 +20,10 @@ public class UserController {
     @Autowired
     private IUserService iUserService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Optional<Users>> getUserById(@PathVariable("id") int id) {
-        return ResponseEntity.ok(iUserService.findUserById(id));
-    }
+//    @GetMapping("/{id}")
+//    public ResponseEntity<Optional<Users>> getUserById(@PathVariable("id") int id) {
+//        return ResponseEntity.ok(iUserService.findUserById(id));
+//    }
 
 //    @PostMapping("/")
 //    @ResponseStatus(HttpStatus.CREATED)
