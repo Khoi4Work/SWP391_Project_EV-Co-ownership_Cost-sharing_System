@@ -206,21 +206,29 @@ export default function Register() {
                                     };
 
                                     try {
-                                        // Gửi object lên backend để check trùng lặp
                                         const res = await fetch("http://localhost:8080/Users/register", {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
                                             body: JSON.stringify(userObject),
                                         });
 
-                                        const data = await res.json();
+                                        const rawText = await res.text(); // lấy response gốc (dù là JSON hay text)
+                                        let data;
 
-                                        if (!data.success) {
-                                            // backend trả về lỗi -> set lỗi form
-                                            setErrors({ [data.field]: data.message });
+                                        try {
+                                            data = JSON.parse(rawText); // thử parse JSON
+                                        } catch {
+                                            data = { success: false, message: rawText }; // nếu không phải JSON thì gói thành object
+                                        }
+
+                                        if (!res.ok || !data.success) {
+                                            // backend báo lỗi hoặc không có success = true
+                                            const field = data.field || "email"; // fallback nếu backend không chỉ rõ field
+                                            setErrors({ [field]: data.message || "Đăng ký thất bại" });
+
                                             toast({
                                                 title: "Đăng ký thất bại",
-                                                description: data.message,
+                                                description: data.message || "Lỗi không xác định từ server",
                                                 variant: "destructive",
                                             });
                                         } else {
@@ -242,6 +250,7 @@ export default function Register() {
                                     } finally {
                                         setSubmitting(false);
                                     }
+
                                 })
 
                         }}
