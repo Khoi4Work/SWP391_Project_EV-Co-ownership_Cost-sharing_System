@@ -68,16 +68,6 @@ export default function Register() {
     const [ocrLoadingCccd, setOcrLoadingCccd] = useState(false);
     const [ocrLoadingGplx, setOcrLoadingGplx] = useState(false);
     // check uniqueness API backend host:http://localhost:8080/users/check?${field}=${value} 
-    const checkDuplicate = async (field: string, value: string) => {
-        try {
-            const res = await axios.get("http://localhost:8080/Users/register");
-            const users = res.data;
-            return users.some((u: any) => u[field] === value);
-        } catch (err) {
-            console.error("Check duplicate error:", err);
-            return false; // nếu lỗi thì coi như không trùng
-        }
-    };
 
     const createUser = async (userData: {
         hovaTen: string;
@@ -206,22 +196,6 @@ export default function Register() {
                             validationSchema
                                 .validate(values, { abortEarly: false })
                                 .then(async () => {
-                                    // Kiểm tra trùng lặp
-                                    const emailExists = await checkDuplicate("email", values.email);
-                                    const cccdExists = await checkDuplicate("cccd", values.cccd);
-                                    const gplxExists = await checkDuplicate("gplx", values.gplx);
-                                    if (emailExists || cccdExists || gplxExists) {
-                                        console.log("Trùng lặp:", { emailExists, cccdExists, gplxExists });
-                                    }
-                                    if (emailExists || cccdExists || gplxExists) {
-                                        const errors: any = {};
-                                        if (emailExists) errors.email = "Email đã tồn tại trong hệ thống";
-                                        if (cccdExists) errors.cccd = "CCCD đã tồn tại trong hệ thống";
-                                        if (gplxExists) errors.gplx = "GPLX đã tồn tại trong hệ thống";
-                                        setErrors(errors);
-                                        setSubmitting(false);
-                                        return;
-                                    }
                                     const userObject = {
                                         hovaTen: values.hovaTen,
                                         email: values.email,
@@ -230,24 +204,46 @@ export default function Register() {
                                         gplx: values.gplx,
                                         password: values.password,
                                     };
-                                    console.log("Điều hướng sang verify-otp với:", userObject);
-                                    navigate("/verify-otp", { state: { ...userObject } });
-                                    toast({
-                                        title: "Thông tin hợp lệ",
-                                        description: "Vui lòng xác thực tài khoản bằng mã OTP",
-                                    });
-                                    setSubmitting(false);
-                                })
-                                .catch((err) => {
-                                    if (err.inner) {
-                                        const formErrors: { [key: string]: string } = {};
-                                        err.inner.forEach((e: any) => {
-                                            formErrors[e.path] = e.message;
+
+                                    try {
+                                        // Gửi object lên backend để check trùng lặp
+                                        const res = await fetch("http://localhost:8080/Users/register", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify(userObject),
                                         });
-                                        setErrors(formErrors);
+
+                                        const data = await res.json();
+
+                                        if (!data.success) {
+                                            // backend trả về lỗi -> set lỗi form
+                                            setErrors({ [data.field]: data.message });
+                                            toast({
+                                                title: "Đăng ký thất bại",
+                                                description: data.message,
+                                                variant: "destructive",
+                                            });
+                                        } else {
+                                            // hợp lệ -> chuyển sang OTP
+                                            console.log("Điều hướng sang verify-otp với:", userObject);
+                                            navigate("/verify-otp", { state: { ...userObject } });
+                                            toast({
+                                                title: "Thông tin hợp lệ",
+                                                description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                            });
+                                        }
+                                    } catch (error) {
+                                        console.error("Lỗi khi gọi backend:", error);
+                                        toast({
+                                            title: "Lỗi hệ thống",
+                                            description: "Không thể kiểm tra thông tin",
+                                            variant: "destructive",
+                                        });
+                                    } finally {
+                                        setSubmitting(false);
                                     }
-                                    setSubmitting(false);
-                                });
+                                })
+
                         }}
                         validate={(values) => {
                             try {
