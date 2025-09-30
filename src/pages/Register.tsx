@@ -76,10 +76,10 @@ export default function Register() {
         cccd: string;
         gplx: string;
         password: string;
-        role: { role_id: number }
     }) => {
         //http://localhost:8080/Users/register: kết quả ở backend (dùng khi test chính thức)
         try {
+            console.log(userData);
             // Thay đổi URL này thành endpoint backend thực tế của bạn
             const response = await axios.post("http://localhost:8080/Users/register", userData);
             console.log("Kết quả backend trả về:", response.data);
@@ -203,6 +203,7 @@ export default function Register() {
                                         cccd: values.cccd,
                                         gplx: values.gplx,
                                         password: values.password,
+                                        role: { role_id: 1 }
                                     };
 
                                     try {
