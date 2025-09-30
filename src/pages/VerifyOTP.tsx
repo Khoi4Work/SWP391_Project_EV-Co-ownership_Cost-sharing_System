@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Car, ArrowLeft, MessageSquare, Mail, Clock } from "lucide-react";
+import { Car, ArrowLeft, Mail, Clock } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
@@ -11,10 +11,9 @@ export default function VerifyOTP() {
   const didRun = useRef(false);
   const [otp, setOtp] = useState("");
   const [isResending, setIsResending] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<"sms" | "email">("email");
+  const [selectedMethod] = useState<"email">("email");
   const [time, setTime] = useState(30);
   const [expired, setExpired] = useState(false);
-  const [initialDelayDone, setInitialDelayDone] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -22,6 +21,7 @@ export default function VerifyOTP() {
   useEffect(() => {
     // ưu tiên lấy từ location.state (điều hướng từ Register qua)
     if (location.state) {
+      console.log("User data từ Register:", location.state);
       setUserData(location.state);
       localStorage.setItem("userInfo", JSON.stringify(location.state));
     } else {
@@ -34,22 +34,14 @@ export default function VerifyOTP() {
       }
     }
   }, [location.state, navigate]);
-
-  const formatPhoneToE164 = (phone?: string) => {
-    if (!phone) return "";
-    phone = phone.replace(/\s+/g, "");
-    if (phone.startsWith("0")) return "+84" + phone.slice(1);
-    return phone;
-  };
-
   const generateOtp = async (method: "sms" | "email") => {
     // tránh sinh OTP 2 lần trong Strict Mode (dev only)
-    if (!didRun.current) {
-      didRun.current = true;
-    } else {
-      // chỉ bỏ qua lần gọi thừa khi Strict Mode chạy effect 2 lần
-      if (process.env.NODE_ENV === "development") return;
-    }
+    //if (!didRun.current) {
+    //didRun.current = true;
+    //} else {
+    // chỉ bỏ qua lần gọi thừa khi Strict Mode chạy effect 2 lần
+    //if (process.env.NODE_ENV === "development") return;
+    //}
 
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setOtp(randomOtp);
@@ -74,22 +66,6 @@ export default function VerifyOTP() {
           title: "OTP đã được tạo",
           description: `Mã xác thực đã gửi qua Email: ${userData.email}`,
         });
-      } else if (method === "sms" && userData?.phone) {
-        const formattedPhone = formatPhoneToE164(userData.phone);
-        const response = await fetch("http://localhost:5000/send-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            method: "sms",
-            destination: formattedPhone,
-            otp: randomOtp,
-          }),
-        });
-        if (!response.ok) throw new Error("Send OTP failed");
-        toast({
-          title: "OTP đã được tạo",
-          description: `Mã xác thực đã gửi qua SMS: ${formattedPhone}`,
-        });
       } else {
         toast({
           title: "OTP đã được tạo",
@@ -108,27 +84,23 @@ export default function VerifyOTP() {
   };
 
 
-  // gửi OTP lần đầu sau 5s, và gửi lại khi đổi phương thức
+  // gửi OTP lần đầu//
   useEffect(() => {
-    if (!initialDelayDone) {
-      const timer = setTimeout(() => {
-        generateOtp(selectedMethod);
-        setInitialDelayDone(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    } else {
-      // chỉ chạy khi user đổi phương thức sau lần đầu
-      generateOtp(selectedMethod);
+    if (userData) {
+      generateOtp("email");
     }
-  }, [selectedMethod, initialDelayDone]);
+  }, [userData]);
+
 
   // countdown timer
   useEffect(() => {
-    if (!initialDelayDone || time <= 0) return;
+    if (time <= 0) return;
     const timer = setTimeout(() => setTime(prev => prev - 1), 1000);
     return () => clearTimeout(timer);
-  }, [time, initialDelayDone]);
-
+  }, [time]);
+  useEffect(() => {
+    if (time === 0) setExpired(true);
+  }, [time]);
   const otpSchema = Yup.object().shape({
     otp: Yup.string()
       .required("Vui lòng nhập OTP")
@@ -167,18 +139,13 @@ export default function VerifyOTP() {
       console.error("Error sending userInfo:", err);
     }
   };
-
-  const handleMethodChange = (method: "sms" | "email") => {
-    setSelectedMethod(method);
-    if (!initialDelayDone) {
-      setSelectedMethod(method); // cập nhật lựa chọn để 5s sau gửi đúng
-    }
-  };
-
   const handleResendOTP = () => {
     setIsResending(true);
     setTimeout(() => {
+      setOtp("");
       generateOtp(selectedMethod);
+      setTime(30);        // reset countdown về 30
+      setExpired(false);  // cho phép chạy lại
       setIsResending(false);
     }, 2000);
   };
@@ -190,11 +157,7 @@ export default function VerifyOTP() {
       navigate("/register"); // nếu không có thì quay lại đăng ký
     }
   }, [navigate]);
-  const maskedContact =
-    selectedMethod === "sms"
-      ? userData?.phone?.replace(/(\d{3})\d{4}(\d{3})/, "$1****$2")
-      : userData?.email?.replace(/(.{2}).*(@.*)/, "$1****$2");
-
+  const maskedContact = userData?.email?.replace(/(.{2}).*(@.*)/, "$1****$2");
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-glow border-0">
@@ -207,40 +170,6 @@ export default function VerifyOTP() {
           <CardDescription>Nhập mã OTP để hoàn tất đăng ký tài khoản</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Chọn phương thức */}
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-center">Chọn phương thức nhận mã:</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant={selectedMethod === "sms" ? "default" : "outline"}
-                onClick={() => handleMethodChange("sms")}
-                className="flex items-center gap-2"
-              >
-                <MessageSquare className="h-4 w-4" />
-                Tin nhắn
-              </Button>
-              <Button
-                type="button"
-                variant={selectedMethod === "email" ? "default" : "outline"}
-                onClick={() => handleMethodChange("email")}
-                className="flex items-center gap-2"
-              >
-                <Mail className="h-4 w-4" />
-                Email
-              </Button>
-            </div>
-          </div>
-
-          {/* Thông tin liên hệ */}
-          <div className="text-center p-3 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">Mã OTP đã được gửi đến</p>
-            <p className="font-medium">
-              {selectedMethod === "sms" ? "📱 " : "📧 "}
-              {maskedContact}
-            </p>
-          </div>
-
           {/* Form OTP với Formik */}
           <Formik
             initialValues={{ otp: "" }}

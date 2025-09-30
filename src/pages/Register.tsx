@@ -86,6 +86,7 @@ export default function Register() {
         cccd: string;
         gplx: string;
         password: string;
+        role: { role_id: number }
     }) => {
         //http://localhost:8080/Users/register: kết quả ở backend (dùng khi test chính thức)
         try {
@@ -230,7 +231,7 @@ export default function Register() {
                                         password: values.password,
                                     };
                                     console.log("Điều hướng sang verify-otp với:", userObject);
-                                    navigate("/verify-otp", { state: userObject });
+                                    navigate("/verify-otp", { state: { ...userObject } });
                                     toast({
                                         title: "Thông tin hợp lệ",
                                         description: "Vui lòng xác thực tài khoản bằng mã OTP",
