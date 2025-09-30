@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Tesseract from "tesseract.js";
 import axios from "axios";
 import { waitForCvReady } from "@/lib/opencvHelpers";
