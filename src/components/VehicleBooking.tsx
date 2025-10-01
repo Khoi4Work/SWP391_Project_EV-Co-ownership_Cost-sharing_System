@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,12 @@ export default function VehicleBooking() {
   const [editVehicle, setEditVehicle] = useState<string>("");
   const [editDate, setEditDate] = useState<string>("");
   const [editTime, setEditTime] = useState<string>("");
+  const [editStartTime, setEditStartTime] = useState<string>("");
+  const [editEndTime, setEditEndTime] = useState<string>("");
+  const [showEditTimeSelector, setShowEditTimeSelector] = useState<boolean>(false);
+  const [newlyCreatedBooking, setNewlyCreatedBooking] = useState<string | null>(null);
   const { toast } = useToast();
+  const bookingsListRef = useRef<HTMLDivElement | null>(null);
 
   // Mock data - would come from backend
   const vehicles: Vehicle[] = [
@@ -48,7 +53,7 @@ export default function VehicleBooking() {
     "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
   ];
 
-  const existingBookings: BookingSlot[] = [
+  const [existingBookings, setExistingBookings] = useState<BookingSlot[]>([
     {
       id: "1",
       time: "09:00-11:00",
@@ -72,18 +77,61 @@ export default function VehicleBooking() {
       time: "13:00-15:00", 
       date: "2024-01-16",
       vehicle: "VinFast VF8",
-      bookedBy: "Lê Văn C (40%)",
+bookedBy: "Lê Văn C (40%)",
       ownershipLevel: 40,
       canOverride: false
     }
-  ];
+  ]);
+
+  // Persist bookings to localStorage so they don't disappear after reload
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("vehicleBookings");
+      if (saved) {
+        const parsed: BookingSlot[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setExistingBookings(parsed);
+        }
+      }
+    } catch (err) {
+      // ignore corrupted storage
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("vehicleBookings", JSON.stringify(existingBookings));
+    } catch {
+      // ignore quota/storage errors
+    }
+  }, [existingBookings]);
 
   const currentUserOwnership = 35; // Mock current user ownership percentage
+  const currentUserName = "Bạn"; // Mock current user display name for matching
 
   const getOwnershipColor = (ownership: number) => {
     if (ownership >= 50) return "default";
     if (ownership >= 30) return "secondary";
     return "outline";
+  };
+
+  // Helpers for monthly limit
+  const isSameMonth = (dateA: string, dateB: string) => {
+    const a = new Date(dateA);
+    const b = new Date(dateB);
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  };
+
+  const getUserBookedUniqueDaysInMonth = (targetDate: string): Set<string> => {
+    const set = new Set<string>();
+    for (const booking of existingBookings) {
+      // Identify current user's bookings by name prefix "Bạn"
+      if (booking.bookedBy?.startsWith(currentUserName) && isSameMonth(booking.date, targetDate)) {
+        set.add(booking.date);
+      }
+    }
+    return set;
   };
 
   const canBookSlot = (time: string, date: string, vehicle: string) => {
@@ -111,19 +159,98 @@ export default function VehicleBooking() {
   };
 
   const handleBooking = () => {
-    if (!selectedVehicle || !selectedDate || !selectedTime) return;
+    if (!selectedVehicle || !selectedDate || !selectedTime) {
+      toast({
+        title: "Thiếu thông tin",
+        description: "Vui lòng chọn xe, ngày và khung giờ trước khi đặt.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Kiểm tra giới hạn 14 ngày/tháng theo người dùng (đếm ngày duy nhất)
+    const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
+    const alreadyCounted = daysSet.has(selectedDate);
+const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
+    if (prospectiveDaysCount > 14) {
+      toast({
+        title: "Vượt giới hạn trong tháng",
+        description: "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Kiểm tra xung đột thời gian cho cùng xe và ngày
+    const hasConflict = existingBookings.some(booking => 
+      booking.vehicle === selectedVehicle && 
+      booking.date === selectedDate && 
+      booking.time === selectedTime
+    );
+    
+    if (hasConflict) {
+      toast({
+        title: "Khung giờ đã được đặt",
+        description: `Xe ${selectedVehicle} vào ${selectedDate} từ ${selectedTime} đã có người đặt. Vui lòng chọn khung giờ khác.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Tạo ID mới cho booking
+    const newBookingId = (existingBookings.length + 1).toString();
+    
+    // Tạo booking mới
+    const newBooking: BookingSlot = {
+      id: newBookingId,
+      time: selectedTime,
+      date: selectedDate,
+      vehicle: selectedVehicle,
+      bookedBy: `${currentUserName} (${currentUserOwnership}%)`,
+      ownershipLevel: currentUserOwnership,
+      canOverride: false
+    };
+    
+    // Thêm booking mới lên đầu danh sách
+    setExistingBookings(prev => [newBooking, ...prev]);
+    
+    // Đánh dấu booking mới được tạo
+    setNewlyCreatedBooking(newBookingId);
+    
+    // Reset form
+    setSelectedVehicle("");
+    setSelectedDate("");
+    setSelectedTime("");
+    setSelectedStartTime("");
+    setSelectedEndTime("");
+    
+    // Cuộn tới danh sách lịch và thông báo rõ ràng
+    if (bookingsListRef.current) {
+      try {
+        bookingsListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch {}
+    }
+
+    // Xóa highlight sau 3 giây
+    setTimeout(() => {
+      setNewlyCreatedBooking(null);
+    }, 3000);
     
     console.log("Booking:", { selectedVehicle, selectedDate, selectedTime });
     // Here would integrate with backend to create booking
     
     toast({
       title: "Đặt lịch thành công",
-      description: `Đã đặt ${selectedVehicle} vào ${selectedDate} từ ${selectedTime}`,
+      description: `Đã đặt ${selectedVehicle} vào ${selectedDate} từ ${selectedTime}. Mục mới nằm ở đầu danh sách.`,
     });
   };
 
   const handleCancelBooking = (bookingId: string) => {
     console.log("Cancelling booking:", bookingId);
+    
+    // Xóa booking khỏi danh sách
+    setExistingBookings(prev => prev.filter(booking => booking.id !== bookingId));
+    
     // Here would integrate with backend to cancel booking
     toast({
       title: "Đã hủy lịch",
@@ -137,7 +264,12 @@ export default function VehicleBooking() {
       setEditingBooking(bookingId);
       setEditVehicle(booking.vehicle);
       setEditDate(booking.date);
-      setEditTime(booking.time);
+setEditTime(booking.time);
+      
+      // Parse time range to get start and end times
+      const [startTime, endTime] = booking.time.split('-');
+      setEditStartTime(startTime || "");
+      setEditEndTime(endTime || "");
     }
   };
 
@@ -146,11 +278,69 @@ export default function VehicleBooking() {
     setEditVehicle("");
     setEditDate("");
     setEditTime("");
+    setEditStartTime("");
+    setEditEndTime("");
+    setShowEditTimeSelector(false);
+  };
+
+  const handleEditTimeSelection = () => {
+    if (!editStartTime || !editEndTime) return;
+    
+    const timeRange = `${editStartTime}-${editEndTime}`;
+    setEditTime(timeRange);
+    setShowEditTimeSelector(false);
+    
+    toast({
+      title: "Đã chọn thời gian",
+      description: `Thời gian: ${timeRange}`,
+    });
   };
 
   const handleUpdateBooking = () => {
     try {
       console.log("Updating booking:", { editingBooking, editVehicle, editDate, editTime });
+      
+      // Kiểm tra giới hạn 14 ngày/tháng khi chỉnh sửa
+      const daysSet = getUserBookedUniqueDaysInMonth(editDate);
+      const currentEditing = existingBookings.find(b => b.id === editingBooking);
+      const isSameDateAsBefore = currentEditing?.date === editDate;
+      const alreadyCounted = daysSet.has(editDate);
+      const prospectiveDaysCount = alreadyCounted || isSameDateAsBefore ? daysSet.size : daysSet.size + 1;
+      if (prospectiveDaysCount > 14) {
+        toast({
+          title: "Vượt giới hạn trong tháng",
+          description: "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Kiểm tra xung đột thời gian cho cùng xe và ngày (trừ booking đang chỉnh sửa)
+      const hasConflict = existingBookings.some(booking => 
+        booking.id !== editingBooking &&
+        booking.vehicle === editVehicle && 
+        booking.date === editDate && 
+        booking.time === editTime
+      );
+      
+      if (hasConflict) {
+        toast({
+          title: "Khung giờ đã được đặt",
+          description: `Xe ${editVehicle} vào ${editDate} từ ${editTime} đã có người đặt. Vui lòng chọn khung giờ khác.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Cập nhật booking trong danh sách
+      setExistingBookings(prev => 
+        prev.map(booking => 
+          booking.id === editingBooking 
+            ? { ...booking, vehicle: editVehicle, date: editDate, time: editTime }
+            : booking
+        )
+      );
+      
       // Here would integrate with backend to update booking
       
       toast({
@@ -162,9 +352,12 @@ export default function VehicleBooking() {
       setEditVehicle("");
       setEditDate("");
       setEditTime("");
+      setEditStartTime("");
+      setEditEndTime("");
+      setShowEditTimeSelector(false);
     } catch (error) {
       toast({
-        title: "Lỗi cập nhật",
+title: "Lỗi cập nhật",
         description: "Không thể cập nhật lịch đặt xe. Vui lòng thử lại.",
         variant: "destructive",
       });
@@ -244,7 +437,7 @@ export default function VehicleBooking() {
               <DialogTitle className="flex items-center space-x-2">
                 <Clock className="h-5 w-5" />
                 <span>Chọn khung giờ sử dụng</span>
-              </DialogTitle>
+</DialogTitle>
             </DialogHeader>
             
             <div className="space-y-6">
@@ -305,7 +498,7 @@ export default function VehicleBooking() {
                         </div>
                         {booking.canOverride && (
                           <Badge variant="secondary" className="text-xs">
-                            Có thể thay thế
+Có thể thay thế
                           </Badge>
                         )}
                       </div>
@@ -335,6 +528,82 @@ export default function VehicleBooking() {
                     setShowTimeSelector(false);
                     setSelectedStartTime("");
                     setSelectedEndTime("");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Hủy
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Time Selection Dialog */}
+        <Dialog open={showEditTimeSelector} onOpenChange={setShowEditTimeSelector}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Clock className="h-5 w-5" />
+                <span>Chọn khung giờ sử dụng (Chỉnh sửa)</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Time Range Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
+                  <Select value={editStartTime} onValueChange={setEditStartTime}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn giờ bắt đầu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlots.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
+                  <Select value={editEndTime} onValueChange={setEditEndTime}>
+                    <SelectTrigger>
+<SelectValue placeholder="Chọn giờ kết thúc" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlots.map((time) => (
+                        <SelectItem 
+                          key={time} 
+                          value={time}
+                          disabled={editStartTime && time <= editStartTime}
+                        >
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleEditTimeSelection}
+                  className="bg-gradient-primary hover:shadow-glow"
+                  disabled={!editStartTime || !editEndTime}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Chọn
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditTimeSelector(false);
+                    setEditStartTime("");
+                    setEditEndTime("");
                   }}
                 >
                   <X className="h-4 w-4 mr-2" />
@@ -378,7 +647,7 @@ export default function VehicleBooking() {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
                   <input
-                    type="date"
+type="date"
                     className="w-full px-3 py-2 border border-input rounded-md bg-background"
                     value={editDate}
                     onChange={(e) => setEditDate(e.target.value)}
@@ -388,18 +657,14 @@ export default function VehicleBooking() {
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
-                  <Select value={editTime} onValueChange={setEditTime}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn giờ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          <span>{time}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    onClick={() => setShowEditTimeSelector(true)}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    {editTime ? editTime : "Chọn khung giờ"}
+                  </Button>
                 </div>
               </div>
 
@@ -430,12 +695,31 @@ export default function VehicleBooking() {
             <Clock className="h-4 w-4" />
             <span>Lịch đã đặt</span>
           </h4>
-          <div className="space-y-3">
+          {newlyCreatedBooking && (
+            <div className="mb-3 p-3 rounded-lg border bg-green-50 border-green-200">
+              <div className="text-sm font-medium mb-1">Bạn vừa đặt lịch thành công</div>
+              {(() => {
+                const b = existingBookings.find(bk => bk.id === newlyCreatedBooking);
+                if (!b) return null;
+                return (
+                  <div className="text-sm text-muted-foreground">
+                    <span className="font-medium mr-2">{b.vehicle}</span>
+                    <span>{b.date} • {b.time}</span>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          <div ref={bookingsListRef} className="space-y-3">
             {existingBookings.map((booking) => (
               <div 
                 key={booking.id} 
-                className={`flex items-center justify-between p-3 border rounded-lg ${
-                  editingBooking === booking.id ? 'bg-primary/10 border-primary/50' : 'bg-accent/20'
+                className={`flex items-center justify-between p-3 border rounded-lg transition-all duration-500 ${
+                  editingBooking === booking.id 
+                    ? 'bg-primary/10 border-primary/50' 
+                    : newlyCreatedBooking === booking.id
+                    ? 'bg-green-100 border-green-300 shadow-lg animate-pulse'
+: 'bg-accent/20'
                 }`}
               >
                 <div className="flex-1">
@@ -450,6 +734,11 @@ export default function VehicleBooking() {
                     {editingBooking === booking.id && (
                       <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
                         Đang chỉnh sửa
+                      </Badge>
+                    )}
+                    {newlyCreatedBooking === booking.id && (
+                      <Badge variant="default" className="text-xs bg-green-100 text-green-800 animate-bounce">
+                        Mới
                       </Badge>
                     )}
                   </div>
@@ -496,7 +785,7 @@ export default function VehicleBooking() {
               </p>
               <div className="mt-2">
                 <Badge variant="secondary" className="text-xs">
-                  Tỷ lệ sở hữu của bạn: {currentUserOwnership}%
+Tỷ lệ sở hữu của bạn: {currentUserOwnership}%
                 </Badge>
               </div>
             </div>
@@ -505,4 +794,4 @@ export default function VehicleBooking() {
       </CardContent>
     </Card>
   );
-}
+} 
