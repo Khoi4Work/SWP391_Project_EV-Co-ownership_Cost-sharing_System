@@ -1,5 +1,9 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.exception.exceptions.CCCDDuplicatedException;
+import khoindn.swp391.be.app.exception.exceptions.EmailDuplicatedException;
+import khoindn.swp391.be.app.exception.exceptions.GPLXDuplicatedException;
+import khoindn.swp391.be.app.exception.exceptions.PhoneDuplicatedException;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
 import khoindn.swp391.be.app.pojo.Users;
@@ -37,6 +41,27 @@ public class AuthenticationService implements UserDetailsService {
     }
 
     public Users register(Users users) {
+        // Kiểm tra email
+        if (iAuthenticationRepository.existsByEmail((users.getEmail()))){
+            throw new EmailDuplicatedException("Email đã được sử dụng");
+        }
+
+        // Kiểm tra CCCD
+        if (iAuthenticationRepository.existsByCccd((users.getCccd()))){
+            throw new CCCDDuplicatedException("CCCD đã được sử dụng");
+        }
+
+        // Kiểm tra GPLX
+        if (iAuthenticationRepository.existsByGplx((users.getGplx()))){
+            throw new GPLXDuplicatedException("GPLX đã được sử dụng");
+        }
+
+        // Kiểm tra phone
+        if (iAuthenticationRepository.existsByPhone((users.getPhone()))){
+            throw new PhoneDuplicatedException( "Số điện thoại đã được sử dụng");
+
+        }
+
         //process login from register controller
         users.setPassword(passwordEncoder.encode(users.getPassword()));
         //encode old password to new password

@@ -18,5 +18,6 @@ public class RegisterVehicleReq {
     @NotNull
     private int vehicleId;
     private List<CoOwner_Info> member;
-
+    private String documentUrl;
+    private String contractType;
 }
