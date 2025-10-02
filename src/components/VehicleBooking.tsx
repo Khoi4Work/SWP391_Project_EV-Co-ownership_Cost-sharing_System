@@ -20,11 +20,14 @@ interface BookingSlot {
 interface Vehicle {
   id: string;
   name: string;
-  available: boolean;
-  groupName: string;
+  available?: boolean;
+  groupName?: string;
 }
 
 export default function VehicleBooking() {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState<boolean>(false);
+  const [vehiclesError, setVehiclesError] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -42,11 +45,76 @@ export default function VehicleBooking() {
   const { toast } = useToast();
   const bookingsListRef = useRef<HTMLDivElement | null>(null);
 
-  // Mock data - would come from backend
-  const vehicles: Vehicle[] = [
-    { id: "1", name: "VinFast VF8", available: true, groupName: "Nhóm VinFast" },
-    { id: "2", name: "Tesla Model Y", available: true, groupName: "Nhóm Tesla" },
-  ];
+  // Load vehicles user registered (from backend)
+  useEffect(() => {
+    const loadVehicles = async () => {
+      setLoadingVehicles(true);
+      setVehiclesError(null);
+      try {
+        const baseUrl = (import.meta as any)?.env?.VITE_API_BASE_URL || "http://localhost:8080";
+        // Thử nhiều endpoint để tương thích BE khác nhau
+        const candidates = [
+          `${baseUrl}/Vehicles/my`,
+          `${baseUrl}/vehicles/my`,
+          `${baseUrl}/api/vehicles/my`,
+          `${baseUrl}/api/vehicles/me`,
+          `${baseUrl}/vehicles/me`,
+          `${baseUrl}/api/v1/vehicles/my`,
+        ];
+
+        let fetched: any = null;
+        let lastError: any = null;
+        for (const url of candidates) {
+          try {
+            const res = await fetch(url, {
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+            });
+            if (!res.ok) {
+              lastError = `HTTP ${res.status} at ${url}`;
+              continue;
+            }
+            const data = await res.json();
+            fetched = data;
+            break;
+          } catch (err) {
+            lastError = err;
+          }
+        }
+
+        const normalizeVehicles = (input: any): Vehicle[] => {
+          const arr = Array.isArray(input)
+            ? input
+            : Array.isArray(input?.vehicles)
+              ? input.vehicles
+              : Array.isArray(input?.data)
+                ? input.data
+                : [];
+          return arr.map((v: any) => ({
+            id: v?.id ?? v?.vehicleId ?? v?.idVehicle ?? String(v?.uuid ?? v?.code ?? v?.plate ?? ""),
+            name: v?.name ?? v?.vehicleName ?? v?.model ?? v?.title ?? v?.displayName ?? "Không rõ tên xe",
+            groupName: v?.groupName ?? v?.group ?? v?.group_name ?? v?.groupLabel ?? v?.group?.name ?? undefined,
+          }))
+          .filter((v: Vehicle) => v.id && v.name);
+        };
+
+        const normalized = normalizeVehicles(fetched);
+        if (normalized.length > 0) {
+          setVehicles(normalized);
+        } else {
+          console.error("[VehicleBooking] Không nhận được danh sách xe hợp lệ.", { fetched, lastError });
+          setVehicles([]);
+          setVehiclesError("Không tải được danh sách xe. Vui lòng thử lại.");
+        }
+      } catch (e: any) {
+        console.error("[VehicleBooking] Lỗi tải danh sách xe:", e);
+        setVehiclesError("Không tải được danh sách xe. Vui lòng thử lại.");
+      } finally {
+        setLoadingVehicles(false);
+      }
+    };
+    loadVehicles();
+  }, []);
 
   const timeSlots = [
     "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", 
@@ -116,6 +184,23 @@ bookedBy: "Lê Văn C (40%)",
     return "outline";
   };
 
+  // Helpers for time range overlap
+  const toMinutes = (hhmm: string) => {
+    const [hh, mm] = hhmm.split(":").map(Number);
+    return hh * 60 + mm;
+  };
+
+  const parseRange = (range: string) => {
+    const [start, end] = range.split('-');
+    return { start: toMinutes(start), end: toMinutes(end) };
+  };
+
+  const rangesOverlap = (a: string, b: string) => {
+    const ra = parseRange(a);
+    const rb = parseRange(b);
+    return ra.start < rb.end && ra.end > rb.start;
+  };
+
   // Helpers for monthly limit
   const isSameMonth = (dateA: string, dateB: string) => {
     const a = new Date(dateA);
@@ -149,6 +234,20 @@ bookedBy: "Lê Văn C (40%)",
     if (!selectedStartTime || !selectedEndTime) return;
     
     const timeRange = `${selectedStartTime}-${selectedEndTime}`;
+    // Prevent selecting an overlapping range for current vehicle/date
+    const hasOverlap = existingBookings.some(booking => 
+      booking.vehicle === selectedVehicle &&
+      booking.date === selectedDate &&
+      rangesOverlap(booking.time, timeRange)
+    );
+    if (hasOverlap) {
+      toast({
+        title: "Xung đột thời gian",
+        description: "Khung giờ bạn chọn bị chồng lấn với lịch đã đặt.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedTime(timeRange);
     setShowTimeSelector(false);
     
@@ -181,11 +280,11 @@ const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
       return;
     }
 
-    // Kiểm tra xung đột thời gian cho cùng xe và ngày
+    // Kiểm tra chồng lấn thời gian cho cùng xe và ngày
     const hasConflict = existingBookings.some(booking => 
       booking.vehicle === selectedVehicle && 
       booking.date === selectedDate && 
-      booking.time === selectedTime
+      rangesOverlap(booking.time, selectedTime)
     );
     
     if (hasConflict) {
@@ -287,6 +386,21 @@ setEditTime(booking.time);
     if (!editStartTime || !editEndTime) return;
     
     const timeRange = `${editStartTime}-${editEndTime}`;
+    // Prevent selecting overlapping range against other bookings
+    const hasOverlap = existingBookings.some(booking => 
+      booking.id !== editingBooking &&
+      booking.vehicle === editVehicle &&
+      booking.date === editDate &&
+      rangesOverlap(booking.time, timeRange)
+    );
+    if (hasOverlap) {
+      toast({
+        title: "Xung đột thời gian",
+        description: "Khung giờ bạn chọn bị chồng lấn với lịch đã đặt.",
+        variant: "destructive",
+      });
+      return;
+    }
     setEditTime(timeRange);
     setShowEditTimeSelector(false);
     
@@ -315,12 +429,12 @@ setEditTime(booking.time);
         return;
       }
 
-      // Kiểm tra xung đột thời gian cho cùng xe và ngày (trừ booking đang chỉnh sửa)
+      // Kiểm tra chồng lấn thời gian cho cùng xe và ngày (trừ booking đang chỉnh sửa)
       const hasConflict = existingBookings.some(booking => 
         booking.id !== editingBooking &&
         booking.vehicle === editVehicle && 
         booking.date === editDate && 
-        booking.time === editTime
+        rangesOverlap(booking.time, editTime)
       );
       
       if (hasConflict) {
@@ -380,16 +494,22 @@ title: "Lỗi cập nhật",
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Chọn xe</label>
-            <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+              <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
               <SelectTrigger>
-                <SelectValue placeholder="Chọn xe" />
+                <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"} />
               </SelectTrigger>
               <SelectContent>
+                {vehiclesError && (
+                  <div className="px-3 py-2 text-sm text-destructive">{vehiclesError}</div>
+                )}
+                {!vehiclesError && vehicles.length === 0 && !loadingVehicles && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">Không có xe nào trong nhóm của bạn</div>
+                )}
                 {vehicles.map((vehicle) => (
                   <SelectItem key={vehicle.id} value={vehicle.name}>
                     <div className="flex items-center space-x-2">
                       <Car className="h-4 w-4" />
-                      <span>{vehicle.name} - {vehicle.groupName}</span>
+                      <span>{vehicle.name}{vehicle.groupName ? ` - ${vehicle.groupName}` : ""}</span>
                     </div>
                   </SelectItem>
                 ))}
