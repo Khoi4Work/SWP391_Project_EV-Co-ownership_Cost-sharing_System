@@ -12,7 +12,7 @@ const {
   VONAGE_API_KEY,
   VONAGE_API_SECRET,
   VONAGE_BRAND_NAME, // tên hiển thị người gửi
-  PORT = 5000,
+  PORT = 8080,
 } = process.env;
 console.log("🔍 ENV check:", {
   hasMail: !!MAILTRAP_USER,
@@ -23,7 +23,12 @@ console.log("🔍 ENV check:", {
 
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // --- Mailer setup ---
@@ -136,6 +141,148 @@ app.post("/send-otp", async (req, res) => {
       .status(500)
       .json({ success: false, error: err.message || "unknown" });
   }
+});
+
+// --- In-memory mock DB for vehicles and bookings ---
+// This is reset on server restart. Intended for local testing only.
+const mockVehicles = [
+  { id: "v1", name: "VinFast VF8", groupName: "Team A" },
+  { id: "v2", name: "Tesla Model Y", groupName: "Team B" },
+  { id: "v3", name: "Hyundai Ioniq 5", groupName: "Team C" },
+];
+
+let mockBookings = [
+  {
+    id: "1",
+    time: "09:00-11:00",
+    date: "2024-01-16",
+    vehicle: "VinFast VF8",
+    bookedBy: "Nguyễn Văn A (60%)",
+    ownershipLevel: 60,
+    canOverride: false,
+  },
+  {
+    id: "2",
+    time: "14:00-17:00",
+    date: "2024-01-16",
+    vehicle: "Tesla Model Y",
+    bookedBy: "Trần Thị B (25%)",
+    ownershipLevel: 25,
+    canOverride: true,
+  },
+  {
+    id: "3",
+    time: "13:00-15:00",
+    date: "2024-01-16",
+    vehicle: "VinFast VF8",
+    bookedBy: "Lê Văn C (40%)",
+    ownershipLevel: 40,
+    canOverride: false,
+  },
+];
+
+// Vehicles the current user has access to
+app.get("/Vehicles/my", (req, res) => {
+  return res.json(mockVehicles);
+});
+
+// List bookings (optional filters: date, vehicle)
+app.get("/Bookings", (req, res) => {
+  const { date, vehicle } = req.query;
+  let result = mockBookings;
+  if (date) {
+    result = result.filter((b) => b.date === String(date));
+  }
+  if (vehicle) {
+    result = result.filter((b) => b.vehicle === String(vehicle));
+  }
+  return res.json(result);
+});
+
+// Create a booking
+app.post("/Bookings", (req, res) => {
+  const { time, date, vehicle, bookedBy, ownershipLevel } = req.body || {};
+  if (!time || !date || !vehicle) {
+    return res.status(400).json({ error: "time, date, vehicle are required" });
+  }
+
+  // basic overlap prevention on server side
+  const overlaps = (a, b) => {
+    const toMinutes = (hhmm) => {
+      const [hh, mm] = String(hhmm).split(":").map(Number);
+      return hh * 60 + mm;
+    };
+    const [as, ae] = String(a).split("-");
+    const [bs, be] = String(b).split("-");
+    const ra = { start: toMinutes(as), end: toMinutes(ae) };
+    const rb = { start: toMinutes(bs), end: toMinutes(be) };
+    return ra.start < rb.end && ra.end > rb.start;
+  };
+
+  const conflict = mockBookings.some(
+    (b) => b.vehicle === vehicle && b.date === date && overlaps(b.time, time)
+  );
+  if (conflict) {
+    return res.status(409).json({ error: "time range conflicts with existing booking" });
+  }
+
+  const newId = (mockBookings.length + 1).toString();
+  const booking = {
+    id: newId,
+    time,
+    date,
+    vehicle,
+    bookedBy: bookedBy || "Bạn (35%)",
+    ownershipLevel: typeof ownershipLevel === "number" ? ownershipLevel : 35,
+    canOverride: false,
+  };
+  mockBookings = [booking, ...mockBookings];
+  return res.status(201).json(booking);
+});
+
+// Update a booking
+app.put("/Bookings/:id", (req, res) => {
+  const { id } = req.params;
+  const { time, date, vehicle } = req.body || {};
+  const idx = mockBookings.findIndex((b) => b.id === id);
+  if (idx === -1) return res.status(404).json({ error: "not found" });
+
+  const next = { ...mockBookings[idx] };
+  if (time) next.time = time;
+  if (date) next.date = date;
+  if (vehicle) next.vehicle = vehicle;
+
+  // conflict check against others
+  const overlaps = (a, b) => {
+    const toMinutes = (hhmm) => {
+      const [hh, mm] = String(hhmm).split(":").map(Number);
+      return hh * 60 + mm;
+    };
+    const [as, ae] = String(a).split("-");
+    const [bs, be] = String(b).split("-");
+    const ra = { start: toMinutes(as), end: toMinutes(ae) };
+    const rb = { start: toMinutes(bs), end: toMinutes(be) };
+    return ra.start < rb.end && ra.end > rb.start;
+  };
+
+  const conflict = mockBookings.some(
+    (b) => b.id !== id && b.vehicle === next.vehicle && b.date === next.date && overlaps(b.time, next.time)
+  );
+  if (conflict) {
+    return res.status(409).json({ error: "time range conflicts with existing booking" });
+  }
+
+  mockBookings[idx] = next;
+  return res.json(next);
+});
+
+// Delete a booking
+app.delete("/Bookings/:id", (req, res) => {
+  const { id } = req.params;
+  const before = mockBookings.length;
+  mockBookings = mockBookings.filter((b) => b.id !== id);
+  if (mockBookings.length === before) return res.status(404).json({ error: "not found" });
+  return res.json({ success: true });
 });
 
 app.listen(PORT, () =>

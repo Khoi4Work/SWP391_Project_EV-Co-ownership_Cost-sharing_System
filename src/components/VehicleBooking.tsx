@@ -51,60 +51,22 @@ export default function VehicleBooking() {
       setLoadingVehicles(true);
       setVehiclesError(null);
       try {
-        const baseUrl = (import.meta as any)?.env?.VITE_API_BASE_URL || "http://localhost:8080";
-        // Thử nhiều endpoint để tương thích BE khác nhau
-        const candidates = [
-          `${baseUrl}/Vehicles/my`,
-          `${baseUrl}/vehicles/my`,
-          `${baseUrl}/api/vehicles/my`,
-          `${baseUrl}/api/vehicles/me`,
-          `${baseUrl}/vehicles/me`,
-          `${baseUrl}/api/v1/vehicles/my`,
-        ];
-
-        let fetched: any = null;
-        let lastError: any = null;
-        for (const url of candidates) {
-          try {
-            const res = await fetch(url, {
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-            });
-            if (!res.ok) {
-              lastError = `HTTP ${res.status} at ${url}`;
-              continue;
-            }
-            const data = await res.json();
-            fetched = data;
-            break;
-          } catch (err) {
-            lastError = err;
-          }
-        }
-
-        const normalizeVehicles = (input: any): Vehicle[] => {
-          const arr = Array.isArray(input)
-            ? input
-            : Array.isArray(input?.vehicles)
-              ? input.vehicles
-              : Array.isArray(input?.data)
-                ? input.data
-                : [];
-          return arr.map((v: any) => ({
-            id: v?.id ?? v?.vehicleId ?? v?.idVehicle ?? String(v?.uuid ?? v?.code ?? v?.plate ?? ""),
-            name: v?.name ?? v?.vehicleName ?? v?.model ?? v?.title ?? v?.displayName ?? "Không rõ tên xe",
-            groupName: v?.groupName ?? v?.group ?? v?.group_name ?? v?.groupLabel ?? v?.group?.name ?? undefined,
-          }))
-          .filter((v: Vehicle) => v.id && v.name);
-        };
-
-        const normalized = normalizeVehicles(fetched);
-        if (normalized.length > 0) {
-          setVehicles(normalized);
+        const baseUrl = (import.meta as any)?.env?.VITE_API_BASE_URL || "http://localhost:5000";
+        // Prefer a dedicated endpoint for user vehicles; adjust path as your backend exposes
+        const res = await fetch(`${baseUrl}/Vehicles/my`, {
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        // Expecting array of { id, name, groupName? }
+        if (Array.isArray(data)) {
+          setVehicles(data as Vehicle[]);
+        } else if (Array.isArray(data?.vehicles)) {
+          setVehicles(data.vehicles as Vehicle[]);
         } else {
-          console.error("[VehicleBooking] Không nhận được danh sách xe hợp lệ.", { fetched, lastError });
+          // Fallback: keep empty list
           setVehicles([]);
-          setVehiclesError("Không tải được danh sách xe. Vui lòng thử lại.");
         }
       } catch (e: any) {
         console.error("[VehicleBooking] Lỗi tải danh sách xe:", e);
