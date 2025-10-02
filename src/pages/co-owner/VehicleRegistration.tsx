@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Formik, Form, ErrorMessage, Field } from "formik";
+import { useFormik, Formik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
 interface CoOwner {
   id: string;
@@ -28,6 +28,7 @@ interface CoOwner {
   phone: string;
   ownership: number;
   idNumber: string;
+  address: string;
 }
 
 export default function VehicleRegistration() {
@@ -39,6 +40,7 @@ export default function VehicleRegistration() {
   const [step, setStep] = useState(1);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [ownerInfo, setOwnerInfo] = useState({
+    id: "",
     name: "",
     email: "",
     phone: "",
@@ -52,7 +54,57 @@ export default function VehicleRegistration() {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  const fetchUserByEmail = async (email: string) => {
+    try {
+      const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
+      if (!res.ok) {
+        toast({
+          title: "Lỗi",
+          description: "Không tìm thấy user với email này",
+          variant: "destructive"
+        });
+        return null;
+      }
+      const data = await res.json();
+      const user = Array.isArray(data) ? data[0] : data;
+      if (!user) return null;
+      return {
+        id: user.id,
+        name: user.hovaTen,       // map hovaTen -> name
+        email: user.email,
+        phone: user.phone,
+        idNumber: user.cccd,      // map cccd -> idNumber
+        address: "",              // API chưa có -> để trống
+        ownership: 50             // default
+      } as CoOwner;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  };
+  const formik = useFormik<CoOwner>({
+    initialValues: ownerInfo,
+    enableReinitialize: true,
+    validationSchema: Yup.object({
+      name: Yup.string().required("Vui lòng nhập họ và tên"),
+      email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
+      phone: Yup.string()
+        .required("Vui lòng nhập số điện thoại")
+        .matches(/^0\d{9}$/, "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0"),
+      idNumber: Yup.string()
+        .required("Vui lòng nhập CCCD/CMND")
+        .matches(/^0\d{11}$/, "CCCD phải có 12 số và bắt đầu bằng 0"),
+      address: Yup.string().required("Vui lòng nhập địa chỉ"),
+      ownership: Yup.number()
+        .required("Vui lòng nhập tỷ lệ sở hữu")
+        .min(1, "Tỷ lệ >= 1%")
+        .max(100, "Tỷ lệ <= 100%"),
+    }),
+    onSubmit: (values) => {
+      setOwnerInfo(values);
+      setStep(3);
+    },
+  });
   const vehicles = [
     {
       id: "vf8",
@@ -136,7 +188,8 @@ export default function VehicleRegistration() {
       email: "",
       phone: "",
       ownership: Math.max(15, Math.min(15, 100 - totalOwnership)), // Minimum 15%
-      idNumber: ""
+      idNumber: "",
+      address: "",
     };
     setCoOwners([...coOwners, newCoOwner]);
   };
@@ -223,6 +276,7 @@ export default function VehicleRegistration() {
                   setStep(1);
                   setSelectedVehicle("");
                   setOwnerInfo({
+                    id: "",
                     name: "",
                     email: "",
                     phone: "",
@@ -358,81 +412,135 @@ export default function VehicleRegistration() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <Formik
-                initialValues={{
-                  name: "",
-                  email: "",
-                  phone: "",
-                  idNumber: "",
-                  ownership: 0,
-                  address: "",
-                }}
-                validationSchema={ownerSchema}
-                onSubmit={(values) => {
-                  console.log("Owner info:", values);
-                  setStep(3);
-                }}
-              >
-                {({ values }) => (
-                  <Form>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Họ và tên *</Label>
-                        <Field as={Input} id="name" name="name" placeholder="Nhập họ và tên đầy đủ" />
-                        <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
-                      </div>
+              {/* Owner type (dùng chung với ownerInfo state) */}
+              {/* interface Owner { name: string; email: string; phone: string; idNumber: string; address: string; ownership: number } */}
 
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email *</Label>
-                        <Field as={Input} id="email" name="email" type="email" placeholder="Nhập địa chỉ email" />
-                        <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Số điện thoại *</Label>
-                        <Field as={Input} id="phone" name="phone" placeholder="Nhập số điện thoại" />
-                        <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="idNumber">CCCD/CMND *</Label>
-                        <Field as={Input} id="idNumber" name="idNumber" placeholder="Nhập số CCCD/CMND" />
-                        <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
-                        <div className="flex items-center space-x-2">
-                          <Field as={Input} id="ownership" name="ownership" type="number" min="1" max="100" className="flex-1" />
-                          {selectedVehicle && (
-                            <div className="text-sm text-primary font-medium">
-                              {getOwnershipAmount(values.ownership).toLocaleString()} VNĐ
-                            </div>
-                          )}
-                        </div>
-                        <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
-                      </div>
+              <FormikProvider value={formik}>
+                <Form onSubmit={formik.handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Họ và tên *</Label>
+                      <Field name="name">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="name"
+                            placeholder="Nhập họ và tên đầy đủ"
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="address">Địa chỉ *</Label>
-                      <Field as={Textarea} id="address" name="address" placeholder="Nhập địa chỉ đầy đủ" />
-                      <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
+                      <Label htmlFor="email">Email *</Label>
+                      <Field name="email">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="email"
+                            type="email"
+                            placeholder="Nhập email"
+                            onBlur={async (e) => {
+                              field.onBlur(e); // 👈 giữ Formik sync
+                              const user = await fetchUserByEmail(e.target.value);
+                              if (user) {
+                                formik.setValues(user); // 👈 fill toàn bộ form
+                              }
+                            }}
+                            onChange={(e) => {
+                              field.onChange(e); // 👈 quan trọng: cập nhật formik.values.email
+                            }}
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
                     </div>
 
-                    <div className="flex justify-between mt-6">
-                      <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Quay lại
-                      </Button>
-                      <Button type="submit" className="bg-gradient-primary hover:shadow-glow">
-                        Tiếp tục
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Số điện thoại *</Label>
+                      <Field name="phone">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="phone"
+                            placeholder="Nhập số điện thoại"
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
                     </div>
-                  </Form>
-                )}
-              </Formik>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="idNumber">CCCD/CMND *</Label>
+                      <Field name="idNumber">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="idNumber"
+                            placeholder="Nhập số CCCD/CMND"
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
+                      <div className="flex items-center space-x-2">
+                        <Field
+                          as={Input}
+                          id="ownership"
+                          name="ownership"
+                          type="number"
+                          min={1}
+                          max={100}
+                          className="flex-1"
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const raw = e.target.value;
+                            const num = parseInt(raw || "0", 10);
+                            formik.setFieldValue("ownership", num);
+                            setOwnerInfo(prev => ({ ...prev, ownership: isNaN(num) ? 0 : num }));
+                          }}
+                        />
+                        {selectedVehicle && (
+                          <div className="text-sm text-primary font-medium">
+                            {getOwnershipAmount(formik.values.ownership).toLocaleString()} VNĐ
+                          </div>
+                        )}
+                      </div>
+                      <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Địa chỉ *</Label>
+                    <Field
+                      as={Textarea}
+                      id="address"
+                      name="address"
+                      placeholder="Nhập địa chỉ đầy đủ"
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                        const v = e.target.value;
+                        formik.setFieldValue("address", v);
+                        setOwnerInfo(prev => ({ ...prev, address: v }));
+                      }}
+                    />
+                    <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Quay lại
+                    </Button>
+                    <Button type="submit" className="bg-gradient-primary hover:shadow-glow">
+                      Tiếp tục
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </Form>
+              </FormikProvider>
             </CardContent>
           </Card>
         )}

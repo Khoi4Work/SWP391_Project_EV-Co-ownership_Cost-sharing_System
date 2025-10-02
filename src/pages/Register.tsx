@@ -213,60 +213,74 @@ export default function Register() {
                                             body: JSON.stringify(userObject),
                                         });
 
-                                        const rawText = await res.text(); // lấy response gốc (dù là JSON hay text)
-                                        let data;
-
+                                        const rawText = await res.text();
+                                        let data: any = null;
                                         try {
-                                            data = JSON.parse(rawText); // thử parse JSON
+                                            data = rawText ? JSON.parse(rawText) : null;
                                         } catch {
-                                            data = { success: false, message: rawText }; // nếu không phải JSON thì gói thành object
+                                            data = null;
                                         }
 
-                                        if (!res.ok || !data.success) {
-                                            // backend báo lỗi hoặc không có success = true
-                                            let field: string | undefined;
+                                        console.log("Register response:", data || rawText);
 
-                                            if (data.field) {
-                                                field = data.field;
-                                            } else if (data.message?.toLowerCase().includes("email")) {
-                                                field = "email";
-                                            } else if (data.message?.toLowerCase().includes("phone")) {
-                                                field = "phone";
-                                            } else if (data.message?.toLowerCase().includes("cccd")) {
-                                                field = "cccd";
-                                            } else if (data.message?.toLowerCase().includes("gplx")) {
-                                                field = "gplx";
-                                            }
-
-                                            if (field) {
-                                                setErrors({ [field]: data.message });
-                                            }
-
+                                        if (!res.ok) {
+                                            // HTTP error
+                                            const message = data?.message || rawText || "Lỗi từ server";
+                                            if (data?.field) setErrors({ [data.field]: message });
                                             toast({
                                                 title: "Đăng ký thất bại",
-                                                description: data.message || "Lỗi không xác định từ server",
+                                                description: message,
                                                 variant: "destructive",
                                             });
-                                        } else {
-                                            // hợp lệ -> chuyển sang OTP
-                                            console.log("Điều hướng sang verify-otp với:", userObject);
                                             navigate("/verify-otp", { state: { ...userObject } });
                                             toast({
                                                 title: "Thông tin hợp lệ",
                                                 description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                            });
+                                            return;
+                                        }
+
+                                        // Nếu status OK
+                                        const isSuccess =
+                                            data?.success === true ||
+                                            data?.id ||
+                                            data?.email ||
+                                            data?.step === "otp";
+
+                                        if (isSuccess) {
+                                            navigate("/verify-otp", { state: { ...userObject } });
+                                            toast({
+                                                title: "Thông tin hợp lệ",
+                                                description: data?.message || "Vui lòng xác thực tài khoản bằng mã OTP",
+                                            });
+                                        } else {
+                                            const message = data?.message || rawText || "Lỗi không xác định từ server";
+                                            // nếu backend trả duplicate lỗi -> map vào field
+                                            let field: string | undefined;
+                                            if (data?.field) field = data.field;
+                                            else if (message.toLowerCase().includes("email")) field = "email";
+                                            else if (message.toLowerCase().includes("phone")) field = "phone";
+                                            else if (message.toLowerCase().includes("cccd")) field = "cccd";
+                                            else if (message.toLowerCase().includes("gplx")) field = "gplx";
+
+                                            if (field) setErrors({ [field]: message });
+
+                                            toast({
+                                                title: "Đăng ký thất bại",
+                                                description: message,
+                                                variant: "destructive",
                                             });
                                         }
                                     } catch (error) {
                                         console.error("Lỗi khi gọi backend:", error);
                                         toast({
                                             title: "Lỗi hệ thống",
-                                            description: "Không thể kiểm tra thông tin",
+                                            description: "Không thể kết nối tới server",
                                             variant: "destructive",
                                         });
                                     } finally {
                                         setSubmitting(false);
                                     }
-
                                 })
 
                         }}
