@@ -1,9 +1,7 @@
 package khoindn.swp391.be.app.model.Response;
 
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
-import khoindn.swp391.be.app.pojo.Group;
-import khoindn.swp391.be.app.pojo.UserRole;
-import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,4 +23,6 @@ public class RegisterVehicleRes {
     int batteryCapacity;
     LocalDateTime createdAt;
     private Group groupId;
+    private ContractSigner contractSigner;
+    private Contract contract;
 }

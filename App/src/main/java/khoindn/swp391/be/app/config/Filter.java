@@ -30,7 +30,8 @@ public class Filter extends OncePerRequestFilter {
             "POST:/Users/login",
             "POST:/UserRole/",
             "POST:/Group/register",
-            "POST:/Schedule/register"
+            "POST:/Schedule/register",
+            "POST:/contract/"
     );
 
     public boolean isPublicAPI(String uri, String method) {

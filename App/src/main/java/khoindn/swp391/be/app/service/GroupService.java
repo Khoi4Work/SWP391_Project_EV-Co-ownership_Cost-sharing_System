@@ -6,18 +6,15 @@ import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
 import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
-import khoindn.swp391.be.app.pojo.Group;
-import khoindn.swp391.be.app.pojo.GroupMember;
-import khoindn.swp391.be.app.pojo.Users;
-import khoindn.swp391.be.app.pojo.Vehicle;
-import khoindn.swp391.be.app.repository.IGroupMemberRepository;
-import khoindn.swp391.be.app.repository.IGroupRepository;
-import khoindn.swp391.be.app.repository.IUserRepository;
-import khoindn.swp391.be.app.repository.IVehicleRepository;
+import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +36,16 @@ public class GroupService implements IGroupService {
     private IGroupMemberRepository iGroupMemberRepository;
 
     @Autowired
+    private IContractRepository iContractRepository;
+
+    @Autowired
+    private IContractSignerRepository iContractSignerRepository;
+
+    @Autowired
     private ModelMapper modelMapper;
+
+
+
 
     @Override
     public RegisterVehicleRes addMemberToGroup(RegisterVehicleReq request) {
@@ -66,7 +72,18 @@ public class GroupService implements IGroupService {
         vehicle.setGroup(group);
         iVehicleRepository.save(vehicle);
 
-        // 5. Tạo group members từ emails
+        // 5. Tạo contract
+        Contract contract = new Contract();
+        contract.setStartDate(LocalDate.now());
+        contract.setStatus("pending");
+        contract.setDocumentUrl(request.getDocumentUrl());
+        contract.setContractType(request.getContractType());
+        contract.setGroup(group);
+        iContractRepository.save(contract);
+
+
+
+        // 7. Tạo group members từ emails
         List<ResponseVehicleRegisteration> owners = new ArrayList<>();
         for (CoOwner_Info member : request.getMember()) {
             Users user = iUserRepository.findByEmail(member.getEmail());
@@ -83,9 +100,15 @@ public class GroupService implements IGroupService {
             iGroupMemberRepository.save(gm);
 
             owners.add(modelMapper.map(user, ResponseVehicleRegisteration.class));
+            // 6. Tạo người ký contract
+            ContractSigner contractSigner = new ContractSigner();
+            contractSigner.setContract(contract);
+            contractSigner.setDecision("pending");
+            contractSigner.setUser(user);
+            iContractSignerRepository.save(contractSigner);
         }
 
-        // 6. Build response
+        // 8. Build response
         RegisterVehicleRes res = new RegisterVehicleRes();
         // map vehicle fields
         modelMapper.map(vehicle, res);
@@ -93,7 +116,10 @@ public class GroupService implements IGroupService {
         res.setGroupId(group);
         // map owners
         res.setOwners(owners);
+        // Set up send contract via email
+
 
         return res;
     }
+
 }
