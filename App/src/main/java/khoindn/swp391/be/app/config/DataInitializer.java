@@ -49,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
             userRoleService.addUserRole(staffRole);
         }
 
-        if (vehicleService.findAll().isEmpty()){
+        if (vehicleService.findAll().isEmpty()) {
             Vehicle v1 = new Vehicle();
             v1.setPlateNo("29A-12345");
             v1.setBrand("Tesla");
@@ -57,6 +57,7 @@ public class DataInitializer implements CommandLineRunner {
             v1.setColor("Red");
             v1.setBatteryCapacity(100);
             v1.setCreatedAt(LocalDateTime.now());
+            v1.setPrice(150000); // thêm giá
             vehicleService.addVehicle(v1);
 
             Vehicle v2 = new Vehicle();
@@ -66,6 +67,7 @@ public class DataInitializer implements CommandLineRunner {
             v2.setColor("Blue");
             v2.setBatteryCapacity(90);
             v2.setCreatedAt(LocalDateTime.now());
+            v2.setPrice(80000); // thêm giá
             vehicleService.addVehicle(v2);
 
             Vehicle v3 = new Vehicle();
@@ -75,6 +77,7 @@ public class DataInitializer implements CommandLineRunner {
             v3.setColor("White");
             v3.setBatteryCapacity(60);
             v3.setCreatedAt(LocalDateTime.now());
+            v3.setPrice(40000); // thêm giá
             vehicleService.addVehicle(v3);
 
             Vehicle v4 = new Vehicle();
@@ -84,6 +87,7 @@ public class DataInitializer implements CommandLineRunner {
             v4.setColor("Black");
             v4.setBatteryCapacity(85);
             v4.setCreatedAt(LocalDateTime.now());
+            v4.setPrice(35000); // thêm giá
             vehicleService.addVehicle(v4);
 
             Vehicle v5 = new Vehicle();
@@ -93,9 +97,10 @@ public class DataInitializer implements CommandLineRunner {
             v5.setColor("Silver");
             v5.setBatteryCapacity(93);
             v5.setCreatedAt(LocalDateTime.now());
+            v5.setPrice(120000); // thêm giá
             vehicleService.addVehicle(v5);
-
         }
+
 
 
 
