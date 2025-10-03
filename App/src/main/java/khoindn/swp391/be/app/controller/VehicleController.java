@@ -4,6 +4,8 @@ import khoindn.swp391.be.app.pojo.Vehicle;
 import khoindn.swp391.be.app.service.IVehicleService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +22,9 @@ public class VehicleController {
     private IVehicleService iVehicleService;
 
     @GetMapping("/")
-    public List<Vehicle> getAllUnregisteredVehicle(){
-        return iVehicleService.getAllUnregisteredVehicle();
+    public ResponseEntity<List<Vehicle>> getAllUnregisteredVehicle() {
+        List<Vehicle> vehicles = iVehicleService.getAllUnregisteredVehicle();
+        return ResponseEntity.status(HttpStatus.OK).body(vehicles);
     }
+
 }

@@ -22,8 +22,9 @@ public class UserRoleController {
     private IUserRoleService iUserRoleService;
 
     @PostMapping("/")
-    public ResponseEntity<?> addUserRole(@RequestBody UserRole userRole){
-        return ResponseEntity.ok(iUserRoleService.addUserRole(userRole));
-
+    public ResponseEntity<UserRole> addUserRole(@RequestBody UserRole userRole) {
+        UserRole created = iUserRoleService.addUserRole(userRole);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created); // 201 CREATED
     }
+
 }

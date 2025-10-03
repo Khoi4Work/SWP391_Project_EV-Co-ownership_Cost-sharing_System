@@ -1,6 +1,6 @@
 package khoindn.swp391.be.app.service;
 
-import khoindn.swp391.be.app.exception.exceptions.VehicleNotBelongException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
@@ -32,15 +32,17 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public ScheduleRes createSchedule(ScheduleReq req) {
-        Users user = iUserRepository.findById(req.getUserId()).get();
+        Users user = iUserRepository.findById(req.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        Group group = iGroupRepository.findById(req.getGroupId()).get();
+        Group group = iGroupRepository.findById(req.getGroupId())
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
 
-        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user).get();
+        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
+                .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
 
         Vehicle vehicle = iVehicleRepository.findVehicleByVehicleId(req.getVehicleId());
-        // check car in group
-        if (vehicle.getGroup().getGroupId() != (req.getGroupId())) {
+        if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
             throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
 
@@ -60,6 +62,7 @@ public class ScheduleService implements IScheduleService {
         return res;
     }
 
+
     @Override
     public List<ScheduleRes> getAllSchedules() {
         return iScheduleRepository.findAll().stream()
@@ -78,33 +81,27 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public VehicleRes getCarByGroupIdAndUserId(int groupId, int userId) {
-        // Lấy user
         Users user = iUserRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // Lấy group
         Group group = iGroupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
 
-        // Kiểm tra user có trong group không
         iGroupMemberRepository.findByGroupAndUsers(group, user)
-                .orElseThrow(() -> new RuntimeException("User does not belong to this group"));
+                .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
 
-        // Lấy vehicle theo group
         Vehicle vehicle = iVehicleRepository.findByGroup(group);
         if (vehicle == null) {
-            throw new RuntimeException("No vehicles found in this group");
+            throw new NoVehicleInGroupException("No vehicles found in this group");
         }
 
-        // Map entity -> DTO
         VehicleRes dto = modelMapper.map(vehicle, VehicleRes.class);
-
-        // Thêm thông tin group thủ công
         dto.setGroupId(group.getGroupId());
         dto.setGroupName(group.getGroupName());
 
         return dto;
     }
+
 
 
 }

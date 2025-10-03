@@ -1,9 +1,11 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.exception.exceptions.RoleNotFoundException;
 import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.repository.IUserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 @Service
 
@@ -19,6 +21,11 @@ public class UserRoleService implements IUserRoleService {
 
     @Override
     public UserRole findByRoleName(String rolename) {
-        return iUserRoleRepository.findByRoleName(rolename);
+        UserRole role = iUserRoleRepository.findByRoleName(rolename);
+        if (role == null) {
+            throw new RoleNotFoundException("Role '" + rolename + "' not found");
+        }
+        return role;
     }
+
 }

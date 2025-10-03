@@ -6,6 +6,7 @@ import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.service.IScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,8 @@ public class ScheduleController {
     @PostMapping("/register")
     public ResponseEntity<ScheduleRes> createSchedule(@Valid @RequestBody ScheduleReq req) {
         ScheduleRes res = scheduleService.createSchedule(req);
-        return ResponseEntity.ok(res);
+        return ResponseEntity.status(HttpStatus.CREATED).body(res);
+
     }
 
     @GetMapping

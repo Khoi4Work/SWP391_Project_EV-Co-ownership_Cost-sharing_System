@@ -37,7 +37,11 @@ public class AuthenticationService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return iAuthenticationRepository.findUsersByEmail(email);
+        Users user = iAuthenticationRepository.findUsersByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
+        return user;
     }
 
     public Users register(Users users) {

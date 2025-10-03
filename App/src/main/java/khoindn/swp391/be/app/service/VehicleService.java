@@ -1,5 +1,7 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.exception.exceptions.NoVehicleInGroupException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
 import khoindn.swp391.be.app.pojo.Vehicle;
 import khoindn.swp391.be.app.repository.IVehicleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +22,11 @@ public class VehicleService implements IVehicleService{
 
     @Override
     public Vehicle findVehicleByModel(String name) {
-        return iVehicleRepository.findVehicleByModel(name);
+        Vehicle vehicle = iVehicleRepository.findVehicleByModel(name);
+        if (vehicle == null) {
+            throw new VehicleIsNotExistedException("Vehicle with model '" + name + "' not found");
+        }
+        return vehicle;
     }
 
     @Override
@@ -30,11 +36,19 @@ public class VehicleService implements IVehicleService{
 
     @Override
     public Vehicle findVehicleById(int id) {
-        return iVehicleRepository.findVehicleByVehicleId(id);
+        Vehicle vehicle = iVehicleRepository.findVehicleByVehicleId(id);
+        if (vehicle == null) {
+            throw new VehicleIsNotExistedException("Vehicle with id " + id + " not found");
+        }
+        return vehicle;
     }
 
     @Override
     public List<Vehicle> getAllUnregisteredVehicle() {
-        return iVehicleRepository.findByGroupIsNull();
+        List<Vehicle> vehicles = iVehicleRepository.findByGroupIsNull();
+        if (vehicles.isEmpty()) {
+            throw new NoVehicleInGroupException("No unregistered vehicles available");
+        }
+        return vehicles;
     }
 }

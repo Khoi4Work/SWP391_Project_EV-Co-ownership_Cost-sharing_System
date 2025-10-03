@@ -22,6 +22,6 @@ public class RegisterController {
     public ResponseEntity<RegisterVehicleRes> registerCar
             (@RequestBody @Valid RegisterVehicleReq request) {
         RegisterVehicleRes group = groupService.addMemberToGroup(request);
-        return ResponseEntity.ok(group);
+        return ResponseEntity.status(201).body(group); // 201 Created
     }
 }
