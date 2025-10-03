@@ -11,7 +11,7 @@ import java.util.List;
 public interface IContractService {
     public Contract getContract(int id);
 
-    public ContractSigner setContract(ContractReq req, int idChoice);
+    public ContractSigner setContract(ContractReq req);
 
     public void SendEmail(SendEmailReq emailReq);
 }
