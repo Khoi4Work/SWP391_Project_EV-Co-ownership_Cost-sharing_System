@@ -15,4 +15,6 @@ public interface IVehicleRepository extends JpaRepository<Vehicle, Integer> {
     public Vehicle findByGroup(Group group);
 
     public List<Vehicle> findByGroupIsNull();
+
+
 }
