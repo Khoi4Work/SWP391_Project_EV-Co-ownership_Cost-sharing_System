@@ -36,14 +36,14 @@ public class ContractService implements IContractService {
 
 
     @Override
-    public ContractSigner setContract(ContractReq req, int idChoice) {
+    public ContractSigner setContract(ContractReq req) {
         if (iContractSignerRepository.existsByUser_Id(req.getIdUserSigned())) {
             ContractSigner contractSigner = iContractSignerRepository
                     .findByUser_IdAndContract_ContractId(req.getIdUserSigned(),req.getIdContract());
             // Cập nhật decision
-            if (idChoice == 1) {
+            if (req.getIdChoice() == 1) {
                 contractSigner.setDecision("Signed");
-            } else if (idChoice == 0) {
+            } else if (req.getIdChoice() == 0) {
                 contractSigner.setDecision("Declined");
             } else {
                 throw new IllegalArgumentException("Invalid choice value");

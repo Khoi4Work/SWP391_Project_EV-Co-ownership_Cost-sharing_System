@@ -23,8 +23,8 @@ public class ContractController {
     }
 
     @PostMapping("/{id}")
-    public ResponseEntity<ContractSigner> setContract(@PathVariable int idChoice, @RequestBody ContractReq req){
-        ContractSigner contractResult = iContractService.setContract(req, idChoice);
+    public ResponseEntity<ContractSigner> setContract(@RequestBody ContractReq req){
+        ContractSigner contractResult = iContractService.setContract(req);
         return ResponseEntity.ok(contractResult);
     }
 
