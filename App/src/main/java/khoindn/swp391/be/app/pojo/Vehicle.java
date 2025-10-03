@@ -40,4 +40,10 @@ public class Vehicle {
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group group;
+
+    @Column(name="price", length = 32)
+    private int price;
+
+    @Column(name="image",length=32)
+    private String image_url;
 }
