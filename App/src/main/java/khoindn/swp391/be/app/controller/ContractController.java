@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import khoindn.swp391.be.app.model.Request.ContractReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.pojo.ContractSigner;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/contract")
+@SecurityRequirement(name = "api")
+
 public class ContractController {
 
     @Autowired

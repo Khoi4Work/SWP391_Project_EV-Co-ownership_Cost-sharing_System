@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import khoindn.swp391.be.app.pojo.Vehicle;
 import khoindn.swp391.be.app.service.IVehicleService;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @CrossOrigin(origins = "http://localhost:8081")
 @RequestMapping("/vehicle")
+@SecurityRequirement(name = "api")
 public class VehicleController {
 
     @Autowired

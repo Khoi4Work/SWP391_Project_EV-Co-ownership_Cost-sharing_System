@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.controller;
 
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
@@ -13,11 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/Users")
+@RequestMapping("/Auth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:8081")
-
-
+@SecurityRequirement(name = "api")
 public class AuthenticationController {
     @Autowired
     AuthenticationService authenticationService;

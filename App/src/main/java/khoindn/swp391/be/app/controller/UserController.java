@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +11,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/Users")
 @CrossOrigin(origins = "http://localhost:8081")
+@SecurityRequirement(name = "api")
+
 public class UserController {
 
     @Autowired

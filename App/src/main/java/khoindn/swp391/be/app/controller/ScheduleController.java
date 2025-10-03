@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
@@ -14,6 +15,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/Schedule")
+@SecurityRequirement(name = "api")
+
 public class ScheduleController {
 
     @Autowired

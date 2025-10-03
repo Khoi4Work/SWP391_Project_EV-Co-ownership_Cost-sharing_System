@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.controller;
 
 
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.service.IUserRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/UserRole")
+@SecurityRequirement(name = "api")
 public class UserRoleController {
 
 
