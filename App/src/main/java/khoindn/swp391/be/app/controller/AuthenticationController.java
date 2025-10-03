@@ -8,6 +8,7 @@ import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +27,7 @@ public class AuthenticationController {
         // get request from FE
         // send to AuthenticationService
         Users newAccount = authenticationService.register(users);
-        return ResponseEntity.ok(newAccount);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newAccount);
     }
 
     @PostMapping("/login")
