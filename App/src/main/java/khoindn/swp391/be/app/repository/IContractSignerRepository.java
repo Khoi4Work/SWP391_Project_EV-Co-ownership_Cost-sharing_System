@@ -13,4 +13,5 @@ public interface IContractSignerRepository extends JpaRepository<ContractSigner,
 
     boolean existsByUser_Id(int userId);
 
+    List<ContractSigner> findByContract_ContractId(int contractContractId);
 }

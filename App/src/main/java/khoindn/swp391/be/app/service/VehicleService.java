@@ -32,4 +32,9 @@ public class VehicleService implements IVehicleService{
     public Vehicle findVehicleById(int id) {
         return iVehicleRepository.findVehicleByVehicleId(id);
     }
+
+    @Override
+    public List<Vehicle> getAllUnregisteredVehicle() {
+        return iVehicleRepository.findByGroupIsNull();
+    }
 }

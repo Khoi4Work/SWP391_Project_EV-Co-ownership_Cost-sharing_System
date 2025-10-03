@@ -13,17 +13,15 @@ import java.util.Optional;
 
 @RequestMapping("/Users")
 @CrossOrigin(origins = "http://localhost:8081")
-
-
 public class UserController {
 
     @Autowired
     private IUserService iUserService;
 
-//    @GetMapping("/{id}")
-//    public ResponseEntity<Optional<Users>> getUserById(@PathVariable("id") int id) {
-//        return ResponseEntity.ok(iUserService.findUserById(id));
-//    }
+    @GetMapping("/")
+    public ResponseEntity<Users> getUserByEmail(String email) {
+        return ResponseEntity.ok(iUserService.getUserByEmail(email));
+    }
 
 //    @PostMapping("/")
 //    @ResponseStatus(HttpStatus.CREATED)

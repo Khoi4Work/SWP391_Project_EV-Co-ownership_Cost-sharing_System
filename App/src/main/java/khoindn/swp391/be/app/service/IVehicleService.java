@@ -13,4 +13,6 @@ public interface IVehicleService {
 
     public Vehicle findVehicleById(int id);
 
+    public List<Vehicle> getAllUnregisteredVehicle();
+
 }
