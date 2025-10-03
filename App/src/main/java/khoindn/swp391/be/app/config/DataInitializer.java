@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    //Test webhook discord
     @Autowired
     private UserRoleService userRoleService;
 
