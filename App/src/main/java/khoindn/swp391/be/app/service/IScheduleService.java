@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
+import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.Vehicle;
 
 import java.util.List;
@@ -11,5 +12,5 @@ public interface IScheduleService {
 
     List<ScheduleRes> getAllSchedules();
 
-    public Vehicle getCarByGroupIdAndUserId(int groupId, int userId);
+    public VehicleRes getCarByGroupIdAndUserId(int groupId, int userId);
 }

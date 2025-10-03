@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.exception.exceptions.VehicleNotBelongException;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
+import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
@@ -76,7 +77,7 @@ public class ScheduleService implements IScheduleService {
     }
 
     @Override
-    public Vehicle getCarByGroupIdAndUserId(int groupId, int userId) {
+    public VehicleRes getCarByGroupIdAndUserId(int groupId, int userId) {
         // Lấy user
         Users user = iUserRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -85,18 +86,24 @@ public class ScheduleService implements IScheduleService {
         Group group = iGroupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        // Kiểm tra user có trong group khôngx`
-        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
+        // Kiểm tra user có trong group không
+        iGroupMemberRepository.findByGroupAndUsers(group, user)
                 .orElseThrow(() -> new RuntimeException("User does not belong to this group"));
 
-        // Lấy danh sách vehicle của group
-        Vehicle vehicles = iVehicleRepository.findByGroup(group);
-
-        if (vehicles == null) {
+        // Lấy vehicle theo group
+        Vehicle vehicle = iVehicleRepository.findByGroup(group);
+        if (vehicle == null) {
             throw new RuntimeException("No vehicles found in this group");
         }
 
-        return vehicles;
+        // Map entity -> DTO
+        VehicleRes dto = modelMapper.map(vehicle, VehicleRes.class);
+
+        // Thêm thông tin group thủ công
+        dto.setGroupId(group.getGroupId());
+        dto.setGroupName(group.getGroupName());
+
+        return dto;
     }
 
 

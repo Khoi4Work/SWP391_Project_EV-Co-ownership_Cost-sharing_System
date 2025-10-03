@@ -45,5 +45,5 @@ public class Vehicle {
     private int price;
 
     @Column(name="image",length=32)
-    private String image_url;
+    private String imageUrl;
 }
