@@ -1,1 +1,2 @@
-# SWP391_Project_EV-Co-ownership_Cost-sharing_System
+# Project Fleet Share Buddy
+Đây là file README đã hợp nhất nội dung từ cả FE và firstBranch.

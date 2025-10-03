@@ -74,4 +74,30 @@ public class ScheduleService implements IScheduleService {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Vehicle getCarByGroupIdAndUserId(int groupId, int userId) {
+        // Lấy user
+        Users user = iUserRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Lấy group
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        // Kiểm tra user có trong group khôngx`
+        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
+                .orElseThrow(() -> new RuntimeException("User does not belong to this group"));
+
+        // Lấy danh sách vehicle của group
+        Vehicle vehicles = iVehicleRepository.findByGroup(group);
+
+        if (vehicles == null) {
+            throw new RuntimeException("No vehicles found in this group");
+        }
+
+        return vehicles;
+    }
+
+
 }

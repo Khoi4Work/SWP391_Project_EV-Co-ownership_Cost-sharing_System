@@ -17,6 +17,7 @@ public class ScheduleController {
     @Autowired
     private IScheduleService scheduleService;
 
+
     @PostMapping("/register")
     public ResponseEntity<ScheduleRes> createSchedule(@Valid @RequestBody ScheduleReq req) {
         ScheduleRes res = scheduleService.createSchedule(req);
@@ -27,6 +28,13 @@ public class ScheduleController {
     public ResponseEntity<List<ScheduleRes>> getAllSchedules() {
         List<ScheduleRes> schedules = scheduleService.getAllSchedules();
         return ResponseEntity.ok(schedules);
+    }
+
+    @GetMapping("/cars")
+    public ResponseEntity<?> getCarsByGroupAndUser(
+            @RequestParam int groupId,
+            @RequestParam int userId) {
+        return ResponseEntity.ok(scheduleService.getCarByGroupIdAndUserId(groupId, userId));
     }
 
 //    @PutMapping("/{id}")
