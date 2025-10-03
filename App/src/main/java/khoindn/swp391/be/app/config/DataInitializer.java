@@ -23,10 +23,10 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
 
 
-        if (userRoleService.findByRoleName("user") == null ||
-                userRoleService.findByRoleName("co-owner") == null||
-                userRoleService.findByRoleName("admin") == null||
-                userRoleService.findByRoleName("staff") == null) {
+        if (!userRoleService.existsByRoleName("user")||
+                !userRoleService.existsByRoleName("co-owner")||
+                !userRoleService.existsByRoleName("admin")||
+                !userRoleService.existsByRoleName("staff")) {
 
             UserRole userRole = new UserRole();
             userRole.setRole_id(1);

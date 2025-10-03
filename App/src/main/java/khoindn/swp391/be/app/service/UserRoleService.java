@@ -28,4 +28,9 @@ public class UserRoleService implements IUserRoleService {
         return role;
     }
 
+    @Override
+    public boolean existsByRoleName(String rolename) {
+        return iUserRoleRepository.existsByRoleName(rolename);
+    }
+
 }

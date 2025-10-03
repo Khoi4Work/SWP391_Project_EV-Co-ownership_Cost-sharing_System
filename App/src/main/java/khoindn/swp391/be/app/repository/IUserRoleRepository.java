@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface IUserRoleRepository extends JpaRepository<UserRole, Integer> {
     public UserRole findByRoleName(String rolename);
 
+    boolean existsByRoleName(String roleName);
 }

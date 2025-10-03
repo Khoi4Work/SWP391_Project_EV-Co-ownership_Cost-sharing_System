@@ -6,4 +6,6 @@ public interface IUserRoleService {
     public UserRole addUserRole(UserRole userRole);
 
     public UserRole findByRoleName(String rolename);
+
+    public  boolean existsByRoleName(String rolename);
 }

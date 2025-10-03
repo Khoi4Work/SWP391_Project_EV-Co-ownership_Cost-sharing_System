@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.mail.internet.MimeMessage;
+import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
 import khoindn.swp391.be.app.model.Request.ContractReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.pojo.Contract;
@@ -31,7 +32,10 @@ public class ContractService implements IContractService {
 
     @Override
     public Contract getContract(int id) {
-        return iContractRepository.findContractByContractId(id);
+        Contract contract = iContractRepository.findContractByContractId(id);
+
+        if(contract==null) throw new ContractNotExistedException("Contract cannot found!");
+        return contract;
     }
 
 
