@@ -21,6 +21,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useFormik, Formik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
+import CoOwnerForm from "./AddingCoOwners";
 interface CoOwner {
   id: string;
   name: string;
@@ -30,7 +31,7 @@ interface CoOwner {
   idNumber: string;
   address: string;
 }
-
+import { useEffect } from "react";
 export default function VehicleRegistration() {
   const ownerSchema = Yup.object({
     name: Yup.string().required("Tên không được để trống"),
@@ -39,19 +40,34 @@ export default function VehicleRegistration() {
   });
   const [step, setStep] = useState(1);
   const [selectedVehicle, setSelectedVehicle] = useState("");
-  const [ownerInfo, setOwnerInfo] = useState({
-    id: "",
-    name: "",
-    email: "",
-    phone: "",
-    idNumber: "",
-    address: "",
-    ownership: 50
-  });
+
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
+  const handleNextFromStep3 = () => {
+    // 1) kiểm tra mỗi coOwner không vượt main owner
+    const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
+    if (invalid) {
+      toast({
+        title: "Lỗi",
+        description: `Đồng sở hữu ${invalid.name || invalid.email || invalid.id} có tỷ lệ lớn hơn chủ sở hữu chính (${mainOwnership}%).`,
+        variant: "destructive"
+      });
+      return;
+    }
 
+    // 2) kiểm tra tổng = 100
+    if (totalOwnership !== 100) {
+      toast({
+        title: "Lỗi",
+        description: `Tổng tỷ lệ sở hữu phải bằng 100% (hiện tại ${totalOwnership}%).`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setStep(4);
+  };
   const navigate = useNavigate();
   const { toast } = useToast();
   const fetchUserByEmail = async (email: string) => {
@@ -83,7 +99,15 @@ export default function VehicleRegistration() {
     }
   };
   const formik = useFormik<CoOwner>({
-    initialValues: ownerInfo,
+    initialValues: {
+      id: "",
+      name: "",
+      email: "",
+      phone: "",
+      idNumber: "",
+      address: "",
+      ownership: 0,
+    },
     enableReinitialize: true,
     validationSchema: Yup.object({
       name: Yup.string().required("Vui lòng nhập họ và tên"),
@@ -97,14 +121,14 @@ export default function VehicleRegistration() {
       address: Yup.string().required("Vui lòng nhập địa chỉ"),
       ownership: Yup.number()
         .required("Vui lòng nhập tỷ lệ sở hữu")
-        .min(1, "Tỷ lệ >= 1%")
-        .max(100, "Tỷ lệ <= 100%"),
+        .min(15, "Tỷ lệ sỡ hữu chính >= 15%")
+        .max(90, "Tỷ lệ sỡ hữu chính <= 90%"),
     }),
     onSubmit: (values) => {
-      setOwnerInfo(values);
       setStep(3);
     },
   });
+  const ownerInfo = formik.values;
   const vehicles = [
     {
       id: "vf8",
@@ -128,8 +152,8 @@ export default function VehicleRegistration() {
       specs: ["64 kWh", "380 km", "SmartSense"]
     }
   ];
-
-  const totalOwnership = ownerInfo.ownership + coOwners.reduce((sum, co) => sum + co.ownership, 0);
+  const mainOwnership = Number(formik.values.ownership) || 0;
+  const totalOwnership = mainOwnership + coOwners.reduce((sum, co) => sum + (Number(co.ownership) || 0), 0);
 
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
@@ -181,13 +205,19 @@ export default function VehicleRegistration() {
       });
       return;
     }
+    const remaining = 100 - mainOwnership - coOwners.reduce((s, c) => s + (Number(c.ownership) || 0), 0);
+    const maxAllowedForNew = Math.min(mainOwnership, remaining);
 
+    if (maxAllowedForNew < 15) {
+      toast({ title: "Không thể thêm", description: "Không đủ phần trăm để thêm đồng sở hữu tối thiểu 15%", variant: "destructive" });
+      return;
+    }
     const newCoOwner: CoOwner = {
       id: Date.now().toString(),
       name: "",
       email: "",
       phone: "",
-      ownership: Math.max(15, Math.min(15, 100 - totalOwnership)), // Minimum 15%
+      ownership: 15,
       idNumber: "",
       address: "",
     };
@@ -195,20 +225,79 @@ export default function VehicleRegistration() {
   };
 
   const updateCoOwner = (id: string, field: keyof CoOwner, value: string | number) => {
-    if (field === 'ownership' && typeof value === 'number' && value < 15) {
-      toast({
-        title: "Tỷ lệ sở hữu không hợp lệ",
-        description: "Tỷ lệ sở hữu tối thiểu là 15%",
-        variant: "destructive"
-      });
-      return;
+    let newValue: string | number = value;
+
+    if (field === "ownership") {
+      const newVal = Number(value);
+
+      // check nhập không hợp lệ (NaN hoặc null)
+      if (isNaN(newVal)) {
+        toast({
+          title: "Tỷ lệ không hợp lệ",
+          description: "Vui lòng nhập số hợp lệ",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // check min
+      if (newVal < 15) {
+        toast({
+          title: "Tỷ lệ không hợp lệ",
+          description: "Tỷ lệ tối thiểu là 15%",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // check max theo mainOwnership
+      if (newVal > mainOwnership) {
+        toast({
+          title: "Tỷ lệ không hợp lệ",
+          description: `Không được lớn hơn tỷ lệ của chủ sở hữu chính (${mainOwnership}%)`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // check tổng ownership
+      const sumWithoutThis = coOwners.reduce(
+        (s, c) => (c.id === id ? s : s + (Number(c.ownership) || 0)),
+        0
+      );
+      const projectedTotal = mainOwnership + sumWithoutThis + newVal;
+
+      if (projectedTotal > 100) {
+        toast({
+          title: "Tổng vượt 100%",
+          description:
+            "Tổng tỷ lệ (chủ + đồng sở hữu) không được vượt quá 100%",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      newValue = newVal; // cuối cùng set value đã chuẩn hóa
     }
 
-    setCoOwners(coOwners.map(co =>
-      co.id === id ? { ...co, [field]: value } : co
-    ));
-  };
+    // update state
+    setCoOwners((prev) => {
+      const updated = prev.map((co) =>
+        co.id === id ? { ...co, [field]: newValue } : co
+      );
 
+      // đồng bộ localStorage (nếu cần)
+      localStorage.setItem("coOwners", JSON.stringify(updated));
+
+      return updated;
+    });
+  };
+  useEffect(() => {
+    const saved = localStorage.getItem("coOwners");
+    if (saved) {
+      setCoOwners(JSON.parse(saved));
+    }
+  }, []);
   const removeCoOwner = (id: string) => {
     setCoOwners(coOwners.filter(co => co.id !== id));
   };
@@ -222,7 +311,11 @@ export default function VehicleRegistration() {
       });
       return;
     }
-
+    const invalid = coOwners.find(co => Number(co.ownership) > mainOwnership);
+    if (invalid) {
+      toast({ title: "Lỗi", description: `Đồng sở hữu ${invalid.name || invalid.email} có tỷ lệ lớn hơn chủ sở hữu chính`, variant: "destructive" });
+      return;
+    }
     setIsSubmitted(true);
     toast({
       title: "Đăng ký thành công",
@@ -275,14 +368,16 @@ export default function VehicleRegistration() {
                   setIsSubmitted(false);
                   setStep(1);
                   setSelectedVehicle("");
-                  setOwnerInfo({
-                    id: "",
-                    name: "",
-                    email: "",
-                    phone: "",
-                    idNumber: "",
-                    address: "",
-                    ownership: 50
+                  formik.resetForm({
+                    values: {
+                      id: "",
+                      name: "",
+                      email: "",
+                      phone: "",
+                      idNumber: "",
+                      address: "",
+                      ownership: 50
+                    }
                   });
                   setCoOwners([]);
                 }}
@@ -442,14 +537,19 @@ export default function VehicleRegistration() {
                             type="email"
                             placeholder="Nhập email"
                             onBlur={async (e) => {
-                              field.onBlur(e); // 👈 giữ Formik sync
+                              field.onBlur(e); // giữ Formik sync
                               const user = await fetchUserByEmail(e.target.value);
                               if (user) {
-                                formik.setValues(user); // 👈 fill toàn bộ form
+                                formik.setValues(prev => ({
+                                  ...prev, // giữ nguyên tất cả giá trị hiện tại
+                                  id: user.id || prev.id,
+                                  name: user.name || prev.name,
+                                  phone: user.phone || prev.phone,
+                                  idNumber: user.idNumber || prev.idNumber,
+                                  address: user.address || prev.address,
+                                  email: user.email || prev.email, // optional, email cũng có thể giữ nguyên
+                                }));
                               }
-                            }}
-                            onChange={(e) => {
-                              field.onChange(e); // 👈 quan trọng: cập nhật formik.values.email
                             }}
                           />
                         )}
@@ -493,14 +593,24 @@ export default function VehicleRegistration() {
                           id="ownership"
                           name="ownership"
                           type="number"
-                          min={1}
-                          max={100}
+                          min={15}
+                          max={90}
                           className="flex-1"
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            const raw = e.target.value;
-                            const num = parseInt(raw || "0", 10);
+                            let num = parseInt(e.target.value || "", 10);
+                            if (isNaN(num)) {
+                              formik.setFieldValue("ownership", ""); // giữ trống khi xóa
+                              return;
+                            }
+
+                            // Giới hạn tối đa 90
+                            if (num > 90) num = 90;
                             formik.setFieldValue("ownership", num);
-                            setOwnerInfo(prev => ({ ...prev, ownership: isNaN(num) ? 0 : num }));
+                          }}
+                          onBlur={() => {
+                            let num = formik.values.ownership;
+                            if (num < 15) num = 15; // giới hạn tối thiểu
+                            formik.setFieldValue("ownership", num);
                           }}
                         />
                         {selectedVehicle && (
@@ -523,7 +633,6 @@ export default function VehicleRegistration() {
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                         const v = e.target.value;
                         formik.setFieldValue("address", v);
-                        setOwnerInfo(prev => ({ ...prev, address: v }));
                       }}
                     />
                     <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
@@ -569,58 +678,18 @@ export default function VehicleRegistration() {
                 </p>
               </div>
 
-              {coOwners.map((coOwner) => (
-                <Card key={coOwner.id} className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium">Đồng sở hữu #{coOwner.id}</h4>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => removeCoOwner(coOwner.id)}
-                      >
-                        Xóa
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        placeholder="Họ và tên"
-                        value={coOwner.name}
-                        onChange={(e) => updateCoOwner(coOwner.id, "name", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Email"
-                        value={coOwner.email}
-                        onChange={(e) => updateCoOwner(coOwner.id, "email", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Số điện thoại"
-                        value={coOwner.phone}
-                        onChange={(e) => updateCoOwner(coOwner.id, "phone", e.target.value)}
-                      />
-                      <Input
-                        placeholder="CCCD/CMND"
-                        value={coOwner.idNumber}
-                        onChange={(e) => updateCoOwner(coOwner.id, "idNumber", e.target.value)}
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="number"
-                          placeholder="Tỷ lệ sở hữu (%)"
-                          value={coOwner.ownership}
-                          onChange={(e) => updateCoOwner(coOwner.id, "ownership", parseInt(e.target.value) || 0)}
-                          className="flex-1"
-                        />
-                        {selectedVehicle && (
-                          <div className="text-sm text-primary font-medium">
-                            {getOwnershipAmount(coOwner.ownership).toLocaleString()} VNĐ
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+              {coOwners.map((coOwner, index) => (
+                <CoOwnerForm
+                  key={coOwner.id}
+                  coOwner={coOwner}
+                  index={index}
+                  updateCoOwner={updateCoOwner}
+                  removeCoOwner={removeCoOwner}
+                  getOwnershipAmount={getOwnershipAmount}
+                  selectedVehicle={selectedVehicle}
+                  fetchUserByEmail={fetchUserByEmail}
+                  mainOwnership={mainOwnership}
+                />
               ))}
 
               <Button
@@ -638,7 +707,7 @@ export default function VehicleRegistration() {
                   Quay lại
                 </Button>
                 <Button
-                  onClick={() => setStep(4)}
+                  onClick={handleNextFromStep3}
                   className="bg-gradient-primary hover:shadow-glow"
                 >
                   Tiếp tục
