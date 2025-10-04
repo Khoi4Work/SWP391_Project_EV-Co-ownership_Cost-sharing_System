@@ -79,13 +79,29 @@ export default function Register() {
     }) => {
         //http://localhost:8080/Users/register: kết quả ở backend (dùng khi test chính thức)
         try {
-            console.log(userData);
-            // Thay đổi URL này thành endpoint backend thực tế của bạn
             const response = await axios.post("http://localhost:8080/Users/register", userData);
             console.log("Kết quả backend trả về:", response.data);
-            return response.data;
-        } catch (error) {
-            throw error;
+            return { success: true, data: response.data };
+        } catch (error: any) {
+            let message = "Có lỗi xảy ra";
+            let field: string | undefined;
+
+            if (error.response) {
+                // Lấy message từ backend
+                message = error.response.data || "Lỗi từ server";
+
+                // Bắt field cụ thể
+                if (message.toLowerCase().includes("email")) field = "email";
+                else if (message.toLowerCase().includes("phone")) field = "phone";
+                else if (message.toLowerCase().includes("cccd")) field = "cccd";
+                else if (message.toLowerCase().includes("gplx")) field = "gplx";
+            } else if (error.request) {
+                message = "Không kết nối được tới server";
+            } else {
+                message = error.message;
+            }
+
+            return { success: false, message, field };
         }
     };
 
@@ -193,26 +209,19 @@ export default function Register() {
                         validateOnChange={true}
                         validateOnBlur={true}
                         onSubmit={async (values, { setSubmitting, setErrors }) => {
-                            validationSchema
-                                .validate(values, { abortEarly: false })
-                                .then(async () => {
-                                    const userObject = {
-                                        hovaTen: values.hovaTen,
-                                        email: values.email,
-                                        phone: values.phone,
-                                        cccd: values.cccd,
-                                        gplx: values.gplx,
-                                        password: values.password,
-                                        role_id: { role_id: 1 }
-                                    };
+                            const userObject = {
+                                hovaTen: values.hovaTen,
+                                email: values.email,
+                                phone: values.phone,
+                                cccd: values.cccd,
+                                gplx: values.gplx,
+                                password: values.password,
+                                role_id: { role_id: 1 },
+                            };
 
-                                    try {
-                                        const res = await fetch("http://localhost:8080/Users/register", {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify(userObject),
-                                        });
+                            const result = await createUser(userObject);
 
+<<<<<<< HEAD
                                         const rawText = await res.text();
                                         let data: any = null;
                                         try {
@@ -282,8 +291,31 @@ export default function Register() {
                                         setSubmitting(false);
                                     }
                                 })
+=======
+                            if (!result.success) {
+                                // nếu backend chỉ ra lỗi cho 1 field cụ thể thì highlight vào đó
+                                if (result.field) {
+                                    setErrors({ [result.field]: result.message });
+                                }
 
+                                toast({
+                                    title: "Đăng ký thất bại",
+                                    description: result.message,
+                                    variant: "destructive",
+                                });
+                            } else {
+                                // thành công -> điều hướng sang verify OTP
+                                navigate("/verify-otp", { state: { ...userObject } });
+                                toast({
+                                    title: "Thông tin hợp lệ",
+                                    description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                });
+                            }
+>>>>>>> a0f448c42b9b4ac1289d9c460115fac78d89d3cf
+
+                            setSubmitting(false);
                         }}
+
                         validate={(values) => {
                             try {
                                 validationSchema.validateSync(values, { abortEarly: false });
