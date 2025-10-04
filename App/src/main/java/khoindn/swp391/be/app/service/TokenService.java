@@ -8,7 +8,7 @@ import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IAuthenticationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 
 import java.util.Date;
@@ -23,24 +23,46 @@ public class TokenService {
     IAuthenticationRepository authenticationRepository;
 
     //generate and validate token
+// thêm ở đầu file (bạn đã có)
+
     public SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);  // thử decode Base64
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (IllegalArgumentException ex) {
+            // fallback: dùng bytes UTF-8 (sẽ cần StandardCharsets)
+            byte[] keyBytes = SECRET_KEY.getBytes(StandardCharsets.UTF_8); // <<< dùng ở đây
+            if (keyBytes.length < 32) {
+                throw new IllegalStateException("SECRET_KEY must be at least 32 bytes (256 bits) for HS256.");
+            }
+            return Keys.hmacShaKeyFor(keyBytes);
+        }
     }
 
+
     public String generateToken(Users account) {
+        long now = System.currentTimeMillis();
+        long exp = now + 24L * 60 * 60 * 1000; // 24 giờ
+
         return Jwts.builder()
-                .subject(account.getId() + "")
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() * 1000 * 60 * 60 * 24)
-                ).signWith(getSignInKey()).compact();
+                .subject(String.valueOf(account.getId()))
+                .issuedAt(new Date(now))
+                .expiration(new Date(exp))     // cộng, không phải nhân
+                .signWith(getSignInKey())
+                .compact();
     }
+
 
     public Users extractToken(String token) {
         String value = extractClaim(token, Claims::getSubject);
         int id = Integer.parseInt(value);
-        return authenticationRepository.findUserById(id);
+        Users user = authenticationRepository.findUserById(id);   // SỬA: gán vào biến
+        if (user == null) {                                       // + THÊM
+            throw new IllegalArgumentException("User not found for id: " + id);
+        }
+        return user;                                              // SỬA: trả biến user
     }
+
 
     public Claims extractAllClaims(String token) {
         return Jwts.parser().
