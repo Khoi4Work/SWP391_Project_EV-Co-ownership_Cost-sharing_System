@@ -1,49 +1,32 @@
 package khoindn.swp391.be.app.service;
 
-import okhttp3.*;
-import org.springframework.beans.factory.annotation.Value;
+import khoindn.swp391.be.app.model.Request.ChatRequest;
+import khoindn.swp391.be.app.model.Response.ChatResponse;
 import org.springframework.stereotype.Service;
-import org.json.JSONObject;
 
+import java.time.OffsetDateTime;
+
+/**
+ * Stub service for generating chat replies.
+ * Replace the body with real LLM call (OpenAI, local model, etc.).
+ */
 @Service
 public class ChatGPTService {
 
-    @Value("${openai.api.key}")
-    private String apiKey;
+    public ChatResponse generateReply(ChatRequest request) {
+        // ===== Replace this block with real provider integration =====
+        String userMsg = request != null ? request.getMessage() : "";
+        String reply = (userMsg == null || userMsg.isBlank())
+                ? "Hi! Please provide a message."
+                : "Echo: " + userMsg;
+        // ============================================================
 
-    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
-
-    public String askChatGPT(String prompt) throws Exception {
-        OkHttpClient client = new OkHttpClient();
-
-        MediaType mediaType = MediaType.parse("application/json");
-        String requestBody = "{\n" +
-                "  \"model\": \"gpt-3.5-turbo\",\n" +
-                "  \"messages\": [{\"role\": \"user\", \"content\": \"" + prompt + "\"}]\n" +
-                "}";
-
-        Request request = new Request.Builder()
-                .url(API_URL)
-                .post(RequestBody.create(requestBody, mediaType))
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Bearer " + apiKey)
+        return ChatResponse.builder()
+                .reply(reply)
+                .createdAt(OffsetDateTime.now())
+                .promptTokens(null)
+                .completionTokens(null)
+                .totalTokens(null)
                 .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new RuntimeException("Unexpected code " + response);
-            }
-
-            // Parse JSON để chỉ lấy phần content của ChatGPT trả về
-            String responseBody = response.body().string();
-            JSONObject json = new JSONObject(responseBody);
-            String content = json
-                    .getJSONArray("choices")
-                    .getJSONObject(0)
-                    .getJSONObject("message")
-                    .getString("content");
-
-            return content.trim();
-        }
     }
 }
