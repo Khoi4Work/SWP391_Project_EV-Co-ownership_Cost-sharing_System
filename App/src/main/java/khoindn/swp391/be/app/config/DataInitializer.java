@@ -22,7 +22,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 // test again and again
-
+// test again and again 
         if (!userRoleService.existsByRoleName("user") ||
                 !userRoleService.existsByRoleName("co-owner") ||
                 !userRoleService.existsByRoleName("admin") ||
