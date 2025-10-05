@@ -32,7 +32,6 @@ public class Filter extends OncePerRequestFilter {
     TokenService tokenService;
 
     private final List<String> PUBLIC_API = List.of(
-            "POST:/api/chat",
             "POST:/Auth/register",
             "POST:/Auth/login",
             "GET:/swagger-ui/**",

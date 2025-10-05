@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import khoindn.swp391.be.app.model.Request.ChatRequest;
 import khoindn.swp391.be.app.model.Response.ChatResponse;
 import khoindn.swp391.be.app.service.ChatGPTService;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(path = "/api/chat", produces = MediaType.APPLICATION_JSON_VALUE)
+@SecurityRequirement(name = "api")
 @CrossOrigin(origins = "*") // adjust for your front-end domain if needed
 public class ChatController {
 
