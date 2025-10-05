@@ -720,63 +720,66 @@ export default function VehicleRegistration() {
 
         {/* Step 4: Confirmation */}
         {step === 4 && (
-          <Card className="shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileCheck className="h-5 w-5" />
-                <span>Xác nhận thông tin đăng ký</span>
-              </CardTitle>
-              <CardDescription>
-                Vui lòng kiểm tra lại thông tin trước khi gửi đăng ký
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Vehicle Info */}
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Xe đã chọn</h3>
-                <p>{vehicles.find(v => v.id === selectedVehicle)?.name}</p>
-              </div>
-
-              {/* Owner Info */}
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Chủ sở hữu chính ({ownerInfo.ownership}%)</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>Họ tên: {ownerInfo.name}</div>
-                  <div>Email: {ownerInfo.email}</div>
-                  <div>Điện thoại: {ownerInfo.phone}</div>
-                  <div>CCCD: {ownerInfo.idNumber}</div>
-                </div>
-              </div>
-
-              {/* Co-owners */}
-              {coOwners.length > 0 && (
+          <>
+            {console.log("Co-owners at step 4:", coOwners)}
+            < Card className="shadow-elegant">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <FileCheck className="h-5 w-5" />
+                  <span>Xác nhận thông tin đăng ký</span>
+                </CardTitle>
+                <CardDescription>
+                  Vui lòng kiểm tra lại thông tin trước khi gửi đăng ký
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Vehicle Info */}
                 <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Đồng sở hữu</h3>
-                  {coOwners.map((coOwner) => (
-                    <div key={coOwner.id} className="mb-2 text-sm">
-                      <strong>{coOwner.name}</strong> ({coOwner.ownership}%) - {coOwner.email}
-                    </div>
-                  ))}
+                  <h3 className="font-semibold mb-2">Xe đã chọn</h3>
+                  <p>{vehicles.find(v => v.id === selectedVehicle)?.name}</p>
                 </div>
-              )}
 
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(3)}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Quay lại
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  className="bg-gradient-primary hover:shadow-glow"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Gửi đăng ký
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                {/* Owner Info */}
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Chủ sở hữu chính ({ownerInfo.ownership}%)</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>Họ tên: {ownerInfo.name}</div>
+                    <div>Email: {ownerInfo.email}</div>
+                    <div>Điện thoại: {ownerInfo.phone}</div>
+                    <div>CCCD: {ownerInfo.idNumber}</div>
+                  </div>
+                </div>
+
+                {/* Co-owners */}
+                {coOwners.length > 0 && (
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">Đồng sở hữu</h3>
+                    {coOwners.map((coOwner) => (
+                      <div key={coOwner.id} className="mb-2 text-sm">
+                        <strong>{coOwner.name}</strong> ({coOwner.ownership}%) - {coOwner.email}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={() => setStep(3)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Quay lại
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    className="bg-gradient-primary hover:shadow-glow"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Gửi đăng ký
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
-    </div>
+    </div >
   );
 }
