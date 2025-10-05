@@ -24,7 +24,6 @@ public class AuthenticationController {
 
     @PostMapping("/register")
     public ResponseEntity register(@Valid @RequestBody Users users) {
-        // get request from FE
         // send to AuthenticationService
         Users newAccount = authenticationService.register(users);
         return ResponseEntity.status(HttpStatus.CREATED).body(newAccount);
