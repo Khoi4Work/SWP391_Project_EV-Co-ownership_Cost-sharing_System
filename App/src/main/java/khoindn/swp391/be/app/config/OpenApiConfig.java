@@ -15,16 +15,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@OpenAPIDefinition(
-        info = @Info(
-                title = "EV Co-ownership / Cost-Sharing API",
-                version = "v1",
-                description = "API documentation for EV co-ownership & cost-sharing system."
-        ),
-        servers = {
-                @Server(url = "/", description = "Default server")
-        }
-)
+//@OpenAPIDefinition(
+//        info = @Info(
+//                title = "EV Co-ownership / Cost-Sharing API",
+//                version = "v1",
+//                description = "API documentation for EV co-ownership & cost-sharing system."
+//        ),
+//        servers = {
+//                @Server(url = "/", description = "Default server")
+//        }
+//)
 @SecurityScheme(
         name = "bearerAuth",
         type = SecuritySchemeType.HTTP,
