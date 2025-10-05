@@ -21,11 +21,11 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+// test
 
-
-        if (!userRoleService.existsByRoleName("user")||
-                !userRoleService.existsByRoleName("co-owner")||
-                !userRoleService.existsByRoleName("admin")||
+        if (!userRoleService.existsByRoleName("user") ||
+                !userRoleService.existsByRoleName("co-owner") ||
+                !userRoleService.existsByRoleName("admin") ||
                 !userRoleService.existsByRoleName("staff")) {
 
             UserRole userRole = new UserRole();
@@ -100,8 +100,6 @@ public class DataInitializer implements CommandLineRunner {
             v5.setPrice(120000); // thêm giá
             vehicleService.addVehicle(v5);
         }
-
-
 
 
     }
