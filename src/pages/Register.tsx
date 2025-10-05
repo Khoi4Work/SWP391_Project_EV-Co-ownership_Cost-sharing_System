@@ -221,6 +221,77 @@ export default function Register() {
 
                             const result = await createUser(userObject);
 
+<<<<<<< HEAD
+                                        const rawText = await res.text();
+                                        let data: any = null;
+                                        try {
+                                            data = rawText ? JSON.parse(rawText) : null;
+                                        } catch {
+                                            data = null;
+                                        }
+
+                                        console.log("Register response:", data || rawText);
+
+                                        if (!res.ok) {
+                                            // HTTP error
+                                            const message = data?.message || rawText || "Lỗi từ server";
+                                            if (data?.field) setErrors({ [data.field]: message });
+                                            toast({
+                                                title: "Đăng ký thất bại",
+                                                description: message,
+                                                variant: "destructive",
+                                            });
+                                            navigate("/verify-otp", { state: { ...userObject } });
+                                            toast({
+                                                title: "Thông tin hợp lệ",
+                                                description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                            });
+                                            return;
+                                        }
+
+                                        // Nếu status OK
+                                        const isSuccess =
+                                            data?.success === true ||
+                                            data?.id ||
+                                            data?.email ||
+                                            data?.step === "otp";
+
+                                        if (isSuccess) {
+                                            navigate("/verify-otp", { state: { ...userObject } });
+                                            toast({
+                                                title: "Thông tin hợp lệ",
+                                                description: data?.message || "Vui lòng xác thực tài khoản bằng mã OTP",
+                                            });
+                                        } else {
+                                            const message = data?.message || rawText || "Lỗi không xác định từ server";
+                                            // nếu backend trả duplicate lỗi -> map vào field
+                                            let field: string | undefined;
+                                            if (data?.field) field = data.field;
+                                            else if (message.toLowerCase().includes("email")) field = "email";
+                                            else if (message.toLowerCase().includes("phone")) field = "phone";
+                                            else if (message.toLowerCase().includes("cccd")) field = "cccd";
+                                            else if (message.toLowerCase().includes("gplx")) field = "gplx";
+
+                                            if (field) setErrors({ [field]: message });
+
+                                            toast({
+                                                title: "Đăng ký thất bại",
+                                                description: message,
+                                                variant: "destructive",
+                                            });
+                                        }
+                                    } catch (error) {
+                                        console.error("Lỗi khi gọi backend:", error);
+                                        toast({
+                                            title: "Lỗi hệ thống",
+                                            description: "Không thể kết nối tới server",
+                                            variant: "destructive",
+                                        });
+                                    } finally {
+                                        setSubmitting(false);
+                                    }
+                                })
+=======
                             if (!result.success) {
                                 // nếu backend chỉ ra lỗi cho 1 field cụ thể thì highlight vào đó
                                 if (result.field) {
@@ -240,6 +311,7 @@ export default function Register() {
                                     description: "Vui lòng xác thực tài khoản bằng mã OTP",
                                 });
                             }
+>>>>>>> a0f448c42b9b4ac1289d9c460115fac78d89d3cf
 
                             setSubmitting(false);
                         }}

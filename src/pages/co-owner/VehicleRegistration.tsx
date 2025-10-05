@@ -19,8 +19,9 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Formik, Form, ErrorMessage, Field } from "formik";
+import { useFormik, Formik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
+import CoOwnerForm from "./AddingCoOwners";
 interface CoOwner {
   id: string;
   name: string;
@@ -28,8 +29,9 @@ interface CoOwner {
   phone: string;
   ownership: number;
   idNumber: string;
+  address: string;
 }
-
+import { useEffect } from "react";
 export default function VehicleRegistration() {
   const ownerSchema = Yup.object({
     name: Yup.string().required("Tên không được để trống"),
@@ -38,21 +40,95 @@ export default function VehicleRegistration() {
   });
   const [step, setStep] = useState(1);
   const [selectedVehicle, setSelectedVehicle] = useState("");
-  const [ownerInfo, setOwnerInfo] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    idNumber: "",
-    address: "",
-    ownership: 50
-  });
+
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
+  const handleNextFromStep3 = () => {
+    // 1) kiểm tra mỗi coOwner không vượt main owner
+    const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
+    if (invalid) {
+      toast({
+        title: "Lỗi",
+        description: `Đồng sở hữu ${invalid.name || invalid.email || invalid.id} có tỷ lệ lớn hơn chủ sở hữu chính (${mainOwnership}%).`,
+        variant: "destructive"
+      });
+      return;
+    }
 
+    // 2) kiểm tra tổng = 100
+    if (totalOwnership !== 100) {
+      toast({
+        title: "Lỗi",
+        description: `Tổng tỷ lệ sở hữu phải bằng 100% (hiện tại ${totalOwnership}%).`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setStep(4);
+  };
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  const fetchUserByEmail = async (email: string) => {
+    try {
+      const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
+      if (!res.ok) {
+        toast({
+          title: "Lỗi",
+          description: "Không tìm thấy user với email này",
+          variant: "destructive"
+        });
+        return null;
+      }
+      const data = await res.json();
+      const user = Array.isArray(data) ? data[0] : data;
+      if (!user) return null;
+      return {
+        id: user.id,
+        name: user.hovaTen,       // map hovaTen -> name
+        email: user.email,
+        phone: user.phone,
+        idNumber: user.cccd,      // map cccd -> idNumber
+        address: "",              // API chưa có -> để trống
+        ownership: 50             // default
+      } as CoOwner;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  };
+  const formik = useFormik<CoOwner>({
+    initialValues: {
+      id: "",
+      name: "",
+      email: "",
+      phone: "",
+      idNumber: "",
+      address: "",
+      ownership: 0,
+    },
+    enableReinitialize: true,
+    validationSchema: Yup.object({
+      name: Yup.string().required("Vui lòng nhập họ và tên"),
+      email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
+      phone: Yup.string()
+        .required("Vui lòng nhập số điện thoại")
+        .matches(/^0\d{9}$/, "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0"),
+      idNumber: Yup.string()
+        .required("Vui lòng nhập CCCD/CMND")
+        .matches(/^0\d{11}$/, "CCCD phải có 12 số và bắt đầu bằng 0"),
+      address: Yup.string().required("Vui lòng nhập địa chỉ"),
+      ownership: Yup.number()
+        .required("Vui lòng nhập tỷ lệ sở hữu")
+        .min(15, "Tỷ lệ sỡ hữu chính >= 15%")
+        .max(90, "Tỷ lệ sỡ hữu chính <= 90%"),
+    }),
+    onSubmit: (values) => {
+      setStep(3);
+    },
+  });
+  const ownerInfo = formik.values;
   const vehicles = [
     {
       id: "vf8",
@@ -76,8 +152,8 @@ export default function VehicleRegistration() {
       specs: ["64 kWh", "380 km", "SmartSense"]
     }
   ];
-
-  const totalOwnership = ownerInfo.ownership + coOwners.reduce((sum, co) => sum + co.ownership, 0);
+  const mainOwnership = Number(formik.values.ownership) || 0;
+  const totalOwnership = mainOwnership + coOwners.reduce((sum, co) => sum + (Number(co.ownership) || 0), 0);
 
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
@@ -129,33 +205,99 @@ export default function VehicleRegistration() {
       });
       return;
     }
+    const remaining = 100 - mainOwnership - coOwners.reduce((s, c) => s + (Number(c.ownership) || 0), 0);
+    const maxAllowedForNew = Math.min(mainOwnership, remaining);
 
+    if (maxAllowedForNew < 15) {
+      toast({ title: "Không thể thêm", description: "Không đủ phần trăm để thêm đồng sở hữu tối thiểu 15%", variant: "destructive" });
+      return;
+    }
     const newCoOwner: CoOwner = {
       id: Date.now().toString(),
       name: "",
       email: "",
       phone: "",
-      ownership: Math.max(15, Math.min(15, 100 - totalOwnership)), // Minimum 15%
-      idNumber: ""
+      ownership: 15,
+      idNumber: "",
+      address: "",
     };
     setCoOwners([...coOwners, newCoOwner]);
   };
 
   const updateCoOwner = (id: string, field: keyof CoOwner, value: string | number) => {
-    if (field === 'ownership' && typeof value === 'number' && value < 15) {
-      toast({
-        title: "Tỷ lệ sở hữu không hợp lệ",
-        description: "Tỷ lệ sở hữu tối thiểu là 15%",
-        variant: "destructive"
-      });
-      return;
+    let newValue: string | number = value;
+
+    if (field === "ownership") {
+      const newVal = Number(value);
+
+      // check nhập không hợp lệ (NaN hoặc null)
+      if (isNaN(newVal)) {
+        toast({
+          title: "Tỷ lệ không hợp lệ",
+          description: "Vui lòng nhập số hợp lệ",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // check min
+      if (newVal < 15) {
+        toast({
+          title: "Tỷ lệ không hợp lệ",
+          description: "Tỷ lệ tối thiểu là 15%",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // check max theo mainOwnership
+      if (newVal > mainOwnership) {
+        toast({
+          title: "Tỷ lệ không hợp lệ",
+          description: `Không được lớn hơn tỷ lệ của chủ sở hữu chính (${mainOwnership}%)`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // check tổng ownership
+      const sumWithoutThis = coOwners.reduce(
+        (s, c) => (c.id === id ? s : s + (Number(c.ownership) || 0)),
+        0
+      );
+      const projectedTotal = mainOwnership + sumWithoutThis + newVal;
+
+      if (projectedTotal > 100) {
+        toast({
+          title: "Tổng vượt 100%",
+          description:
+            "Tổng tỷ lệ (chủ + đồng sở hữu) không được vượt quá 100%",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      newValue = newVal; // cuối cùng set value đã chuẩn hóa
     }
 
-    setCoOwners(coOwners.map(co =>
-      co.id === id ? { ...co, [field]: value } : co
-    ));
-  };
+    // update state
+    setCoOwners((prev) => {
+      const updated = prev.map((co) =>
+        co.id === id ? { ...co, [field]: newValue } : co
+      );
 
+      // đồng bộ localStorage (nếu cần)
+      localStorage.setItem("coOwners", JSON.stringify(updated));
+
+      return updated;
+    });
+  };
+  useEffect(() => {
+    const saved = localStorage.getItem("coOwners");
+    if (saved) {
+      setCoOwners(JSON.parse(saved));
+    }
+  }, []);
   const removeCoOwner = (id: string) => {
     setCoOwners(coOwners.filter(co => co.id !== id));
   };
@@ -169,7 +311,11 @@ export default function VehicleRegistration() {
       });
       return;
     }
-
+    const invalid = coOwners.find(co => Number(co.ownership) > mainOwnership);
+    if (invalid) {
+      toast({ title: "Lỗi", description: `Đồng sở hữu ${invalid.name || invalid.email} có tỷ lệ lớn hơn chủ sở hữu chính`, variant: "destructive" });
+      return;
+    }
     setIsSubmitted(true);
     toast({
       title: "Đăng ký thành công",
@@ -222,13 +368,16 @@ export default function VehicleRegistration() {
                   setIsSubmitted(false);
                   setStep(1);
                   setSelectedVehicle("");
-                  setOwnerInfo({
-                    name: "",
-                    email: "",
-                    phone: "",
-                    idNumber: "",
-                    address: "",
-                    ownership: 50
+                  formik.resetForm({
+                    values: {
+                      id: "",
+                      name: "",
+                      email: "",
+                      phone: "",
+                      idNumber: "",
+                      address: "",
+                      ownership: 50
+                    }
                   });
                   setCoOwners([]);
                 }}
@@ -358,81 +507,149 @@ export default function VehicleRegistration() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <Formik
-                initialValues={{
-                  name: "",
-                  email: "",
-                  phone: "",
-                  idNumber: "",
-                  ownership: 0,
-                  address: "",
-                }}
-                validationSchema={ownerSchema}
-                onSubmit={(values) => {
-                  console.log("Owner info:", values);
-                  setStep(3);
-                }}
-              >
-                {({ values }) => (
-                  <Form>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Họ và tên *</Label>
-                        <Field as={Input} id="name" name="name" placeholder="Nhập họ và tên đầy đủ" />
-                        <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
-                      </div>
+              {/* Owner type (dùng chung với ownerInfo state) */}
+              {/* interface Owner { name: string; email: string; phone: string; idNumber: string; address: string; ownership: number } */}
 
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email *</Label>
-                        <Field as={Input} id="email" name="email" type="email" placeholder="Nhập địa chỉ email" />
-                        <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Số điện thoại *</Label>
-                        <Field as={Input} id="phone" name="phone" placeholder="Nhập số điện thoại" />
-                        <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="idNumber">CCCD/CMND *</Label>
-                        <Field as={Input} id="idNumber" name="idNumber" placeholder="Nhập số CCCD/CMND" />
-                        <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
-                        <div className="flex items-center space-x-2">
-                          <Field as={Input} id="ownership" name="ownership" type="number" min="1" max="100" className="flex-1" />
-                          {selectedVehicle && (
-                            <div className="text-sm text-primary font-medium">
-                              {getOwnershipAmount(values.ownership).toLocaleString()} VNĐ
-                            </div>
-                          )}
-                        </div>
-                        <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
-                      </div>
+              <FormikProvider value={formik}>
+                <Form onSubmit={formik.handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Họ và tên *</Label>
+                      <Field name="name">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="name"
+                            placeholder="Nhập họ và tên đầy đủ"
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="address">Địa chỉ *</Label>
-                      <Field as={Textarea} id="address" name="address" placeholder="Nhập địa chỉ đầy đủ" />
-                      <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
+                      <Label htmlFor="email">Email *</Label>
+                      <Field name="email">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="email"
+                            type="email"
+                            placeholder="Nhập email"
+                            onBlur={async (e) => {
+                              field.onBlur(e); // giữ Formik sync
+                              const user = await fetchUserByEmail(e.target.value);
+                              if (user) {
+                                formik.setValues(prev => ({
+                                  ...prev, // giữ nguyên tất cả giá trị hiện tại
+                                  id: user.id || prev.id,
+                                  name: user.name || prev.name,
+                                  phone: user.phone || prev.phone,
+                                  idNumber: user.idNumber || prev.idNumber,
+                                  address: user.address || prev.address,
+                                  email: user.email || prev.email, // optional, email cũng có thể giữ nguyên
+                                }));
+                              }
+                            }}
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
                     </div>
 
-                    <div className="flex justify-between mt-6">
-                      <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Quay lại
-                      </Button>
-                      <Button type="submit" className="bg-gradient-primary hover:shadow-glow">
-                        Tiếp tục
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Số điện thoại *</Label>
+                      <Field name="phone">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="phone"
+                            placeholder="Nhập số điện thoại"
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
                     </div>
-                  </Form>
-                )}
-              </Formik>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="idNumber">CCCD/CMND *</Label>
+                      <Field name="idNumber">
+                        {({ field }: any) => (
+                          <Input
+                            {...field}
+                            id="idNumber"
+                            placeholder="Nhập số CCCD/CMND"
+                          />
+                        )}
+                      </Field>
+                      <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
+                      <div className="flex items-center space-x-2">
+                        <Field
+                          as={Input}
+                          id="ownership"
+                          name="ownership"
+                          type="number"
+                          min={15}
+                          max={90}
+                          className="flex-1"
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            let num = parseInt(e.target.value || "", 10);
+                            if (isNaN(num)) {
+                              formik.setFieldValue("ownership", ""); // giữ trống khi xóa
+                              return;
+                            }
+
+                            // Giới hạn tối đa 90
+                            if (num > 90) num = 90;
+                            formik.setFieldValue("ownership", num);
+                          }}
+                          onBlur={() => {
+                            let num = formik.values.ownership;
+                            if (num < 15) num = 15; // giới hạn tối thiểu
+                            formik.setFieldValue("ownership", num);
+                          }}
+                        />
+                        {selectedVehicle && (
+                          <div className="text-sm text-primary font-medium">
+                            {getOwnershipAmount(formik.values.ownership).toLocaleString()} VNĐ
+                          </div>
+                        )}
+                      </div>
+                      <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Địa chỉ *</Label>
+                    <Field
+                      as={Textarea}
+                      id="address"
+                      name="address"
+                      placeholder="Nhập địa chỉ đầy đủ"
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                        const v = e.target.value;
+                        formik.setFieldValue("address", v);
+                      }}
+                    />
+                    <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Quay lại
+                    </Button>
+                    <Button type="submit" className="bg-gradient-primary hover:shadow-glow">
+                      Tiếp tục
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </Form>
+              </FormikProvider>
             </CardContent>
           </Card>
         )}
@@ -461,58 +678,18 @@ export default function VehicleRegistration() {
                 </p>
               </div>
 
-              {coOwners.map((coOwner) => (
-                <Card key={coOwner.id} className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium">Đồng sở hữu #{coOwner.id}</h4>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => removeCoOwner(coOwner.id)}
-                      >
-                        Xóa
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        placeholder="Họ và tên"
-                        value={coOwner.name}
-                        onChange={(e) => updateCoOwner(coOwner.id, "name", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Email"
-                        value={coOwner.email}
-                        onChange={(e) => updateCoOwner(coOwner.id, "email", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Số điện thoại"
-                        value={coOwner.phone}
-                        onChange={(e) => updateCoOwner(coOwner.id, "phone", e.target.value)}
-                      />
-                      <Input
-                        placeholder="CCCD/CMND"
-                        value={coOwner.idNumber}
-                        onChange={(e) => updateCoOwner(coOwner.id, "idNumber", e.target.value)}
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="number"
-                          placeholder="Tỷ lệ sở hữu (%)"
-                          value={coOwner.ownership}
-                          onChange={(e) => updateCoOwner(coOwner.id, "ownership", parseInt(e.target.value) || 0)}
-                          className="flex-1"
-                        />
-                        {selectedVehicle && (
-                          <div className="text-sm text-primary font-medium">
-                            {getOwnershipAmount(coOwner.ownership).toLocaleString()} VNĐ
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+              {coOwners.map((coOwner, index) => (
+                <CoOwnerForm
+                  key={coOwner.id}
+                  coOwner={coOwner}
+                  index={index}
+                  updateCoOwner={updateCoOwner}
+                  removeCoOwner={removeCoOwner}
+                  getOwnershipAmount={getOwnershipAmount}
+                  selectedVehicle={selectedVehicle}
+                  fetchUserByEmail={fetchUserByEmail}
+                  mainOwnership={mainOwnership}
+                />
               ))}
 
               <Button
@@ -530,7 +707,7 @@ export default function VehicleRegistration() {
                   Quay lại
                 </Button>
                 <Button
-                  onClick={() => setStep(4)}
+                  onClick={handleNextFromStep3}
                   className="bg-gradient-primary hover:shadow-glow"
                 >
                   Tiếp tục
