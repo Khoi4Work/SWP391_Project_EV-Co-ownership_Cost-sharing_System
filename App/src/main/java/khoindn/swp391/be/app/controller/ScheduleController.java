@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/Schedule")
 @SecurityRequirement(name = "api")
+@CrossOrigin(origins = "http://localhost:8081")
 
 public class ScheduleController {
 
@@ -30,13 +31,13 @@ public class ScheduleController {
 
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<List<ScheduleRes>> getAllSchedules() {
         List<ScheduleRes> schedules = scheduleService.getAllSchedules();
         return ResponseEntity.ok(schedules);
     }
 
-    @GetMapping("/cars")
+    @GetMapping("/vehicle")
     public ResponseEntity<VehicleRes> getCarsByGroupAndUser(
             @RequestParam int groupId,
             @RequestParam int userId) {

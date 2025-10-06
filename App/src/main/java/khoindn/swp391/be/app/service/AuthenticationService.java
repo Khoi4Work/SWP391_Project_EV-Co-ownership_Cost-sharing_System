@@ -12,6 +12,7 @@ import khoindn.swp391.be.app.repository.IUserRepository;
 import khoindn.swp391.be.app.repository.IUserRoleRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthenticationService implements UserDetailsService {
@@ -85,6 +87,9 @@ public class AuthenticationService implements UserDetailsService {
                         loginUser.getEmail(),
                         loginUser.getPassword()));
         Users users = (Users) authentication.getPrincipal();
+        if (loginUser.getRoleId() != null && !loginUser.getRoleId().equals(users.getRole().getRoleId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai loại tài khoản");
+        }
         //map account --> accountResponse
         UsersResponse usersResponse = modelMapper.map(users, UsersResponse.class);
         String token = tokenService.generateToken(users);
