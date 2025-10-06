@@ -146,8 +146,7 @@ export default function CoOwnerForm({
                     min={15}
                     max={90}
                     className="flex-1"
-                    onChange={(e) => {
-                      field.onChange(e); // cập nhật Formik local
+                    onBlur={(e) => {
                       updateCoOwner(coOwner.id, "ownership", Number(e.target.value)); // cập nhật parent state
                     }}
                   />
