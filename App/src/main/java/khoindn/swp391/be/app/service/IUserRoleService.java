@@ -8,4 +8,6 @@ public interface IUserRoleService {
     public UserRole findByRoleName(String rolename);
 
     public  boolean existsByRoleName(String rolename);
+
+    public UserRole findUserRoleByRoleId(int id);
 }

@@ -48,8 +48,8 @@ public class Users implements UserDetails {
     private String phone;
 
     @ManyToOne
-    @JoinColumn(name = "Role_ID", nullable = false)
-    private UserRole role_id; // Default role ID for regular users
+    @JoinColumn(name = "role_id", nullable = false)
+    private UserRole role; // Default role ID for regular users
 
     @OneToMany(mappedBy = "users")
     private List<GroupMember> userOfGroupMember = new ArrayList<>();

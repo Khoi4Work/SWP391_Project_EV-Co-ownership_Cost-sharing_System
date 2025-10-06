@@ -33,4 +33,9 @@ public class UserRoleService implements IUserRoleService {
         return iUserRoleRepository.existsByRoleName(rolename);
     }
 
+    @Override
+    public UserRole findUserRoleByRoleId(int id) {
+        return iUserRoleRepository.findUserRoleByRoleId(id);
+    }
+
 }

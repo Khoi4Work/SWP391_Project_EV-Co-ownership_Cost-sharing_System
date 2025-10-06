@@ -99,7 +99,7 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(UserNotBelongException.class)
     public ResponseEntity handleUserNotBelong(UserNotBelongException ex) {
-        return ResponseEntity.status(403).body(ex.getMessage()); // 403
+        return ResponseEntity.status(403).body("User ko thuoc group"); // 403
     }
     @ExceptionHandler(RoleNotFoundException.class)
     public ResponseEntity handleRoleNotFound(RoleNotFoundException ex) {

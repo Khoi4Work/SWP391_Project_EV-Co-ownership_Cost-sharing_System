@@ -29,22 +29,22 @@ public class DataInitializer implements CommandLineRunner {
                 !userRoleService.existsByRoleName("staff")) {
 
             UserRole userRole = new UserRole();
-            userRole.setRole_id(1);
+            userRole.setRoleId(1);
             userRole.setRoleName("user");
             userRoleService.addUserRole(userRole);
 
             UserRole coOwnerRole = new UserRole();
-            coOwnerRole.setRole_id(2);
+            coOwnerRole.setRoleId(2);
             coOwnerRole.setRoleName("co-owner");
             userRoleService.addUserRole(coOwnerRole);
 
             UserRole adminRole = new UserRole();
-            adminRole.setRole_id(3);
+            adminRole.setRoleId(3);
             adminRole.setRoleName("admin");
             userRoleService.addUserRole(adminRole);
 
             UserRole staffRole = new UserRole();
-            staffRole.setRole_id(4);
+            staffRole.setRoleId(4);
             staffRole.setRoleName("staff");
             userRoleService.addUserRole(staffRole);
         }

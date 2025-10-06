@@ -9,6 +9,7 @@ import khoindn.swp391.be.app.model.Response.UsersResponse;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IAuthenticationRepository;
 import khoindn.swp391.be.app.repository.IUserRepository;
+import khoindn.swp391.be.app.repository.IUserRoleRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,6 +35,8 @@ public class AuthenticationService implements UserDetailsService {
     ModelMapper modelMapper;
     @Autowired
     TokenService tokenService;
+    @Autowired
+    private IUserRoleRepository iUserRoleRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -68,6 +71,7 @@ public class AuthenticationService implements UserDetailsService {
 
         //process login from register controller
         users.setPassword(passwordEncoder.encode(users.getPassword()));
+        users.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRole().getRoleId()));
         //encode old password to new password
         // save to DB
         return iAuthenticationRepository.save(users);

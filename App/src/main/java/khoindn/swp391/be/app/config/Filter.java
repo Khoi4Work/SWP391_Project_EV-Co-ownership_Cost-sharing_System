@@ -24,6 +24,7 @@ import java.util.List;
 
 @Component
 public class Filter extends OncePerRequestFilter {
+
     @Autowired
     @Qualifier("handlerExceptionResolver")
     private HandlerExceptionResolver resolver;
@@ -32,16 +33,16 @@ public class Filter extends OncePerRequestFilter {
     TokenService tokenService;
 
     private final List<String> PUBLIC_API = List.of(
-            "POST:/Auth/register",
-            "POST:/Auth/login",
+            "POST:/auth/register",
+            "POST:/auth/login",
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
             "GET:/swagger-resources/**"
-
     );
 
     public boolean isPublicAPI(String uri, String method) {
         AntPathMatcher matcher = new AntPathMatcher();
+
 
         return PUBLIC_API.stream().anyMatch(pattern -> {
             String[] parts = pattern.split(":", 2);
@@ -54,15 +55,15 @@ public class Filter extends OncePerRequestFilter {
         });
     }
 
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         System.out.println("Filter is called");
-
         String uri = request.getRequestURI();
         String method = request.getMethod();
         if (isPublicAPI(uri, method)) {
-            //API public
+            //Api public => access
             filterChain.doFilter(request, response);
         } else {
             Users user = null;
@@ -99,8 +100,6 @@ public class Filter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         }
-
-
     }
 
     public String getToken(HttpServletRequest request) {
@@ -108,4 +107,5 @@ public class Filter extends OncePerRequestFilter {
         if (authHeader == null) return null;
         return authHeader.substring(7);
     }
+
 }
