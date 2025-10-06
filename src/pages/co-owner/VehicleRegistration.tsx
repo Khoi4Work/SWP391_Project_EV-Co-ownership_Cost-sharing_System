@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import axiosClient from "@/api/axiosClient";
+
 import {
   Car,
   User,
@@ -72,16 +74,10 @@ export default function VehicleRegistration() {
   const { toast } = useToast();
   const fetchUserByEmail = async (email: string) => {
     try {
-      const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
-      if (!res.ok) {
-        toast({
-          title: "Lỗi",
-          description: "Không tìm thấy user với email này",
-          variant: "destructive"
-        });
-        return null;
-      }
-      const data = await res.json();
+      // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
+        const res = await axiosClient.get(`/vehicle/`);
+
+      const data = res.data;
       const user = Array.isArray(data) ? data[0] : data;
       if (!user) return null;
       return {

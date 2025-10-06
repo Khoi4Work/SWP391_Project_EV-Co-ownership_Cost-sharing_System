@@ -109,7 +109,7 @@ export default function VerifyOTP() {
   const sendUserInfoToBackend = async () => {
     try {
       // lấy danh sách user trước
-      const checkRes = await fetch("http://localhost:8080/Users/register");
+      const checkRes = await fetch("http://localhost:8080/auth/register");
       const users = await checkRes.json();
 
       const exists = users.find(
@@ -126,7 +126,7 @@ export default function VerifyOTP() {
       }
 
       // nếu không trùng -> mới tạo user
-      const response = await fetch("http://localhost:8080/Users/register", {
+      const response = await fetch("http://localhost:8080/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),

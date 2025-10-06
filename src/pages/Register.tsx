@@ -79,7 +79,7 @@ export default function Register() {
     }) => {
         //http://localhost:8080/Users/register: kết quả ở backend (dùng khi test chính thức)
         try {
-            const response = await axios.post("http://localhost:8080/Users/register", userData);
+            const response = await axios.post("http://localhost:8080/auth/register", userData);
             console.log("Kết quả backend trả về:", response.data);
             return { success: true, data: response.data };
         } catch (error: any) {

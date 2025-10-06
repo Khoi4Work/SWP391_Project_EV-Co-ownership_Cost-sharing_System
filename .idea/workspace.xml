@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="" />
+    <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/api/axiosClient.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Register.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Register.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/VerifyOTP.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/VerifyOTP.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -10,20 +20,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "tlamvantuan"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;tlamvantuan&quot;
   }
-}]]></component>
+}</component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "git@github.com:Khoi4Work/SWP391_Project_EV-Co-ownership_Cost-sharing_System.git",
-    "accountId": "baa29417-4b0b-44af-b41d-037c592353ce"
+    "accountId": "f462ab90-8f01-452b-9a08-b40f4511ed94"
   }
 }]]></component>
-
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -36,12 +44,18 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "FE",
     "kotlin-language-version-configured": "true",
-
     "last_opened_file_path": "D:/SinxS/SWP391/Ecoshare_Login",
-
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "settings.typescriptcompiler",
+    "ts.external.directory.path": "E:\\FPT_document\\Student_marterials\\Ky_CN_5\\SWP391\\SWP391_Project\\SWP391_FE_repo\\node_modules\\typescript\\lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -62,13 +76,27 @@
       <updated>1758033801189</updated>
       <workItem from="1758033802557" duration="218000" />
       <workItem from="1758090117614" duration="157000" />
-
       <workItem from="1758092701810" duration="16000" />
-
+      <workItem from="1759764725904" duration="8177000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>
