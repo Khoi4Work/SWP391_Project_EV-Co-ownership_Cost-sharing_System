@@ -26,6 +26,7 @@ export default function Login() {
             });
             return;
         }
+
         const roleMap: Record<string, number> = {
             "admin": 3,
             "staff": 4,
@@ -41,6 +42,16 @@ export default function Login() {
                 password,
                 roleId,
             });
+            const hasValidData = Boolean(response?.data && (response.data.token || response.data.id));
+            console.log(response.data.token);
+            if (!hasValidData) {
+                toast({
+                    title: "Lỗi đăng nhập",
+                    description: "Tài khoản hoặc mật khẩu không đúng.",
+                    variant: "destructive",
+                });
+                return;
+            }
             console.log(response.data)
             // Xử lý response backend trả về
             toast({
