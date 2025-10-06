@@ -216,9 +216,9 @@ export default function Register() {
                                 cccd: values.cccd,
                                 gplx: values.gplx,
                                 password: values.password,
-                                role_id: { role_id: 1 },
+                                roleId: 1,
                             };
-
+                                                console.log(userObject)
                             const result = await createUser(userObject);
 
                             if (!result.success) {

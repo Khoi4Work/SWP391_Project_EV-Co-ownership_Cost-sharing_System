@@ -5,12 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/api/axiosClient.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/Register.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Register.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/VerifyOTP.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/VerifyOTP.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,7 +74,7 @@
       <workItem from="1758033802557" duration="218000" />
       <workItem from="1758090117614" duration="157000" />
       <workItem from="1758092701810" duration="16000" />
-      <workItem from="1759764725904" duration="8177000" />
+      <workItem from="1759764725904" duration="11552000" />
     </task>
     <servers />
   </component>
