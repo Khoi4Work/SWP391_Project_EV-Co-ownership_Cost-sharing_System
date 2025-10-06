@@ -33,8 +33,16 @@ export default function Login() {
         password,
         userType: userTypes[0],
       });
-      console.log(response.data)
-      // Xử lý response backend trả về
+      // Kiểm tra điều kiện thành công rõ ràng (ví dụ cần token hoặc id)
+      const hasValidData = Boolean(response?.data && (response.data.token || response.data.id));
+      if (!hasValidData) {
+        toast({
+          title: "Lỗi đăng nhập",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Thành công
       toast({
         title: "Đăng nhập thành công",
         description: `Chào mừng bạn đến với EcoShare!`,
