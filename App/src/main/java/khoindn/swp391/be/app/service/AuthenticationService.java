@@ -5,6 +5,7 @@ import khoindn.swp391.be.app.exception.exceptions.EmailDuplicatedException;
 import khoindn.swp391.be.app.exception.exceptions.GPLXDuplicatedException;
 import khoindn.swp391.be.app.exception.exceptions.PhoneDuplicatedException;
 import khoindn.swp391.be.app.model.Request.LoginUser;
+import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IAuthenticationRepository;
@@ -49,7 +50,7 @@ public class AuthenticationService implements UserDetailsService {
         return user;
     }
 
-    public Users register(Users users) {
+    public Users register(RegisterUserReq users) {
         // Kiểm tra email
         if (iAuthenticationRepository.existsByEmail((users.getEmail()))){
             throw new EmailDuplicatedException("Email đã được sử dụng");
@@ -73,10 +74,11 @@ public class AuthenticationService implements UserDetailsService {
 
         //process login from register controller
         users.setPassword(passwordEncoder.encode(users.getPassword()));
-        users.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRole().getRoleId()));
+        Users user = modelMapper.map(users, Users.class);
+        user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId()));
         //encode old password to new password
         // save to DB
-        return iAuthenticationRepository.save(users);
+        return iAuthenticationRepository.save(user);
     }
 
     public UsersResponse login(LoginUser loginUser) {

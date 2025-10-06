@@ -4,6 +4,7 @@ package khoindn.swp391.be.app.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.LoginUser;
+import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.AuthenticationService;
@@ -22,9 +23,10 @@ public class AuthenticationController {
     AuthenticationService authenticationService;
 
     @PostMapping("/register")
-    public ResponseEntity register(@Valid @RequestBody Users users) {
+    public ResponseEntity register(@Valid @RequestBody RegisterUserReq users) {
         // send to AuthenticationService
         Users newAccount = authenticationService.register(users);
+        System.out.println(newAccount);
         return ResponseEntity.status(HttpStatus.CREATED).body(newAccount);
     }
 

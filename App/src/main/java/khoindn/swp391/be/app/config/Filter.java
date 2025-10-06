@@ -62,8 +62,10 @@ public class Filter extends OncePerRequestFilter {
         System.out.println("Filter is called");
         String uri = request.getRequestURI();
         String method = request.getMethod();
+        System.out.println(method+"-"+uri);
         if (isPublicAPI(uri, method)) {
             //Api public => access
+            System.out.println("This is a public API");
             filterChain.doFilter(request, response);
         } else {
             Users user = null;
