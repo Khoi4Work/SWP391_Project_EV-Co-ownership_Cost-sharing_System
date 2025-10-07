@@ -45,14 +45,17 @@ export default function VerifyOTP() {
             otp: randomOtp,
         });
         try {
-            await axios.post("http://localhost:8080/email/send-otp", {
+            const otplog = await axios.post("http://localhost:8080/email/send-otp", {
                 email: userData.email,
                 otp: randomOtp,
+<<<<<<< HEAD
 
             });
             console.log("Sẽ gửi lên backend:", {
                 email: userData.email,
                 otp: randomOtp,
+=======
+>>>>>>> 0de15205c8cabaddfee3c0047c7fa34021301260
             });
             toast({
                 title: "Đã gửi mã OTP",
