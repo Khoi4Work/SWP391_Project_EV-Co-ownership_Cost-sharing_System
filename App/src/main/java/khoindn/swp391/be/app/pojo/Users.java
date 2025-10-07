@@ -24,7 +24,7 @@ public class Users implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private int id;
+    private Integer id;
 
     @NotNull
     private String hovaTen;  // Changed to match Java naming conventions

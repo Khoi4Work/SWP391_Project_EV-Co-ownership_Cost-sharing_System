@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.management.relation.Role;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,5 +28,5 @@ public class RegisterUserReq {
 
     private String phone;
 
-    private int roleId; // Default role ID for regular users
+    private UserRole roleId; // Default role ID for regular users
 }
