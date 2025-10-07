@@ -6,7 +6,39 @@
   <component name="ChangeListManager">
     <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eslint.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/eslint.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/postcss.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/postcss.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/App.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ChatBox.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ChatBox.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/UserDropdown.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/UserDropdown.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/VehicleBooking.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/VehicleBooking.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/data/mockGroups.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/data/mockGroups.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hooks/use-mobile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/hooks/use-mobile.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hooks/use-toast.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/hooks/use-toast.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hooks/useSEO.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/hooks/useSEO.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/opencvHelpers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/opencvHelpers.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/utils.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/utils.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/NotFound.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/NotFound.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Register.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Register.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/VerifyOTP.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/VerifyOTP.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/admin/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/admin/Dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/AddingCoOwners.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/AddingCoOwners.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/Dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/GroupDetail.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/GroupDetail.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/MyGroups.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/MyGroups.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/staff/Dashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/staff/Dashboard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tailwind.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/tailwind.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.node.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.node.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/vite.config.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

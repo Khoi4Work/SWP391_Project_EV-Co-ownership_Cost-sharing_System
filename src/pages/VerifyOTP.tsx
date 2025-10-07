@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { Car, ArrowLeft, Clock } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Formik, Form } from "formik";
+import {useState, useEffect} from "react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Link, useNavigate, useLocation} from "react-router-dom";
+import {useToast} from "@/hooks/use-toast";
+import {Car, ArrowLeft, Clock} from "lucide-react";
+import {InputOTP, InputOTPGroup, InputOTPSlot} from "@/components/ui/input-otp";
+import {Formik, Form} from "formik";
 import * as Yup from "yup";
 import axios from "axios";
 
@@ -16,7 +16,7 @@ export default function VerifyOTP() {
     const [expired, setExpired] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const { toast } = useToast();
+    const {toast} = useToast();
 
     const userData = location.state?.userObject;
 
@@ -108,7 +108,7 @@ export default function VerifyOTP() {
             <Card className="w-full max-w-md shadow-glow border-0">
                 <CardHeader className="text-center space-y-4">
                     <div className="flex items-center justify-center space-x-2">
-                        <Car className="h-8 w-8 text-primary" />
+                        <Car className="h-8 w-8 text-primary"/>
                         <span className="text-2xl font-bold text-primary">EcoShare</span>
                     </div>
                     <CardTitle className="text-2xl font-bold">Xác thực tài khoản</CardTitle>
@@ -117,7 +117,7 @@ export default function VerifyOTP() {
 
                 <CardContent className="space-y-6">
                     <Formik
-                        initialValues={{ otp: "" }}
+                        initialValues={{otp: ""}}
                         validationSchema={otpSchema}
                         onSubmit={async (values) => {
                             if (expired) {
@@ -139,7 +139,7 @@ export default function VerifyOTP() {
                             }
                         }}
                     >
-                        {({ values, setFieldValue, errors, touched }) => (
+                        {({values, setFieldValue, errors, touched}) => (
                             <Form className="space-y-6">
                                 <div className="space-y-2 text-center">
                                     <label className="text-sm font-medium">Nhập mã OTP (6 số)</label>
@@ -154,7 +154,7 @@ export default function VerifyOTP() {
                                         >
                                             <InputOTPGroup>
                                                 {[...Array(6)].map((_, i) => (
-                                                    <InputOTPSlot key={i} index={i} />
+                                                    <InputOTPSlot key={i} index={i}/>
                                                 ))}
                                             </InputOTPGroup>
                                         </InputOTP>
@@ -186,7 +186,7 @@ export default function VerifyOTP() {
                         >
                             {isResending ? (
                                 <>
-                                    <Clock className="h-4 w-4 mr-2 animate-spin" /> Đang gửi lại...
+                                    <Clock className="h-4 w-4 mr-2 animate-spin"/> Đang gửi lại...
                                 </>
                             ) : (
                                 "Gửi lại mã OTP"
@@ -199,7 +199,7 @@ export default function VerifyOTP() {
                             to="/register"
                             className="flex items-center justify-center space-x-2 text-sm text-muted-foreground hover:text-primary"
                         >
-                            <ArrowLeft className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4"/>
                             <span>Quay lại đăng ký</span>
                         </Link>
                     </div>
