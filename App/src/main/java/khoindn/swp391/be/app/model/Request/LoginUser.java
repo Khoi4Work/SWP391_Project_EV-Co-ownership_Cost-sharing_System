@@ -16,4 +16,5 @@ public class LoginUser {
     @NotBlank
     private String password;
 
+
 }
