@@ -43,7 +43,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api/chat",
-                                "/auth/**"
+                                "/auth/**",
+                                "/email/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

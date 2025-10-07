@@ -23,7 +23,7 @@ public class AuthenticationController {
     AuthenticationService authenticationService;
 
     @PostMapping("/register")
-    public ResponseEntity register(@Valid @RequestBody RegisterUserReq users) {
+    public ResponseEntity<Users> register(@Valid @RequestBody RegisterUserReq users) {
         // send to AuthenticationService
         Users newAccount = authenticationService.register(users);
         System.out.println(newAccount);
