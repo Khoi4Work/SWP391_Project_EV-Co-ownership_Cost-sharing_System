@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import khoindn.swp391.be.app.exception.exceptions.NoVehicleInGroupException;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -42,6 +44,10 @@ public class ScheduleController {
             @RequestParam int groupId,
             @RequestParam int userId) {
         VehicleRes res = scheduleService.getCarByGroupIdAndUserId(groupId, userId);
+        System.out.println(res);
+        if (res == null) {
+            throw new NoVehicleInGroupException("No vehicle in user's group");
+        }
         return ResponseEntity.ok(res);
     }
 //    @PutMapping("/{id}")

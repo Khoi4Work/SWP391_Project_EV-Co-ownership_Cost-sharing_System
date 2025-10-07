@@ -35,7 +35,7 @@ public class Filter extends OncePerRequestFilter {
     private final List<String> PUBLIC_API = List.of(
             "POST:/api/chat",
             "POST:/auth/register",
-            "POST:/auth/login/{roleId}",
+            "POST:/auth/**",
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
             "GET:/swagger-resources/**",

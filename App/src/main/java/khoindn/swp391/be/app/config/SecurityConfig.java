@@ -39,7 +39,6 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource())) // ✅ bật CORS
                 .authorizeHttpRequests(req -> req
                         // THÊM whitelist cho Swagger + chat + auth
                         .requestMatchers(
