@@ -31,7 +31,7 @@ export default function VerifyOTP() {
             return;
         }
         sendOtpEmail(); // Gọi gửi OTP khi vào trang
-    }, []);
+    }, [userData]);
 
     // 🔹 Frontend tạo OTP và gửi tới backend để backend gửi mail
     const sendOtpEmail = async () => {
@@ -43,11 +43,10 @@ export default function VerifyOTP() {
         console.log("OTP (debug):", randomOtp);
 
         try {
-            await axios.post("http://localhost:8080/email/send-otp", {
+            const otplog = await axios.post("http://localhost:8080/email/send-otp", {
                 email: userData.email,
                 otp: randomOtp,
             });
-
             toast({
                 title: "Đã gửi mã OTP",
                 description: `Vui lòng kiểm tra email: ${userData.email}`,
