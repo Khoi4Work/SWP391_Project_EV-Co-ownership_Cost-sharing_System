@@ -39,7 +39,10 @@ public class Filter extends OncePerRequestFilter {
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
             "GET:/swagger-resources/**",
-            "POST:/email/send-otp"
+            "POST:/email/send-otp",
+            "POST:/Schedule/**",
+            "GET:/Schedule/**"
+
     );
 
     public boolean isPublicAPI(String uri, String method) {
@@ -62,9 +65,10 @@ public class Filter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         System.out.println("Filter is called");
+        System.out.println("Authorization header: " + request.getHeader("Authorization"));
         String uri = request.getRequestURI();
         String method = request.getMethod();
-        System.out.println(method+"-"+uri);
+        System.out.println(method + "-" + uri);
         if (isPublicAPI(uri, method)) {
             //Api public => access
             System.out.println("This is a public API");
@@ -73,6 +77,7 @@ public class Filter extends OncePerRequestFilter {
             Users user = null;
             //Api private (theo role)=> check token
             String token = getToken(request);
+
             if (token != null) {
                 user = tokenService.extractToken(token);
             } else {
