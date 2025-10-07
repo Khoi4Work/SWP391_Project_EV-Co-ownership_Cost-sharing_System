@@ -80,12 +80,9 @@ public class AuthenticationService implements UserDetailsService {
 
         System.out.println("User: " + user);
 
-        if (!iUserRepository.existsById(user.getId())) {
+
             // save to DB
             return iAuthenticationRepository.save(user);
-        }else{
-            throw new UserIsExistedException("user is existed with info: "+user);
-        }
     }
 
     public UsersResponse login(LoginUser loginUser) {
