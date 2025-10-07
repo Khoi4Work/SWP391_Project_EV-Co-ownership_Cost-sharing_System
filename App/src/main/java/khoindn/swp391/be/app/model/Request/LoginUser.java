@@ -16,4 +16,6 @@ public class LoginUser {
     @NotBlank
     private String password;
 
+    private Integer roleId;
+
 }

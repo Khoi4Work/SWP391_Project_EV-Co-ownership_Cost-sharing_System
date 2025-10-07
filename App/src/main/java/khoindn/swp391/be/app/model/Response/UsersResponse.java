@@ -14,7 +14,7 @@ public class UsersResponse {
     String email;
     String cccd;
     String gplx;
-    private UserRole role_id;
+    private UserRole role;
     String token;
 
 //    String gender;

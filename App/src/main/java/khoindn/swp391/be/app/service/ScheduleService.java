@@ -1,8 +1,9 @@
 package khoindn.swp391.be.app.service;
 
-import khoindn.swp391.be.app.exception.exceptions.VehicleNotBelongException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
+import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
@@ -31,15 +32,17 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public ScheduleRes createSchedule(ScheduleReq req) {
-        Users user = iUserRepository.findById(req.getUserId()).get();
+        Users user = iUserRepository.findById(req.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        Group group = iGroupRepository.findById(req.getGroupId()).get();
+        Group group = iGroupRepository.findById(req.getGroupId())
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
 
-        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user).get();
+        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
+                .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
 
         Vehicle vehicle = iVehicleRepository.findVehicleByVehicleId(req.getVehicleId());
-        // check car in group
-        if (vehicle.getGroup().getGroupId() != (req.getGroupId())) {
+        if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
             throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
 
@@ -59,6 +62,7 @@ public class ScheduleService implements IScheduleService {
         return res;
     }
 
+
     @Override
     public List<ScheduleRes> getAllSchedules() {
         return iScheduleRepository.findAll().stream()
@@ -74,4 +78,30 @@ public class ScheduleService implements IScheduleService {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public VehicleRes getCarByGroupIdAndUserId(int groupId, int userId) {
+        Users user = iUserRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        iGroupMemberRepository.findByGroupAndUsers(group, user)
+                .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
+
+        Vehicle vehicle = iVehicleRepository.findByGroup(group);
+        if (vehicle == null) {
+            throw new NoVehicleInGroupException("No vehicles found in this group");
+        }
+
+        VehicleRes dto = modelMapper.map(vehicle, VehicleRes.class);
+        dto.setGroupId(group.getGroupId());
+        dto.setGroupName(group.getGroupName());
+
+        return dto;
+    }
+
+
+
 }

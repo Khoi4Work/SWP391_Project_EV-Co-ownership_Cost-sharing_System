@@ -16,7 +16,7 @@ public class Vehicle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "car_id")
+    @Column(name = "vehicle_id")
     private int vehicleId;
 
     @Column(name = "plate_no", length = 32, nullable = false)
@@ -40,4 +40,10 @@ public class Vehicle {
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group group;
+
+    @Column(name="price", length = 32)
+    private int price;
+
+    @Column(name="image",length=32)
+    private String imageUrl;
 }

@@ -15,7 +15,7 @@ import java.util.List;
 public class UserRole {
     @Id
     @Column
-    private int role_id;
+    private int roleId;
     @Column(unique = true)
     private String roleName;
 
