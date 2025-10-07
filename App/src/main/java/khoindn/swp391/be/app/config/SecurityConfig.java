@@ -39,12 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(req -> req
                         // THÊM whitelist cho Swagger + chat + auth
                         .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/api/chat",
-                                "/auth/**",
-                                "/email/**"
+                                "/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
