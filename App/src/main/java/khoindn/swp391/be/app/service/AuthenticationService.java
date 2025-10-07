@@ -93,9 +93,9 @@ public class AuthenticationService implements UserDetailsService {
                         loginUser.getEmail(),
                         loginUser.getPassword()));
         Users users = (Users) authentication.getPrincipal();
-        if (loginUser.getRoleId() != null && !loginUser.getRoleId().equals(users.getRole().getRoleId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai loại tài khoản");
-        }
+//        if (loginUser.getRoleId() != null && !loginUser.getRoleId().equals(users.getRole().getRoleId())) {
+//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai loại tài khoản");
+//        }
         //map account --> accountResponse
         UsersResponse usersResponse = modelMapper.map(users, UsersResponse.class);
         String token = tokenService.generateToken(users);
