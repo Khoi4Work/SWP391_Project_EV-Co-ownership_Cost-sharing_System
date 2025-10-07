@@ -8,7 +8,6 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
-
 export default function VerifyOTP() {
     const [otp, setOtp] = useState("");
     const [isResending, setIsResending] = useState(false);
@@ -17,9 +16,7 @@ export default function VerifyOTP() {
     const navigate = useNavigate();
     const location = useLocation();
     const { toast } = useToast();
-
     const userData = location.state?.userObject;
-
     useEffect(() => {
         if (!userData) {
             toast({
@@ -45,17 +42,10 @@ export default function VerifyOTP() {
             otp: randomOtp,
         });
         try {
-            const otplog = await axios.post("http://localhost:8080/email/send-otp", {
+            await axios.post("http://localhost:8080/email/send-otp", {
                 email: userData.email,
                 otp: randomOtp,
-<<<<<<< HEAD
 
-            });
-            console.log("Sẽ gửi lên backend:", {
-                email: userData.email,
-                otp: randomOtp,
-=======
->>>>>>> 0de15205c8cabaddfee3c0047c7fa34021301260
             });
             toast({
                 title: "Đã gửi mã OTP",
