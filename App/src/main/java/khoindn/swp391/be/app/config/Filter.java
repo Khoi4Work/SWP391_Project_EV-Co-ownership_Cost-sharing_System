@@ -33,13 +33,15 @@ public class Filter extends OncePerRequestFilter {
     TokenService tokenService;
 
     private final List<String> PUBLIC_API = List.of(
+            "POST:/api/chat",
             "POST:/auth/register",
+            "GET:/Users/get",
             "POST:/auth/login",
             "GET:/Users/get",
-            "POST:/email/send-otp",
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
-            "GET:/swagger-resources/**"
+            "GET:/swagger-resources/**",
+            "POST:/email/send-otp"
     );
 
     public boolean isPublicAPI(String uri, String method) {
