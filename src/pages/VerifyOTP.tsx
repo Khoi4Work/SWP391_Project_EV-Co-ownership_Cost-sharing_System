@@ -31,23 +31,29 @@ export default function VerifyOTP() {
             return;
         }
         sendOtpEmail(); // Gọi gửi OTP khi vào trang
-    }, []);
+    }, [userData]);
 
     // 🔹 Frontend tạo OTP và gửi tới backend để backend gửi mail
     const sendOtpEmail = async () => {
         const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        setOtp(randomOtp);
         setTime(30);
         setExpired(false);
-
+        setOtp(randomOtp);
         console.log("OTP (debug):", randomOtp);
-
+        console.log("Sẽ gửi lên backend:", {
+            email: userData.email,
+            otp: randomOtp,
+        });
         try {
             await axios.post("http://localhost:8080/email/send-otp", {
                 email: userData.email,
                 otp: randomOtp,
-            });
 
+            });
+            console.log("Sẽ gửi lên backend:", {
+                email: userData.email,
+                otp: randomOtp,
+            });
             toast({
                 title: "Đã gửi mã OTP",
                 description: `Vui lòng kiểm tra email: ${userData.email}`,
