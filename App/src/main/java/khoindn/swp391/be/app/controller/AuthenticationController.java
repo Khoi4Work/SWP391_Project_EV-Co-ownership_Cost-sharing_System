@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/auth")
@@ -30,9 +31,15 @@ public class AuthenticationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newAccount);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity login(@RequestBody @Valid LoginUser loginUser) {
+    @PostMapping("/login/{roleId}")
+    public ResponseEntity login(@PathVariable Integer roleId, @RequestBody @Valid LoginUser loginUser) {
+        // Kiểm tra roleId với thông tin user
         UsersResponse usersResponse = authenticationService.login(loginUser);
+
+        if (!roleId.equals(usersResponse.getRole().getRoleId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai loại tài khoản");
+        }
+
         return ResponseEntity.ok(usersResponse);
     }
 }
