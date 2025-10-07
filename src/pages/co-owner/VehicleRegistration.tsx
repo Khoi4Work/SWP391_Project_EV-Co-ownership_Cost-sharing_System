@@ -7,19 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Car, 
-  User, 
-  Users, 
-  FileCheck, 
-  ArrowRight, 
+import {
+  Car,
+  User,
+  Users,
+  FileCheck,
+  ArrowRight,
   ArrowLeft,
   CheckCircle,
   Mail
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
+import { Formik, Form, ErrorMessage, Field } from "formik";
+import * as Yup from "yup";
 interface CoOwner {
   id: string;
   name: string;
@@ -30,12 +31,17 @@ interface CoOwner {
 }
 
 export default function VehicleRegistration() {
+  const ownerSchema = Yup.object({
+    name: Yup.string().required("Tên không được để trống"),
+    email: Yup.string().email("Email không hợp lệ").required("Email bắt buộc"),
+    phone: Yup.string().required("Số điện thoại bắt buộc"),
+  });
   const [step, setStep] = useState(1);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [ownerInfo, setOwnerInfo] = useState({
     name: "",
     email: "",
-    phone: "", 
+    phone: "",
     idNumber: "",
     address: "",
     ownership: 50
@@ -43,7 +49,7 @@ export default function VehicleRegistration() {
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -52,27 +58,27 @@ export default function VehicleRegistration() {
       id: "vf8",
       name: "VinFast VF8",
       price: "1,200,000,000 VNĐ",
-      image: "/placeholder.svg",
+      image: "/Vinfast_VF8.jpg",
       specs: ["87.7 kWh", "420 km", "Tự lái cấp 2"]
     },
     {
       id: "tesla-y",
-      name: "Tesla Model Y", 
+      name: "Tesla Model Y",
       price: "1,800,000,000 VNĐ",
-      image: "/placeholder.svg",
+      image: "/TeslaModelY.jpg",
       specs: ["75 kWh", "525 km", "Autopilot"]
     },
     {
       id: "kona",
       name: "Hyundai Kona Electric",
-      price: "800,000,000 VNĐ", 
-      image: "/placeholder.svg",
+      price: "800,000,000 VNĐ",
+      image: "/HuyndaiKonaElectric.jpg",
       specs: ["64 kWh", "380 km", "SmartSense"]
     }
   ];
 
   const totalOwnership = ownerInfo.ownership + coOwners.reduce((sum, co) => sum + co.ownership, 0);
-  
+
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
@@ -83,7 +89,7 @@ export default function VehicleRegistration() {
       default: return false;
     }
   };
-  
+
   // Calculate progress based on completed steps
   const getProgress = () => {
     let completed = 0;
@@ -93,7 +99,7 @@ export default function VehicleRegistration() {
     }
     return (completed / 4) * 100;
   };
-  
+
   const getVehiclePrice = () => {
     const vehicle = vehicles.find(v => v.id === selectedVehicle);
     return vehicle ? parseInt(vehicle.price.replace(/[^0-9]/g, '')) : 0;
@@ -144,8 +150,8 @@ export default function VehicleRegistration() {
       });
       return;
     }
-    
-    setCoOwners(coOwners.map(co => 
+
+    setCoOwners(coOwners.map(co =>
       co.id === id ? { ...co, [field]: value } : co
     ));
   };
@@ -181,13 +187,13 @@ export default function VehicleRegistration() {
                 <CheckCircle className="h-16 w-16 text-success" />
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <h2 className="text-3xl font-bold text-foreground">
                 Đăng ký xe thành công!
               </h2>
               <p className="text-muted-foreground text-lg">
-                Đơn đăng ký xe điện của bạn đã được gửi thành công. 
+                Đơn đăng ký xe điện của bạn đã được gửi thành công.
                 Chúng tôi sẽ xem xét và phản hồi trong vòng 24 giờ.
               </p>
             </div>
@@ -204,13 +210,13 @@ export default function VehicleRegistration() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
+              <Button
                 onClick={() => navigate("/co-owner/dashboard")}
                 className="bg-gradient-primary hover:shadow-glow"
               >
                 Về bảng điều khiển
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => {
                   setIsSubmitted(false);
@@ -298,19 +304,18 @@ export default function VehicleRegistration() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {vehicles.map((vehicle) => (
-                  <div 
+                  <div
                     key={vehicle.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-elegant ${
-                      selectedVehicle === vehicle.id 
-                        ? "border-primary bg-primary/5 shadow-elegant" 
-                        : "border-border"
-                    }`}
+                    className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-elegant ${selectedVehicle === vehicle.id
+                      ? "border-primary bg-primary/5 shadow-elegant"
+                      : "border-border"
+                      }`}
                     onClick={() => setSelectedVehicle(vehicle.id)}
                   >
-                    <img 
-                      src={vehicle.image} 
+                    <img
+                      src={vehicle.image}
                       alt={vehicle.name}
-                      className="w-full h-32 object-cover rounded-md mb-4"
+                      className="w-full h-48 object-cover rounded-md mb-4"
                     />
                     <h3 className="font-semibold mb-2">{vehicle.name}</h3>
                     <p className="text-lg font-bold text-primary mb-3">{vehicle.price}</p>
@@ -324,9 +329,9 @@ export default function VehicleRegistration() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="flex justify-end">
-                <Button 
+                <Button
                   onClick={() => setStep(2)}
                   disabled={!selectedVehicle}
                   className="bg-gradient-primary hover:shadow-glow"
@@ -351,93 +356,83 @@ export default function VehicleRegistration() {
                 Người có tỷ lệ sở hữu cao nhất sẽ là chủ sở hữu chính
               </CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Họ và tên *</Label>
-                  <Input
-                    id="name"
-                    value={ownerInfo.name}
-                    onChange={(e) => setOwnerInfo({...ownerInfo, name: e.target.value})}
-                    placeholder="Nhập họ và tên đầy đủ"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={ownerInfo.email}
-                    onChange={(e) => setOwnerInfo({...ownerInfo, email: e.target.value})}
-                    placeholder="Nhập địa chỉ email"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Số điện thoại *</Label>
-                  <Input
-                    id="phone"
-                    value={ownerInfo.phone}
-                    onChange={(e) => setOwnerInfo({...ownerInfo, phone: e.target.value})}
-                    placeholder="Nhập số điện thoại"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="idNumber">CCCD/CMND *</Label>
-                  <Input
-                    id="idNumber"
-                    value={ownerInfo.idNumber}
-                    onChange={(e) => setOwnerInfo({...ownerInfo, idNumber: e.target.value})}
-                    placeholder="Nhập số CCCD/CMND"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      id="ownership"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={ownerInfo.ownership}
-                      onChange={(e) => setOwnerInfo({...ownerInfo, ownership: parseInt(e.target.value) || 0})}
-                      className="flex-1"
-                    />
-                    {selectedVehicle && (
-                      <div className="text-sm text-primary font-medium">
-                        {getOwnershipAmount(ownerInfo.ownership).toLocaleString()} VNĐ
+              <Formik
+                initialValues={{
+                  name: "",
+                  email: "",
+                  phone: "",
+                  idNumber: "",
+                  ownership: 0,
+                  address: "",
+                }}
+                validationSchema={ownerSchema}
+                onSubmit={(values) => {
+                  console.log("Owner info:", values);
+                  setStep(3);
+                }}
+              >
+                {({ values }) => (
+                  <Form>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Họ và tên *</Label>
+                        <Field as={Input} id="name" name="name" placeholder="Nhập họ và tên đầy đủ" />
+                        <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="address">Địa chỉ *</Label>
-                <Textarea
-                  id="address"
-                  value={ownerInfo.address}
-                  onChange={(e) => setOwnerInfo({...ownerInfo, address: e.target.value})}
-                  placeholder="Nhập địa chỉ đầy đủ"
-                />
-              </div>
-              
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Quay lại
-                </Button>
-                <Button 
-                  onClick={() => setStep(3)}
-                  className="bg-gradient-primary hover:shadow-glow"
-                >
-                  Tiếp tục
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Field as={Input} id="email" name="email" type="email" placeholder="Nhập địa chỉ email" />
+                        <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Số điện thoại *</Label>
+                        <Field as={Input} id="phone" name="phone" placeholder="Nhập số điện thoại" />
+                        <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="idNumber">CCCD/CMND *</Label>
+                        <Field as={Input} id="idNumber" name="idNumber" placeholder="Nhập số CCCD/CMND" />
+                        <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
+                        <div className="flex items-center space-x-2">
+                          <Field as={Input} id="ownership" name="ownership" type="number" min="1" max="100" className="flex-1" />
+                          {selectedVehicle && (
+                            <div className="text-sm text-primary font-medium">
+                              {getOwnershipAmount(values.ownership).toLocaleString()} VNĐ
+                            </div>
+                          )}
+                        </div>
+                        <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Địa chỉ *</Label>
+                      <Field as={Textarea} id="address" name="address" placeholder="Nhập địa chỉ đầy đủ" />
+                      <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
+                    </div>
+
+                    <div className="flex justify-between mt-6">
+                      <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Quay lại
+                      </Button>
+                      <Button type="submit" className="bg-gradient-primary hover:shadow-glow">
+                        Tiếp tục
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </Form>
+                )}
+              </Formik>
             </CardContent>
           </Card>
         )}
@@ -471,15 +466,15 @@ export default function VehicleRegistration() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h4 className="font-medium">Đồng sở hữu #{coOwner.id}</h4>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => removeCoOwner(coOwner.id)}
                       >
                         Xóa
                       </Button>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
                         placeholder="Họ và tên"
@@ -520,21 +515,21 @@ export default function VehicleRegistration() {
                 </Card>
               ))}
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={addCoOwner}
                 disabled={totalOwnership >= 100}
                 className="w-full"
               >
                 + Thêm đồng sở hữu
               </Button>
-              
+
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setStep(2)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Quay lại
                 </Button>
-                <Button 
+                <Button
                   onClick={() => setStep(4)}
                   className="bg-gradient-primary hover:shadow-glow"
                 >
@@ -587,13 +582,13 @@ export default function VehicleRegistration() {
                   ))}
                 </div>
               )}
-              
+
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setStep(3)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Quay lại
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSubmit}
                   className="bg-gradient-primary hover:shadow-glow"
                 >

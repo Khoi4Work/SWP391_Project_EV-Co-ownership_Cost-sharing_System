@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Tesseract from "tesseract.js";
 import axios from "axios";
 import { waitForCvReady } from "@/lib/opencvHelpers";
@@ -68,16 +68,6 @@ export default function Register() {
     const [ocrLoadingCccd, setOcrLoadingCccd] = useState(false);
     const [ocrLoadingGplx, setOcrLoadingGplx] = useState(false);
     // check uniqueness API backend host:http://localhost:8080/users/check?${field}=${value} 
-    const checkDuplicate = async (field: string, value: string) => {
-        try {
-            const res = await axios.get("https://68ca27d4430c4476c34861d4.mockapi.io/user");
-            const users = res.data;
-            return users.some((u: any) => u[field] === value);
-        } catch (err) {
-            console.error("Check duplicate error:", err);
-            return false; // nếu lỗi thì coi như không trùng
-        }
-    };
 
     const createUser = async (userData: {
         hovaTen: string;
@@ -89,12 +79,29 @@ export default function Register() {
     }) => {
         //http://localhost:8080/Users/register: kết quả ở backend (dùng khi test chính thức)
         try {
-            // Thay đổi URL này thành endpoint backend thực tế của bạn
-            const response = await axios.post("https://68ca27d4430c4476c34861d4.mockapi.io/user", userData);
+            const response = await axios.post("http://localhost:8080/Users/register", userData);
             console.log("Kết quả backend trả về:", response.data);
-            return response.data;
-        } catch (error) {
-            throw error;
+            return { success: true, data: response.data };
+        } catch (error: any) {
+            let message = "Có lỗi xảy ra";
+            let field: string | undefined;
+
+            if (error.response) {
+                // Lấy message từ backend
+                message = error.response.data || "Lỗi từ server";
+
+                // Bắt field cụ thể
+                if (message.toLowerCase().includes("email")) field = "email";
+                else if (message.toLowerCase().includes("phone")) field = "phone";
+                else if (message.toLowerCase().includes("cccd")) field = "cccd";
+                else if (message.toLowerCase().includes("gplx")) field = "gplx";
+            } else if (error.request) {
+                message = "Không kết nối được tới server";
+            } else {
+                message = error.message;
+            }
+
+            return { success: false, message, field };
         }
     };
 
@@ -202,52 +209,41 @@ export default function Register() {
                         validateOnChange={true}
                         validateOnBlur={true}
                         onSubmit={async (values, { setSubmitting, setErrors }) => {
-                            validationSchema
-                                .validate(values, { abortEarly: false })
-                                .then(async () => {
-                                    // Kiểm tra trùng lặp
-                                    const emailExists = await checkDuplicate("email", values.email);
-                                    const cccdExists = await checkDuplicate("cccd", values.cccd);
-                                    const gplxExists = await checkDuplicate("gplx", values.gplx);
-                                    if (emailExists || cccdExists || gplxExists) {
-                                        console.log("Trùng lặp:", { emailExists, cccdExists, gplxExists });
-                                    }
-                                    if (emailExists || cccdExists || gplxExists) {
-                                        const errors: any = {};
-                                        if (emailExists) errors.email = "Email đã tồn tại trong hệ thống";
-                                        if (cccdExists) errors.cccd = "CCCD đã tồn tại trong hệ thống";
-                                        if (gplxExists) errors.gplx = "GPLX đã tồn tại trong hệ thống";
-                                        setErrors(errors);
-                                        setSubmitting(false);
-                                        return;
-                                    }
-                                    const userObject = {
-                                        hovaTen: values.hovaTen,
-                                        email: values.email,
-                                        phone: values.phone,
-                                        cccd: values.cccd,
-                                        gplx: values.gplx,
-                                        password: values.password,
-                                    };
-                                    console.log("Điều hướng sang verify-otp với:", userObject);
-                                    navigate("/verify-otp", { state: userObject });
-                                    toast({
-                                        title: "Thông tin hợp lệ",
-                                        description: "Vui lòng xác thực tài khoản bằng mã OTP",
-                                    });
-                                    setSubmitting(false);
-                                })
-                                .catch((err) => {
-                                    if (err.inner) {
-                                        const formErrors: { [key: string]: string } = {};
-                                        err.inner.forEach((e: any) => {
-                                            formErrors[e.path] = e.message;
-                                        });
-                                        setErrors(formErrors);
-                                    }
-                                    setSubmitting(false);
+                            const userObject = {
+                                hovaTen: values.hovaTen,
+                                email: values.email,
+                                phone: values.phone,
+                                cccd: values.cccd,
+                                gplx: values.gplx,
+                                password: values.password,
+                                role_id: { role_id: 1 },
+                            };
+
+                            const result = await createUser(userObject);
+
+                            if (!result.success) {
+                                // nếu backend chỉ ra lỗi cho 1 field cụ thể thì highlight vào đó
+                                if (result.field) {
+                                    setErrors({ [result.field]: result.message });
+                                }
+
+                                toast({
+                                    title: "Đăng ký thất bại",
+                                    description: result.message,
+                                    variant: "destructive",
                                 });
+                            } else {
+                                // thành công -> điều hướng sang verify OTP
+                                navigate("/verify-otp", { state: { ...userObject } });
+                                toast({
+                                    title: "Thông tin hợp lệ",
+                                    description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                });
+                            }
+
+                            setSubmitting(false);
                         }}
+
                         validate={(values) => {
                             try {
                                 validationSchema.validateSync(values, { abortEarly: false });

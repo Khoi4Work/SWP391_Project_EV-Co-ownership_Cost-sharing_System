@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="" />
+    <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Login.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -19,12 +22,21 @@
     &quot;assignee&quot;: &quot;tlamvantuan&quot;
   }
 }</component>
+<<<<<<< HEAD
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "git@github.com:Khoi4Work/SWP391_Project_EV-Co-ownership_Cost-sharing_System.git",
     "accountId": "7627e885-913d-403c-acaf-9f91aa00fb70"
   }
 }]]></component>
+=======
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:Khoi4Work/SWP391_Project_EV-Co-ownership_Cost-sharing_System.git&quot;,
+    &quot;accountId&quot;: &quot;baa29417-4b0b-44af-b41d-037c592353ce&quot;
+  }
+}</component>
+>>>>>>> 21241676252860f9c3d2b2617ffd5cd9c595afc8
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -33,6 +45,7 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
+<<<<<<< HEAD
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
@@ -45,8 +58,26 @@
     "last_opened_file_path": "D:/SinxS/SWP391/Ecoshare_Login",
     "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
+=======
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;FE__Schedule&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/SinxS/SWP391/FE_Schedule&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;D:\\SinxS\\SWP391\\FE_Schedule\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+>>>>>>> 21241676252860f9c3d2b2617ffd5cd9c595afc8
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -64,6 +95,10 @@
       <workItem from="1758033802557" duration="218000" />
       <workItem from="1758090117614" duration="157000" />
       <workItem from="1758092701810" duration="16000" />
+<<<<<<< HEAD
+=======
+      <workItem from="1759756842932" duration="6652000" />
+>>>>>>> 21241676252860f9c3d2b2617ffd5cd9c595afc8
     </task>
     <servers />
   </component>
