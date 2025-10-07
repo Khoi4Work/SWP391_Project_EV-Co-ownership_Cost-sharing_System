@@ -26,34 +26,40 @@ export default function Login() {
             });
             return;
         }
+
+        const roleMap: Record<string, number> = {
+            "admin": 3,
+            "staff": 4,
+            "co-owner": 1, // 1 = user
+            "user": 1
+        };
+        const selectedType = userTypes[0];
+        const roleId = roleMap[selectedType];
         try {
             // Thay đổi URL này thành endpoint backend thực tế của bạn
-            const response = await axios.post("http://localhost:8080/auth/login", {
+            const response = await axios.post(`http://localhost:8080/auth/login/${roleId}`, {
                 email,
                 password,
-                userType: userTypes[0],
             });
-
-
-            // Kiểm tra điều kiện thành công rõ ràng (ví dụ cần token hoặc id)
             const hasValidData = Boolean(response?.data && (response.data.token || response.data.id));
-            const token = response.data.token;
+            const token = response.data.token; // ✅ lấy token từ response
+            console.log("Token:", token);
+            localStorage.setItem("accessToken", token);
             if (!hasValidData) {
                 toast({
                     title: "Lỗi đăng nhập",
+                    description: "Tài khoản hoặc mật khẩu không đúng.",
                     variant: "destructive",
                 });
                 return;
             }
-            // Thành công
-            // ✅ Lưu token vào localStorage (hoặc sessionStorage)
-            localStorage.setItem("token", token);
+            console.log(response.data)
+            // Xử lý response backend trả về
             toast({
                 title: "Đăng nhập thành công",
                 description: `Chào mừng bạn đến với EcoShare!`,
             });
             // Điều hướng theo loại tài khoản
-            const selectedType = userTypes[0];
             if (selectedType === "co-owner") {
                 navigate("/co-owner/dashboard");
             } else if (selectedType === "staff") {
