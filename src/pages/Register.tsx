@@ -10,7 +10,6 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useState } from "react";
 import Tesseract from "tesseract.js";
-import axios from "axios";
 import { waitForCvReady } from "@/lib/opencvHelpers";
 async function preprocessWithOpenCV(file: File): Promise<string> {
     await waitForCvReady(); // helper ở trên
@@ -69,41 +68,7 @@ export default function Register() {
     const [ocrLoadingGplx, setOcrLoadingGplx] = useState(false);
     // check uniqueness API backend host:http://localhost:8080/users/check?${field}=${value} 
 
-    const createUser = async (userData: {
-        hovaTen: string;
-        email: string;
-        phone: string;
-        cccd: string;
-        gplx: string;
-        password: string;
-    }) => {
-        //http://localhost:8080/Users/register: kết quả ở backend (dùng khi test chính thức)
-        try {
-            const response = await axios.post("http://localhost:8080/auth/register", userData);
-            console.log("Kết quả backend trả về:", response.data);
-            return { success: true, data: response.data };
-        } catch (error: any) {
-            let message = "Có lỗi xảy ra";
-            let field: string | undefined;
 
-            if (error.response) {
-                // Lấy message từ backend
-                message = error.response.data || "Lỗi từ server";
-
-                // Bắt field cụ thể
-                if (message.toLowerCase().includes("email")) field = "email";
-                else if (message.toLowerCase().includes("phone")) field = "phone";
-                else if (message.toLowerCase().includes("cccd")) field = "cccd";
-                else if (message.toLowerCase().includes("gplx")) field = "gplx";
-            } else if (error.request) {
-                message = "Không kết nối được tới server";
-            } else {
-                message = error.message;
-            }
-
-            return { success: false, message, field };
-        }
-    };
 
     // OCR CCCD
     const handleUploadCccd = async (e: React.ChangeEvent<HTMLInputElement>, setFieldValue: (field: string, value: any) => void) => {
@@ -208,7 +173,7 @@ export default function Register() {
                         validationSchema={validationSchema}
                         validateOnChange={true}
                         validateOnBlur={true}
-                        onSubmit={async (values, { setSubmitting, setErrors }) => {
+                        onSubmit={async (values, { setSubmitting }) => {
                             const userObject = {
                                 hovaTen: values.hovaTen,
                                 email: values.email,
@@ -218,33 +183,17 @@ export default function Register() {
                                 password: values.password,
                                 roleId: 1,
                             };
-                                                console.log(userObject)
-                            const result = await createUser(userObject);
 
-                            if (!result.success) {
-                                // nếu backend chỉ ra lỗi cho 1 field cụ thể thì highlight vào đó
-                                // if (result.field) {
-                                //     setErrors({ [result.field]: result.message });
-                                // }
+                            console.log("Dữ liệu đăng ký:", userObject);
 
-                                // toast({
-                                //     title: "Đăng ký thất bại",
-                                //     description: result.message,
-                                //     variant: "destructive",
-                                // });
-                                navigate("/verify-otp", { state: { ...userObject } });
-                                toast({
-                                    title: "Thông tin hợp lệ",
-                                    description: "Vui lòng xác thực tài khoản bằng mã OTP",
-                                });
-                            } else {
-                                // thành công -> điều hướng sang verify OTP
-                                navigate("/verify-otp", { state: { ...userObject } });
-                                toast({
-                                    title: "Thông tin hợp lệ",
-                                    description: "Vui lòng xác thực tài khoản bằng mã OTP",
-                                });
-                            }
+                            // ❌ Không gọi API ở đây
+                            // ✅ Chỉ chuyển dữ liệu qua VerifyOTP
+                            navigate("/verify-otp", { state: { userObject } });
+
+                            toast({
+                                title: "Thông tin hợp lệ",
+                                description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                            });
 
                             setSubmitting(false);
                         }}

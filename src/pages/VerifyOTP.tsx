@@ -18,18 +18,23 @@ export default function VerifyOTP() {
     const location = useLocation();
     const { toast } = useToast();
 
-    const userData = location.state; // lấy từ Register
+    const userData = location.state?.userObject;
 
     useEffect(() => {
         if (!userData) {
+            toast({
+                title: "Thiếu thông tin đăng ký",
+                description: "Vui lòng điền lại thông tin ở trang đăng ký.",
+                variant: "destructive",
+            });
             navigate("/register");
             return;
         }
-        generateOtp();
+        sendOtpEmail(); // Gọi gửi OTP khi vào trang
     }, []);
 
-    // Gửi OTP qua email
-    const generateOtp = async () => {
+    // 🔹 Frontend tạo OTP và gửi tới backend để backend gửi mail
+    const sendOtpEmail = async () => {
         const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
         setOtp(randomOtp);
         setTime(30);
@@ -38,27 +43,26 @@ export default function VerifyOTP() {
         console.log("OTP (debug):", randomOtp);
 
         try {
-            await axios.post("http://localhost:5000/send-otp", {
-                method: "email",
-                destination: userData.email,
+            await axios.post("http://localhost:8080/email/send-otp", {
+                email: userData.email,
                 otp: randomOtp,
             });
 
             toast({
-                title: "OTP đã được gửi",
+                title: "Đã gửi mã OTP",
                 description: `Vui lòng kiểm tra email: ${userData.email}`,
             });
         } catch (error) {
             console.error(error);
             toast({
-                title: "Gửi OTP thất bại",
-                description: "Không thể gửi mã xác thực",
+                title: "Lỗi khi gửi OTP",
+                description: "Không thể gửi mã xác thực tới email.",
                 variant: "destructive",
             });
         }
     };
 
-    // Countdown timer
+    // ⏰ Đếm ngược thời gian
     useEffect(() => {
         if (time <= 0) return;
         const timer = setTimeout(() => setTime((t) => t - 1), 1000);
@@ -70,15 +74,18 @@ export default function VerifyOTP() {
     }, [time]);
 
     const otpSchema = Yup.object().shape({
-        otp: Yup.string().required("Vui lòng nhập OTP").matches(/^\d{6}$/, "OTP phải gồm 6 chữ số"),
+        otp: Yup.string()
+            .required("Vui lòng nhập OTP")
+            .matches(/^\d{6}$/, "OTP phải gồm 6 chữ số"),
     });
 
     const handleResendOTP = async () => {
         setIsResending(true);
-        await generateOtp();
+        await sendOtpEmail();
         setIsResending(false);
     };
 
+    // 🔹 Chỉ gọi 1 lần API tạo tài khoản khi OTP đúng
     const handleVerify = async () => {
         try {
             await axios.post("http://localhost:8080/auth/register", userData);
@@ -86,12 +93,12 @@ export default function VerifyOTP() {
                 title: "Xác thực thành công",
                 description: "Tài khoản đã được tạo!",
             });
-            navigate("/co-owner/dashboard");
+            navigate("/login");
         } catch (error) {
             console.error("Error creating user:", error);
             toast({
                 title: "Đăng ký thất bại",
-                description: "Không thể tạo tài khoản",
+                description: "Không thể tạo tài khoản.",
                 variant: "destructive",
             });
         }
@@ -123,7 +130,7 @@ export default function VerifyOTP() {
                                 return;
                             }
                             if (values.otp === otp) {
-                                await handleVerify();
+                                await handleVerify(); // ✅ chỉ gọi 1 lần API tạo tài khoản
                             } else {
                                 toast({
                                     title: "Mã OTP không đúng",
