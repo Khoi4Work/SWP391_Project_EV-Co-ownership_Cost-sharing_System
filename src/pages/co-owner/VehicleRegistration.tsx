@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import axiosClient from "@/api/axiosClient";
-
+import jsPDF from "jspdf";
 import {
   Car,
   User,
@@ -35,14 +35,9 @@ interface CoOwner {
 }
 import { useEffect } from "react";
 export default function VehicleRegistration() {
-  const ownerSchema = Yup.object({
-    name: Yup.string().required("Tên không được để trống"),
-    email: Yup.string().email("Email không hợp lệ").required("Email bắt buộc"),
-    phone: Yup.string().required("Số điện thoại bắt buộc"),
-  });
   const [step, setStep] = useState(1);
   const [selectedVehicle, setSelectedVehicle] = useState("");
-
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
@@ -75,7 +70,7 @@ export default function VehicleRegistration() {
   const fetchUserByEmail = async (email: string) => {
     try {
       // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
-        const res = await axiosClient.get(`/vehicle/`);
+      const res = await axiosClient.get(`/vehicle/`);
 
       const data = res.data;
       const user = Array.isArray(data) ? data[0] : data;
@@ -292,6 +287,7 @@ export default function VehicleRegistration() {
       return;
     }
     setIsSubmitted(true);
+    generateContractPDF();
     toast({
       title: "Đăng ký thành công",
       description: "Đơn đăng ký xe đã được gửi thành công!",
@@ -299,6 +295,8 @@ export default function VehicleRegistration() {
   };
 
   if (isSubmitted) {
+    const contractPdfUrl = "/assets/contract.pdf"; // 👉 đường dẫn file PDF bạn muốn hiển thị
+
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-glow border-0 text-center">
@@ -319,6 +317,7 @@ export default function VehicleRegistration() {
               </p>
             </div>
 
+            {/* 🔽 Thêm khối hiển thị PDF vào đây */}
             <div className="bg-accent/50 rounded-lg p-6 space-y-3">
               <h3 className="font-semibold flex items-center justify-center space-x-2">
                 <Mail className="h-5 w-5" />
@@ -328,6 +327,18 @@ export default function VehicleRegistration() {
                 Hợp đồng và các thông tin chi tiết đã được gửi đến địa chỉ email của bạn.
                 Vui lòng kiểm tra hộp thư để xem chi tiết.
               </p>
+
+              {/* 🔗 Link xem PDF */}
+              <div className="mt-4">
+                <a
+                  href={contractPdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-medium hover:underline"
+                >
+                  📄 Xem hợp đồng (PDF)
+                </a>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -351,8 +362,8 @@ export default function VehicleRegistration() {
                       phone: "",
                       idNumber: "",
                       address: "",
-                      ownership: 50
-                    }
+                      ownership: 50,
+                    },
                   });
                   setCoOwners([]);
                 }}
@@ -365,6 +376,44 @@ export default function VehicleRegistration() {
       </div>
     );
   }
+
+  const generateContractPDF = () => {
+    const doc = new jsPDF();
+    // 🚗 Tiêu đề
+    doc.setFontSize(18);
+    doc.text("HỢP ĐỒNG ĐĂNG KÝ XE ĐIỆN", 20, 20);
+
+    doc.setFontSize(12);
+    doc.text("Thông tin chủ sở hữu:", 20, 40);
+    doc.text(`Họ tên: ${ownerInfo.name}`, 20, 48);
+    doc.text(`Email: ${ownerInfo.email}`, 20, 56);
+    doc.text(`SĐT: ${ownerInfo.phone}`, 20, 64);
+    doc.text(`CCCD: ${ownerInfo.idNumber}`, 20, 72);
+
+    doc.text("Thông tin xe:", 20, 90);
+    doc.text(
+      `${vehicles.find((v) => v.id === selectedVehicle)?.name || "Không xác định"}`,
+      20,
+      98
+    );
+
+    if (coOwners.length > 0) {
+      doc.text("Đồng sở hữu:", 20, 116);
+      coOwners.forEach((co, i) => {
+        doc.text(`${i + 1}. ${co.name} (${co.ownership}%) - ${co.email}`, 24, 124 + i * 8);
+      });
+    }
+
+    // ✍️ Phần ký kết
+    doc.text(" ", 20, 150);
+    doc.text("Xác nhận đồng ý với các điều khoản trên.", 20, 160);
+    doc.text("Ký tên: ____________________________", 20, 170);
+
+    // 💾 Xuất thành blob URL để hiển thị
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+  };
 
   return (
     <div className="min-h-screen bg-background">
