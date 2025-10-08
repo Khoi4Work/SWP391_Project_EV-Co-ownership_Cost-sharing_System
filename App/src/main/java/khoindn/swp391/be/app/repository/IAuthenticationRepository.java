@@ -11,7 +11,6 @@ public interface IAuthenticationRepository extends JpaRepository<Users, Integer>
 
     Users findUserById(int id);
 
-
     boolean existsByEmail(String email);
 
     boolean existsByCccd(String cccd);

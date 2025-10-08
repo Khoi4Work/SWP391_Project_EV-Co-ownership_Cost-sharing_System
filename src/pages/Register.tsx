@@ -1,16 +1,17 @@
 declare const window: any;
-import { useNavigate, Link } from "react-router-dom";
-import { Car, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import {useNavigate, Link} from "react-router-dom";
+import {Car, ArrowLeft} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {useToast} from "@/hooks/use-toast";
+import {Formik, Form, Field, ErrorMessage} from "formik";
 import * as Yup from "yup";
-import { useState } from "react";
+import {useState} from "react";
 import Tesseract from "tesseract.js";
-import { waitForCvReady } from "@/lib/opencvHelpers";
+import {waitForCvReady} from "@/lib/opencvHelpers";
+
 async function preprocessWithOpenCV(file: File): Promise<string> {
     await waitForCvReady(); // helper ở trên
     const cv = (window as any).cv;
@@ -55,19 +56,23 @@ async function preprocessWithOpenCV(file: File): Promise<string> {
     outCanvas.getContext("2d")!.putImageData(imgData, 0, 0);
 
     // cleanup
-    src.delete(); gray.delete(); blurred.delete(); thresh.delete(); inverted.delete(); out.delete();
+    src.delete();
+    gray.delete();
+    blurred.delete();
+    thresh.delete();
+    inverted.delete();
+    out.delete();
 
     return outCanvas.toDataURL("image/png");
 }
 
 export default function Register() {
     const navigate = useNavigate();
-    const { toast } = useToast();
+    const {toast} = useToast();
     const [showTerms, setShowTerms] = useState(false);
     const [ocrLoadingCccd, setOcrLoadingCccd] = useState(false);
     const [ocrLoadingGplx, setOcrLoadingGplx] = useState(false);
     // check uniqueness API backend host:http://localhost:8080/users/check?${field}=${value} 
-
 
 
     // OCR CCCD
@@ -77,18 +82,18 @@ export default function Register() {
         setOcrLoadingCccd(true);
         try {
             const preprocessed = await preprocessWithOpenCV(file);
-            const { data } = await Tesseract.recognize(preprocessed, "eng", { logger: m => console.log(m) });
+            const {data} = await Tesseract.recognize(preprocessed, "eng", {logger: m => console.log(m)});
             const text = data.text.replace(/\s+/g, "");
             const match = text.match(/0\d{11}/); // Regex 12 số bắt đầu bằng 0
             if (match) {
                 setFieldValue("cccd", match[0]);
-                toast({ title: "CCCD nhận diện thành công", description: match[0] });
+                toast({title: "CCCD nhận diện thành công", description: match[0]});
             } else {
-                toast({ title: "Không nhận diện được CCCD", variant: "destructive" });
+                toast({title: "Không nhận diện được CCCD", variant: "destructive"});
             }
         } catch (err) {
             console.error("OCR CCCD error:", err);
-            toast({ title: "Lỗi OCR", description: "Có lỗi xảy ra", variant: "destructive" });
+            toast({title: "Lỗi OCR", description: "Có lỗi xảy ra", variant: "destructive"});
         } finally {
             setOcrLoadingCccd(false);
         }
@@ -101,7 +106,7 @@ export default function Register() {
         setOcrLoadingGplx(true);
         try {
             const preprocessed = await preprocessWithOpenCV(file);
-            const { data } = await Tesseract.recognize(preprocessed, "eng", { logger: m => console.log(m) });
+            const {data} = await Tesseract.recognize(preprocessed, "eng", {logger: m => console.log(m)});
             const text = data.text.replace(/\s+/g, "");
             // Lấy cả chữ in hoa và số, 8 ký tự trở lên
             // Lấy chuỗi số dài 8–12 chữ số
@@ -150,7 +155,7 @@ export default function Register() {
             <Card className="w-full max-w-md shadow-glow border-0">
                 <CardHeader className="text-center space-y-4">
                     <div className="flex items-center justify-center space-x-2">
-                        <Car className="h-8 w-8 text-primary" />
+                        <Car className="h-8 w-8 text-primary"/>
                         <span className="text-2xl font-bold text-primary">EcoShare</span>
                     </div>
                     <CardTitle className="text-2xl font-bold">Đăng ký tài khoản</CardTitle>
@@ -173,7 +178,7 @@ export default function Register() {
                         validationSchema={validationSchema}
                         validateOnChange={true}
                         validateOnBlur={true}
-                        onSubmit={async (values, { setSubmitting }) => {
+                        onSubmit={async (values, {setSubmitting}) => {
                             const userObject = {
                                 hovaTen: values.hovaTen,
                                 email: values.email,
@@ -181,14 +186,16 @@ export default function Register() {
                                 cccd: values.cccd,
                                 gplx: values.gplx,
                                 password: values.password,
-                                roleId: 1,
+                                roleId: {
+                                    roleId: 1
+                                }
                             };
 
                             console.log("Dữ liệu đăng ký:", userObject);
 
                             // ❌ Không gọi API ở đây
                             // ✅ Chỉ chuyển dữ liệu qua VerifyOTP
-                            navigate("/verify-otp", { state: { userObject } });
+                            navigate("/verify-otp", {state: {userObject}});
 
                             toast({
                                 title: "Thông tin hợp lệ",
@@ -200,7 +207,7 @@ export default function Register() {
 
                         validate={(values) => {
                             try {
-                                validationSchema.validateSync(values, { abortEarly: false });
+                                validationSchema.validateSync(values, {abortEarly: false});
                                 return {};
                             } catch (err: any) {
                                 const errors: { [key: string]: string } = {};
@@ -213,7 +220,7 @@ export default function Register() {
                             }
                         }}
                     >
-                        {({ isSubmitting, setFieldValue }) => (
+                        {({isSubmitting, setFieldValue}) => (
                             <Form className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="hovaTen">Họ và tên*</Label>
@@ -225,7 +232,7 @@ export default function Register() {
                                         placeholder="Nhập họ và tên đầy đủ"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="hovaTen" />}
+                                        {<ErrorMessage name="hovaTen"/>}
                                     </div>
                                 </div>
 
@@ -239,30 +246,34 @@ export default function Register() {
                                         placeholder="Nhập email của bạn"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="email" />}
+                                        {<ErrorMessage name="email"/>}
                                     </div>
                                 </div>
                                 <div className="space-y-2 relative">
                                     <Label htmlFor="cccd">CCCD*</Label>
                                     <div className="relative">
-                                        <Field as={Input} id="cccd" name="cccd" type="text" placeholder="Chỉ upload ảnh để điền CCCD" />
+                                        <Field as={Input} id="cccd" name="cccd" type="text"
+                                               placeholder="Chỉ upload ảnh để điền CCCD"/>
                                         <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
                                             {ocrLoadingCccd ? "⏳" : "📷"}
-                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadCccd(e, setFieldValue)} />
+                                            <input type="file" accept="image/*" className="hidden"
+                                                   onChange={(e) => handleUploadCccd(e, setFieldValue)}/>
                                         </label>
                                     </div>
-                                    <div className="text-red-500 text-xs">{<ErrorMessage name="cccd" />}</div>
+                                    <div className="text-red-500 text-xs">{<ErrorMessage name="cccd"/>}</div>
                                 </div>
                                 <div className="space-y-2 relative">
                                     <Label htmlFor="gplx">Giấy phép lái xe*</Label>
                                     <div className="relative">
-                                        <Field as={Input} id="gplx" name="gplx" type="text" placeholder="Chỉ upload ảnh để điền GPLX" />
+                                        <Field as={Input} id="gplx" name="gplx" type="text"
+                                               placeholder="Chỉ upload ảnh để điền GPLX"/>
                                         <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
                                             {ocrLoadingGplx ? "⏳" : "📷"}
-                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadGplx(e, setFieldValue)} />
+                                            <input type="file" accept="image/*" className="hidden"
+                                                   onChange={(e) => handleUploadGplx(e, setFieldValue)}/>
                                         </label>
                                     </div>
-                                    <div className="text-red-500 text-xs">{<ErrorMessage name="gplx" />}</div>
+                                    <div className="text-red-500 text-xs">{<ErrorMessage name="gplx"/>}</div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="phone">Số điện thoại*</Label>
@@ -274,7 +285,7 @@ export default function Register() {
                                         placeholder="Nhập số điện thoại"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="phone" />}
+                                        {<ErrorMessage name="phone"/>}
                                     </div>
                                 </div>
 
@@ -288,7 +299,7 @@ export default function Register() {
                                         placeholder="Nhập mật khẩu"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="password" />}
+                                        {<ErrorMessage name="password"/>}
                                     </div>
                                 </div>
 
@@ -302,10 +313,10 @@ export default function Register() {
                                         placeholder="Nhập lại mật khẩu"
                                     />
                                     <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="confirmPassword" />}
+                                        {<ErrorMessage name="confirmPassword"/>}
                                     </div>
                                 </div>
-                                <div style={{ height: 5 }} />
+                                <div style={{height: 5}}/>
                                 <div className="flex items-center space-x-2">
                                     <Field
                                         type="checkbox"
@@ -324,7 +335,7 @@ export default function Register() {
                                     </Label>
                                 </div>
                                 <div className="text-red-500 text-xs">
-                                    {<ErrorMessage name="acceptTerms" />}
+                                    {<ErrorMessage name="acceptTerms"/>}
                                 </div>
                                 <Button
                                     type="submit"
@@ -394,7 +405,7 @@ export default function Register() {
                             to="/"
                             className="flex items-center justify-center space-x-2 text-sm text-muted-foreground hover:text-primary"
                         >
-                            <ArrowLeft className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4"/>
                             <span>Quay về trang chủ</span>
                         </Link>
                     </div>
