@@ -83,7 +83,12 @@ export default function CoOwnerForm({
           <div className="space-y-2">
             <Label>Họ và tên</Label>
             <Field name="name">
-              {({ field }: any) => <Input {...field} placeholder="Nhập họ và tên" />}
+              {({ field }: any) => <Input {...field}
+                onBlur={(e) => {
+                  field.onBlur(e);
+                  updateCoOwner(coOwner.id, "name", e.target.value);
+                }}
+                placeholder="Nhập họ và tên" />}
             </Field>
             <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
           </div>
@@ -98,6 +103,7 @@ export default function CoOwnerForm({
                   placeholder="Nhập email"
                   onBlur={async (e) => {
                     field.onBlur(e);
+                    updateCoOwner(coOwner.id, "email", e.target.value);
                     const emailValue = e.target.value.trim();
                     if (!emailValue) return;
 
@@ -120,7 +126,12 @@ export default function CoOwnerForm({
           <div className="space-y-2">
             <Label>Số điện thoại</Label>
             <Field name="phone">
-              {({ field }: any) => <Input {...field} placeholder="Nhập số điện thoại" />}
+              {({ field }: any) => <Input {...field}
+                onBlur={(e) => {
+                  field.onBlur(e);
+                  updateCoOwner(coOwner.id, "phone", e.target.value);
+                }}
+                placeholder="Nhập số điện thoại" />}
             </Field>
             <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
           </div>
@@ -129,7 +140,12 @@ export default function CoOwnerForm({
           <div className="space-y-2">
             <Label>CCCD/CMND</Label>
             <Field name="idNumber">
-              {({ field }: any) => <Input {...field} placeholder="Nhập số CCCD/CMND" />}
+              {({ field }: any) => <Input {...field}
+                onBlur={(e) => {
+                  field.onBlur(e);
+                  updateCoOwner(coOwner.id, "idNumber", e.target.value);
+                }}
+                placeholder="Nhập số CCCD/CMND" />}
             </Field>
             <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
           </div>

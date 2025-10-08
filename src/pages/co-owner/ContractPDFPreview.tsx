@@ -12,10 +12,9 @@ export default function ContractPDFPreview({ userData, vehicleData }) {
     doc.text("HỢP ĐỒNG ĐĂNG KÝ XE", 70, 20);
 
     doc.setFontSize(12);
-    doc.text(`Bên A (Chủ xe): ${userData?.name || "Chưa có"}`, 20, 40);
+    doc.text(`Bên A (Chủ sỡ hữu chính): ${userData?.name || "Chưa có"}`, 20, 40);
     doc.text(`Email: ${userData?.email || "Chưa có"}`, 20, 50);
     doc.text(`SĐT: ${userData?.phone || "Chưa có"}`, 20, 60);
-
     doc.text(`Bên B (Hệ thống): EcoShare Platform`, 20, 80);
     doc.text(`Xe đăng ký: ${vehicleData?.model || "Chưa có"}`, 20, 100);
     doc.text(`Biển số: ${vehicleData?.licensePlate || "Chưa có"}`, 20, 110);

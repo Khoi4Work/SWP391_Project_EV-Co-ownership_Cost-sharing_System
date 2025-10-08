@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFormik, Formik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
 import CoOwnerForm from "./AddingCoOwners";
+import ContractPDFPreview from "./ContractPDFPreview";
 interface CoOwner {
   id: string;
   name: string;
@@ -295,7 +296,7 @@ export default function VehicleRegistration() {
   };
 
   if (isSubmitted) {
-    const contractPdfUrl = "/assets/contract.pdf"; // 👉 đường dẫn file PDF bạn muốn hiển thị
+    const contractPdfUrl = "/contract.pdf"; // 👉 đường dẫn file PDF bạn muốn hiển thị
 
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
@@ -329,15 +330,9 @@ export default function VehicleRegistration() {
               </p>
 
               {/* 🔗 Link xem PDF */}
-              <div className="mt-4">
-                <a
-                  href={contractPdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary font-medium hover:underline"
-                >
-                  📄 Xem hợp đồng (PDF)
-                </a>
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="font-semibold mb-2">Xem hợp đồng đăng ký xe:</h3>
+                <ContractPDFPreview userData={ownerInfo} vehicleData={selectedVehicle} />
               </div>
             </div>
 
@@ -777,10 +772,13 @@ export default function VehicleRegistration() {
                 {/* Co-owners */}
                 {coOwners.length > 0 && (
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">Đồng sở hữu</h3>
                     {coOwners.map((coOwner) => (
                       <div key={coOwner.id} className="mb-2 text-sm">
-                        <strong>{coOwner.name}</strong> ({coOwner.ownership}%) - {coOwner.email}
+                        <h3 className="font-semibold mb-2">Đồng sỡ hữu ({coOwner.ownership}%)</h3>
+                        <div>Họ tên:{coOwner.name}</div>
+                        <div>Email: {coOwner.email}</div>
+                        <div>Điện thoại: {coOwner.phone}</div>
+                        <div>CCCD: {coOwner.idNumber}</div>
                       </div>
                     ))}
                   </div>
