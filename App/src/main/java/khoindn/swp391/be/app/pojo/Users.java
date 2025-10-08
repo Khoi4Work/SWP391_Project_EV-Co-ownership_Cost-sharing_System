@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -52,6 +53,7 @@ public class Users implements UserDetails {
     private UserRole role; // Default role ID for regular users
 
     @OneToMany(mappedBy = "users")
+    @JsonIgnore
     private List<GroupMember> userOfGroupMember = new ArrayList<>();
 
     public Users(String hovaTen, String email, String password, String cccd, String gplx) {
@@ -71,6 +73,6 @@ public class Users implements UserDetails {
 
     @Override
     public String getUsername() {
-        return "";
+        return this.email;
     }
 }

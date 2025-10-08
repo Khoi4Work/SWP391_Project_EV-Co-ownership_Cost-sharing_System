@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:8081")
+@SecurityRequirement(name = "api")
 public class AuthenticationController {
     @Autowired
     AuthenticationService authenticationService;
@@ -32,7 +33,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login/{roleId}")
-    public ResponseEntity login(@PathVariable Integer roleId, @RequestBody @Valid LoginUser loginUser) {
+    public ResponseEntity<UsersResponse> login(@PathVariable Integer roleId, @RequestBody @Valid LoginUser loginUser) {
         // Kiểm tra roleId với thông tin user
         UsersResponse usersResponse = authenticationService.login(loginUser);
 
@@ -41,5 +42,10 @@ public class AuthenticationController {
         }
 
         return ResponseEntity.ok(usersResponse);
+    }
+
+    @GetMapping("/current")
+    public ResponseEntity getCurrentAccount(){
+        return ResponseEntity.ok(authenticationService.getCurrentAccount());
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -101,6 +102,19 @@ public class AuthenticationService implements UserDetailsService {
         String token = tokenService.generateToken(users);
         usersResponse.setToken(token);
         return usersResponse;
+    }
+
+    public Users getCurrentAccount() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        System.out.println("Principal type: " +
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal().getClass());
+
+
+        if (principal instanceof Users) {
+            return (Users) principal;
+        } else {
+            throw new AuthenticationException("User is not logged in or token is invalid");
+        }
     }
 
 

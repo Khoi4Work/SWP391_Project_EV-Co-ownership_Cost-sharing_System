@@ -35,14 +35,13 @@ public class Filter extends OncePerRequestFilter {
     private final List<String> PUBLIC_API = List.of(
             "POST:/api/chat",
             "POST:/auth/register",
-            "POST:/auth/**",
-            "GET:/swagger-ui/**",
-            "GET:/v3/api-docs/**",
-            "GET:/swagger-resources/**",
+            "POST:/auth/login/**",
             "POST:/email/send-otp",
             "POST:/Schedule/**",
-            "GET:/Schedule/**"
 
+            "GET:/swagger-ui/**",
+            "GET:/v3/api-docs/**",
+            "GET:/swagger-resources/**"
     );
 
     public boolean isPublicAPI(String uri, String method) {
@@ -90,8 +89,11 @@ public class Filter extends OncePerRequestFilter {
             UsernamePasswordAuthenticationToken
                     authenToken =
                     new UsernamePasswordAuthenticationToken(user, token, user.getAuthorities());
+
             authenToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
             SecurityContextHolder.getContext().setAuthentication(authenToken);
+
 
             // Co token
             // Nen phai verify lại token
