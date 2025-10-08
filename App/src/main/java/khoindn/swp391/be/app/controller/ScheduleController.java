@@ -50,6 +50,19 @@ public class ScheduleController {
         }
         return ResponseEntity.ok(res);
     }
+
+    @PutMapping("/update/{scheduleId}")
+    public ResponseEntity<Void> updateSchedule(@PathVariable int scheduleId,
+                                               @RequestBody ScheduleReq req) {
+        scheduleService.updateSchedule(req, scheduleId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/delete/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable int scheduleId) {
+        scheduleService.deleteSchedule(scheduleId);
+        return ResponseEntity.noContent().build();
+    }
 //    @PutMapping("/{id}")
 //    public ResponseEntity<ScheduleRes> updateSchedule(@PathVariable Integer id,
 //                                                      @RequestBody ScheduleReq req) {

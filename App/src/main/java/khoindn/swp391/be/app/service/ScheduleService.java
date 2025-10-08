@@ -102,6 +102,46 @@ public class ScheduleService implements IScheduleService {
         return dto;
     }
 
+    @Override
+    public void updateSchedule(ScheduleReq req, int scheduleId) {
+        // Find existing schedule
+        Schedule schedule = iScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        // Validate user exists
+        Users user = iUserRepository.findById(req.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // Validate group exists
+        Group group = iGroupRepository.findById(req.getGroupId())
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        // Validate user belongs to group
+        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
+                .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
+
+        // Validate vehicle belongs to group
+        Vehicle vehicle = iVehicleRepository.findVehicleByVehicleId(req.getVehicleId());
+        if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
+            throw new VehicleNotBelongException("Vehicle does not belong to this group");
+        }
+
+        // Update schedule fields
+        schedule.setStartTime(req.getStartTime());
+        schedule.setEndTime(req.getEndTime());
+        schedule.setGroupMember(gm);
+        schedule.getGroupMember().getGroup().setVehicles((List<Vehicle>) vehicle);
+
+        // Save updated schedule
+        iScheduleRepository.save(schedule);
+    }
+
+    @Override
+    public void deleteSchedule(int scheduleId) {
+        Schedule schedule = iScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+        iScheduleRepository.delete(schedule);
+    }
 
 
 }

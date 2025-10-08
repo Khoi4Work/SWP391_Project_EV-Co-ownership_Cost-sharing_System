@@ -13,4 +13,8 @@ public interface IScheduleService {
     List<ScheduleRes> getAllSchedules();
 
     public VehicleRes getCarByGroupIdAndUserId(int groupId, int userId);
+
+    public void updateSchedule(ScheduleReq req, int scheduleId);
+
+    public void deleteSchedule(int scheduleId);
 }
