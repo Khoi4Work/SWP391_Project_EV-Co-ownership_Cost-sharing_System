@@ -101,9 +101,9 @@ export default function VerifyOTP() {
                 variant: "destructive",
             });
         }
-        // finally {
-        //     navigate("/login");
-        // }
+        finally {
+            navigate("/login");
+        }
     };
 
     return (
