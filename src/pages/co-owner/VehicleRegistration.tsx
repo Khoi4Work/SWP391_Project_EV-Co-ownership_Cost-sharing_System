@@ -129,7 +129,7 @@ export default function VehicleRegistration() {
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
-        const response = await axiosClient.get("/vehicle");
+        const response = await axiosClient.get("/vehicle/");
         // ⚙️ Map lại dữ liệu backend cho phù hợp UI
         const mappedVehicles = response.data.map((v) => ({
           id: v.vehicleId,

@@ -1,20 +1,20 @@
-import {useState} from "react";
+import { useState } from "react";
 import axios from "axios";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Link, useNavigate} from "react-router-dom";
-import {useToast} from "@/hooks/use-toast";
-import {Car, ArrowLeft} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { Car, ArrowLeft } from "lucide-react";
 
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [userTypes, setUserTypes] = useState<string[]>([]);
     const navigate = useNavigate();
-    const {toast} = useToast();
+    const { toast } = useToast();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -72,13 +72,13 @@ export default function Login() {
             });
 
             // Điều hướng theo loại tài khoản
-            if (selectedType === "co-owner") {
-                navigate("/co-owner/dashboard");
-            } else if (selectedType === "staff") {
-                navigate("/staff/dashboard");
-            } else if (selectedType === "admin") {
-                navigate("/admin/dashboard");
-            }
+            // if (selectedType === "co-owner") {
+            //     navigate("/co-owner/dashboard");
+            // } else if (selectedType === "staff") {
+            //     navigate("/staff/dashboard");
+            // } else if (selectedType === "admin") {
+            //     navigate("/admin/dashboard");
+            // }
         } catch (err) {
             toast({
                 title: "Lỗi đăng nhập",
@@ -86,6 +86,9 @@ export default function Login() {
                     err?.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.",
                 variant: "destructive",
             });
+        }
+        finally {
+            navigate("/co-owner/dashboard");
         }
     };
 
@@ -97,13 +100,13 @@ export default function Login() {
                 onClick={() => navigate(-1)}
                 className="absolute top-4 left-4 text-white hover:bg-white/10"
             >
-                <ArrowLeft className="h-4 w-4 mr-2"/>
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Quay lại
             </Button>
             <Card className="w-full max-w-md shadow-glow border-0">
                 <CardHeader className="text-center space-y-4">
                     <div className="flex items-center justify-center space-x-2">
-                        <Car className="h-8 w-8 text-primary"/>
+                        <Car className="h-8 w-8 text-primary" />
                         <span className="text-2xl font-bold text-primary">EcoShare</span>
                     </div>
                     <CardTitle className="text-2xl font-bold">Đăng nhập</CardTitle>
@@ -117,9 +120,9 @@ export default function Login() {
                             <Label>Loại tài khoản</Label>
                             <div className="flex flex-wrap gap-4">
                                 {[
-                                    {value: "co-owner", label: "Chủ sở hữu (Co-owner)"},
-                                    {value: "staff", label: "Nhân viên (Staff)"},
-                                    {value: "admin", label: "Quản trị viên (Admin)"}
+                                    { value: "co-owner", label: "Chủ sở hữu (Co-owner)" },
+                                    { value: "staff", label: "Nhân viên (Staff)" },
+                                    { value: "admin", label: "Quản trị viên (Admin)" }
                                 ].map((type) => (
                                     <div key={type.value} className="flex items-center space-x-2">
                                         <Checkbox
