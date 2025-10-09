@@ -1,4 +1,4 @@
-package com.example.demo.response;
+package khoindn.swp391.be.app.model;
 
 public class ApiResponse<T> {
     private String status;

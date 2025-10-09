@@ -37,15 +37,16 @@ public class ChatGPTService {
         List<String> dbContexts = safeList(knowledgeSearchService.searchRelated(request.getMessage(), TOP_K));
         List<String> clientCtx  = safeList(request.getContext());
 
-        // Gộp, loại trùng (giữ thứ tự), cắt gọn “theo từ” để hạn chế token
+        // Gộp & khử trùng (giữ thứ tự)
         List<String> allContexts = new ArrayList<>(dedupeKeepOrder(dbContexts));
         allContexts.addAll(dedupeKeepOrder(clientCtx));
 
-        String contextBlock = buildContextBlockWordLimited(allContexts, /*maxWords*/ 180); // ~1200–1400 chars
+        // ✅ Coi CẢ DB lẫn client context là "internal"
+        boolean hasAnyContext = !allContexts.isEmpty();
 
-        // Nếu không có context nội bộ, nói rõ để giảm bịa
-        boolean hasInternal = !dbContexts.isEmpty();
-        if (!hasInternal) {
+        // Ghép block context (giới hạn theo số từ để tiết kiệm token)
+        String contextBlock = buildContextBlockWordLimited(allContexts, 180); // ~1200–1400 chars
+        if (!hasAnyContext) {
             contextBlock = "(no internal context found)";
         }
 
@@ -69,15 +70,15 @@ public class ChatGPTService {
                 """.formatted(contextBlock, request.getMessage());
         messages.add(Message.user(userPayload));
 
-        // Gọi model an toàn
+        // Gọi model an toàn + fallback thông minh
         String reply;
         Integer promptT = null, completionT = null, totalT = null;
         try {
             LlmResult result = llmClient.chat(messages);
-            reply    = (result != null && result.firstText() != null)
+            reply = (result != null && result.firstText() != null)
                     ? result.firstText()
-                    : (hasInternal
-                    ? "Sorry, I couldn't synthesize an answer from the current context."
+                    : (hasAnyContext
+                    ? fallbackFromContext(request.getMessage(), allContexts)
                     : "I don't see any internal data for this question. Could you provide more details?");
             if (result != null) {
                 promptT = result.getPromptTokens();
@@ -85,16 +86,16 @@ public class ChatGPTService {
                 totalT = result.getTotalTokens();
             }
         } catch (Exception e) {
-            log.error("LLM call failed", e);
-            reply = hasInternal
-                    ? "The assistant encountered an error while generating a response from the context. Please try again."
+            log.error("LLM call failed: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            reply = hasAnyContext
+                    ? fallbackFromContext(request.getMessage(), allContexts)
                     : "The assistant couldn't access internal data at the moment. Please try again later.";
         }
 
         // Log căn bản để debug chất lượng
-        log.info("Q='{}' | ctx_db={} | ctx_client={} | ctx_words~={}",
+        log.info("Q='{}' | ctx_db={} | ctx_client={} | any_ctx={} | ctx_words~={}",
                 trimLog(request.getMessage(), 160),
-                dbContexts.size(), clientCtx.size(),
+                dbContexts.size(), clientCtx.size(), hasAnyContext,
                 approxWordCount(contextBlock));
 
         return ChatResponse.builder()
@@ -106,7 +107,7 @@ public class ChatGPTService {
                 .build();
     }
 
-    // -------- Helpers --------
+    // ---------- Helpers ----------
 
     private List<String> safeList(List<String> in) {
         return (in == null) ? Collections.emptyList() : in.stream()
@@ -117,8 +118,7 @@ public class ChatGPTService {
     }
 
     private List<String> dedupeKeepOrder(List<String> items) {
-        LinkedHashSet<String> set = new LinkedHashSet<>(items);
-        return new ArrayList<>(set);
+        return new ArrayList<>(new LinkedHashSet<>(items));
     }
 
     private String buildContextBlockWordLimited(List<String> contexts, int maxWords) {
@@ -135,6 +135,13 @@ public class ChatGPTService {
         }
         String out = sb.toString().trim();
         return out.isBlank() ? "(no internal context found)" : out;
+    }
+
+    private String fallbackFromContext(String question, List<String> contexts) {
+        // Trả lời tóm tắt 1–2 dòng dựa trên context đầu tiên để demo vẫn có output
+        String first = contexts.get(0);
+        return "Theo dữ liệu nội bộ: " + first +
+                "\n(Ghi chú: câu trả lời này được tổng hợp trực tiếp từ context vì dịch vụ LLM đang lỗi/không phản hồi.)";
     }
 
     private int wordCount(String s) { return (int) Arrays.stream(s.split("\\s+")).filter(t -> !t.isBlank()).count(); }
