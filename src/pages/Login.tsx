@@ -30,21 +30,20 @@ export default function Login() {
         const roleMap: Record<string, number> = {
             "admin": 3,
             "staff": 4,
-            "co-owner": 1, // 1 = user
+            "co-owner": 1,
             "user": 1
         };
         const selectedType = userTypes[0];
         const roleId = roleMap[selectedType];
+
         try {
-            // Thay đổi URL này thành endpoint backend thực tế của bạn
             const response = await axios.post(`http://localhost:8080/auth/login/${roleId}`, {
                 email,
                 password,
             });
+
             const hasValidData = Boolean(response?.data && (response.data.token || response.data.id));
-            const token = response.data.token; // ✅ lấy token từ response
-            console.log("Token:", token);
-            localStorage.setItem("accessToken", token);
+
             if (!hasValidData) {
                 toast({
                     title: "Lỗi đăng nhập",
@@ -53,12 +52,25 @@ export default function Login() {
                 });
                 return;
             }
-            console.log(response.data)
-            // Xử lý response backend trả về
+
+            // ✅ Trích xuất dữ liệu từ response
+            const token = response.data.token;
+            const userId = response.data.id;
+            const hovaten = response.data.hovaten; // Tên field từ backend
+
+            // ✅ Lưu vào localStorage
+            localStorage.setItem("accessToken", token);
+            localStorage.setItem("userId", userId.toString());
+            localStorage.setItem("hovaten", hovaten);
+
+            console.log("Token:", token);
+            console.log("User ID:", userId);
+
             toast({
                 title: "Đăng nhập thành công",
-                description: `Chào mừng bạn đến với EcoShare!`,
+                description: `Chào mừng ${hovaten} đến với EcoShare!`,
             });
+
             // Điều hướng theo loại tài khoản
             if (selectedType === "co-owner") {
                 navigate("/co-owner/dashboard");
@@ -68,7 +80,6 @@ export default function Login() {
                 navigate("/admin/dashboard");
             }
         } catch (err) {
-            // Xử lý lỗi trả về từ backend
             toast({
                 title: "Lỗi đăng nhập",
                 description:
@@ -77,6 +88,7 @@ export default function Login() {
             });
         }
     };
+
 
     return (
         <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
