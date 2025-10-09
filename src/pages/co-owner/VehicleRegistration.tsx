@@ -42,42 +42,42 @@ export default function VehicleRegistration() {
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
-  useEffect(() => {
-    const demoVehicles = [
-      {
-        id: 1,
-        name: "VinFast VF e34",
-        image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
-        price: "690,000,000₫",
-        brand: "Vinfast",
-        color: "red",
-        batteryCapacity: 3.6,
-        plateNo: "56789"
-      },
-      {
-        id: 2,
-        name: "Tesla Model 3",
-        image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
-        price: "1,500,000,000₫",
-        brand: "Tesla",
-        color: "yellow",
-        batteryCapacity: 3.7,
-        plateNo: "12345"
-      },
-      {
-        id: 3,
-        name: "Hyundai Ioniq 5",
-        image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
-        price: "1,200,000,000₫",
-        brand: "Hyundai",
-        color: "white",
-        batteryCapacity: 3.8,
-        plateNo: "1231313"
-      }
-    ];
-
-    setVehicles(demoVehicles);
-  }, []);
+  // useEffect(() => {
+  //   const demoVehicles = [
+  //     {
+  //       id: 1,
+  //       name: "VinFast VF e34",
+  //       image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
+  //       price: "690,000,000₫",
+  //       brand: "Vinfast",
+  //       color: "red",
+  //       batteryCapacity: 3.6,
+  //       plateNo: "56789"
+  //     },
+  //     {
+  //       id: 2,
+  //       name: "Tesla Model 3",
+  //       image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
+  //       price: "1,500,000,000₫",
+  //       brand: "Tesla",
+  //       color: "yellow",
+  //       batteryCapacity: 3.7,
+  //       plateNo: "12345"
+  //     },
+  //     {
+  //       id: 3,
+  //       name: "Hyundai Ioniq 5",
+  //       image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
+  //       price: "1,200,000,000₫",
+  //       brand: "Hyundai",
+  //       color: "white",
+  //       batteryCapacity: 3.8,
+  //       plateNo: "1231313"
+  //     }
+  //   ];
+  //
+  //   setVehicles(demoVehicles);
+  // }, []);
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -129,7 +129,7 @@ export default function VehicleRegistration() {
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
-        const response = await axiosClient.get("/vehicle");
+        const response = await axiosClient.get("/vehicle/");
         // ⚙️ Map lại dữ liệu backend cho phù hợp UI
         const mappedVehicles = response.data.map((v) => ({
           id: v.vehicleId,
