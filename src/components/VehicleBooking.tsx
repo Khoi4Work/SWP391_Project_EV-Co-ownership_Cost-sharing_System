@@ -5,13 +5,13 @@ import {Badge} from "@/components/ui/badge";
 import {Calendar, Clock, Car, Edit, X, Check, AlertCircle} from "lucide-react";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import axiosClient from "@/api/axiosClient";
 
 interface BookingSlot {
     scheduleId: number;
     time: string;
     date: string;
-    vehicleName: string;
+    brand: string;
+    model: string;
     vehicleId: number;
     bookedBy: string;
     userId: number;
@@ -21,7 +21,14 @@ interface BookingSlot {
 
 interface Vehicle {
     vehicleId: number;
-    name: string;
+    plateNo: string;
+    brand: string;
+    model: string;
+    color: string;
+    batteryCapacity: number;
+    price: number;
+    imageUrl: string | null;
+    createdAt: string;
     groupId: number;
     groupName: string;
 }
@@ -78,90 +85,111 @@ export default function VehicleBooking() {
     };
 
     // Sửa loadVehicles: luôn trả về mảng và thêm xe mẫu để test
-    const token = localStorage.getItem("token"); // Lấy token từ login
-    console.log(token)
+    const token = localStorage.getItem("accessToken"); // Lấy token từ login
+    console.log("Token:", token);
     const loadVehicles = async () => {
         setLoadingVehicles(true);
         setVehiclesError(null);
-
         try {
-            // ✅ Gọi API bằng axiosClient, tự động gắn token từ interceptor
-            const res = await axiosClient.get(
-                `${beBaseUrl}/Schedule/vehicle`,
-                {
-                    params: {
-                        groupId: currentGroupId,
-                        userId: currentUserId
-                    }
+            console.log("Calling API with:", {
+                url: `${beBaseUrl}/Schedule/vehicle?groupId=${currentGroupId}&userId=${currentUserId}`,
+                token,
+                currentGroupId,
+                currentUserId
+            });
+
+            const res = await fetch(`${beBaseUrl}/Schedule/vehicle?groupId=${currentGroupId}&userId=${currentUserId}`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                },
+                credentials: "include"
+            });
+
+            console.log("API Response status:", res.status);
+            const responseText = await res.text();
+            console.log("API Raw response:", responseText);
+
+            let vehiclesArr: Vehicle[] = [];
+            if (res.ok) {
+                try {
+                    const data = JSON.parse(responseText);
+                    console.log("Parsed API response:", data);
+                    vehiclesArr = Array.isArray(data) ? data : [data];
+                    console.log("Processed vehicles array:", vehiclesArr);
+                } catch (parseError) {
+                    console.error("Error parsing API response:", parseError);
                 }
-            );
-
-            // Axios tự parse JSON, nên lấy trực tiếp
-            let vehiclesArr: Vehicle[] = Array.isArray(res.data) ? res.data : [res.data];
-
-            // ✅ Nếu không có dữ liệu, tạo xe mẫu
-            if (!vehiclesArr || vehiclesArr.length === 0) {
-                vehiclesArr = [
-                    {
-                        vehicleId: 9991,
-                        name: "VinFast VF e34",
-                        groupId: currentGroupId,
-                        groupName: "Nhóm A",
-                    },
-                    {
-                        vehicleId: 9992,
-                        name: "Kia EV6",
-                        groupId: currentGroupId,
-                        groupName: "Nhóm A",
-                    },
-                    {
-                        vehicleId: 9993,
-                        name: "Hyundai Ioniq 5",
-                        groupId: currentGroupId,
-                        groupName: "Nhóm A",
-                    },
-                ];
             }
 
+            // Nếu không lấy được xe từ BE hoặc BE trả về rỗng, luôn thêm xe mẫu để test
+            // if (!vehiclesArr || vehiclesArr.length === 0) {
+            //     console.log("Using sample vehicles data");
+            //     vehiclesArr = [
+            //         {
+            //             vehicleId: 9991,
+            //             name: "VinFast VF e34",
+            //             groupId: currentGroupId,
+            //             groupName: "Nhóm A",
+            //         },
+            //         {
+            //             vehicleId: 9992,
+            //             name: "Kia EV6",
+            //             groupId: currentGroupId,
+            //             groupName: "Nhóm A",
+            //         },
+            //         {
+            //             vehicleId: 9993,
+            //             name: "Hyundai Ioniq 5",
+            //             groupId: currentGroupId,
+            //             groupName: "Nhóm A",
+            //         },
+            //     ];
+            // }
+            console.log("Final vehicles array:", vehiclesArr);
             setVehicles(vehiclesArr);
-
         } catch (e: any) {
-            console.error("❌ Lỗi khi load vehicles:", e);
-
+            console.error("Error loading vehicles:", e);
             // Nếu lỗi BE, vẫn set xe mẫu để test
             setVehicles([
-                {
-                    vehicleId: 9991,
-                    name: "VinFast VF e34",
-                    groupId: currentGroupId,
-                    groupName: "Nhóm A",
-                },
-                {
-                    vehicleId: 9992,
-                    name: "Kia EV6",
-                    groupId: currentGroupId,
-                    groupName: "Nhóm A",
-                },
-                {
-                    vehicleId: 9993,
-                    name: "Hyundai Ioniq 5",
-                    groupId: currentGroupId,
-                    groupName: "Nhóm A",
-                },
+                // {
+                //     vehicleId: 9991,
+                //     name: "VinFast VF e34",
+                //     groupId: currentGroupId,
+                //     groupName: "Nhóm A",
+                // },
+                // {
+                //     vehicleId: 9992,
+                //     name: "Kia EV6",
+                //     groupId: currentGroupId,
+                //     groupName: "Nhóm A",
+                // },
+                // {
+                //     vehicleId: 9993,
+                //     name: "Hyundai Ioniq 5",
+                //     groupId: currentGroupId,
+                //     groupName: "Nhóm A",
+                // },
             ]);
-
             setVehiclesError("Không kết nối được BE, đang dùng xe mẫu để test.");
         } finally {
             setLoadingVehicles(false);
         }
     };
 
-
     const loadBookings = async () => {
         setLoadingBookings(true);
         try {
-            const res = await axiosClient.get(`${beBaseUrl}/Schedule/all`)
-            const data =  res.data;
+            const res = await fetch(`${beBaseUrl}/Schedule/all`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                },
+                credentials: "include"
+            });
+            console.log("Loading bookings response:", res.status);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
             const formattedBookings: BookingSlot[] = data.map((item: any) => {
                 const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
@@ -179,7 +207,8 @@ export default function VehicleBooking() {
                     scheduleId: item.scheduleId,
                     time: `${startTime}-${endTime}`,
                     date: date,
-                    vehicleName: vehicle?.name || "Xe không xác định",
+                    brand: vehicle.brand ,
+                    model: vehicle.model ,
                     vehicleId: item.vehicleId,
                     bookedBy: item.userId === currentUserId ? currentUserName : `User ${item.userId}`,
                     userId: item.userId,
@@ -195,7 +224,8 @@ export default function VehicleBooking() {
                     scheduleId: 1,
                     time: "08:00-10:00",
                     date: new Date().toISOString().split('T')[0],
-                    vehicleName: "VinFast VF e34",
+                    brand: "Tesla",
+                    model: "Model S",
                     vehicleId: 9991,
                     bookedBy: "User 2",
                     userId: 2,
@@ -206,7 +236,8 @@ export default function VehicleBooking() {
                     scheduleId: 2,
                     time: "12:00-14:00",
                     date: new Date().toISOString().split('T')[0],
-                    vehicleName: "Kia EV6",
+                    brand: "VinFast",
+                    model: "VF8",
                     vehicleId: 9992,
                     bookedBy: "User 3",
                     userId: 3,
@@ -226,7 +257,7 @@ export default function VehicleBooking() {
 
     const getSelectedVehicleName = () => {
         const v = vehicles.find(v => String(v.vehicleId) === String(selectedVehicle));
-        return v?.name || "";
+        return v ? `${v.brand} ${v.model}` : "";
     };
 
     const toMinutes = (hhmm: string) => {
@@ -264,8 +295,11 @@ export default function VehicleBooking() {
     const handleTimeSelection = () => {
         if (!selectedStartTime || !selectedEndTime) return;
         const timeRange = `${selectedStartTime}-${selectedEndTime}`;
+        const selectedV = vehicles.find(v => String(v.vehicleId) === selectedVehicle);
         const hasOverlap = existingBookings.some(booking =>
-            booking.vehicleName === getSelectedVehicleName() && booking.date === selectedDate && rangesOverlap(booking.time, timeRange)
+            booking.vehicleId === Number(selectedVehicle) &&
+            booking.date === selectedDate &&
+            rangesOverlap(booking.time, timeRange)
         );
         if (hasOverlap) {
             showToast("Xung đột thời gian", "Khung giờ bạn chọn bị chồng lấn với lịch đã đặt.", "destructive");
@@ -284,12 +318,12 @@ export default function VehicleBooking() {
         const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
         const alreadyCounted = daysSet.has(selectedDate);
         const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
-        if (prospectiveDaysCount > 14) {
+        if (prospectiveDaysCount > 3) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
             return;
         }
         const hasConflict = existingBookings.some(booking =>
-            booking.vehicleName === getSelectedVehicleName() && booking.date === selectedDate && rangesOverlap(booking.time, selectedTime)
+            booking.vehicleId === Number(selectedVehicle) && booking.date === selectedDate && rangesOverlap(booking.time, selectedTime)
         );
         if (hasConflict) {
             showToast("Khung giờ đã được đặt", `Xe ${getSelectedVehicleName()} vào ${selectedDate} từ ${selectedTime} đã có người đặt.`, "destructive");
@@ -299,7 +333,16 @@ export default function VehicleBooking() {
         // Gọi BE để tạo lịch mới
         try {
             const [start, end] = selectedTime.split("-");
-            const res = await fetch(`${beBaseUrl}/Schedule`, {
+            console.log("Sending schedule request:", {
+                startTime: toLocalDateTime(selectedDate, start),
+                endTime: toLocalDateTime(selectedDate, end),
+                status: "pending",
+                groupId: currentGroupId,
+                userId: currentUserId,
+                vehicleId: Number(selectedVehicle)
+            });
+
+            const res = await fetch(`${beBaseUrl}/Schedule/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -315,7 +358,16 @@ export default function VehicleBooking() {
                     vehicleId: Number(selectedVehicle),
                 }),
             });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Schedule creation failed:", {
+                    status: res.status,
+                    response: errorText
+                });
+                throw new Error(`HTTP ${res.status}: ${errorText}`);
+            }
+
             await loadBookings();
             showToast("Đặt lịch thành công", `Đã đặt ${getSelectedVehicleName()} vào ${selectedDate} từ ${selectedTime}.`);
             setSelectedVehicle("");
@@ -327,6 +379,7 @@ export default function VehicleBooking() {
                 bookingsListRef.current.scrollIntoView({behavior: 'smooth', block: 'start'});
             }
         } catch (e) {
+            console.error("Booking error:", e);
             showToast("Lỗi đặt lịch", "Không thể đặt lịch. Vui lòng thử lại.", "destructive");
         }
     };
@@ -334,7 +387,7 @@ export default function VehicleBooking() {
     // Sửa handleCancelBooking: gọi API BE để xóa lịch
     const handleCancelBooking = async (scheduleId: number) => {
         try {
-            const res = await fetch(`${beBaseUrl}/Schedule/${scheduleId}`, {
+            const res = await fetch(`${beBaseUrl}/Schedule/delete/${scheduleId}`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
@@ -342,14 +395,25 @@ export default function VehicleBooking() {
                 },
                 credentials: "include",
             });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            setExistingBookings(prev => prev.filter(booking => booking.scheduleId !== scheduleId));
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Schedule deletion failed:", {
+                    status: res.status,
+                    response: errorText
+                });
+                throw new Error(`HTTP ${res.status}: ${errorText}`);
+            }
+
+            // Reload bookings from backend after successful deletion
+            await loadBookings();
+
             showToast("Đã hủy lịch", "Lịch đặt xe đã được hủy thành công");
         } catch (e) {
+            console.error("Delete error:", e);
             showToast("Lỗi hủy lịch", "Không thể hủy lịch. Vui lòng thử lại.", "destructive");
         }
     };
-
     const handleEditBooking = (scheduleId: number) => {
         const booking = existingBookings.find(b => b.scheduleId === scheduleId);
         if (booking) {
@@ -390,23 +454,66 @@ export default function VehicleBooking() {
 
     // Sửa handleUpdateBooking: gọi API BE để cập nhật lịch
     const handleUpdateBooking = async () => {
-        if (!editVehicle || !editDate || !editTime) return;
-        // Nếu không muốn gọi BE, chỉ cập nhật trực tiếp trên state:
-        setExistingBookings(prev =>
-            prev.map(booking =>
-                booking.scheduleId === editingBooking
-                    ? {
-                        ...booking,
-                        vehicleId: Number(editVehicle),
-                        vehicleName: vehicles.find(v => v.vehicleId === Number(editVehicle))?.name || booking.vehicleName,
-                        date: editDate,
-                        time: editTime,
-                    }
-                    : booking
-            )
-        );
-        showToast("Cập nhật thành công", "Lịch đặt xe đã được cập nhật thành công");
-        handleCancelEdit();
+        if (!editVehicle || !editDate || !editTime) {
+            showToast("Thiếu thông tin", "Vui lòng điền đầy đủ thông tin trước khi cập nhật.", "destructive");
+            return;
+        }
+
+        try {
+            const [start, end] = editTime.split("-");
+
+            console.log("Sending update request:", {
+                scheduleId: editingBooking,
+                startTime: toLocalDateTime(editDate, start),
+                endTime: toLocalDateTime(editDate, end),
+                groupId: currentGroupId,
+                userId: currentUserId,
+                vehicleId: Number(editVehicle)
+            });
+
+            const res = await fetch(`${beBaseUrl}/Schedule/update/${editingBooking}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    startTime: toLocalDateTime(editDate, start),
+                    endTime: toLocalDateTime(editDate, end),
+                    groupId: currentGroupId,
+                    userId: currentUserId,
+                    vehicleId: Number(editVehicle),
+                }),
+            });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Schedule update failed:", {
+                    status: res.status,
+                    response: errorText
+                });
+                throw new Error(`HTTP ${res.status}: ${errorText}`);
+            }
+
+            // Reload bookings from backend after successful update
+            await loadBookings();
+
+            showToast("Cập nhật thành công", "Lịch đặt xe đã được cập nhật thành công");
+            handleCancelEdit();
+        } catch (e) {
+            console.error("Update error:", e);
+            showToast("Lỗi cập nhật", "Không thể cập nhật lịch. Vui lòng thử lại.", "destructive");
+        }
+    };
+
+    // Thêm log cho việc chọn xe
+    const handleVehicleSelect = (vehicleId: string) => {
+        console.log("Selected vehicle ID:", vehicleId);
+        console.log("Available vehicles:", vehicles);
+        const selectedVehicle = vehicles.find(v => String(v.vehicleId) === vehicleId);
+        console.log("Selected vehicle details:", selectedVehicle);
+        setSelectedVehicle(vehicleId);
     };
 
     return (
@@ -443,23 +550,38 @@ export default function VehicleBooking() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn xe</label>
-                            <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+                            <Select value={selectedVehicle} onValueChange={handleVehicleSelect}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {vehiclesError &&
-                                        <div className="px-3 py-2 text-sm text-destructive">{vehiclesError}</div>}
-                                    {!vehiclesError && vehicles.length === 0 && !loadingVehicles &&
-                                        <div className="px-3 py-2 text-sm text-muted-foreground">Không có xe nào</div>}
-                                    {vehicles.map((vehicle) => (
-                                        <SelectItem key={vehicle.vehicleId} value={String(vehicle.vehicleId)}>
+                                    <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}>
+                                        {selectedVehicle && vehicles.find(v => String(v.vehicleId) === selectedVehicle) && (
                                             <div className="flex items-center space-x-2">
                                                 <Car className="h-4 w-4"/>
-                                                <span>{vehicle.name} - {vehicle.groupName}</span>
+                                                <span>{vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.brand} {vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.model} {vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.groupName}</span>
                                             </div>
-                                        </SelectItem>
-                                    ))}
+                                        )}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {vehiclesError && (
+                                        <div className="px-3 py-2 text-sm text-destructive">
+                                            {vehiclesError}
+                                        </div>
+                                    )}
+                                    {!vehiclesError && vehicles.length === 0 && !loadingVehicles && (
+                                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                                            Không có xe nào
+                                        </div>
+                                    )}
+                                    {!vehiclesError && vehicles.map((vehicle) => {
+                                        return (
+                                            <SelectItem key={vehicle.vehicleId} value={String(vehicle.vehicleId)}>
+                                                <div className="flex items-center space-x-2">
+                                                    <Car className="h-4 w-4"/>
+                                                    <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
+                                                </div>
+                                            </SelectItem>
+                                        );
+                                    })}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -512,7 +634,7 @@ export default function VehicleBooking() {
                                                         className="flex items-center gap-3 px-3 py-2 rounded border bg-gray-50 text-xs"
                                                     >
                                                         <span className="font-semibold text-blue-700">{b.time}</span>
-                                                        <span className="text-gray-700">{b.vehicleName}</span>
+                                                        <span className="text-gray-700">{b.brand} {b.model}</span>
                                                         <span className="text-gray-500">Người đặt: {b.bookedBy}</span>
                                                         <span className="text-gray-500">Trạng thái: {b.status}</span>
                                                     </div>
@@ -621,7 +743,7 @@ export default function VehicleBooking() {
                                                                 value={String(vehicle.vehicleId)}>
                                                         <div className="flex items-center space-x-2">
                                                             <Car className="h-4 w-4"/>
-                                                            <span>{vehicle.name} - {vehicle.groupName}</span>
+                                                            <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
                                                         </div>
                                                     </SelectItem>
                                                 ))}
@@ -673,7 +795,7 @@ export default function VehicleBooking() {
                                             <div className="flex items-center space-x-3">
                                                 <div className="flex items-center space-x-2">
                                                     <Car className="h-4 w-4"/>
-                                                    <span className="font-medium">{booking.vehicleName}</span>
+                                                    <span className="font-medium">{booking.brand} {booking.model}</span>
                                                 </div>
                                                 <Badge variant="secondary">{booking.bookedBy}</Badge>
                                                 <Badge
