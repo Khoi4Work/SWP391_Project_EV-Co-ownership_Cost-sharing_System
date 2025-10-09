@@ -1,8 +1,10 @@
 package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import khoindn.swp391.be.app.model.Request.ContractReq;
+import khoindn.swp391.be.app.model.Request.ContractCreateReq;
+import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
+import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
 import khoindn.swp391.be.app.service.IContractService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,7 @@ public class ContractController {
 
     // Tạo/Set contract
     @PostMapping("/")
-    public ResponseEntity<ContractSigner> setContract(@RequestBody ContractReq req) {
+    public ResponseEntity<ContractSigner> setContract(@RequestBody ContractDecisionReq req) {
         ContractSigner contractResult = iContractService.setContract(req);
         if (contractResult == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -43,10 +45,19 @@ public class ContractController {
     @PostMapping("/send-email")
     public ResponseEntity<String> sendEmail(@RequestBody SendEmailReq emailReq) {
         try {
-            iContractService.SendEmail(emailReq);
+            iContractService.SendBulkEmail(emailReq);
             return ResponseEntity.status(HttpStatus.OK).body("Email sent successfully");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send email");
         }
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<ContractSigner> createContract(@RequestBody ContractCreateReq req) {
+        ContractSigner contractResult = iContractService.createContract(req);
+        if (contractResult == null) {
+            throw new RuntimeException("Failed to create contract");
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(contractResult);
     }
 }

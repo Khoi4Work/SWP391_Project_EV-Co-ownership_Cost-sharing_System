@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CoOwner_Info {
-    @Email
-    private String email;
+
+    private int contractId;
     @NotNull
     private float ownershipPercentage;
 }

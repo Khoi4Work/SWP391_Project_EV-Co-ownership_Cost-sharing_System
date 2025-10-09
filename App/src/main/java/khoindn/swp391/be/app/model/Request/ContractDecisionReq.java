@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ContractReq {
+public class ContractDecisionReq {
     private int idChoice;
     private int idContract;
     private int idUserSigned;

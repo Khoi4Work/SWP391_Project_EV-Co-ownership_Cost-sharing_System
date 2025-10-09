@@ -17,4 +17,5 @@ public interface IVehicleRepository extends JpaRepository<Vehicle, Integer> {
     public List<Vehicle> findByGroupIsNull();
 
 
+    Vehicle getVehiclesByVehicleId(int vehicleId);
 }

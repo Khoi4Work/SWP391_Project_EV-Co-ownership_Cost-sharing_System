@@ -1,9 +1,9 @@
 package khoindn.swp391.be.app.service;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.mail.internet.MimeMessage;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
-import khoindn.swp391.be.app.model.Request.ContractReq;
+import khoindn.swp391.be.app.model.Request.ContractCreateReq;
+import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
@@ -13,11 +13,11 @@ import khoindn.swp391.be.app.repository.IContractSignerRepository;
 import khoindn.swp391.be.app.repository.IUserRepository;
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -28,6 +28,8 @@ public class ContractService implements IContractService {
     private IContractSignerRepository iContractSignerRepository;
     @Autowired
     private JavaMailSender javaMailSender;
+    @Autowired
+    private IUserRepository iUserRepository;
 
 
     @Override
@@ -40,7 +42,7 @@ public class ContractService implements IContractService {
 
 
     @Override
-    public ContractSigner setContract(ContractReq req) {
+    public ContractSigner setContract(ContractDecisionReq req) {
         if (iContractSignerRepository.existsByUser_Id(req.getIdUserSigned())) {
             ContractSigner contractSigner = iContractSignerRepository
                     .findByUser_IdAndContract_ContractId(req.getIdUserSigned(),req.getIdContract());
@@ -98,7 +100,7 @@ public class ContractService implements IContractService {
 //    }
 
     @Override
-    public void SendEmail(SendEmailReq emailReq) {
+    public void SendBulkEmail(SendEmailReq emailReq) {
         for (String eachEmail : emailReq.getEmail()) {
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
@@ -117,6 +119,44 @@ public class ContractService implements IContractService {
         }
     }
 
+    @Override
+    public ContractSigner createContract(ContractCreateReq req) {
+        Contract contract = new Contract();
+        ContractSigner contractSigner = new ContractSigner();
+        for (Integer userId : req.getUserId()){
+            Users users = iUserRepository.findUsersById(userId);
+            // Tao Contract
+
+            contract.setContractType(req.getContractType());
+            contract.setStartDate(LocalDate.now());
+            contract.setDocumentUrl(req.getDocumentUrl());
+            contract.setStatus("Pending");
+            iContractRepository.save(contract);
+            // Tao nguoi ky contract
+
+            contractSigner.setContract(contract);
+            contractSigner.setUser(users);
+            contractSigner.setDecision("Pending");
+            iContractSignerRepository.save(contractSigner);
+
+            try {
+                MimeMessage message = javaMailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+                helper.setTo(users.getEmail());
+                helper.setSubject("[EcoShare System] E-Contract");
+                helper.setText(
+                        "<a href='" + req.getDocumentUrl() +
+                                "'>Nhấn vào đây để xem hợp đồng</a>", true);
+
+                javaMailSender.send(message);
+            } catch (Exception e) {
+                e.getMessage();
+            }
+        }
+        return contractSigner;
+
+    }
 
 
 }
