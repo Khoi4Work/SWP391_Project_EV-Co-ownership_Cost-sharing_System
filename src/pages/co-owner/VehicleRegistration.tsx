@@ -107,7 +107,7 @@ export default function VehicleRegistration() {
   const fetchUserByEmail = async (email: string) => {
     try {
       // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
-      const res = await axiosClient.get(`/vehicle/`);
+      const res = await axiosClient.get(`/Users`);
 
       const data = res.data;
       const user = Array.isArray(data) ? data[0] : data;
