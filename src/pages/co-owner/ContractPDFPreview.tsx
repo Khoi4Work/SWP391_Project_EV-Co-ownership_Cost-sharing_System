@@ -28,13 +28,6 @@ export async function GenerateContractPDF(userData: any, vehicleData: any): Prom
   page.drawText("I Agree", { x: 62, y: height - 317, size: 12, font: helvetica });
   consent.addOptionToPage("reject", page, { x: 160, y: height - 320, width: 15, height: 15 });
   page.drawText("I Do Not Agree", { x: 182, y: height - 317, size: 12, font: helvetica });
-
-  // Signature text field
-  page.drawText("Signature:", { x: 40, y: height - 360, size: 12, font: helvetica });
-  const signatureField = form.createTextField("signature");
-  signatureField.setText("");
-  signatureField.addToPage(page, { x: 110, y: height - 370, width: 300, height: 20 });
-
   // (Chú ý: không gọi form.flatten() — để file vẫn ở dạng interactive)
 
   const pdfBytes = await pdfDoc.save();
