@@ -321,7 +321,7 @@ export default function VehicleRegistration() {
       return;
     }
 
-    const { pdfUrl } = GenerateContractPDF(ownerInfo, selectedVehicle);
+    const { pdfUrl } = await GenerateContractPDF(ownerInfo, selectedVehicle);
     setPdfUrl(pdfUrl);
 
     const invalid = coOwners.find((co) => Number(co.ownership) > mainOwnership);
@@ -366,10 +366,15 @@ export default function VehicleRegistration() {
 
     console.log("📦 Payload gửi backend:", payload);
     console.log("📨 Payload gửi createContract:", contract);
-
+    try {
+      await axiosClient.post("http://localhost:8080/create", contract);
+      console.log("✅ Gửi contract thành công");
+    } catch (err) {
+      console.error("❌ Lỗi khi gọi createContract:", err);
+    }
     try {
       // 1️⃣ Gửi group trước
-      const res = await axiosClient.post("http://localhost:8080/group/register", payload);
+      const res = await axiosClient.post("http://localhost:8080/group/create", payload);
       if (res.status === 200 || res.status === 201) {
         toast({
           title: "Đăng ký thành công",
@@ -377,12 +382,6 @@ export default function VehicleRegistration() {
         });
 
         // 2️⃣ Sau khi group OK thì tạo contract
-        try {
-          await axiosClient.post("http://localhost:8080/create", contract);
-          console.log("✅ Gửi contract thành công");
-        } catch (err) {
-          console.error("❌ Lỗi khi gọi createContract:", err);
-        }
       } else {
         toast({
           title: "Lỗi",

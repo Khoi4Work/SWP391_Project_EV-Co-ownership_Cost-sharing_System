@@ -1,30 +1,44 @@
-import { jsPDF } from "jspdf";
-export function GenerateContractPDF(userData, vehicleData) {
-  const doc = new jsPDF();
-  doc.setFontSize(18);
-  doc.text("VEHICLE REGISTRATION AGREEMENT", 55, 20);
-  doc.setFontSize(12);
-  doc.text(`Primary Co-Owner: ${userData?.name || "N/A"}`, 20, 40);
-  doc.text(`Email: ${userData?.email || "N/A"}`, 20, 50);
-  doc.text(`Phone Number: ${userData?.phone || "N/A"}`, 20, 60);
-  doc.text(`Platform: EcoShare Platform`, 20, 80);
-  doc.text(`Registered Vehicle: ${vehicleData?.model || "N/A"}`, 20, 100);
-  doc.text(`License Plate: ${vehicleData?.licensePlate || "N/A"}`, 20, 110);
-  doc.text(`Activation Date: ${new Date().toLocaleDateString()}`, 20, 130);
+// Thay import jsPDF bằng:
+import { PDFDocument, StandardFonts } from "pdf-lib";
 
-  doc.text(
-    "Policy for Party A: Party A commits to providing truthful information. The system is responsible for maintaining data confidentiality and offering technical support within the scope of the service.",
-    20,
-    150,
-    { maxWidth: 170 }
-  );
+// Thay hàm GenerateContractPDF cũ bằng cái này:
+export async function GenerateContractPDF(userData: any, vehicleData: any): Promise<{ pdfBlob: Blob; pdfUrl: string }> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const { width, height } = page.getSize();
 
-  doc.text("Signatures:", 20, 200);
-  doc.text("Party A: ____________________", 20, 220);
-  doc.text("Party B: ____________________", 120, 220);
+  // Title + thông tin
+  page.drawText("VEHICLE REGISTRATION AGREEMENT", { x: 50, y: height - 72, size: 18, font: helvetica });
+  page.drawText(`Primary Co-Owner: ${userData?.name ?? "N/A"}`, { x: 40, y: height - 110, size: 12, font: helvetica });
+  page.drawText(`Email: ${userData?.email ?? "N/A"}`, { x: 40, y: height - 130, size: 12, font: helvetica });
+  page.drawText(`Phone Number: ${userData?.phone ?? "N/A"}`, { x: 40, y: height - 150, size: 12, font: helvetica });
+  page.drawText(`Platform: EcoShare Platform`, { x: 40, y: height - 170, size: 12, font: helvetica });
+  page.drawText(`Registered Vehicle: ${vehicleData?.model ?? "N/A"}`, { x: 40, y: height - 190, size: 12, font: helvetica });
+  page.drawText(`License Plate: ${vehicleData?.licensePlate ?? "N/A"}`, { x: 40, y: height - 210, size: 12, font: helvetica });
+  page.drawText(`Activation Date: ${new Date().toLocaleDateString()}`, { x: 40, y: height - 230, size: 12, font: helvetica });
 
-  // 🖼️ Xuất blob và URL
-  const pdfBlob = doc.output("blob");
+  const policy = "Policy for Party A: Party A commits to providing truthful information. The system is responsible for maintaining data confidentiality and offering technical support within the scope of the service.";
+  page.drawText(policy, { x: 40, y: height - 260, size: 10, font: helvetica, maxWidth: 515 });
+
+  // Form (radio group: chỉ chọn 1 trong 2)
+  const form = pdfDoc.getForm();
+  const consent = form.createRadioGroup("consent");
+  consent.addOptionToPage("accept", page, { x: 40, y: height - 320, width: 15, height: 15 });
+  page.drawText("I Agree", { x: 62, y: height - 317, size: 12, font: helvetica });
+  consent.addOptionToPage("reject", page, { x: 160, y: height - 320, width: 15, height: 15 });
+  page.drawText("I Do Not Agree", { x: 182, y: height - 317, size: 12, font: helvetica });
+
+  // Signature text field
+  page.drawText("Signature:", { x: 40, y: height - 360, size: 12, font: helvetica });
+  const signatureField = form.createTextField("signature");
+  signatureField.setText("");
+  signatureField.addToPage(page, { x: 110, y: height - 370, width: 300, height: 20 });
+
+  // (Chú ý: không gọi form.flatten() — để file vẫn ở dạng interactive)
+
+  const pdfBytes = await pdfDoc.save();
+  const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
   const pdfUrl = URL.createObjectURL(pdfBlob);
   return { pdfBlob, pdfUrl };
 }
