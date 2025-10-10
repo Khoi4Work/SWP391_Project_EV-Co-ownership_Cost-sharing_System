@@ -107,10 +107,10 @@ export default function VehicleRegistration() {
   const fetchUserByEmail = async (email: string) => {
     try {
       // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
-      const res = await axiosClient.get(`/users`);
-
-      const data = res.data;
-      const user = Array.isArray(data) ? data[0] : data;
+      const res = await axiosClient.get(`/users/get`, {
+        params: { email }
+      });
+      const user = res.data;
       if (!user) return null;
       return {
         id: user.id,
@@ -119,7 +119,7 @@ export default function VehicleRegistration() {
         phone: user.phone,
         idNumber: user.cccd,      // map cccd -> idNumber
         address: "",              // API chưa có -> để trống
-        ownership: 50             // default
+        ownership: 0             // default
       } as CoOwner;
     } catch (err) {
       console.error(err);
@@ -248,7 +248,7 @@ export default function VehicleRegistration() {
       return;
     }
     const newCoOwner: CoOwner = {
-      id: 0,
+      id: Date.now(),
       name: "",
       email: "",
       phone: "",
@@ -404,27 +404,33 @@ export default function VehicleRegistration() {
     console.log("📦 Payload gửi backend:", payload);
     console.log("📨 Payload gửi createContract:", contract);
     try {
-      await axiosClient.post("/contract/create", contract);
+
+      const resData = await axiosClient.post("/contract/create", contract);
+      localStorage.setItem("contractId", resData.data.contract.contractId);
       console.log("✅ Gửi contract thành công");
     } catch (err) {
       console.error("❌ Lỗi khi gọi createContract:", err);
     }
     try {
-      // 1️⃣ Gửi group trước
-      const res = await axiosClient.post("/group/create", payload);
-      if (res.status === 200 || res.status === 201) {
-        toast({
-          title: "Đăng ký thành công",
-          description: "Hợp đồng đã được gửi đến hệ thống!",
-        });
+      const idContract = localStorage.getItem("contractId");
+      const contractData = await axiosClient.get(`/contract/${idContract}`);
+      console.log(contractData);
+      if (contractData.data.status === "active") {
+        const res = await axiosClient.post("/group/create", payload);
+        if (res.status === 200 || res.status === 201) {
+          toast({
+            title: "Đăng ký thành công",
+            description: "Hợp đồng đã được gửi đến hệ thống!",
+          });
 
-        // 2️⃣ Sau khi group OK thì tạo contract
-      } else {
-        toast({
-          title: "Lỗi",
-          description: "Gửi hợp đồng thất bại!",
-          variant: "destructive",
-        });
+          // 2️⃣ Sau khi group OK thì tạo contract
+        } else {
+          toast({
+            title: "Lỗi",
+            description: "Gửi hợp đồng thất bại!",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error("❌ Lỗi khi gửi hợp đồng:", error);
