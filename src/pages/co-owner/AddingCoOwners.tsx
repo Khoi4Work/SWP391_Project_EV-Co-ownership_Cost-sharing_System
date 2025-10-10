@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 interface CoOwner {
-  id: string;
+  id: number;
   name: string;
   email: string;
   phone: string;
@@ -18,8 +18,8 @@ interface CoOwner {
 interface Props {
   coOwner: CoOwner;
   index: number;
-  updateCoOwner: (id: string, field: keyof CoOwner, value: any) => void;
-  removeCoOwner: (id: string) => void;
+  updateCoOwner: (id: number, field: keyof CoOwner, value: any) => void;
+  removeCoOwner: (id: number) => void;
   getOwnershipAmount: (ownership: number) => number;
   selectedVehicle: string | null;
   fetchUserByEmail: (email: string) => Promise<Partial<CoOwner> | null>;

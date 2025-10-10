@@ -70,15 +70,14 @@ export default function Login() {
                 title: "Đăng nhập thành công",
                 description: `Chào mừng ${hovaten} đến với EcoShare!`,
             });
-
-            // Điều hướng theo loại tài khoản
-            // if (selectedType === "co-owner") {
-            //     navigate("/co-owner/dashboard");
-            // } else if (selectedType === "staff") {
-            //     navigate("/staff/dashboard");
-            // } else if (selectedType === "admin") {
-            //     navigate("/admin/dashboard");
-            // }
+            //Điều hướng theo loại tài khoản
+            if (selectedType === "co-owner") {
+                navigate("/co-owner/dashboard");
+            } else if (selectedType === "staff") {
+                navigate("/staff/dashboard");
+            } else if (selectedType === "admin") {
+                navigate("/admin/dashboard");
+            }
         } catch (err) {
             toast({
                 title: "Lỗi đăng nhập",

@@ -26,7 +26,7 @@ import * as Yup from "yup";
 import CoOwnerForm from "./AddingCoOwners";
 import { GenerateContractPDF } from "./ContractPDFPreview";
 interface CoOwner {
-  id: string;
+  id: number;
   name: string;
   email: string;
   phone: string;
@@ -42,42 +42,42 @@ export default function VehicleRegistration() {
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
-  useEffect(() => {
-    const demoVehicles = [
-      {
-        id: 1,
-        name: "VinFast VF e34",
-        image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
-        price: "690,000,000₫",
-        brand: "Vinfast",
-        color: "red",
-        batteryCapacity: 3.6,
-        plateNo: "56789"
-      },
-      {
-        id: 2,
-        name: "Tesla Model 3",
-        image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
-        price: "1,500,000,000₫",
-        brand: "Tesla",
-        color: "yellow",
-        batteryCapacity: 3.7,
-        plateNo: "12345"
-      },
-      {
-        id: 3,
-        name: "Hyundai Ioniq 5",
-        image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
-        price: "1,200,000,000₫",
-        brand: "Hyundai",
-        color: "white",
-        batteryCapacity: 3.8,
-        plateNo: "1231313"
-      }
-    ];
+  // useEffect(() => {
+  //   const demoVehicles = [
+  //     {
+  //       id: 1,
+  //       name: "VinFast VF e34",
+  //       image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
+  //       price: "690,000,000₫",
+  //       brand: "Vinfast",
+  //       color: "red",
+  //       batteryCapacity: 3.6,
+  //       plateNo: "56789"
+  //     },
+  //     {
+  //       id: 2,
+  //       name: "Tesla Model 3",
+  //       image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
+  //       price: "1,500,000,000₫",
+  //       brand: "Tesla",
+  //       color: "yellow",
+  //       batteryCapacity: 3.7,
+  //       plateNo: "12345"
+  //     },
+  //     {
+  //       id: 3,
+  //       name: "Hyundai Ioniq 5",
+  //       image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
+  //       price: "1,200,000,000₫",
+  //       brand: "Hyundai",
+  //       color: "white",
+  //       batteryCapacity: 3.8,
+  //       plateNo: "1231313"
+  //     }
+  //   ];
 
-    setVehicles(demoVehicles);
-  }, []);
+  //   setVehicles(demoVehicles);
+  // }, []);
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -107,7 +107,7 @@ export default function VehicleRegistration() {
   const fetchUserByEmail = async (email: string) => {
     try {
       // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
-      const res = await axiosClient.get(`/Users`);
+      const res = await axiosClient.get(`/users`);
 
       const data = res.data;
       const user = Array.isArray(data) ? data[0] : data;
@@ -152,7 +152,7 @@ export default function VehicleRegistration() {
   }, []);
   const formik = useFormik<CoOwner>({
     initialValues: {
-      id: "",
+      id: 0,
       name: "",
       email: "",
       phone: "",
@@ -248,7 +248,7 @@ export default function VehicleRegistration() {
       return;
     }
     const newCoOwner: CoOwner = {
-      id: Date.now().toString(),
+      id: 0,
       name: "",
       email: "",
       phone: "",
@@ -259,7 +259,42 @@ export default function VehicleRegistration() {
     setCoOwners([...coOwners, newCoOwner]);
   };
 
-  const updateCoOwner = (id: string, field: keyof CoOwner, value: string | number) => {
+  const updateCoOwner = async (
+    id: number,
+    field: keyof CoOwner,
+    value: string | number
+  ) => {
+    // ✅ Nếu đang nhập email → tìm user trong DB
+    if (field === "email") {
+      const emailValue = value as string;
+      try {
+        const user = await fetchUserByEmail(emailValue);
+        if (user) {
+          setCoOwners((prev) => {
+            const updated = prev.map((co) =>
+              co.id === id
+                ? {
+                  ...co,
+                  id: Number(user.id),   // ✅ Gán id thật từ DB
+                  name: user.name ?? co.name,
+                  phone: user.phone ?? co.phone,
+                  idNumber: user.idNumber ?? co.idNumber,
+                  address: user.address ?? co.address,
+                  email: emailValue,
+                }
+                : co
+            );
+            localStorage.setItem("coOwners", JSON.stringify(updated));
+            return updated;
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Không tìm thấy user theo email:", error);
+      }
+    }
+
+    // ✅ Xử lý ownership (giữ nguyên như bạn đang có)
     if (field === "ownership") {
       const newVal = Number(value);
       if (isNaN(newVal) || newVal < 15 || newVal > mainOwnership) return;
@@ -279,11 +314,13 @@ export default function VehicleRegistration() {
         return updated;
       });
     } else {
+      // ✅ Các field khác giữ logic cũ
       setCoOwners((prev) =>
         prev.map((co) => (co.id === id ? { ...co, [field]: value } : co))
       );
     }
   };
+
 
   useEffect(() => {
     const saved = localStorage.getItem("coOwners");
@@ -304,7 +341,7 @@ export default function VehicleRegistration() {
     setCoOwners([]);
     localStorage.removeItem("coOwners");
   }, [selectedVehicle]);
-  const removeCoOwner = (id: string) => {
+  const removeCoOwner = (id: number) => {
     const updated = coOwners.filter(co => co.id !== id);
     setCoOwners(updated);
     if (updated.length === 0) localStorage.removeItem("coOwners");
@@ -470,7 +507,7 @@ export default function VehicleRegistration() {
                   setSelectedVehicle("");
                   formik.resetForm({
                     values: {
-                      id: "",
+                      id: 0,
                       name: "",
                       email: "",
                       phone: "",
