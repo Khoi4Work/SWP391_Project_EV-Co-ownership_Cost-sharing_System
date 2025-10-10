@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/contract")
 @SecurityRequirement(name = "api")
@@ -53,9 +55,9 @@ public class ContractController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ContractSigner> createContract(@RequestBody ContractCreateReq req) {
+    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody ContractCreateReq req) {
         System.out.println(req);
-        ContractSigner contractResult = iContractService.createContract(req);
+        List<ContractSigner> contractResult = iContractService.createContract(req);
         if (contractResult == null) {
             throw new RuntimeException("Failed to create contract");
         }

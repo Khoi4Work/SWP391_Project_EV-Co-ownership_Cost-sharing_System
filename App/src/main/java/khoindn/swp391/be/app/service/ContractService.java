@@ -17,8 +17,11 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ContractService implements IContractService {
@@ -30,6 +33,12 @@ public class ContractService implements IContractService {
     private JavaMailSender javaMailSender;
     @Autowired
     private IUserRepository iUserRepository;
+    @Autowired
+    private TokenService tokenService;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private AuthenticationService authenticationService;
 
 
     @Override
@@ -43,9 +52,10 @@ public class ContractService implements IContractService {
 
     @Override
     public ContractSigner setContract(ContractDecisionReq req) {
-        if (iContractSignerRepository.existsByUser_Id(req.getIdUserSigned())) {
+        Users user = authenticationService.getCurrentAccount();
+        if (iContractSignerRepository.existsByUser_Id(user.getId())) {
             ContractSigner contractSigner = iContractSignerRepository
-                    .findByUser_IdAndContract_ContractId(req.getIdUserSigned(),req.getIdContract());
+                    .findByUser_IdAndContract_ContractId(user.getId(),req.getIdContract());
             // Cập nhật decision
             if (req.getIdChoice() == 1) {
                 contractSigner.setDecision("Signed");
@@ -120,9 +130,10 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public ContractSigner createContract(ContractCreateReq req) {
+    public List<ContractSigner> createContract(ContractCreateReq req) {
         Contract contract = new Contract();
         ContractSigner contractSigner = new ContractSigner();
+        List<ContractSigner> signerList = new ArrayList<>();
         for (Integer userId : req.getUserId()){
             Users users = iUserRepository.findUsersById(userId);
             // Tao Contract
@@ -138,23 +149,28 @@ public class ContractService implements IContractService {
             contractSigner.setUser(users);
             contractSigner.setDecision("Pending");
             iContractSignerRepository.save(contractSigner);
+            signerList.add(contractSigner);
 
+            // ✅ TẠO TOKEN RIÊNG CHO USER
+            String token = tokenService.generateToken(users);
+            String secureUrl = req.getDocumentUrl() + "?token=" + token;
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
                 helper.setTo(users.getEmail());
-                helper.setSubject("[EcoShare System] E-Contract");
-                helper.setText(
-                        "<a href='" + req.getDocumentUrl() +
-                                "'>Nhấn vào đây để xem hợp đồng</a>", true);
+                helper.setSubject("[EcoShare System] Send E-Contract to User");
+                helper.setText("Kính mời Quý khách truy cập vào " +
+                        "<a href='" + secureUrl + "'>liên kết này</a>" +
+                        " để xem thông tin chi tiết về hợp đồng đồng sở hữu.", true);
+
 
                 javaMailSender.send(message);
             } catch (Exception e) {
                 e.getMessage();
             }
         }
-        return contractSigner;
+        return signerList;
 
     }
 

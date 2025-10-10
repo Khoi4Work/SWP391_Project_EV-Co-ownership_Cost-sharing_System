@@ -6,6 +6,8 @@ import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
 
+import java.util.List;
+
 public interface IContractService {
     public Contract getContract(int id);
 
@@ -13,5 +15,5 @@ public interface IContractService {
 
     public void SendBulkEmail(SendEmailReq emailReq);
 
-    public ContractSigner createContract(ContractCreateReq req);
+    public List<ContractSigner> createContract(ContractCreateReq req);
 }

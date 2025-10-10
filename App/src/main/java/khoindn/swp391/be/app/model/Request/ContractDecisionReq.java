@@ -10,5 +10,4 @@ import lombok.NoArgsConstructor;
 public class ContractDecisionReq {
     private int idChoice;
     private int idContract;
-    private int idUserSigned;
 }
