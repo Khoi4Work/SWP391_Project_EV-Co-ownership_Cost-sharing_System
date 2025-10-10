@@ -38,7 +38,7 @@ export async function GenerateContractPDF(userData: any, vehicleData: any): Prom
   // (Chú ý: không gọi form.flatten() — để file vẫn ở dạng interactive)
 
   const pdfBytes = await pdfDoc.save();
-  const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+  const pdfBlob = new Blob([pdfBytes as any], { type: "application/pdf" });
   const pdfUrl = URL.createObjectURL(pdfBlob);
   return { pdfBlob, pdfUrl };
 }
