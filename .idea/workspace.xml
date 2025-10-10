@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/VehicleBooking.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/VehicleBooking.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,12 +22,12 @@
     &quot;assignee&quot;: &quot;tlamvantuan&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;git@github.com:Khoi4Work/SWP391_Project_EV-Co-ownership_Cost-sharing_System.git&quot;,
-    &quot;accountId&quot;: &quot;baa29417-4b0b-44af-b41d-037c592353ce&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "git@github.com:Khoi4Work/SWP391_Project_EV-Co-ownership_Cost-sharing_System.git",
+    "accountId": "f462ab90-8f01-452b-9a08-b40f4511ed94"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -36,25 +36,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;FE&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/SinxS/SWP391/Ecoshare_FE&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.typescriptcompiler&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;D:\\SinxS\\SWP391\\Ecoshare_FE\\node_modules\\typescript\\lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "FE",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/SinxS/SWP391/Ecoshare_FE",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "settings.typescriptcompiler",
+    "ts.external.directory.path": "E:\\FPT_document\\Student_marterials\\Ky_CN_5\\SWP391\\SWP391_Project\\SWP391_FE_repo\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlserver"
+    ]
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration default="true" type="JetRunConfigurationType">
       <module name="Ecoshare_FE" />
@@ -89,6 +94,7 @@
       <workItem from="1759764725904" duration="11552000" />
       <workItem from="1759909905081" duration="323000" />
       <workItem from="1760015990812" duration="6235000" />
+      <workItem from="1760022621584" duration="1653000" />
     </task>
     <servers />
   </component>

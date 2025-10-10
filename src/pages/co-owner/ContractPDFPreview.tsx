@@ -1,8 +1,6 @@
 import { jsPDF } from "jspdf";
-import { EcoShareLogo } from "@/components/ui/logo";
 export function GenerateContractPDF(userData, vehicleData) {
   const doc = new jsPDF();
-  doc.addImage(EcoShareLogo, "PNG", 15, 10, 30, 30, '', 'FAST');
   doc.setFontSize(18);
   doc.text("VEHICLE REGISTRATION AGREEMENT", 55, 20);
   doc.setFontSize(12);
