@@ -275,7 +275,7 @@ export default function VehicleRegistration() {
               co.id === id
                 ? {
                   ...co,
-                  id: Number(user.id),   // ✅ Gán id thật từ DB
+                  id: user.id,   // ✅ Gán id thật từ DB
                   name: user.name ?? co.name,
                   phone: user.phone ?? co.phone,
                   idNumber: user.idNumber ?? co.idNumber,
