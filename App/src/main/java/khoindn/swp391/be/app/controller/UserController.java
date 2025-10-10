@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/Users")
+@RequestMapping("/users")
 @CrossOrigin(origins = "http://localhost:8081")
 @SecurityRequirement(name = "api")
 

@@ -46,7 +46,7 @@ public class GroupService implements IGroupService {
 
     @Override
     public RegisterVehicleRes addMemberToGroup(GroupCreateReq request) {
-
+        System.out.println(request);
 
 
         // 3. Tạo group mới

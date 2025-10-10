@@ -1,7 +1,7 @@
 package khoindn.swp391.be.app.model.formatReq;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.Id;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +11,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CoOwner_Info {
 
-    private int contractId;
-    @NotNull
-    private float ownershipPercentage;
+    @NotNull(message = "Contract ID cannot be null")
+    private Integer contractId;
+
+    @NotNull(message = "Ownership percentage cannot be null")
+    @DecimalMin(value = "14.9", message = "Ownership percentage must be greater than 14.9")
+    @DecimalMax(value = "100.0", message = "Ownership percentage must not exceed 100")
+    private Float ownershipPercentage;
 }
