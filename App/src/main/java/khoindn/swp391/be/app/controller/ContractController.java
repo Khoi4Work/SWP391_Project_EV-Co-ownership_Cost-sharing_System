@@ -23,12 +23,12 @@ public class ContractController {
 
     // Lấy contract
     @GetMapping("/{id}")
-    public ResponseEntity<String> getContract(@PathVariable int id) {
-        String url = iContractService.getContract(id).getDocumentUrl();
-        if (url == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Contract not found");
+    public ResponseEntity<Contract> getContract(@PathVariable int id) {
+        Contract contract = iContractService.getContract(id);
+        if (contract == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        return ResponseEntity.status(HttpStatus.OK).body(url);
+        return ResponseEntity.status(HttpStatus.OK).body(contract);
     }
 
     // Tạo/Set contract
