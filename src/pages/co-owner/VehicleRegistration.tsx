@@ -42,42 +42,42 @@ export default function VehicleRegistration() {
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
-  // useEffect(() => {
-  //   const demoVehicles = [
-  //     {
-  //       id: 1,
-  //       name: "VinFast VF e34",
-  //       image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
-  //       price: "690,000,000₫",
-  //       brand: "Vinfast",
-  //       color: "red",
-  //       batteryCapacity: 3.6,
-  //       plateNo: "56789"
-  //     },
-  //     {
-  //       id: 2,
-  //       name: "Tesla Model 3",
-  //       image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
-  //       price: "1,500,000,000₫",
-  //       brand: "Tesla",
-  //       color: "yellow",
-  //       batteryCapacity: 3.7,
-  //       plateNo: "12345"
-  //     },
-  //     {
-  //       id: 3,
-  //       name: "Hyundai Ioniq 5",
-  //       image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
-  //       price: "1,200,000,000₫",
-  //       brand: "Hyundai",
-  //       color: "white",
-  //       batteryCapacity: 3.8,
-  //       plateNo: "1231313"
-  //     }
-  //   ];
+  useEffect(() => {
+    const demoVehicles = [
+      {
+        id: 1,
+        name: "VinFast VF e34",
+        image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
+        price: "690,000,000₫",
+        brand: "Vinfast",
+        color: "red",
+        batteryCapacity: 3.6,
+        plateNo: "56789"
+      },
+      {
+        id: 2,
+        name: "Tesla Model 3",
+        image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
+        price: "1,500,000,000₫",
+        brand: "Tesla",
+        color: "yellow",
+        batteryCapacity: 3.7,
+        plateNo: "12345"
+      },
+      {
+        id: 3,
+        name: "Hyundai Ioniq 5",
+        image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
+        price: "1,200,000,000₫",
+        brand: "Hyundai",
+        color: "white",
+        batteryCapacity: 3.8,
+        plateNo: "1231313"
+      }
+    ];
 
-  //   setVehicles(demoVehicles);
-  // }, []);
+    setVehicles(demoVehicles);
+  }, []);
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -162,14 +162,7 @@ export default function VehicleRegistration() {
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
-      name: Yup.string().required("Vui lòng nhập họ và tên"),
       email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-      phone: Yup.string()
-        .required("Vui lòng nhập số điện thoại")
-        .matches(/^0\d{9}$/, "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0"),
-      idNumber: Yup.string()
-        .required("Vui lòng nhập CCCD/CMND")
-        .matches(/^0\d{11}$/, "CCCD phải có 12 số và bắt đầu bằng 0"),
       address: Yup.string().required("Vui lòng nhập địa chỉ"),
       ownership: Yup.number()
         .required("Vui lòng nhập tỷ lệ sở hữu")
@@ -651,26 +644,11 @@ export default function VehicleRegistration() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {/* Owner type (dùng chung với ownerInfo state) */}
-              {/* interface Owner { name: string; email: string; phone: string; idNumber: string; address: string; ownership: number } */}
-
               <FormikProvider value={formik}>
                 <Form onSubmit={formik.handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Họ và tên *</Label>
-                      <Field name="name">
-                        {({ field }: any) => (
-                          <Input
-                            {...field}
-                            id="name"
-                            placeholder="Nhập họ và tên đầy đủ"
-                          />
-                        )}
-                      </Field>
-                      <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
-                    </div>
 
+                    {/* ✅ Chỉ giữ lại Email */}
                     <div className="space-y-2">
                       <Label htmlFor="email">Email *</Label>
                       <Field name="email">
@@ -681,17 +659,17 @@ export default function VehicleRegistration() {
                             type="email"
                             placeholder="Nhập email"
                             onBlur={async (e) => {
-                              field.onBlur(e); // giữ Formik sync
+                              field.onBlur(e);
                               const user = await fetchUserByEmail(e.target.value);
                               if (user) {
                                 formik.setValues(prev => ({
-                                  ...prev, // giữ nguyên tất cả giá trị hiện tại
+                                  ...prev,
                                   id: user.id || prev.id,
                                   name: user.name || prev.name,
                                   phone: user.phone || prev.phone,
                                   idNumber: user.idNumber || prev.idNumber,
                                   address: user.address || prev.address,
-                                  email: user.email || prev.email, // optional, email cũng có thể giữ nguyên
+                                  email: user.email || prev.email,
                                 }));
                               }
                             }}
@@ -701,34 +679,7 @@ export default function VehicleRegistration() {
                       <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Số điện thoại *</Label>
-                      <Field name="phone">
-                        {({ field }: any) => (
-                          <Input
-                            {...field}
-                            id="phone"
-                            placeholder="Nhập số điện thoại"
-                          />
-                        )}
-                      </Field>
-                      <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="idNumber">CCCD/CMND *</Label>
-                      <Field name="idNumber">
-                        {({ field }: any) => (
-                          <Input
-                            {...field}
-                            id="idNumber"
-                            placeholder="Nhập số CCCD/CMND"
-                          />
-                        )}
-                      </Field>
-                      <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
-                    </div>
-
+                    {/* ✅ Chỉ giữ lại Ownership */}
                     <div className="space-y-2">
                       <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
                       <div className="flex items-center space-x-2">
@@ -743,17 +694,15 @@ export default function VehicleRegistration() {
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             let num = parseInt(e.target.value || "", 10);
                             if (isNaN(num)) {
-                              formik.setFieldValue("ownership", ""); // giữ trống khi xóa
+                              formik.setFieldValue("ownership", "");
                               return;
                             }
-
-                            // Giới hạn tối đa 90
                             if (num > 90) num = 90;
                             formik.setFieldValue("ownership", num);
                           }}
                           onBlur={() => {
                             let num = formik.values.ownership;
-                            if (num < 15) num = 15; // giới hạn tối thiểu
+                            if (num < 15) num = 15;
                             formik.setFieldValue("ownership", num);
                           }}
                         />
@@ -767,6 +716,7 @@ export default function VehicleRegistration() {
                     </div>
                   </div>
 
+                  {/* ✅ Chỉ giữ lại Address */}
                   <div className="space-y-2">
                     <Label htmlFor="address">Địa chỉ *</Label>
                     <Field
@@ -797,6 +747,7 @@ export default function VehicleRegistration() {
             </CardContent>
           </Card>
         )}
+
 
         {/* Step 3: Co-owners */}
         {step === 3 && (

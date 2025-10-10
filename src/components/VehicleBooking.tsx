@@ -1,10 +1,10 @@
-import {useEffect, useRef, useState} from "react";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Calendar, Clock, Car, Edit, X, Check, AlertCircle} from "lucide-react";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import { useEffect, useRef, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, Car, Edit, X, Check, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface BookingSlot {
     scheduleId: number;
@@ -70,14 +70,14 @@ export default function VehicleBooking() {
     const currentUserName = localStorage.getItem("hovaten");
     const token = localStorage.getItem("accessToken");
     console.log("Token:", token);
-// Lấy token từ login
+    // Lấy token từ login
 
 
     const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
 
     const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
         const id = Date.now();
-        setToasts(prev => [...prev, {id, title, description, variant}]);
+        setToasts(prev => [...prev, { id, title, description, variant }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
     };
     useEffect(() => {
@@ -105,13 +105,13 @@ export default function VehicleBooking() {
             );
 
             if (!groupRes.ok) {
-                throw new Error("Không thể lấy thông tin nhóm");
+                throw new Error(`Lỗi API: ${groupRes.status}`);
             }
 
             const groupMembers = await groupRes.json();
 
             if (!groupMembers || groupMembers.length === 0) {
-                showToast("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
+                console.warn("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
                 return;
             }
 
@@ -120,7 +120,6 @@ export default function VehicleBooking() {
 
         } catch (error) {
             console.error("Error loading groupId:", error);
-            showToast("Lỗi", "Không thể lấy thông tin nhóm", "destructive");
         }
     };
 
@@ -153,7 +152,7 @@ export default function VehicleBooking() {
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
                     },
                     credentials: "include"
                 }
@@ -193,7 +192,7 @@ export default function VehicleBooking() {
             const res = await fetch(`${beBaseUrl}/Schedule/all`, {
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include"
             });
@@ -275,7 +274,7 @@ export default function VehicleBooking() {
 
     const parseRange = (range: string) => {
         const [start, end] = range.split('-');
-        return {start: toMinutes(start), end: toMinutes(end)};
+        return { start: toMinutes(start), end: toMinutes(end) };
     };
 
     const rangesOverlap = (a: string, b: string) => {
@@ -355,7 +354,7 @@ export default function VehicleBooking() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
                 body: JSON.stringify({
@@ -385,7 +384,7 @@ export default function VehicleBooking() {
             setSelectedStartTime("");
             setSelectedEndTime("");
             if (bookingsListRef.current) {
-                bookingsListRef.current.scrollIntoView({behavior: 'smooth', block: 'start'});
+                bookingsListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         } catch (e) {
             console.error("Booking error:", e);
@@ -400,7 +399,7 @@ export default function VehicleBooking() {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
             });
@@ -485,7 +484,7 @@ export default function VehicleBooking() {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
                 body: JSON.stringify({
@@ -531,17 +530,17 @@ export default function VehicleBooking() {
             <div className="fixed top-4 right-4 z-50 space-y-2">
                 {toasts.map(toast => (
                     <div key={toast.id}
-                         className={`p-4 rounded-lg shadow-lg border min-w-[300px] ${toast.variant === 'destructive' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-white border-gray-200'}`}>
+                        className={`p-4 rounded-lg shadow-lg border min-w-[300px] ${toast.variant === 'destructive' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-start gap-3">
                             <AlertCircle
-                                className={`h-5 w-5 mt-0.5 ${toast.variant === 'destructive' ? 'text-red-600' : 'text-blue-600'}`}/>
+                                className={`h-5 w-5 mt-0.5 ${toast.variant === 'destructive' ? 'text-red-600' : 'text-blue-600'}`} />
                             <div className="flex-1">
                                 <div className="font-semibold">{toast.title}</div>
                                 <div className="text-sm mt-1 opacity-90">{toast.description}</div>
                             </div>
                             <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-                                    className="text-gray-400 hover:text-gray-600">
-                                <X className="h-4 w-4"/>S
+                                className="text-gray-400 hover:text-gray-600">
+                                <X className="h-4 w-4" />S
                             </button>
                         </div>
                     </div>
@@ -551,7 +550,7 @@ export default function VehicleBooking() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
-                        <Calendar className="h-5 w-5"/>
+                        <Calendar className="h-5 w-5" />
                         <span>Đặt lịch sử dụng xe</span>
                     </CardTitle>
                     <CardDescription>Lên lịch sử dụng xe điện trong nhóm đồng sở hữu</CardDescription>
@@ -565,7 +564,7 @@ export default function VehicleBooking() {
                                     <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}>
                                         {selectedVehicle && vehicles.find(v => String(v.vehicleId) === selectedVehicle) && (
                                             <div className="flex items-center space-x-2">
-                                                <Car className="h-4 w-4"/>
+                                                <Car className="h-4 w-4" />
                                                 <span>{vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.brand} {vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.model} {vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.groupName}</span>
                                             </div>
                                         )}
@@ -586,7 +585,7 @@ export default function VehicleBooking() {
                                         return (
                                             <SelectItem key={vehicle.vehicleId} value={String(vehicle.vehicleId)}>
                                                 <div className="flex items-center space-x-2">
-                                                    <Car className="h-4 w-4"/>
+                                                    <Car className="h-4 w-4" />
                                                     <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
                                                 </div>
                                             </SelectItem>
@@ -598,29 +597,29 @@ export default function VehicleBooking() {
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
                             <input type="date"
-                                   className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                   value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
-                                   min={new Date().toISOString().split('T')[0]}/>
+                                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                                value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]} />
                         </div>
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
                             <Button variant="outline" className="w-full justify-start text-left font-normal"
-                                    onClick={() => setShowTimeSelector(true)}
-                                    disabled={!selectedVehicle || !selectedDate}>
-                                <Clock className="h-4 w-4 mr-2"/>
+                                onClick={() => setShowTimeSelector(true)}
+                                disabled={!selectedVehicle || !selectedDate}>
+                                <Clock className="h-4 w-4 mr-2" />
                                 {selectedTime ? selectedTime : "Chọn khung giờ"}
                             </Button>
                         </div>
                     </div>
 
                     <Button onClick={handleBooking} className="w-full"
-                            disabled={!selectedVehicle || !selectedDate || !selectedTime}>Đặt lịch</Button>
+                        disabled={!selectedVehicle || !selectedDate || !selectedTime}>Đặt lịch</Button>
 
                     <Dialog open={showTimeSelector} onOpenChange={setShowTimeSelector}>
                         <DialogContent className="max-w-2xl">
                             <DialogHeader>
                                 <DialogTitle className="flex items-center space-x-2">
-                                    <Clock className="h-5 w-5"/>
+                                    <Clock className="h-5 w-5" />
                                     <span>Chọn khung giờ sử dụng</span>
                                 </DialogTitle>
                                 <div id="dialog-time-desc" className="text-muted-foreground text-sm mt-1">
@@ -644,8 +643,8 @@ export default function VehicleBooking() {
                                                         key={b.scheduleId}
                                                         className="flex items-center gap-3 px-3 py-2 rounded border bg-gray-50 text-xs"
                                                     >
-                                                            <span
-                                                                className="font-semibold text-blue-700">{b.time}</span>
+                                                        <span
+                                                            className="font-semibold text-blue-700">{b.time}</span>
                                                         <span className="text-gray-700">{b.brand} {b.model}</span>
                                                         <span
                                                             className="text-gray-500">Người đặt: {b.bookedBy}</span>
@@ -658,9 +657,9 @@ export default function VehicleBooking() {
                                                     String(b.vehicleId) === String(selectedVehicle) &&
                                                     b.date === selectedDate
                                             ).length === 0 && (
-                                                <span
-                                                    className="text-xs text-muted-foreground">Chưa có lịch nào</span>
-                                            )}
+                                                    <span
+                                                        className="text-xs text-muted-foreground">Chưa có lịch nào</span>
+                                                )}
                                         </div>
                                     </div>
                                 )}
@@ -669,31 +668,31 @@ export default function VehicleBooking() {
                                         <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
                                         <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
+                                                placeholder="Chọn giờ bắt đầu" /></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (<SelectItem key={time}
-                                                                                                 value={time}>{time}</SelectItem>))}</SelectContent>
+                                                value={time}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
                                         <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ kết thúc"/></SelectTrigger>
+                                                placeholder="Chọn giờ kết thúc" /></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (
                                                 <SelectItem key={time} value={time}
-                                                            disabled={selectedStartTime && time <= selectedStartTime}>{time}</SelectItem>))}</SelectContent>
+                                                    disabled={selectedStartTime && time <= selectedStartTime}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
                                     <Button onClick={handleTimeSelection}
-                                            disabled={!selectedStartTime || !selectedEndTime}><Check
-                                        className="h-4 w-4 mr-2"/>Chọn</Button>
+                                        disabled={!selectedStartTime || !selectedEndTime}><Check
+                                            className="h-4 w-4 mr-2" />Chọn</Button>
                                     <Button variant="outline" onClick={() => {
                                         setShowTimeSelector(false);
                                         setSelectedStartTime("");
                                         setSelectedEndTime("");
-                                    }}><X className="h-4 w-4 mr-2"/>Hủy</Button>
+                                    }}><X className="h-4 w-4 mr-2" />Hủy</Button>
                                 </div>
                             </div>
                         </DialogContent>
@@ -703,7 +702,7 @@ export default function VehicleBooking() {
                         <DialogContent className="max-w-2xl">
                             <DialogHeader>
                                 <DialogTitle className="flex items-center space-x-2">
-                                    <Clock className="h-5 w-5"/>
+                                    <Clock className="h-5 w-5" />
                                     <span>Chỉnh sửa khung giờ</span>
                                 </DialogTitle>
                             </DialogHeader>
@@ -713,31 +712,31 @@ export default function VehicleBooking() {
                                         <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
                                         <Select value={editStartTime} onValueChange={setEditStartTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
+                                                placeholder="Chọn giờ bắt đầu" /></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (<SelectItem key={time}
-                                                                                                 value={time}>{time}</SelectItem>))}</SelectContent>
+                                                value={time}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
                                         <Select value={editEndTime} onValueChange={setEditEndTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ kết thúc"/></SelectTrigger>
+                                                placeholder="Chọn giờ kết thúc" /></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (
                                                 <SelectItem key={time} value={time}
-                                                            disabled={editStartTime && time <= editStartTime}>{time}</SelectItem>))}</SelectContent>
+                                                    disabled={editStartTime && time <= editStartTime}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
                                     <Button onClick={handleEditTimeSelection}
-                                            disabled={!editStartTime || !editEndTime}><Check
-                                        className="h-4 w-4 mr-2"/>Chọn</Button>
+                                        disabled={!editStartTime || !editEndTime}><Check
+                                            className="h-4 w-4 mr-2" />Chọn</Button>
                                     <Button variant="outline" onClick={() => {
                                         setShowEditTimeSelector(false);
                                         setEditStartTime("");
                                         setEditEndTime("");
-                                    }}><X className="h-4 w-4 mr-2"/>Hủy</Button>
+                                    }}><X className="h-4 w-4 mr-2" />Hủy</Button>
                                 </div>
                             </div>
                         </DialogContent>
@@ -747,7 +746,7 @@ export default function VehicleBooking() {
                         <Card className="border-primary/50 bg-primary/5">
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center space-x-2">
-                                    <Edit className="h-5 w-5"/>
+                                    <Edit className="h-5 w-5" />
                                     <span>Chỉnh sửa lịch đặt</span>
                                 </CardTitle>
                             </CardHeader>
@@ -756,13 +755,13 @@ export default function VehicleBooking() {
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn xe</label>
                                         <Select value={editVehicle} onValueChange={setEditVehicle}>
-                                            <SelectTrigger><SelectValue placeholder="Chọn xe"/></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder="Chọn xe" /></SelectTrigger>
                                             <SelectContent>
                                                 {vehicles.map((vehicle) => (
                                                     <SelectItem key={vehicle.vehicleId}
-                                                                value={String(vehicle.vehicleId)}>
+                                                        value={String(vehicle.vehicleId)}>
                                                         <div className="flex items-center space-x-2">
-                                                            <Car className="h-4 w-4"/>
+                                                            <Car className="h-4 w-4" />
                                                             <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
                                                         </div>
                                                     </SelectItem>
@@ -773,26 +772,26 @@ export default function VehicleBooking() {
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
                                         <input type="date"
-                                               className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                               value={editDate} onChange={(e) => setEditDate(e.target.value)}
-                                               min={new Date().toISOString().split('T')[0]}/>
+                                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                                            value={editDate} onChange={(e) => setEditDate(e.target.value)}
+                                            min={new Date().toISOString().split('T')[0]} />
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
                                         <Button variant="outline"
-                                                className="w-full justify-start text-left font-normal"
-                                                onClick={() => setShowEditTimeSelector(true)}>
-                                            <Clock className="h-4 w-4 mr-2"/>
+                                            className="w-full justify-start text-left font-normal"
+                                            onClick={() => setShowEditTimeSelector(true)}>
+                                            <Clock className="h-4 w-4 mr-2" />
                                             {editTime ? editTime : "Chọn khung giờ"}
                                         </Button>
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
                                     <Button onClick={handleUpdateBooking}
-                                            disabled={!editVehicle || !editDate || !editTime}><Check
-                                        className="h-4 w-4 mr-2"/>Cập nhật</Button>
+                                        disabled={!editVehicle || !editDate || !editTime}><Check
+                                            className="h-4 w-4 mr-2" />Cập nhật</Button>
                                     <Button onClick={handleCancelEdit} variant="outline"><X
-                                        className="h-4 w-4 mr-2"/>Hủy
+                                        className="h-4 w-4 mr-2" />Hủy
                                         chỉnh sửa</Button>
                                 </div>
                             </CardContent>
@@ -801,7 +800,7 @@ export default function VehicleBooking() {
 
                     <div>
                         <h4 className="font-semibold mb-3 flex items-center space-x-2">
-                            <Clock className="h-4 w-4"/>
+                            <Clock className="h-4 w-4" />
                             <span>Lịch đã đặt</span>
                         </h4>
                         <div ref={bookingsListRef} className="space-y-3">
@@ -812,11 +811,11 @@ export default function VehicleBooking() {
                             ) : (
                                 existingBookings.map((booking) => (
                                     <div key={booking.scheduleId}
-                                         className={`flex items-center justify-between p-3 border rounded-lg transition-all ${editingBooking === booking.scheduleId ? 'bg-primary/10 border-primary/50' : newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' : 'bg-accent/20'}`}>
+                                        className={`flex items-center justify-between p-3 border rounded-lg transition-all ${editingBooking === booking.scheduleId ? 'bg-primary/10 border-primary/50' : newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' : 'bg-accent/20'}`}>
                                         <div className="flex-1">
                                             <div className="flex items-center space-x-3">
                                                 <div className="flex items-center space-x-2">
-                                                    <Car className="h-4 w-4"/>
+                                                    <Car className="h-4 w-4" />
                                                     <span
                                                         className="font-medium">{booking.brand} {booking.model}</span>
                                                 </div>
@@ -831,13 +830,13 @@ export default function VehicleBooking() {
                                         </div>
                                         <div className="flex items-center space-x-2">
                                             <Button size="sm" variant="outline"
-                                                    onClick={() => handleEditBooking(booking.scheduleId)}
-                                                    disabled={editingBooking === booking.scheduleId}>
-                                                <Edit className="h-4 w-4 mr-1"/>Sửa
+                                                onClick={() => handleEditBooking(booking.scheduleId)}
+                                                disabled={editingBooking === booking.scheduleId}>
+                                                <Edit className="h-4 w-4 mr-1" />Sửa
                                             </Button>
                                             <Button size="sm" variant="outline"
-                                                    onClick={() => handleCancelBooking(booking.scheduleId)}>
-                                                <X className="h-4 w-4 mr-1"/>Hủy
+                                                onClick={() => handleCancelBooking(booking.scheduleId)}>
+                                                <X className="h-4 w-4 mr-1" />Hủy
                                             </Button>
                                         </div>
                                     </div>

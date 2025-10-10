@@ -40,14 +40,7 @@ export default function CoOwnerForm({
     initialValues: coOwner,
     enableReinitialize: true,
     validationSchema: Yup.object({
-      name: Yup.string().required("Vui lòng nhập họ và tên"),
       email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-      phone: Yup.string()
-        .required("Vui lòng nhập số điện thoại")
-        .matches(/^0\d{9}$/, "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0"),
-      idNumber: Yup.string()
-        .required("Vui lòng nhập CCCD/CMND")
-        .matches(/^0\d{11}$/, "CCCD phải có 12 số và bắt đầu bằng 0"),
       address: Yup.string().required("Vui lòng nhập địa chỉ"),
       ownership: Yup.number()
         .required("Vui lòng nhập tỷ lệ sở hữu")
@@ -79,23 +72,10 @@ export default function CoOwnerForm({
 
       <FormikProvider value={formik}>
         <Form className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Họ và tên */}
-          <div className="space-y-2">
-            <Label>Họ và tên</Label>
-            <Field name="name">
-              {({ field }: any) => <Input {...field}
-                onBlur={(e) => {
-                  field.onBlur(e);
-                  updateCoOwner(coOwner.id, "name", e.target.value);
-                }}
-                placeholder="Nhập họ và tên" />}
-            </Field>
-            <ErrorMessage name="name" component="div" className="text-red-500 text-sm" />
-          </div>
 
-          {/* Email */}
-          <div className="space-y-2">
-            <Label>Email</Label>
+          {/* ✅ Email (giữ lại) */}
+          <div className="space-y-2 md:col-span-2">
+            <Label>Email *</Label>
             <Field name="email">
               {({ field }: any) => (
                 <Input
@@ -114,6 +94,9 @@ export default function CoOwnerForm({
                         ...user,
                         email: user.email ?? formik.values.email,
                       });
+                      updateCoOwner(coOwner.id, "name", user.name);
+                      updateCoOwner(coOwner.id, "phone", user.phone);
+                      updateCoOwner(coOwner.id, "idNumber", user.idNumber);
                     }
                   }}
                 />
@@ -122,37 +105,9 @@ export default function CoOwnerForm({
             <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
           </div>
 
-          {/* Số điện thoại */}
-          <div className="space-y-2">
-            <Label>Số điện thoại</Label>
-            <Field name="phone">
-              {({ field }: any) => <Input {...field}
-                onBlur={(e) => {
-                  field.onBlur(e);
-                  updateCoOwner(coOwner.id, "phone", e.target.value);
-                }}
-                placeholder="Nhập số điện thoại" />}
-            </Field>
-            <ErrorMessage name="phone" component="div" className="text-red-500 text-sm" />
-          </div>
-
-          {/* CCCD */}
-          <div className="space-y-2">
-            <Label>CCCD/CMND</Label>
-            <Field name="idNumber">
-              {({ field }: any) => <Input {...field}
-                onBlur={(e) => {
-                  field.onBlur(e);
-                  updateCoOwner(coOwner.id, "idNumber", e.target.value);
-                }}
-                placeholder="Nhập số CCCD/CMND" />}
-            </Field>
-            <ErrorMessage name="idNumber" component="div" className="text-red-500 text-sm" />
-          </div>
-
-          {/* Ownership */}
-          <div className="space-y-2">
-            <Label>Tỷ lệ sở hữu (%)</Label>
+          {/* ✅ Ownership (giữ lại) */}
+          <div className="space-y-2 md:col-span-2">
+            <Label>Tỷ lệ sở hữu (%) *</Label>
             <div className="flex items-center space-x-2">
               <Field name="ownership">
                 {({ field }: any) => (
@@ -163,7 +118,7 @@ export default function CoOwnerForm({
                     max={90}
                     className="flex-1"
                     onBlur={(e) => {
-                      updateCoOwner(coOwner.id, "ownership", Number(e.target.value)); // cập nhật parent state
+                      updateCoOwner(coOwner.id, "ownership", Number(e.target.value));
                     }}
                   />
                 )}
@@ -177,9 +132,9 @@ export default function CoOwnerForm({
             <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
           </div>
 
-          {/* Địa chỉ */}
+          {/* ✅ Address (giữ lại) */}
           <div className="space-y-2 md:col-span-2">
-            <Label>Địa chỉ</Label>
+            <Label>Địa chỉ *</Label>
             <Field as={Textarea} name="address" placeholder="Nhập địa chỉ" />
             <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
           </div>
