@@ -320,8 +320,10 @@ export default function VehicleRegistration() {
       });
       return;
     }
+
     const { pdfUrl } = GenerateContractPDF(ownerInfo, selectedVehicle);
     setPdfUrl(pdfUrl);
+
     const invalid = coOwners.find((co) => Number(co.ownership) > mainOwnership);
     if (invalid) {
       toast({
@@ -334,33 +336,53 @@ export default function VehicleRegistration() {
 
     setIsSubmitted(true);
     setShowPDF(true);
-    // 🧩 2. Tạo payload gửi backend
+
+    // ✅ Payload group
     const payload = {
       vehicleId: selectedVehicle,
       member: [
         {
-          email: ownerInfo.email,  // hoặc mainOwner.email
-          ownershipPercentage: mainOwnership, // tỷ lệ sở hữu chính (ví dụ 60%)
+          email: ownerInfo.email,
+          ownershipPercentage: mainOwnership,
         },
         ...coOwners.map((co) => ({
           email: co.email,
           ownershipPercentage: co.ownership,
         })),
       ],
-      documentUrl: pdfUrl, // URL blob tạm
+      documentUrl: pdfUrl,
       contractType: "Vehicle Registration",
     };
 
-    console.log("📦 Payload gửi backend:", payload);
+    // ✅ Payload contract
+    const contract = {
+      linkUrl: pdfUrl,
+      contractType: "VEHICLE REGISTRATION",
+      userIds: [
+        Number(ownerInfo.id),
+        ...coOwners.filter(co => co.id).map(co => Number(co.id))
+      ]
+    };
 
-    // 📨 3. Gửi payload tới backend
+    console.log("📦 Payload gửi backend:", payload);
+    console.log("📨 Payload gửi createContract:", contract);
+
     try {
+      // 1️⃣ Gửi group trước
       const res = await axiosClient.post("http://localhost:8080/group/register", payload);
       if (res.status === 200 || res.status === 201) {
         toast({
           title: "Đăng ký thành công",
           description: "Hợp đồng đã được gửi đến hệ thống!",
         });
+
+        // 2️⃣ Sau khi group OK thì tạo contract
+        try {
+          await axiosClient.post("http://localhost:8080/create", contract);
+          console.log("✅ Gửi contract thành công");
+        } catch (err) {
+          console.error("❌ Lỗi khi gọi createContract:", err);
+        }
       } else {
         toast({
           title: "Lỗi",
@@ -377,6 +399,7 @@ export default function VehicleRegistration() {
       });
     }
   };
+
 
 
   if (isSubmitted) {
