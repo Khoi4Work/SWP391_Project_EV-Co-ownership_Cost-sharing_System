@@ -29,7 +29,7 @@ export default function ContractPreviewPage() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axiosClient.get("/users/me", {
+                const res = await axiosClient.get("/auth/current", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -45,9 +45,6 @@ export default function ContractPreviewPage() {
 
         fetchUser();
     }, [token]);
-
-    if (loading) return <div>Đang tải thông tin user...</div>;
-    if (error) return <div className="text-red-500">{error}</div>;
     useEffect(() => {
         // TODO: Lấy dữ liệu từ localStorage hoặc state chung
         const savedOwner = JSON.parse(localStorage.getItem("ownerInfo") || "{}");
@@ -72,7 +69,8 @@ export default function ContractPreviewPage() {
         // pdf.addImage(imgData, "PNG", 0, 0, width, height);
         // pdf.save(`HopDongDongSoHuu_${id}.pdf`);
     };
-
+    if (loading) return <div>Đang tải thông tin user...</div>;
+    if (error) return <div className="text-red-500">{error}</div>;
     if (!ownerInfo || !vehicleData) return <p>Đang tải dữ liệu hợp đồng...</p>;
 
     return (
