@@ -40,6 +40,12 @@ public class ScheduleController {
         return ResponseEntity.ok(schedules);
     }
 
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<List<ScheduleRes>> getSchedulesByGroupId(@PathVariable int groupId) {
+        List<ScheduleRes> schedules = scheduleService.findByGroupMember_Group_GroupId(groupId);
+        return ResponseEntity.ok(schedules);
+    }
+
     @GetMapping("/vehicle")
     public ResponseEntity<VehicleRes> getCarsByGroupAndUser(
             @RequestParam int groupId,

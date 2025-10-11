@@ -143,5 +143,31 @@ public class ScheduleService implements IScheduleService {
         iScheduleRepository.delete(schedule);
     }
 
+    @Override
+    public List<ScheduleRes> findByGroupMember_Group_GroupId(int groupId) {
+        // Validate group exists
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        List<Schedule> schedules = iScheduleRepository.findByGroupMember_Group_GroupId(groupId);
+
+        // Convert entities to DTOs
+        return schedules.stream()
+                .map(schedule -> {
+                    ScheduleRes res = modelMapper.map(schedule, ScheduleRes.class);
+                    res.setUserId(schedule.getGroupMember().getUsers().getId());
+                    res.setGroupId(schedule.getGroupMember().getGroup().getGroupId());
+
+                    // Get vehicle for this schedule's group
+                    Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
+                    if (vehicle != null) {
+                        res.setVehicleId(vehicle.getVehicleId());
+                    }
+
+                    return res;
+                })
+                .collect(Collectors.toList());
+    }
+
 
 }
