@@ -413,7 +413,7 @@ export default function VehicleRegistration() {
       const resData = await axiosClient.post("/contract/create", contract);
       localStorage.setItem("contractId", resData.data.contract.contractId);
       console.log("✅ Gửi contract thành công");
-      navigate(`/contract/preview/${tempContractId}`);
+      navigate(`/contract/preview/${resData.data.contract.contractId}`);
     } catch (err) {
       console.error("❌ Lỗi khi gọi createContract:", err);
     }
