@@ -7,4 +7,7 @@ import java.util.List;
 public interface IGroupMemberService {
     public List<GroupMember> findAllByUsersId(int userId);
 
+    List<Integer> getGroupIdsByUserId(int userId);
+
+
 }

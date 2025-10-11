@@ -13,11 +13,11 @@ public interface IScheduleService {
 
     List<ScheduleRes> getAllSchedules();
 
-    public VehicleRes getCarByGroupIdAndUserId(int groupId, int userId);
+    List<VehicleRes> getCarsByGroupIdAndUserId(int groupId, int userId);  // Sửa return type
 
     public void updateSchedule(ScheduleReq req, int scheduleId);
 
-    public void deleteSchedule(int scheduleId);
+    void cancelSchedule(int scheduleId);
     List<ScheduleRes> findByGroupMember_Group_GroupId(int groupId);
 
 }

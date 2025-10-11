@@ -47,15 +47,17 @@ public class ScheduleController {
     }
 
     @GetMapping("/vehicle")
-    public ResponseEntity<VehicleRes> getCarsByGroupAndUser(
+    public ResponseEntity<List<VehicleRes>> getCarsByGroupAndUser(
             @RequestParam int groupId,
             @RequestParam int userId) {
-        VehicleRes res = scheduleService.getCarByGroupIdAndUserId(groupId, userId);
-        System.out.println(res);
-        if (res == null) {
+        List<VehicleRes> resList = scheduleService.getCarsByGroupIdAndUserId(groupId, userId);
+        System.out.println("Vehicles found: " + resList.size());
+
+        if (resList.isEmpty()) {
             throw new NoVehicleInGroupException("No vehicle in user's group");
         }
-        return ResponseEntity.ok(res);
+
+        return ResponseEntity.ok(resList);
     }
 
     @PutMapping("/update/{scheduleId}")
@@ -67,7 +69,7 @@ public class ScheduleController {
 
     @DeleteMapping("/delete/{scheduleId}")
     public ResponseEntity<Void> deleteSchedule(@PathVariable int scheduleId) {
-        scheduleService.deleteSchedule(scheduleId);
+        scheduleService.cancelSchedule(scheduleId);
         return ResponseEntity.noContent().build();
     }
 //    @PutMapping("/{id}")

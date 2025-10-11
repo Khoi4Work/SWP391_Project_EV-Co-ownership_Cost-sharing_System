@@ -24,4 +24,10 @@ public class GroupMemberController {
         List<GroupMember> groupMember = groupMemberService.findAllByUsersId(userId);
         return ResponseEntity.ok(groupMember);
     }
+    @GetMapping("/getGroupIdsByUserId")
+    public ResponseEntity<List<Integer>> getGroupIdsByUserId(@RequestParam("userId") int userId) {
+        List<Integer> groupIds = groupMemberService.getGroupIdsByUserId(userId);
+        return ResponseEntity.ok(groupIds);
+    }
+
 }
