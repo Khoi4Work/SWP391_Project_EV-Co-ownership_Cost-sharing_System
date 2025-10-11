@@ -181,13 +181,13 @@ export async function GenerateContractPDF(
     font: helvetica,
   });
 
-  consent.addOptionToPage("reject", page, {
+  consent.addOptionToPage("decline", page, {
     x: 70,
     y: yPos - 60,
     width: 15,
     height: 15,
   });
-  page.drawText("I Do Not Agree and wish to cancel this registration.", {
+  page.drawText("I Do Not Agree and wish to decline this registration.", {
     x: 95,
     y: yPos - 57,
     size: 11,

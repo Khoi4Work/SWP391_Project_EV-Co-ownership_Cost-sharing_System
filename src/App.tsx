@@ -16,7 +16,7 @@ import GroupDetail from "./pages/co-owner/GroupDetail";
 import Contracts from "./pages/co-owner/Contracts";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/ui/footnote";
-
+import PdfPreview from "./pages/co-owner/PDFPreview";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -37,7 +37,7 @@ const App = () => (
                     <Route path="/co-owner/groups" element={<MyGroups/>}/>
                     <Route path="/co-owner/groups/:groupId" element={<GroupDetail/>}/>
                     <Route path="/co-owner/contracts" element={<Contracts/>}/>
-
+                    <Route path="/pdf-preview" element={<PdfPreview />} />
                     {/* Staff routes */}
                     <Route path="/staff/dashboard" element={<StaffDashboard/>}/>
 

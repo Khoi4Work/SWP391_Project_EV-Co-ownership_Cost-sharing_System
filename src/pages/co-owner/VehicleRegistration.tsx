@@ -145,9 +145,10 @@ export default function VehicleRegistration() {
         setVehicles(mappedVehicles);
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe:", error);
+
+
       }
     };
-
     fetchVehicles();
   }, []);
   const formik = useFormik<CoOwner>({
@@ -474,15 +475,15 @@ export default function VehicleRegistration() {
               <div className="mt-6">
                 <h3 className="font-semibold mb-2">📄 Xem hợp đồng:</h3>
                 {pdfUrl ? (
-                  <a
-                    href={pdfUrl}
-                    download="Vehicle_Contract.pdf"
+                  <Link
+                    to={`/pdf-preview?url=${encodeURIComponent(pdfUrl)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 underline font-medium"
                   >
                     View or Download Contract PDF
-                  </a>
+                  </Link>
+
                 ) : (
                   <p className="text-muted-foreground text-sm italic">
                     Đang tạo hợp đồng PDF...
