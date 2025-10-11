@@ -6,7 +6,7 @@ import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button"; // nếu bạn dùng ShadCN button
 
 export default function ContractPreviewPage() {
-    const { tempContractId } = useParams(); // lấy id tạm từ URL
+    const { id } = useParams(); // lấy id tạm từ URL
     const [ownerInfo, setOwnerInfo] = useState<any>(null);
     const [coOwners, setCoOwners] = useState<any[]>([]);
     const [vehicleData, setVehicleData] = useState<any>(null);
@@ -21,7 +21,7 @@ export default function ContractPreviewPage() {
         setOwnerInfo(savedOwner);
         setCoOwners(savedCoOwners);
         setVehicleData(savedVehicle);
-    }, [tempContractId]);
+    }, [id]);
 
     const generatePDF = async () => {
         const element = document.getElementById("contract-area");
@@ -34,7 +34,7 @@ export default function ContractPreviewPage() {
         const height = (canvas.height * width) / canvas.width;
 
         pdf.addImage(imgData, "PNG", 0, 0, width, height);
-        pdf.save(`HopDongDongSoHuu_${tempContractId}.pdf`);
+        pdf.save(`HopDongDongSoHuu_${id}.pdf`);
     };
 
     if (!ownerInfo || !vehicleData) return <p>Đang tải dữ liệu hợp đồng...</p>;
