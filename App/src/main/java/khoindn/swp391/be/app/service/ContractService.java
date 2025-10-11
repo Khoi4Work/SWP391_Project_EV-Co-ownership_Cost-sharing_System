@@ -45,7 +45,7 @@ public class ContractService implements IContractService {
     public Contract getContract(int id) {
         Contract contract = iContractRepository.findContractByContractId(id);
 
-        if(contract==null) throw new ContractNotExistedException("Contract cannot found!");
+        if (contract == null) throw new ContractNotExistedException("Contract cannot found!");
         return contract;
     }
 
@@ -55,7 +55,7 @@ public class ContractService implements IContractService {
         Users user = authenticationService.getCurrentAccount();
         if (iContractSignerRepository.existsByUser_Id(user.getId())) {
             ContractSigner contractSigner = iContractSignerRepository
-                    .findByUser_IdAndContract_ContractId(user.getId(),req.getIdContract());
+                    .findByUser_IdAndContract_ContractId(user.getId(), req.getIdContract());
             // Cập nhật decision
             if (req.getIdChoice() == 1) {
                 contractSigner.setDecision("Signed");
@@ -91,7 +91,7 @@ public class ContractService implements IContractService {
 
 
             return contractSigner;
-        }else  {
+        } else {
             throw new IllegalArgumentException("Invalid userId value");
         }
     }
@@ -131,29 +131,36 @@ public class ContractService implements IContractService {
 
     @Override
     public List<ContractSigner> createContract(ContractCreateReq req) {
-        Contract contract = new Contract();
-        ContractSigner contractSigner = new ContractSigner();
+
         List<ContractSigner> signerList = new ArrayList<>();
-        for (Integer userId : req.getUserId()){
+
+        Contract contract = new Contract();
+
+        contract.setContractType(req.getContractType());
+        contract.setStartDate(LocalDate.now());
+        contract.setDocumentUrl(req.getDocumentUrl());
+        contract.setStatus("Pending");
+        iContractRepository.save(contract);
+
+        for (Integer userId : req.getUserId()) {
             Users users = iUserRepository.findUsersById(userId);
+            ContractSigner contractSigner = new ContractSigner();
             // Tao Contract
 
-            contract.setContractType(req.getContractType());
-            contract.setStartDate(LocalDate.now());
-            contract.setDocumentUrl(req.getDocumentUrl());
-            contract.setStatus("Pending");
-            iContractRepository.save(contract);
+
             // Tao nguoi ky contract
 
             contractSigner.setContract(contract);
             contractSigner.setUser(users);
             contractSigner.setDecision("Pending");
             iContractSignerRepository.save(contractSigner);
+
             signerList.add(contractSigner);
 
             // ✅ TẠO TOKEN RIÊNG CHO USER
             String token = tokenService.generateToken(users);
             String secureUrl = req.getDocumentUrl() + "?token=" + token;
+
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -163,8 +170,6 @@ public class ContractService implements IContractService {
                 helper.setText("Kính mời Quý khách truy cập vào " +
                         "<a href='" + secureUrl + "'>liên kết này</a>" +
                         " để xem thông tin chi tiết về hợp đồng đồng sở hữu.", true);
-
-
                 javaMailSender.send(message);
             } catch (Exception e) {
                 e.getMessage();

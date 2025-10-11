@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.pojo.Users;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IUserService{
@@ -14,5 +15,7 @@ public interface IUserService{
     public Users updateUser(Users users, int id);
 
     public Users getUserByEmail(String email);
+
+    public List<Users> getAllUsers();
 
 }

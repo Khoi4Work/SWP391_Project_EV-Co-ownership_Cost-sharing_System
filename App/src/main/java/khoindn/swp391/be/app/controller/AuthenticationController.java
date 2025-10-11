@@ -45,7 +45,7 @@ public class AuthenticationController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity getCurrentAccount(){
+    public ResponseEntity<Users> getCurrentAccount(){
         return ResponseEntity.ok(authenticationService.getCurrentAccount());
     }
 }
