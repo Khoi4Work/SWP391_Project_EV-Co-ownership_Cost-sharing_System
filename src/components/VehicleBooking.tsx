@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Car, Edit, X, Check, AlertCircle } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {useEffect, useRef, useState} from "react";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Badge} from "@/components/ui/badge";
+import {Calendar, Clock, Car, Edit, X, Check, AlertCircle} from "lucide-react";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 interface BookingSlot {
     scheduleId: number;
@@ -41,6 +41,7 @@ interface ToastMessage {
 }
 
 export default function VehicleBooking() {
+    // ===== STATE DECLARATIONS =====
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [loadingVehicles, setLoadingVehicles] = useState(false);
     const [vehiclesError, setVehiclesError] = useState<string | null>(null);
@@ -59,42 +60,33 @@ export default function VehicleBooking() {
     const [showEditTimeSelector, setShowEditTimeSelector] = useState(false);
     const [newlyCreatedBooking, setNewlyCreatedBooking] = useState<number | null>(null);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
-    const bookingsListRef = useRef<HTMLDivElement | null>(null);
     const [existingBookings, setExistingBookings] = useState<BookingSlot[]>([]);
     const [loadingBookings, setLoadingBookings] = useState(false);
 
+    // ===== REFS =====
+    const bookingsListRef = useRef<HTMLDivElement | null>(null);
+
+    // ===== CONSTANTS =====
     const beBaseUrl = "http://localhost:8080";
-    // const currentUserId = Number(localStorage.getItem("currentUserId") || "1");
     const currentUserId = Number(localStorage.getItem("userId"));
-    // const currentGroupId = Number(localStorage.getItem("currentGroupId") || "1");
     const currentUserName = localStorage.getItem("hovaten");
     const token = localStorage.getItem("accessToken");
-    console.log("Token:", token);
-    // Lấy token từ login
-
-
     const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
 
+    // ===== HELPER FUNCTIONS =====
     const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
         const id = Date.now();
-        setToasts(prev => [...prev, { id, title, description, variant }]);
+        setToasts(prev => [...prev, {id, title, description, variant}]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
     };
-    useEffect(() => {
-        const initData = async () => {
-            // Lấy groupId trước
-            await loadGroupId();
-            // Sau đó mới load vehicles và bookings
-            await loadVehiclesAndBookings();
-        };
 
-        initData();
-    }, []);
-
+    // ===== API FUNCTIONS =====
     const loadGroupId = async () => {
         try {
+            console.log("Loading groupId for userId:", currentUserId);
+
             const groupRes = await fetch(
-                `${beBaseUrl}/groupMember/getByUserId?userId=${currentUserId}`,
+                `${beBaseUrl}/groupMember/getGroupIdsByUserId?userId=${currentUserId}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -105,26 +97,30 @@ export default function VehicleBooking() {
             );
 
             if (!groupRes.ok) {
-                throw new Error(`Lỗi API: ${groupRes.status}`);
+                throw new Error("Không thể lấy thông tin nhóm");
             }
 
-            const groupMembers = await groupRes.json();
+            // API trả về trực tiếp array of integers: [1, 2]
+            const groupIds: number[] = await groupRes.json();
 
-            if (!groupMembers || groupMembers.length === 0) {
-                console.warn("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
+            if (!groupIds || groupIds.length === 0) {
+                showToast("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
                 return;
             }
 
-            const currentGroupId = groupMembers[0].group.groupId;
-            localStorage.setItem("groupId", currentGroupId.toString());
+            // Lưu array groupIds vào localStorage (phải stringify)
+            localStorage.setItem("groupIds", JSON.stringify(groupIds));
 
-        } catch (error) {
-            console.error("Error loading groupId:", error);
+            // Lưu groupId đầu tiên làm mặc định cho loadVehicles
+            localStorage.setItem("groupId", groupIds[0].toString());
+
+            console.log("✅ All GroupIds loaded:", groupIds);
+            console.log("✅ Default GroupId for vehicles:", groupIds[0]);
+
+        } catch (error: any) {
+            console.error("❌ Error loading groupId:", error);
+            showToast("Lỗi", "Không thể lấy thông tin nhóm", "destructive");
         }
-    };
-
-    const loadVehiclesAndBookings = async () => {
-        await Promise.all([loadVehicles(), loadBookings()]);
     };
 
     const loadVehicles = async () => {
@@ -132,52 +128,61 @@ export default function VehicleBooking() {
         setVehiclesError(null);
 
         try {
-            const currentGroupId = localStorage.getItem("groupId");
+            // Lấy tất cả groupIds thay vì chỉ 1
+            const groupIdsStr = localStorage.getItem("groupIds");
 
-            if (!currentGroupId) {
+            if (!groupIdsStr) {
                 setVehicles([]);
                 setVehiclesError("Chưa có thông tin nhóm");
                 return;
             }
 
-            console.log("Calling API with:", {
-                url: `${beBaseUrl}/Schedule/vehicle?groupId=${currentGroupId}&userId=${currentUserId}`,
-                token,
-                currentGroupId,
-                currentUserId
-            });
+            const groupIds: number[] = JSON.parse(groupIdsStr);
+            console.log("Loading vehicles for all groupIds:", groupIds);
 
-            const res = await fetch(
-                `${beBaseUrl}/Schedule/vehicle?groupId=${currentGroupId}&userId=${currentUserId}`,
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
-                    credentials: "include"
-                }
+            // Tạo array các fetch promises cho mỗi groupId
+            const fetchPromises = groupIds.map(groupId =>
+                fetch(
+                    `${beBaseUrl}/Schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`,
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                        },
+                        credentials: "include"
+                    }
+                ).then(async res => {
+                    console.log(`Vehicles API response for group ${groupId}:`, res.status);
+
+                    if (!res.ok) {
+                        console.warn(`Failed to load vehicles for group ${groupId}`);
+                        return null;
+                    }
+
+                    return res.json();
+                })
             );
 
-            console.log("API Response status:", res.status);
+            // Chờ tất cả requests hoàn thành
+            const allVehiclesData = await Promise.all(fetchPromises);
 
-            if (!res.ok) {
-                throw new Error(`API Error: ${res.status}`);
-            }
+            console.log("All vehicles data:", allVehiclesData);
 
-            const data = await res.json();
-            console.log("API response:", data);
+            // Filter out null values và flatten thành single array
+            const vehiclesArr: Vehicle[] = allVehiclesData
+                .filter(data => data !== null)
+                .flatMap(data => Array.isArray(data) ? data : (data ? [data] : []));
 
-            const vehiclesArr: Vehicle[] = Array.isArray(data) ? data : (data ? [data] : []);
-            console.log("Vehicles array:", vehiclesArr);
+            console.log("✅ Vehicles loaded from all groups:", vehiclesArr.length);
 
             setVehicles(vehiclesArr);
 
             if (vehiclesArr.length === 0) {
-                setVehiclesError("Nhóm chưa có xe nào");
+                setVehiclesError("Các nhóm chưa có xe nào");
             }
 
         } catch (error: any) {
-            console.error("Error loading vehicles:", error);
+            console.error("❌ Error loading vehicles:", error);
             setVehicles([]);
             setVehiclesError(error.message || "Không thể tải danh sách xe");
             showToast("Lỗi", "Không thể tải danh sách xe", "destructive");
@@ -188,74 +193,150 @@ export default function VehicleBooking() {
 
     const loadBookings = async () => {
         setLoadingBookings(true);
+
+        console.log("=== Loading Bookings ===");
+        console.log("Current vehicles count:", vehicles.length);
+
         try {
-            const res = await fetch(`${beBaseUrl}/Schedule/all`, {
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                },
-                credentials: "include"
-            });
-            console.log("Loading bookings response:", res.status);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            const formattedBookings: BookingSlot[] = data.map((item: any) => {
-                const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
-                const endTime = new Date(item.endTime).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
-                const date = new Date(item.startTime).toISOString().split('T')[0];
-                const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
-                return {
-                    scheduleId: item.scheduleId,
-                    time: `${startTime}-${endTime}`,
-                    date: date,
-                    brand: vehicle.brand,
-                    model: vehicle.model,
-                    vehicleId: item.vehicleId,
-                    bookedBy: item.userId === currentUserId ? currentUserName : `User ${item.userId}`,
-                    userId: item.userId,
-                    groupId: item.groupId,
-                    status: item.status
-                };
-            });
+            // Lấy tất cả groupIds từ localStorage
+            const groupIdsStr = localStorage.getItem('groupIds');
+
+            if (!groupIdsStr) {
+                throw new Error("Không tìm thấy groupIds trong localStorage");
+            }
+
+            // Parse JSON string thành array
+            const groupIds: number[] = JSON.parse(groupIdsStr);
+            console.log("Loading bookings for groupIds:", groupIds);
+
+            // Tạo array các fetch promises cho mỗi groupId
+            const fetchPromises = groupIds.map(groupId =>
+                fetch(`${beBaseUrl}/Schedule/group/${groupId}`, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    },
+                    credentials: "include"
+                }).then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status} for group ${groupId}`);
+                    }
+                    return res.json();
+                })
+            );
+
+            // Chờ tất cả requests hoàn thành
+            const allBookingsArrays = await Promise.all(fetchPromises);
+
+            // Merge tất cả arrays thành một array duy nhất
+            const data = allBookingsArrays.flat();
+
+            console.log("Bookings raw data from all groups:", data);
+            console.log("Is array:", Array.isArray(data));
+            console.log("Data length:", data?.length || 0);
+
+            if (!Array.isArray(data)) {
+                throw new Error("API trả về không phải array");
+            }
+
+            if (data.length === 0) {
+                console.warn("⚠️ Không có booking nào");
+                setExistingBookings([]);
+                return;
+            }
+
+            console.log("First booking item:", data[0]);
+
+            const formattedBookings: BookingSlot[] = data
+                .map((item: any, index: number) => {
+                    try {
+                        // Validate required fields
+                        if (!item.startTime || !item.endTime || !item.vehicleId) {
+                            console.warn(`⚠️ Item ${index} thiếu fields:`, item);
+                            return null;
+                        }
+
+                        const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+
+                        const endTime = new Date(item.endTime).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+
+                        const date = new Date(item.startTime).toISOString().split('T')[0];
+
+                        // Find vehicle
+                        const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
+
+                        if (!vehicle) {
+                            console.error(`❌ Không tìm thấy vehicle ID ${item.vehicleId}`);
+                            console.log("Available vehicle IDs:", vehicles.map(v => v.vehicleId));
+                            return null;
+                        }
+
+                        return {
+                            scheduleId: item.scheduleId,
+                            time: `${startTime}-${endTime}`,
+                            date: date,
+                            brand: vehicle.brand,
+                            model: vehicle.model,
+                            vehicleId: item.vehicleId,
+                            bookedBy: item.userName,
+                            userId: item.userId,
+                            groupId: item.groupId,
+                            status: item.status
+                        };
+                    } catch (itemError: any) {
+                        console.error(`❌ Lỗi xử lý item ${index}:`, itemError.message);
+                        return null;
+                    }
+                })
+                .filter((item): item is BookingSlot => item !== null);
+
+            console.log("✅ Formatted bookings:", formattedBookings.length);
+            if (formattedBookings.length > 0) {
+                console.log("Sample booking:", formattedBookings[0]);
+            }
+
             setExistingBookings(formattedBookings);
+
         } catch (e: any) {
-            // Nếu lỗi BE, tạo dữ liệu mẫu để test UI
-            setExistingBookings([
-                // {
-                //     scheduleId: 1,
-                //     time: "08:00-10:00",
-                //     date: new Date().toISOString().split('T')[0],
-                //     brand: "Tesla",
-                //     model: "Model S",
-                //     vehicleId: 9991,
-                //     bookedBy: "User 2",
-                //     userId: 2,
-                //     status: "pending"
-                // },
-                // {
-                //     scheduleId: 2,
-                //     time: "12:00-14:00",
-                //     date: new Date().toISOString().split('T')[0],
-                //     brand: "VinFast",
-                //     model: "VF8",
-                //     vehicleId: 9992,
-                //     bookedBy: "User 3",
-                //     userId: 3,
-                //     status: "approved"
-                // }
-            ]);
+            console.error("❌ Error loading bookings:", e.message);
+            showToast("Lỗi tải lịch", e.message, "destructive");
         } finally {
             setLoadingBookings(false);
+            console.log("=== End Loading Bookings ===");
         }
     };
+
+    // ===== EFFECTS =====
+    // Effect 1: Initialize data on mount
+    useEffect(() => {
+        const initData = async () => {
+            console.log("=== Initializing Data ===");
+            await loadGroupId();
+            await loadVehicles();
+        };
+
+        initData();
+    }, []); // Run once on mount
+
+    // Effect 2: Load bookings when vehicles are available
+    useEffect(() => {
+        console.log("=== Vehicles State Changed ===");
+        console.log("Vehicles length:", vehicles.length);
+
+        if (vehicles && vehicles.length > 0) {
+            console.log("✅ Vehicles ready, loading bookings");
+            loadBookings();
+        }
+    }, [vehicles]); // Run when vehicles change
+
 
     const toLocalDateTime = (date: string, hhmm: string) => {
         const [hh, mm] = hhmm.split(":");
@@ -274,7 +355,7 @@ export default function VehicleBooking() {
 
     const parseRange = (range: string) => {
         const [start, end] = range.split('-');
-        return { start: toMinutes(start), end: toMinutes(end) };
+        return {start: toMinutes(start), end: toMinutes(end)};
     };
 
     const rangesOverlap = (a: string, b: string) => {
@@ -303,11 +384,12 @@ export default function VehicleBooking() {
         if (!selectedStartTime || !selectedEndTime) return;
         const timeRange = `${selectedStartTime}-${selectedEndTime}`;
         const selectedV = vehicles.find(v => String(v.vehicleId) === selectedVehicle);
-        const hasOverlap = existingBookings.some(booking =>
-            booking.vehicleId === Number(selectedVehicle) &&
-            booking.date === selectedDate &&
-            rangesOverlap(booking.time, timeRange)
-        );
+        const hasOverlap = existingBookings.filter(booking => booking.status !== "canceled")
+            .some(booking =>
+                booking.vehicleId === Number(selectedVehicle) &&
+                booking.date === selectedDate &&
+                rangesOverlap(booking.time, timeRange)
+            );
         if (hasOverlap) {
             showToast("Xung đột thời gian", "Khung giờ bạn chọn bị chồng lấn với lịch đã đặt.", "destructive");
             return;
@@ -329,9 +411,10 @@ export default function VehicleBooking() {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
             return;
         }
-        const hasConflict = existingBookings.some(booking =>
-            booking.vehicleId === Number(selectedVehicle) && booking.date === selectedDate && rangesOverlap(booking.time, selectedTime)
-        );
+        const hasConflict = existingBookings.filter(booking => booking.status !== "canceled")
+            .some(booking =>
+                booking.vehicleId === Number(selectedVehicle) && booking.date === selectedDate && rangesOverlap(booking.time, selectedTime)
+            );
         if (hasConflict) {
             showToast("Khung giờ đã được đặt", `Xe ${getSelectedVehicleName()} vào ${selectedDate} từ ${selectedTime} đã có người đặt.`, "destructive");
             return;
@@ -354,7 +437,7 @@ export default function VehicleBooking() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
                 body: JSON.stringify({
@@ -384,7 +467,7 @@ export default function VehicleBooking() {
             setSelectedStartTime("");
             setSelectedEndTime("");
             if (bookingsListRef.current) {
-                bookingsListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                bookingsListRef.current.scrollIntoView({behavior: 'smooth', block: 'start'});
             }
         } catch (e) {
             console.error("Booking error:", e);
@@ -399,7 +482,7 @@ export default function VehicleBooking() {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
             });
@@ -448,9 +531,10 @@ export default function VehicleBooking() {
     const handleEditTimeSelection = () => {
         if (!editStartTime || !editEndTime) return;
         const timeRange = `${editStartTime}-${editEndTime}`;
-        const hasOverlap = existingBookings.some(booking =>
-            booking.scheduleId !== editingBooking && booking.vehicleId === Number(editVehicle) && booking.date === editDate && rangesOverlap(booking.time, timeRange)
-        );
+        const hasOverlap = existingBookings.filter(booking => booking.status !== "canceled")
+            .some(booking =>
+                booking.scheduleId !== editingBooking && booking.vehicleId === Number(editVehicle) && booking.date === editDate && rangesOverlap(booking.time, timeRange)
+            );
         if (hasOverlap) {
             showToast("Xung đột thời gian", "Khung giờ bạn chọn bị chồng lấn với lịch đã đặt.", "destructive");
             return;
@@ -484,7 +568,7 @@ export default function VehicleBooking() {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
                 body: JSON.stringify({
@@ -530,17 +614,17 @@ export default function VehicleBooking() {
             <div className="fixed top-4 right-4 z-50 space-y-2">
                 {toasts.map(toast => (
                     <div key={toast.id}
-                        className={`p-4 rounded-lg shadow-lg border min-w-[300px] ${toast.variant === 'destructive' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-white border-gray-200'}`}>
+                         className={`p-4 rounded-lg shadow-lg border min-w-[300px] ${toast.variant === 'destructive' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-start gap-3">
                             <AlertCircle
-                                className={`h-5 w-5 mt-0.5 ${toast.variant === 'destructive' ? 'text-red-600' : 'text-blue-600'}`} />
+                                className={`h-5 w-5 mt-0.5 ${toast.variant === 'destructive' ? 'text-red-600' : 'text-blue-600'}`}/>
                             <div className="flex-1">
                                 <div className="font-semibold">{toast.title}</div>
                                 <div className="text-sm mt-1 opacity-90">{toast.description}</div>
                             </div>
                             <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-                                className="text-gray-400 hover:text-gray-600">
-                                <X className="h-4 w-4" />S
+                                    className="text-gray-400 hover:text-gray-600">
+                                <X className="h-4 w-4"/>S
                             </button>
                         </div>
                     </div>
@@ -550,7 +634,7 @@ export default function VehicleBooking() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
-                        <Calendar className="h-5 w-5" />
+                        <Calendar className="h-5 w-5"/>
                         <span>Đặt lịch sử dụng xe</span>
                     </CardTitle>
                     <CardDescription>Lên lịch sử dụng xe điện trong nhóm đồng sở hữu</CardDescription>
@@ -564,7 +648,7 @@ export default function VehicleBooking() {
                                     <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}>
                                         {selectedVehicle && vehicles.find(v => String(v.vehicleId) === selectedVehicle) && (
                                             <div className="flex items-center space-x-2">
-                                                <Car className="h-4 w-4" />
+                                                <Car className="h-4 w-4"/>
                                                 <span>{vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.brand} {vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.model} {vehicles.find(v => String(v.vehicleId) === selectedVehicle)?.groupName}</span>
                                             </div>
                                         )}
@@ -585,7 +669,7 @@ export default function VehicleBooking() {
                                         return (
                                             <SelectItem key={vehicle.vehicleId} value={String(vehicle.vehicleId)}>
                                                 <div className="flex items-center space-x-2">
-                                                    <Car className="h-4 w-4" />
+                                                    <Car className="h-4 w-4"/>
                                                     <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
                                                 </div>
                                             </SelectItem>
@@ -597,29 +681,29 @@ export default function VehicleBooking() {
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
                             <input type="date"
-                                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
-                                min={new Date().toISOString().split('T')[0]} />
+                                   className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                                   value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
+                                   min={new Date().toISOString().split('T')[0]}/>
                         </div>
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
                             <Button variant="outline" className="w-full justify-start text-left font-normal"
-                                onClick={() => setShowTimeSelector(true)}
-                                disabled={!selectedVehicle || !selectedDate}>
-                                <Clock className="h-4 w-4 mr-2" />
+                                    onClick={() => setShowTimeSelector(true)}
+                                    disabled={!selectedVehicle || !selectedDate}>
+                                <Clock className="h-4 w-4 mr-2"/>
                                 {selectedTime ? selectedTime : "Chọn khung giờ"}
                             </Button>
                         </div>
                     </div>
 
                     <Button onClick={handleBooking} className="w-full"
-                        disabled={!selectedVehicle || !selectedDate || !selectedTime}>Đặt lịch</Button>
+                            disabled={!selectedVehicle || !selectedDate || !selectedTime}>Đặt lịch</Button>
 
                     <Dialog open={showTimeSelector} onOpenChange={setShowTimeSelector}>
                         <DialogContent className="max-w-2xl">
                             <DialogHeader>
                                 <DialogTitle className="flex items-center space-x-2">
-                                    <Clock className="h-5 w-5" />
+                                    <Clock className="h-5 w-5"/>
                                     <span>Chọn khung giờ sử dụng</span>
                                 </DialogTitle>
                                 <div id="dialog-time-desc" className="text-muted-foreground text-sm mt-1">
@@ -643,8 +727,8 @@ export default function VehicleBooking() {
                                                         key={b.scheduleId}
                                                         className="flex items-center gap-3 px-3 py-2 rounded border bg-gray-50 text-xs"
                                                     >
-                                                        <span
-                                                            className="font-semibold text-blue-700">{b.time}</span>
+                                                            <span
+                                                                className="font-semibold text-blue-700">{b.time}</span>
                                                         <span className="text-gray-700">{b.brand} {b.model}</span>
                                                         <span
                                                             className="text-gray-500">Người đặt: {b.bookedBy}</span>
@@ -657,9 +741,9 @@ export default function VehicleBooking() {
                                                     String(b.vehicleId) === String(selectedVehicle) &&
                                                     b.date === selectedDate
                                             ).length === 0 && (
-                                                    <span
-                                                        className="text-xs text-muted-foreground">Chưa có lịch nào</span>
-                                                )}
+                                                <span
+                                                    className="text-xs text-muted-foreground">Chưa có lịch nào</span>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -668,31 +752,31 @@ export default function VehicleBooking() {
                                         <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
                                         <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ bắt đầu" /></SelectTrigger>
+                                                placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (<SelectItem key={time}
-                                                value={time}>{time}</SelectItem>))}</SelectContent>
+                                                                                                 value={time}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
                                         <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ kết thúc" /></SelectTrigger>
+                                                placeholder="Chọn giờ kết thúc"/></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (
                                                 <SelectItem key={time} value={time}
-                                                    disabled={selectedStartTime && time <= selectedStartTime}>{time}</SelectItem>))}</SelectContent>
+                                                            disabled={selectedStartTime && time <= selectedStartTime}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
                                     <Button onClick={handleTimeSelection}
-                                        disabled={!selectedStartTime || !selectedEndTime}><Check
-                                            className="h-4 w-4 mr-2" />Chọn</Button>
+                                            disabled={!selectedStartTime || !selectedEndTime}><Check
+                                        className="h-4 w-4 mr-2"/>Chọn</Button>
                                     <Button variant="outline" onClick={() => {
                                         setShowTimeSelector(false);
                                         setSelectedStartTime("");
                                         setSelectedEndTime("");
-                                    }}><X className="h-4 w-4 mr-2" />Hủy</Button>
+                                    }}><X className="h-4 w-4 mr-2"/>Hủy</Button>
                                 </div>
                             </div>
                         </DialogContent>
@@ -702,7 +786,7 @@ export default function VehicleBooking() {
                         <DialogContent className="max-w-2xl">
                             <DialogHeader>
                                 <DialogTitle className="flex items-center space-x-2">
-                                    <Clock className="h-5 w-5" />
+                                    <Clock className="h-5 w-5"/>
                                     <span>Chỉnh sửa khung giờ</span>
                                 </DialogTitle>
                             </DialogHeader>
@@ -712,31 +796,31 @@ export default function VehicleBooking() {
                                         <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
                                         <Select value={editStartTime} onValueChange={setEditStartTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ bắt đầu" /></SelectTrigger>
+                                                placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (<SelectItem key={time}
-                                                value={time}>{time}</SelectItem>))}</SelectContent>
+                                                                                                 value={time}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
                                         <Select value={editEndTime} onValueChange={setEditEndTime}>
                                             <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ kết thúc" /></SelectTrigger>
+                                                placeholder="Chọn giờ kết thúc"/></SelectTrigger>
                                             <SelectContent>{timeSlots.map((time) => (
                                                 <SelectItem key={time} value={time}
-                                                    disabled={editStartTime && time <= editStartTime}>{time}</SelectItem>))}</SelectContent>
+                                                            disabled={editStartTime && time <= editStartTime}>{time}</SelectItem>))}</SelectContent>
                                         </Select>
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
                                     <Button onClick={handleEditTimeSelection}
-                                        disabled={!editStartTime || !editEndTime}><Check
-                                            className="h-4 w-4 mr-2" />Chọn</Button>
+                                            disabled={!editStartTime || !editEndTime}><Check
+                                        className="h-4 w-4 mr-2"/>Chọn</Button>
                                     <Button variant="outline" onClick={() => {
                                         setShowEditTimeSelector(false);
                                         setEditStartTime("");
                                         setEditEndTime("");
-                                    }}><X className="h-4 w-4 mr-2" />Hủy</Button>
+                                    }}><X className="h-4 w-4 mr-2"/>Hủy</Button>
                                 </div>
                             </div>
                         </DialogContent>
@@ -746,7 +830,7 @@ export default function VehicleBooking() {
                         <Card className="border-primary/50 bg-primary/5">
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center space-x-2">
-                                    <Edit className="h-5 w-5" />
+                                    <Edit className="h-5 w-5"/>
                                     <span>Chỉnh sửa lịch đặt</span>
                                 </CardTitle>
                             </CardHeader>
@@ -755,13 +839,13 @@ export default function VehicleBooking() {
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn xe</label>
                                         <Select value={editVehicle} onValueChange={setEditVehicle}>
-                                            <SelectTrigger><SelectValue placeholder="Chọn xe" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder="Chọn xe"/></SelectTrigger>
                                             <SelectContent>
                                                 {vehicles.map((vehicle) => (
                                                     <SelectItem key={vehicle.vehicleId}
-                                                        value={String(vehicle.vehicleId)}>
+                                                                value={String(vehicle.vehicleId)}>
                                                         <div className="flex items-center space-x-2">
-                                                            <Car className="h-4 w-4" />
+                                                            <Car className="h-4 w-4"/>
                                                             <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
                                                         </div>
                                                     </SelectItem>
@@ -772,26 +856,26 @@ export default function VehicleBooking() {
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
                                         <input type="date"
-                                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                            value={editDate} onChange={(e) => setEditDate(e.target.value)}
-                                            min={new Date().toISOString().split('T')[0]} />
+                                               className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                                               value={editDate} onChange={(e) => setEditDate(e.target.value)}
+                                               min={new Date().toISOString().split('T')[0]}/>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
                                         <Button variant="outline"
-                                            className="w-full justify-start text-left font-normal"
-                                            onClick={() => setShowEditTimeSelector(true)}>
-                                            <Clock className="h-4 w-4 mr-2" />
+                                                className="w-full justify-start text-left font-normal"
+                                                onClick={() => setShowEditTimeSelector(true)}>
+                                            <Clock className="h-4 w-4 mr-2"/>
                                             {editTime ? editTime : "Chọn khung giờ"}
                                         </Button>
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
                                     <Button onClick={handleUpdateBooking}
-                                        disabled={!editVehicle || !editDate || !editTime}><Check
-                                            className="h-4 w-4 mr-2" />Cập nhật</Button>
+                                            disabled={!editVehicle || !editDate || !editTime}><Check
+                                        className="h-4 w-4 mr-2"/>Cập nhật</Button>
                                     <Button onClick={handleCancelEdit} variant="outline"><X
-                                        className="h-4 w-4 mr-2" />Hủy
+                                        className="h-4 w-4 mr-2"/>Hủy
                                         chỉnh sửa</Button>
                                 </div>
                             </CardContent>
@@ -800,7 +884,7 @@ export default function VehicleBooking() {
 
                     <div>
                         <h4 className="font-semibold mb-3 flex items-center space-x-2">
-                            <Clock className="h-4 w-4" />
+                            <Clock className="h-4 w-4"/>
                             <span>Lịch đã đặt</span>
                         </h4>
                         <div ref={bookingsListRef} className="space-y-3">
@@ -811,11 +895,11 @@ export default function VehicleBooking() {
                             ) : (
                                 existingBookings.map((booking) => (
                                     <div key={booking.scheduleId}
-                                        className={`flex items-center justify-between p-3 border rounded-lg transition-all ${editingBooking === booking.scheduleId ? 'bg-primary/10 border-primary/50' : newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' : 'bg-accent/20'}`}>
+                                         className={`flex items-center justify-between p-3 border rounded-lg transition-all ${editingBooking === booking.scheduleId ? 'bg-primary/10 border-primary/50' : newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' : 'bg-accent/20'}`}>
                                         <div className="flex-1">
                                             <div className="flex items-center space-x-3">
                                                 <div className="flex items-center space-x-2">
-                                                    <Car className="h-4 w-4" />
+                                                    <Car className="h-4 w-4"/>
                                                     <span
                                                         className="font-medium">{booking.brand} {booking.model}</span>
                                                 </div>
@@ -830,13 +914,13 @@ export default function VehicleBooking() {
                                         </div>
                                         <div className="flex items-center space-x-2">
                                             <Button size="sm" variant="outline"
-                                                onClick={() => handleEditBooking(booking.scheduleId)}
-                                                disabled={editingBooking === booking.scheduleId}>
-                                                <Edit className="h-4 w-4 mr-1" />Sửa
+                                                    onClick={() => handleEditBooking(booking.scheduleId)}
+                                                    disabled={editingBooking === booking.scheduleId}>
+                                                <Edit className="h-4 w-4 mr-1"/>Sửa
                                             </Button>
                                             <Button size="sm" variant="outline"
-                                                onClick={() => handleCancelBooking(booking.scheduleId)}>
-                                                <X className="h-4 w-4 mr-1" />Hủy
+                                                    onClick={() => handleCancelBooking(booking.scheduleId)}>
+                                                <X className="h-4 w-4 mr-1"/>Hủy
                                             </Button>
                                         </div>
                                     </div>
