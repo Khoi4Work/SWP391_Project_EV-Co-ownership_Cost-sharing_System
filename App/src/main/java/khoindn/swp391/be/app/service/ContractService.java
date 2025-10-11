@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.mail.internet.MimeMessage;
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional
 public class ContractService implements IContractService {
     @Autowired
     private IContractRepository iContractRepository;
@@ -142,6 +144,7 @@ public class ContractService implements IContractService {
         contract.setStatus("Pending");
         iContractRepository.save(contract);
 
+
         for (Integer userId : req.getUserId()) {
             Users users = iUserRepository.findUsersById(userId);
             ContractSigner contractSigner = new ContractSigner();
@@ -159,7 +162,7 @@ public class ContractService implements IContractService {
 
             // ✅ TẠO TOKEN RIÊNG CHO USER
             String token = tokenService.generateToken(users);
-            String secureUrl = req.getDocumentUrl() + "?token=" + token;
+            String secureUrl = req.getDocumentUrl() + contract.getContractId()+"?token=" + token;
 
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
