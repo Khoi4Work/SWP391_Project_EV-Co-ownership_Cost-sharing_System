@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import axiosClient from "@/api/axiosClient";
-import jsPDF from "jspdf";
 import {
   Car,
   User,
@@ -24,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFormik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
 import CoOwnerForm from "./AddingCoOwners";
-import { GenerateContractPDF } from "./ContractPDFPreview";
+import ContractPreview from "./ContractPDFPreview";
 interface CoOwner {
   id: number;
   name: string;
@@ -35,49 +34,51 @@ interface CoOwner {
   address: string;
 }
 export default function VehicleRegistration() {
-  const [showPDF, setShowPDF] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [pdfUrl, setPdfUrl] = useState(null);
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
-  useEffect(() => {
-    const demoVehicles = [
-      {
-        id: 1,
-        name: "VinFast VF e34",
-        image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
-        price: "690,000,000₫",
-        brand: "Vinfast",
-        color: "red",
-        batteryCapacity: 3.6,
-        plateNo: "56789"
-      },
-      {
-        id: 2,
-        name: "Tesla Model 3",
-        image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
-        price: "1,500,000,000₫",
-        brand: "Tesla",
-        color: "yellow",
-        batteryCapacity: 3.7,
-        plateNo: "12345"
-      },
-      {
-        id: 3,
-        name: "Hyundai Ioniq 5",
-        image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
-        price: "1,200,000,000₫",
-        brand: "Hyundai",
-        color: "white",
-        batteryCapacity: 3.8,
-        plateNo: "1231313"
-      }
-    ];
+  const [status, setStatus] = useState<number | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  // useEffect(() => {
+  //   const demoVehicles = [
+  //     {
+  //       id: 1,
+  //       name: "VinFast VF e34",
+  //       image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
+  //       price: "690,000,000₫",
+  //       brand: "Vinfast",
+  //       color: "red",
+  //       batteryCapacity: 3.6,
+  //       plateNo: "56789"
+  //     },
+  //     {
+  //       id: 2,
+  //       name: "Tesla Model 3",
+  //       image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
+  //       price: "1,500,000,000₫",
+  //       brand: "Tesla",
+  //       color: "yellow",
+  //       batteryCapacity: 3.7,
+  //       plateNo: "12345"
+  //     },
+  //     {
+  //       id: 3,
+  //       name: "Hyundai Ioniq 5",
+  //       image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
+  //       price: "1,200,000,000₫",
+  //       brand: "Hyundai",
+  //       color: "white",
+  //       batteryCapacity: 3.8,
+  //       plateNo: "1231313"
+  //     }
+  //   ];
 
-    setVehicles(demoVehicles);
-  }, []);
+  //   setVehicles(demoVehicles);
+  // }, []);
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -102,8 +103,6 @@ export default function VehicleRegistration() {
 
     setStep(4);
   };
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const fetchUserByEmail = async (email: string) => {
     try {
       // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
@@ -352,7 +351,6 @@ export default function VehicleRegistration() {
       return;
     }
 
-    const { pdfUrl } = await GenerateContractPDF(ownerInfo, selectedVehicle);
     setPdfUrl(pdfUrl);
 
     const invalid = coOwners.find((co) => Number(co.ownership) > mainOwnership);
@@ -366,7 +364,6 @@ export default function VehicleRegistration() {
     }
 
     setIsSubmitted(true);
-    setShowPDF(true);
 
     // ✅ Payload group
     const payload = {
@@ -384,12 +381,16 @@ export default function VehicleRegistration() {
       documentUrl: pdfUrl,
       contractType: "Vehicle Registration",
     };
-
+    const tempContractId = Date.now(); // tạo id tạm thời để gắn vào URL
+    var documentUrl = `${window.location.origin}/contract/preview/${tempContractId}`;
     // ✅ Payload contract
     const contract = {
-      documentUrl: pdfUrl,
+      documentUrl,
       contractType: "VEHICLE REGISTRATION",
       userId: [
+        {
+          userId: ownerInfo.id,
+        },
         Number(ownerInfo.id),
         ...coOwners.filter(co => co.id).map(co => Number(co.id))
       ]
@@ -400,8 +401,10 @@ export default function VehicleRegistration() {
     try {
 
       const resData = await axiosClient.post("/contract/create", contract);
+      documentUrl = `${window.location.origin}/contract/preview/${resData.data.contract.contractId}`;
       localStorage.setItem("contractId", resData.data.contract.contractId);
       console.log("✅ Gửi contract thành công");
+      navigate(`/contract/preview/${tempContractId}`);
     } catch (err) {
       console.error("❌ Lỗi khi gọi createContract:", err);
     }
@@ -439,7 +442,9 @@ export default function VehicleRegistration() {
 
 
   if (isSubmitted) {
-
+    localStorage.setItem("ownerInfo", JSON.stringify(ownerInfo));
+    localStorage.setItem("coOwners", JSON.stringify(coOwners));
+    localStorage.setItem("selectedVehicle", JSON.stringify(selectedVehicle));
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-glow border-0 text-center">
@@ -471,23 +476,20 @@ export default function VehicleRegistration() {
                 Vui lòng kiểm tra hộp thư để xem chi tiết.
               </p>
 
-              {/* 🔗 Link xem PDF */}
               <div className="mt-6">
                 <h3 className="font-semibold mb-2">📄 Xem hợp đồng:</h3>
+
                 {pdfUrl ? (
-                  <Link
-                    to={`/pdf-preview?url=${encodeURIComponent(pdfUrl)}`}
+                  <a
+                    href={pdfUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline font-medium"
+                    className="text-blue-600 underline hover:text-blue-800"
                   >
-                    View or Download Contract PDF
-                  </Link>
-
+                    Xem hợp đồng đồng sở hữu (PDF)
+                  </a>
                 ) : (
-                  <p className="text-muted-foreground text-sm italic">
-                    Đang tạo hợp đồng PDF...
-                  </p>
+                  <p>Đang tạo hợp đồng PDF...</p>
                 )}
               </div>
             </div>
