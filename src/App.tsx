@@ -30,7 +30,7 @@ const App = () => (
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/verify-otp" element={<VerifyOTP />} />
-                    <Route path="/contract/preview/:tempId" element={<ContractPreviewPage />} />
+                    <Route path="/contract/preview/:id" element={<ContractPreviewPage />} />
                     {/* Co-owner routes */}
                     <Route path="/co-owner/dashboard" element={<CoOwnerDashboard />} />
                     <Route path="/co-owner/vehicle-registration" element={<VehicleRegistration />} />

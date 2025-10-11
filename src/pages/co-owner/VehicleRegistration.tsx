@@ -382,15 +382,13 @@ export default function VehicleRegistration() {
       contractType: "Vehicle Registration",
     };
     const tempContractId = Date.now(); // tạo id tạm thời để gắn vào URL
-    var documentUrl = `${window.location.origin}/contract/preview/${tempContractId}`;
+    var documentUrl = `${window.location.origin}/contract/preview/`;
     // ✅ Payload contract
     const contract = {
       documentUrl,
       contractType: "VEHICLE REGISTRATION",
       userId: [
-        {
-          userId: ownerInfo.id,
-        },
+
         Number(ownerInfo.id),
         ...coOwners.filter(co => co.id).map(co => Number(co.id))
       ]
