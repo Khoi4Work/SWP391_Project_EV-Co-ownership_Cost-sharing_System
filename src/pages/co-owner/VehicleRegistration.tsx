@@ -219,7 +219,10 @@ export default function VehicleRegistration() {
     const price = getVehiclePrice();
     return Math.round(price * (percentage / 100));
   };
-
+  const handleSelectVehicle = (vehicle: any) => {
+    setSelectedVehicle(vehicle); // lưu cả object
+    localStorage.setItem("selectedVehicle", JSON.stringify(vehicle)); // lưu trực tiếp
+  };
   const addCoOwner = () => {
     // Maximum 5 people total (including primary owner)
     if (coOwners.length >= 4) {
@@ -603,10 +606,7 @@ export default function VehicleRegistration() {
                       ? "border-primary bg-primary/5 shadow-elegant"
                       : "border-border"
                       }`}
-                    onClick={() => {
-                      setSelectedVehicle(vehicle.id);
-                      localStorage.setItem("selectedVehicle", JSON.stringify(vehicle.id));
-                    }}
+                    onClick={() => handleSelectVehicle(vehicle)}
                   >
                     <img
                       src={vehicle.image}
