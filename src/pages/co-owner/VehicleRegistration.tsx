@@ -603,7 +603,10 @@ export default function VehicleRegistration() {
                       ? "border-primary bg-primary/5 shadow-elegant"
                       : "border-border"
                       }`}
-                    onClick={() => setSelectedVehicle(vehicle.id)}
+                    onClick={() => {
+                      setSelectedVehicle(vehicle.id);
+                      localStorage.setItem("selectedVehicle", JSON.stringify(vehicle.id));
+                    }}
                   >
                     <img
                       src={vehicle.image}
