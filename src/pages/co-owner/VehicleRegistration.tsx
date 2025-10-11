@@ -24,6 +24,7 @@ import { useFormik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
 import CoOwnerForm from "./AddingCoOwners";
 import ContractPreview from "./ContractPDFPreview";
+
 interface CoOwner {
   id: number;
   name: string;
@@ -33,6 +34,7 @@ interface CoOwner {
   idNumber: string;
   address: string;
 }
+
 export default function VehicleRegistration() {
   const [step, setStep] = useState(1);
   const [selectedVehicle, setSelectedVehicle] = useState("");
@@ -181,16 +183,20 @@ export default function VehicleRegistration() {
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
-      case 1: return selectedVehicle !== "";
-      case 2: return ownerInfo.name && ownerInfo.email && ownerInfo.phone && ownerInfo.idNumber && ownerInfo.address;
+      case 1:
+        return selectedVehicle !== "";
+      case 2:
+        return ownerInfo.name && ownerInfo.email && ownerInfo.phone && ownerInfo.idNumber && ownerInfo.address;
       case 3:
         return (
           coOwners.length > 0 &&
           totalOwnership === 100 &&
           coOwners.every(co => co.name && co.email && co.idNumber)
         );
-      case 4: return isStepCompleted(1) && isStepCompleted(2) && isStepCompleted(3);
-      default: return false;
+      case 4:
+        return isStepCompleted(1) && isStepCompleted(2) && isStepCompleted(3);
+      default:
+        return false;
     }
   };
 
@@ -237,7 +243,11 @@ export default function VehicleRegistration() {
     const maxAllowedForNew = Math.min(mainOwnership, remaining);
 
     if (maxAllowedForNew < 15) {
-      toast({ title: "Không thể thêm", description: "Không đủ phần trăm để thêm đồng sở hữu tối thiểu 15%", variant: "destructive" });
+      toast({
+        title: "Không thể thêm",
+        description: "Không đủ phần trăm để thêm đồng sở hữu tối thiểu 15%",
+        variant: "destructive"
+      });
       return;
     }
     const newCoOwner: CoOwner = {
@@ -388,7 +398,6 @@ export default function VehicleRegistration() {
       documentUrl,
       contractType: "VEHICLE REGISTRATION",
       userId: [
-
         Number(ownerInfo.id),
         ...coOwners.filter(co => co.id).map(co => Number(co.id))
       ]
@@ -399,7 +408,6 @@ export default function VehicleRegistration() {
     try {
 
       const resData = await axiosClient.post("/contract/create", contract);
-      documentUrl = `${window.location.origin}/contract/preview/${resData.data.contract.contractId}`;
       localStorage.setItem("contractId", resData.data.contract.contractId);
       console.log("✅ Gửi contract thành công");
       navigate(`/contract/preview/${tempContractId}`);
@@ -436,7 +444,6 @@ export default function VehicleRegistration() {
       });
     }
   };
-
 
 
   if (isSubmitted) {
@@ -554,7 +561,8 @@ export default function VehicleRegistration() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium">Bước {step} / 4</span>
-              <span className="text-sm text-muted-foreground">{Math.round(getProgress())}% hoàn thành</span>
+              <span
+                className="text-sm text-muted-foreground">{Math.round(getProgress())}% hoàn thành</span>
             </div>
             <Progress value={getProgress()} className="mb-4" />
             <div className="flex justify-between text-xs">
@@ -677,7 +685,8 @@ export default function VehicleRegistration() {
                           />
                         )}
                       </Field>
-                      <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
+                      <ErrorMessage name="email" component="div"
+                        className="text-red-500 text-sm" />
                     </div>
 
                     {/* ✅ Chỉ giữ lại Ownership */}
@@ -713,7 +722,8 @@ export default function VehicleRegistration() {
                           </div>
                         )}
                       </div>
-                      <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
+                      <ErrorMessage name="ownership" component="div"
+                        className="text-red-500 text-sm" />
                     </div>
                   </div>
 
@@ -851,7 +861,8 @@ export default function VehicleRegistration() {
                   <div className="border rounded-lg p-4">
                     {coOwners.map((coOwner) => (
                       <div key={coOwner.id} className="mb-2 text-sm">
-                        <h3 className="font-semibold mb-2">Đồng sỡ hữu ({coOwner.ownership}%)</h3>
+                        <h3 className="font-semibold mb-2">Đồng sỡ hữu
+                          ({coOwner.ownership}%)</h3>
                         <div>Họ tên:{coOwner.name}</div>
                         <div>Email: {coOwner.email}</div>
                         <div>Điện thoại: {coOwner.phone}</div>
@@ -879,6 +890,6 @@ export default function VehicleRegistration() {
           </>
         )}
       </div>
-    </div >
+    </div>
   );
 }
