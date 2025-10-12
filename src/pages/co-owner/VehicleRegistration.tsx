@@ -411,10 +411,14 @@ export default function VehicleRegistration() {
     try {
 
       const resData = await axiosClient.post("/contract/create", contract);
-      const key = `contractId_${resData.data.user.id}`;
-      localStorage.setItem(key, resData.data.contract.contractId);
-      console.log("✅ Gửi contract thành công");
-      navigate(`/contract/preview/${resData.data.contract.contractId}`);
+      resData.data.forEach((user)=>{
+          const key = `contractId_${user.user.id}`;
+          localStorage.setItem(key, user.contract.contractId);
+          const get = localStorage.getItem(key)
+          console.log("Contract Id duoc luu: "+get);
+          console.log("key duoc set: "+ key);
+          console.log("✅ Gửi contract thành công");
+      });
     } catch (err) {
       console.error("❌ Lỗi khi gọi createContract:", err);
     }

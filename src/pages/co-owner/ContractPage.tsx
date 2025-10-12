@@ -62,8 +62,11 @@ export default function ContractPreviewPage() {
         }
 
         try {
-
-            const idContract = localStorage.getItem(`contractId_${user.id}`);
+            console.log(user.id)
+            const key = 'contractId_' + user.id;
+            console.log(key)
+            const idContract = localStorage.getItem(key);
+            console.log(idContract)
             if (!idContract) {
                 alert("Không có contract id");
                 return;
