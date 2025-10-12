@@ -411,45 +411,16 @@ export default function VehicleRegistration() {
     try {
 
       const resData = await axiosClient.post("/contract/create", contract);
-      resData.data.forEach((user)=>{
-          const key = `contractId_${user.user.id}`;
-          localStorage.setItem(key, user.contract.contractId);
-          const get = localStorage.getItem(key)
-          console.log("Contract Id duoc luu: "+get);
-          console.log("key duoc set: "+ key);
-          console.log("✅ Gửi contract thành công");
+      resData.data.forEach((user) => {
+        const key = `contractId_${user.user.id}`;
+        localStorage.setItem(key, user.contract.contractId);
+        const get = localStorage.getItem(key)
+        console.log("Contract Id duoc luu: " + get);
+        console.log("key duoc set: " + key);
+        console.log("✅ Gửi contract thành công");
       });
     } catch (err) {
       console.error("❌ Lỗi khi gọi createContract:", err);
-    }
-    try {
-      const idContract = localStorage.getItem("contractId");
-      const contractData = await axiosClient.get(`/contract/${idContract}`);
-      console.log(contractData);
-      if (contractData.data.status === "active") {
-        const res = await axiosClient.post("/group/create", payload);
-        if (res.status === 200 || res.status === 201) {
-          toast({
-            title: "Đăng ký thành công",
-            description: "Hợp đồng đã được gửi đến hệ thống!",
-          });
-
-          // 2️⃣ Sau khi group OK thì tạo contract
-        } else {
-          toast({
-            title: "Lỗi",
-            description: "Gửi hợp đồng thất bại!",
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error) {
-      console.error("❌ Lỗi khi gửi hợp đồng:", error);
-      toast({
-        title: "Lỗi hệ thống",
-        description: "Không thể gửi hợp đồng lên hệ thống.",
-        variant: "destructive",
-      });
     }
   };
 

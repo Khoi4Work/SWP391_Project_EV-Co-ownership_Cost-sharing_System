@@ -3,8 +3,9 @@ import { useParams, useLocation } from "react-router-dom";
 import ContractPreview from "./ContractPDFPreview";
 import { Button } from "@/components/ui/button"; // nếu bạn dùng ShadCN button
 import axiosClient from "@/api/axiosClient";
-
+import { useToast } from "@/hooks/use-toast";
 export default function ContractPreviewPage() {
+    const { toast } = useToast();
     const location = useLocation();
     const { id } = useParams(); // lấy id tạm từ URL
     const [ownerInfo, setOwnerInfo] = useState<any>(null);
@@ -82,7 +83,6 @@ export default function ContractPreviewPage() {
                 idUser: user.id,
                 idChoice: status,
             };
-
             const res = await axiosClient.post("/contract/set", payload, {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -90,11 +90,68 @@ export default function ContractPreviewPage() {
             });
             console.log("Payload gửi đi:", payload);
             alert("Gửi quyết định thành công!");
+            if (res.data.contract.status === "active") {
+                // ✅ Khi hợp đồng thành công thì tạo group:
+                // Gom owner chính + các coOwners
+                const allMembers = [
+                    {
+                        userId: ownerInfo?.id,
+                        ownerShip: ownerInfo?.ownership || 0, // nếu FE đặt tên khác thì chỉnh lại
+                    },
+                    ...coOwners.map((co) => ({
+                        userId: co.id,
+                        ownerShip: co.ownership || 0, // chỉnh nếu khác tên
+                    })),
+                ];
+
+                // ✅ Xác định thằng có tỷ lệ lớn nhất làm ADMIN
+                let maxRate = -1;
+                let adminId = null;
+                allMembers.forEach((m) => {
+                    if (m.ownerShip > maxRate) {
+                        maxRate = m.ownerShip;
+                        adminId = m.userId;
+                    }
+                });
+
+                // ✅ Tạo danh sách thành viên đúng format backend
+                const membersWithRole = allMembers.map((m) => ({
+                    coOwnerId: m.userId,
+                    roleInGroup: m.userId === adminId ? "admin" : "member",
+                    ownerShipPercentage: m.ownerShip,
+                }));
+
+                const groupPayload = {
+                    contractId: idContract,
+                    vehicleId: vehicleData.vehicleId,
+                    members: membersWithRole,
+                };
+
+                console.log("groupPayload gửi đi:", groupPayload);
+
+                const resGroup = await axiosClient.post("/group/create", groupPayload);
+
+                if (resGroup.status === 200 || resGroup.status === 201) {
+                    toast({
+                        title: "Đăng ký thành công",
+                        description: "Nhóm sở hữu đã được tạo!",
+                    });
+                } else {
+                    toast({
+                        title: "Lỗi",
+                        description: "Gửi group thất bại!",
+                        variant: "destructive",
+                    });
+                }
+            }
+
+            alert("Gửi quyết định thành công!");
         } catch (err) {
             console.error("Lỗi khi gửi quyết định:", err);
             alert("Gửi thất bại, vui lòng thử lại.");
         }
     };
+
     if (loading) return <div>Đang tải thông tin user...</div>;
     if (error) return <div className="text-red-500">{error}</div>;
     if (!ownerInfo || !vehicleData) return <p>Đang tải dữ liệu hợp đồng...</p>;
