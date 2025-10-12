@@ -16,7 +16,6 @@ export default function ContractPreviewPage() {
     const [error, setError] = useState("");
     const queryParams = new URLSearchParams(location.search);
     const token = queryParams.get("token");
-    localStorage.setItem("user token", token);
     console.log("Contract ID:", id);
     console.log("Token từ query string:", token);
     useEffect(() => {
@@ -56,18 +55,42 @@ export default function ContractPreviewPage() {
         setVehicleData(savedVehicle);
     }, [id]);
 
-    const generatePDF = async () => {
-        // const element = document.getElementById("contract-area");
-        // if (!element) return;
+    const handleConfirm = async () => {
+        if (status === null) {
+            alert("Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận.");
+            return;
+        }
 
-        // const canvas = await html2canvas(element);
-        // const imgData = canvas.toDataURL("image/png");
-        // const pdf = new jsPDF("p", "mm", "a4");
-        // const width = pdf.internal.pageSize.getWidth();
-        // const height = (canvas.height * width) / canvas.width;
+        try {
 
-        // pdf.addImage(imgData, "PNG", 0, 0, width, height);
-        // pdf.save(`HopDongDongSoHuu_${id}.pdf`);
+            const idContract = localStorage.getItem(`contractId_${user.data.id}`);
+            if (!idContract) {
+                alert("Không có contract id");
+                return;
+            }
+
+            if (!user || !user.id) {
+                alert("Không tìm thấy thông tin người dùng");
+                return;
+            }
+
+            const payload = {
+                idContract,
+                idUser: user.id,
+                idChoice: status,
+            };
+
+            const res = await axiosClient.post("/contract/set", payload, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            console.log("Payload gửi đi:", payload);
+            alert("Gửi quyết định thành công!");
+        } catch (err) {
+            console.error("Lỗi khi gửi quyết định:", err);
+            alert("Gửi thất bại, vui lòng thử lại.");
+        }
     };
     if (loading) return <div>Đang tải thông tin user...</div>;
     if (error) return <div className="text-red-500">{error}</div>;
@@ -87,7 +110,7 @@ export default function ContractPreviewPage() {
             </div>
 
             <div className="flex gap-4">
-                <Button onClick={generatePDF} disabled={status === null}>
+                <Button onClick={handleConfirm} disabled={status === null}>
                     Xác nhận hợp đồng
                 </Button>
                 {status !== null && (
