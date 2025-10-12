@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -54,6 +55,7 @@ public class Users implements UserDetails {
 
     @OneToMany(mappedBy = "users")
     @JsonIgnore
+    @ToString.Exclude
     private List<GroupMember> userOfGroupMember = new ArrayList<>();
 
     public Users(String hovaTen, String email, String password, String cccd, String gplx) {

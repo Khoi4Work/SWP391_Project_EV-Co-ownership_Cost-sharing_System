@@ -17,12 +17,13 @@ public class GroupCreateReq {
 
     @NotNull(message = "Vehicle ID cannot be null")
     private Integer vehicleId;
+    @NotNull(message = "Contract ID cannot be null")
+    private Integer contractId;
 
     @NotNull(message = "Member list cannot be null")
     @Size(min = 1, message = "At least one co-owner is required")
-    private List<CoOwner_Info> member;
+    private List<CoOwner_Info> members;
 
-    @NotNull(message = "Role in group cannot be null")
-    private String roleInGroup;
+
 }
 

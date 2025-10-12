@@ -71,23 +71,23 @@ public class GroupService implements IGroupService {
 
         // 7. Tạo group members từ emails
         List<ResponseVehicleRegisteration> owners = new ArrayList<>();
-        for (CoOwner_Info member : request.getMember()) {
-            ContractSigner contract = iContractSignerRepository
-                    .findContractSignerByContract_ContractId((member.getContractId()));
-            Users user = iUserRepository.findUsersById(contract.getUser().getId());
+
+        for (CoOwner_Info member : request.getMembers()) {
+            Users user = iUserRepository.findUsersById(member.getCoOwnerId());
             if (user == null) {
-                throw new RuntimeException("User not found with email: " + contract.getUser().getEmail());
+                throw new RuntimeException("User not found !!");
             }
 
             GroupMember gm = new GroupMember();
             gm.setGroup(group);
             gm.setUsers(user);
-            gm.setRoleInGroup(request.getRoleInGroup());//?
+            gm.setRoleInGroup(member.getRoleInGroup());//?
             gm.setOwnershipPercentage(member.getOwnershipPercentage());
             gm.setCreatedAt(LocalDateTime.now());
             iGroupMemberRepository.save(gm);
 
             owners.add(modelMapper.map(user, ResponseVehicleRegisteration.class));
+
         }
 
         // 8. Build response
@@ -99,6 +99,7 @@ public class GroupService implements IGroupService {
         // Set up send contract via email
         modelMapper.map(vehicle, res);
 
+        System.out.println(res);
         return res;
     }
 

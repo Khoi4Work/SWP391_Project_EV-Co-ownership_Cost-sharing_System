@@ -54,7 +54,9 @@ public class ContractService implements IContractService {
 
     @Override
     public ContractSigner setContract(ContractDecisionReq req) {
-        Users user = authenticationService.getCurrentAccount();
+        System.out.println("Update contract...");
+        Users user = iUserRepository.findUsersById(req.getIdUser());
+        System.out.println(user);
         if (iContractSignerRepository.existsByUser_Id(user.getId())) {
             ContractSigner contractSigner = iContractSignerRepository
                     .findByUser_IdAndContract_ContractId(user.getId(), req.getIdContract());
