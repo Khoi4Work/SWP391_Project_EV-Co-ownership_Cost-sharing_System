@@ -173,7 +173,7 @@ export default function VehicleBooking() {
                 .filter(data => data !== null)
                 .flatMap(data => Array.isArray(data) ? data : (data ? [data] : []));
 
-            console.log("✅ Vehicles loaded from all groups:", vehiclesArr.length);
+            console.log("✅ Xe được  tải lên từ tất cả các nhóm:", vehiclesArr.length);
 
             setVehicles(vehiclesArr);
 
