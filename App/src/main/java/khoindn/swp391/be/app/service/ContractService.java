@@ -121,7 +121,7 @@ public class ContractService implements IContractService {
                 helper.setTo(eachEmail);
                 helper.setSubject("[EcoShare System] E-Contract");
                 helper.setText(
-                        "<a href='" + emailReq.getDocumentUrl() +
+                        "<a href='" + emailReq.getContent() +
                                 "'>Nhấn vào đây để xem hợp đồng</a>", true);
 
                 javaMailSender.send(message);

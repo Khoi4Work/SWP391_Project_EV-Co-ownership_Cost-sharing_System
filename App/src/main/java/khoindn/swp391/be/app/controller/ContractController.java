@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
@@ -35,7 +36,7 @@ public class ContractController {
 
     // Tạo/Set contract
     @PostMapping("/")
-    public ResponseEntity<ContractSigner> setContract(@RequestBody ContractDecisionReq req) {
+    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req) {
         ContractSigner contractResult = iContractService.setContract(req);
         if (contractResult == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -55,7 +56,7 @@ public class ContractController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody ContractCreateReq req) {
+    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req) {
         System.out.println(req);
         List<ContractSigner> contractResult = iContractService.createContract(req);
         if (contractResult == null) {
