@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import React, {useState, useEffect} from "react";
+import {useParams, useLocation} from "react-router-dom";
 import ContractPreview from "./ContractPDFPreview";
-import { Button } from "@/components/ui/button"; // nếu bạn dùng ShadCN button
+import {Button} from "@/components/ui/button"; // nếu bạn dùng ShadCN button
 import axiosClient from "@/api/axiosClient";
 
 export default function ContractPreviewPage() {
     const location = useLocation();
-    const { id } = useParams(); // lấy id tạm từ URL
+    const {id} = useParams(); // lấy id tạm từ URL
     const [ownerInfo, setOwnerInfo] = useState<any>(null);
     const [coOwners, setCoOwners] = useState<any[]>([]);
     const [vehicleData, setVehicleData] = useState<any>(null);
@@ -62,8 +62,11 @@ export default function ContractPreviewPage() {
         }
 
         try {
-
-            const idContract = localStorage.getItem(`contractId_${user.data.id}`);
+            console.log(user.id)
+            const key = 'contractId_'+user.id;
+            console.log(key)
+            const idContract = localStorage.getItem(key);
+            console.log(idContract)
             if (!idContract) {
                 alert("Không có contract id");
                 return;
