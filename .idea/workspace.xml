@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="59bcd08a-910f-4395-84cd-2117fba145b6" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pages/co-owner/ContractPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/ContractPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/co-owner/VehicleRegistration.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,12 +22,12 @@
     &quot;assignee&quot;: &quot;tlamvantuan&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "git@github.com:Khoi4Work/SWP391_Project_EV-Co-ownership_Cost-sharing_System.git",
-    "accountId": "f462ab90-8f01-452b-9a08-b40f4511ed94"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:Khoi4Work/SWP391_Project_EV-Co-ownership_Cost-sharing_System.git&quot;,
+    &quot;accountId&quot;: &quot;f462ab90-8f01-452b-9a08-b40f4511ed94&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
