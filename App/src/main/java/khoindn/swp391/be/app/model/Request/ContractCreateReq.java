@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.model.Request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,7 +18,7 @@ public class ContractCreateReq {
     private String documentUrl;
     @NotBlank(message = "Can't get contractType!!")
     private String contractType;
-    @NotBlank(message = "Can't get userId")
+    @NotEmpty(message = "UserId list cannot be empty")
     public List<Integer> userId;
 
 }

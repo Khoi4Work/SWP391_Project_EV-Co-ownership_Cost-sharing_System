@@ -35,7 +35,7 @@ public class ContractController {
     }
 
     // Tạo/Set contract
-    @PostMapping("/")
+    @PostMapping("/set")
     public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req) {
         ContractSigner contractResult = iContractService.setContract(req);
         if (contractResult == null) {
