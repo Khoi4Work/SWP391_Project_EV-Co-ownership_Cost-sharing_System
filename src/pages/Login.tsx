@@ -108,7 +108,7 @@ export default function Login() {
                         <Car className="h-8 w-8 text-primary" />
                         <span className="text-2xl font-bold text-primary">EcoShare</span>
                     </div>
-                    <CardTitle className="text-2xl font-bold">Đăng nhập</CardTitle>
+                    <CardTitle className="text-2xl font-bold">Login</CardTitle>
                     <CardDescription>
                         Đăng nhập để truy cập hệ thống quản lý xe điện
                     </CardDescription>
@@ -148,7 +148,7 @@ export default function Login() {
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="Nhập email của bạn"
+                                placeholder="Nhập email "
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
@@ -159,7 +159,7 @@ export default function Login() {
                             <Input
                                 id="password"
                                 type="password"
-                                placeholder="Nhập mật khẩu"
+                                placeholder="Nhập mật khẩu của bạn"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
@@ -171,9 +171,9 @@ export default function Login() {
                     </form>
 
                     <div className="mt-4 text-center text-sm">
-                        <span className="text-muted-foreground">Chưa có tài khoản? </span>
+                        <span className="text-muted-foreground">Chưa có tài khoản ? </span>
                         <Link to="/register" className="text-primary hover:underline font-medium">
-                            Đăng ký ngay
+                            👉Đăng ký ngay
                         </Link>
                     </div>
                 </CardContent>

@@ -30,7 +30,7 @@ export default function ContractPreviewPage() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axios.get("/auth/current", {
+                const res = await axios.get("http://localhost:8080/auth/current", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -91,7 +91,8 @@ export default function ContractPreviewPage() {
             });
             console.log("Payload gửi đi:", payload);
             alert("Gửi quyết định thành công!");
-            if (res.data.contract.status === "activated") {
+            console.log(res.data.contract.status);
+            if (res.data.contract.status === "Activated") {
                 // ✅ Khi hợp đồng thành công thì tạo group:
                 // Gom owner chính + các coOwners
                 const allMembers = [
@@ -119,7 +120,7 @@ export default function ContractPreviewPage() {
                 const membersWithRole = allMembers.map((m) => ({
                     coOwnerId: m.userId,
                     roleInGroup: m.userId === adminId ? "admin" : "member",
-                    ownerShipPercentage: m.ownership,
+                    ownershipPercentage: m.ownership,
                 }));
 
                 const groupPayload = {

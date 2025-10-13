@@ -71,7 +71,7 @@ export default function VehicleBooking() {
     const currentUserId = Number(localStorage.getItem("userId"));
     const currentUserName = localStorage.getItem("hovaten");
     const token = localStorage.getItem("accessToken");
-    const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
+    const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
     // ===== HELPER FUNCTIONS =====
     const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
@@ -173,7 +173,7 @@ export default function VehicleBooking() {
                 .filter(data => data !== null)
                 .flatMap(data => Array.isArray(data) ? data : (data ? [data] : []));
 
-            console.log("✅ Vehicles loaded from all groups:", vehiclesArr.length);
+            console.log("✅ Xe được  tải lên từ tất cả các nhóm:", vehiclesArr.length);
 
             setVehicles(vehiclesArr);
 
