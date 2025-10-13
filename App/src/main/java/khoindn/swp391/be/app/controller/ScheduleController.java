@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/Schedule")
@@ -71,6 +72,15 @@ public class ScheduleController {
     public ResponseEntity<Void> deleteSchedule(@PathVariable int scheduleId) {
         scheduleService.cancelSchedule(scheduleId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/override-count")
+    public ResponseEntity<Map<String, Object>> getOverrideCount(
+            @RequestParam int userId,
+            @RequestParam int groupId) {
+
+        Map<String, Object> result = scheduleService.getOverrideCountForUser(userId, groupId);
+        return ResponseEntity.ok(result);
     }
 //    @PutMapping("/{id}")
 //    public ResponseEntity<ScheduleRes> updateSchedule(@PathVariable Integer id,
