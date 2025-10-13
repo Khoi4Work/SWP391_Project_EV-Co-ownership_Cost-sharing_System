@@ -717,7 +717,6 @@ export default function VehicleRegistration() {
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                         const v = e.target.value;
                         formik.setFieldValue("address", v);
-                        localStorage.setItem("address", v);
                       }}
                     />
                     <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
