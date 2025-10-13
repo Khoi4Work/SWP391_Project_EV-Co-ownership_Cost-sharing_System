@@ -7,6 +7,8 @@ import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
+import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.service.AuthenticationService;
 import khoindn.swp391.be.app.service.IContractService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,10 +26,13 @@ public class ContractController {
     @Autowired
     private IContractService iContractService;
 
+    @Autowired
+    private AuthenticationService authenticationService;
+
     // Lấy contract
-    @GetMapping("/{id}")
-    public ResponseEntity<Contract> getContract(@PathVariable int id) {
-        Contract contract = iContractService.getContract(id);
+    @GetMapping("/user/{id}")
+    public ResponseEntity<Contract> getContractByUserId(@PathVariable int id) {
+        Contract contract = iContractService.getContractByUser(id);
         if (contract == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -64,5 +69,15 @@ public class ContractController {
         }
         System.out.println(contractResult);
         return ResponseEntity.status(HttpStatus.CREATED).body(contractResult);
+    }
+
+    @GetMapping("/user/current")
+    public ResponseEntity<Contract> getContractsByUserCurrent() {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Contract contract = iContractService.getContractByUser(user.getId());
+        return ResponseEntity.status(HttpStatus.OK).body(contract);
     }
 }

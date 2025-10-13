@@ -9,7 +9,7 @@ import khoindn.swp391.be.app.pojo.ContractSigner;
 import java.util.List;
 
 public interface IContractService {
-    public Contract getContract(int id);
+    public Contract getContractByUser(int id);
 
     public ContractSigner setContract(ContractDecisionReq req);
 

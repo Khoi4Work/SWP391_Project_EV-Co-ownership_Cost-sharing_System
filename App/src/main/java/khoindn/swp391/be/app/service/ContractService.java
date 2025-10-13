@@ -44,7 +44,7 @@ public class ContractService implements IContractService {
 
 
     @Override
-    public Contract getContract(int id) {
+    public Contract getContractByUser(int id) {
         Contract contract = iContractRepository.findContractByContractId(id);
 
         if (contract == null) throw new ContractNotExistedException("Contract cannot found!");
@@ -85,6 +85,7 @@ public class ContractService implements IContractService {
 
             if (anyDeclined) {
                 contract.setStatus("Declined");
+                contract.setEndDate(LocalDate.now());
             } else if (allSigned) {
                 contract.setStatus("Activated");
             } else if (stillPending) {
