@@ -4,6 +4,7 @@ import ContractPreview from "./ContractPDFPreview";
 import { Button } from "@/components/ui/button"; // nếu bạn dùng ShadCN button
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 export default function ContractPreviewPage() {
     const { toast } = useToast();
     const location = useLocation();
@@ -29,7 +30,7 @@ export default function ContractPreviewPage() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axiosClient.get("/auth/current", {
+                const res = await axios.get("/auth/current", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -90,17 +91,17 @@ export default function ContractPreviewPage() {
             });
             console.log("Payload gửi đi:", payload);
             alert("Gửi quyết định thành công!");
-            if (res.data.contract.status === "active") {
+            if (res.data.contract.status === "activated") {
                 // ✅ Khi hợp đồng thành công thì tạo group:
                 // Gom owner chính + các coOwners
                 const allMembers = [
                     {
                         userId: ownerInfo?.id,
-                        ownerShip: ownerInfo?.ownership || 0, // nếu FE đặt tên khác thì chỉnh lại
+                        ownership: ownerInfo?.ownership || 0, // nếu FE đặt tên khác thì chỉnh lại
                     },
                     ...coOwners.map((co) => ({
                         userId: co.id,
-                        ownerShip: co.ownership || 0, // chỉnh nếu khác tên
+                        ownership: co.ownership || 0, // chỉnh nếu khác tên
                     })),
                 ];
 
@@ -108,8 +109,8 @@ export default function ContractPreviewPage() {
                 let maxRate = -1;
                 let adminId = null;
                 allMembers.forEach((m) => {
-                    if (m.ownerShip > maxRate) {
-                        maxRate = m.ownerShip;
+                    if (m.ownership > maxRate) {
+                        maxRate = m.ownership;
                         adminId = m.userId;
                     }
                 });
@@ -118,12 +119,12 @@ export default function ContractPreviewPage() {
                 const membersWithRole = allMembers.map((m) => ({
                     coOwnerId: m.userId,
                     roleInGroup: m.userId === adminId ? "admin" : "member",
-                    ownerShipPercentage: m.ownerShip,
+                    ownerShipPercentage: m.ownership,
                 }));
 
                 const groupPayload = {
                     contractId: idContract,
-                    vehicleId: vehicleData.vehicleId,
+                    vehicleId: vehicleData.id,
                     members: membersWithRole,
                 };
 
