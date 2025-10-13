@@ -624,7 +624,7 @@ export default function VehicleBooking() {
                             </div>
                             <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
                                     className="text-gray-400 hover:text-gray-600">
-                                <X className="h-4 w-4"/>S
+                                <X className="h-4 w-4"/>
                             </button>
                         </div>
                     </div>
