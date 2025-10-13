@@ -35,7 +35,10 @@ public class Filter extends OncePerRequestFilter {
     private final List<String> PUBLIC_API = List.of(
             "POST:/api/chat",
             "POST:/auth/register",
-            "POST:/auth/login",
+            "POST:/auth/login/**",
+            "POST:/email/send-otp",
+            "POST:/Schedule/**",
+
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
             "GET:/swagger-resources/**"
@@ -61,9 +64,10 @@ public class Filter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         System.out.println("Filter is called");
+        System.out.println("Authorization header: " + request.getHeader("Authorization"));
         String uri = request.getRequestURI();
         String method = request.getMethod();
-        System.out.println(method+"-"+uri);
+        System.out.println(method + "-" + uri);
         if (isPublicAPI(uri, method)) {
             //Api public => access
             System.out.println("This is a public API");
@@ -72,6 +76,7 @@ public class Filter extends OncePerRequestFilter {
             Users user = null;
             //Api private (theo role)=> check token
             String token = getToken(request);
+
             if (token != null) {
                 user = tokenService.extractToken(token);
             } else {
@@ -84,8 +89,11 @@ public class Filter extends OncePerRequestFilter {
             UsernamePasswordAuthenticationToken
                     authenToken =
                     new UsernamePasswordAuthenticationToken(user, token, user.getAuthorities());
+
             authenToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
             SecurityContextHolder.getContext().setAuthentication(authenToken);
+
 
             // Co token
             // Nen phai verify lại token

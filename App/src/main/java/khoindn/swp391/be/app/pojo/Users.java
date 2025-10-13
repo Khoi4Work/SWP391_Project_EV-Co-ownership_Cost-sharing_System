@@ -1,12 +1,14 @@
 package khoindn.swp391.be.app.pojo;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -24,7 +26,7 @@ public class Users implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private int id;
+    private Integer id;
 
     @NotNull
     private String hovaTen;  // Changed to match Java naming conventions
@@ -52,6 +54,8 @@ public class Users implements UserDetails {
     private UserRole role; // Default role ID for regular users
 
     @OneToMany(mappedBy = "users")
+    @JsonIgnore
+    @ToString.Exclude
     private List<GroupMember> userOfGroupMember = new ArrayList<>();
 
     public Users(String hovaTen, String email, String password, String cccd, String gplx) {
@@ -71,6 +75,6 @@ public class Users implements UserDetails {
 
     @Override
     public String getUsername() {
-        return "";
+        return this.email;
     }
 }

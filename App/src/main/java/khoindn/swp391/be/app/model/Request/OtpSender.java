@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ContractReq {
-    private int idChoice;
-    private int idContract;
-    private int idUserSigned;
+public class OtpSender {
+
+    private String email;
+    private String otp;
 }

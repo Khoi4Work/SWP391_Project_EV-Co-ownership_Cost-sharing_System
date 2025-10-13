@@ -45,6 +45,20 @@ public class ScheduleService implements IScheduleService {
         if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
             throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
+        List<Schedule> allSchedules = iScheduleRepository
+                .findByGroupMember_Group_GroupId(req.getGroupId());
+
+        boolean hasConflict = allSchedules.stream()
+                .filter(s -> !s.getStatus().equals("canceled"))
+                .filter(s -> s.getGroupMember().getGroup().getGroupId() == req.getGroupId())
+                .anyMatch(s ->
+                        s.getStartTime().isBefore(req.getEndTime()) &&
+                                s.getEndTime().isAfter(req.getStartTime())
+                );
+
+        if (hasConflict) {
+            throw new RuntimeException("Time slot already booked for this vehicle");
+        }
 
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
@@ -80,7 +94,7 @@ public class ScheduleService implements IScheduleService {
     }
 
     @Override
-    public VehicleRes getCarByGroupIdAndUserId(int groupId, int userId) {
+    public List<VehicleRes> getCarsByGroupIdAndUserId(int groupId, int userId) {
         Users user = iUserRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -90,18 +104,94 @@ public class ScheduleService implements IScheduleService {
         iGroupMemberRepository.findByGroupAndUsers(group, user)
                 .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
 
-        Vehicle vehicle = iVehicleRepository.findByGroup(group);
-        if (vehicle == null) {
+        List<Vehicle> vehicles = iVehicleRepository.findAllByGroup(group);
+
+        if (vehicles.isEmpty()) {
             throw new NoVehicleInGroupException("No vehicles found in this group");
         }
 
-        VehicleRes dto = modelMapper.map(vehicle, VehicleRes.class);
-        dto.setGroupId(group.getGroupId());
-        dto.setGroupName(group.getGroupName());
-
-        return dto;
+        // Convert sang List<VehicleRes>
+        return vehicles.stream()
+                .map(vehicle -> {
+                    VehicleRes dto = modelMapper.map(vehicle, VehicleRes.class);
+                    dto.setGroupId(group.getGroupId());
+                    dto.setGroupName(group.getGroupName());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
+
+    @Override
+    public void updateSchedule(ScheduleReq req, int scheduleId) {
+        // Find existing schedule
+        Schedule schedule = iScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        // Validate user exists
+        Users user = iUserRepository.findById(req.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // Validate group exists
+        Group group = iGroupRepository.findById(req.getGroupId())
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        // Validate user belongs to group
+        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
+                .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
+
+        // Validate vehicle belongs to group
+        Vehicle vehicle = iVehicleRepository.findVehicleByVehicleId(req.getVehicleId());
+        if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
+            throw new VehicleNotBelongException("Vehicle does not belong to this group");
+        }
+
+        // Update schedule fields
+        schedule.setStartTime(req.getStartTime());
+        schedule.setEndTime(req.getEndTime());
+        schedule.setGroupMember(gm);
+        schedule.getGroupMember().getGroup().setVehicles((List<Vehicle>) vehicle);
+
+        // Save updated schedule
+        iScheduleRepository.save(schedule);
+    }
+
+    @Override
+    public void cancelSchedule(int scheduleId) {
+        Schedule schedule = iScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        // Đổi status thay vì delete
+        schedule.setStatus("canceled");
+        iScheduleRepository.save(schedule);
+    }
+
+    @Override
+    public List<ScheduleRes> findByGroupMember_Group_GroupId(int groupId) {
+        // Validate group exists
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        List<Schedule> schedules = iScheduleRepository.findByGroupMember_Group_GroupId(groupId);
+
+        // Convert entities to DTOs
+        return schedules.stream()
+                .map(schedule -> {
+                    ScheduleRes res = modelMapper.map(schedule, ScheduleRes.class);
+                    res.setUserId(schedule.getGroupMember().getUsers().getId());
+                    res.setUserName(schedule.getGroupMember().getUsers().getUsername());
+                    res.setGroupId(schedule.getGroupMember().getGroup().getGroupId());
+
+                    // Get vehicle for this schedule's group
+                    Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
+                    if (vehicle != null) {
+                        res.setVehicleId(vehicle.getVehicleId());
+                    }
+
+                    return res;
+                })
+                .collect(Collectors.toList());
+    }
 
 
 }
