@@ -179,7 +179,7 @@ export default function ContractPreviewPage() {
                     contractId: idContract,
                     vehicleId: vehicleData.id,
                     members: membersWithRole,
-                    documentUrl: fileUrl,
+                    documentUrl: documentUrl,
                 };
 
                 console.log("groupPayload gửi đi:", groupPayload);
