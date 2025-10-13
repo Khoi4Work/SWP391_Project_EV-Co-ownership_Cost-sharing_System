@@ -6,6 +6,16 @@ import {Calendar, Clock, Car, Edit, X, Check, AlertCircle} from "lucide-react";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
+interface OverrideInfo {
+    userId: number;
+    groupId: number;
+    overridesUsed: number;
+    overridesRemaining: number;
+    maxOverridesPerMonth: number;
+    currentMonth: string;
+    nextResetDate: string;
+}
+
 interface BookingSlot {
     scheduleId: number;
     time: string;
@@ -62,6 +72,8 @@ export default function VehicleBooking() {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [existingBookings, setExistingBookings] = useState<BookingSlot[]>([]);
     const [loadingBookings, setLoadingBookings] = useState(false);
+    const [overrideInfo, setOverrideInfo] = useState<OverrideInfo | null>(null);
+    const [loadingOverrideInfo, setLoadingOverrideInfo] = useState(false);
 
     // ===== REFS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
@@ -313,18 +325,56 @@ export default function VehicleBooking() {
             console.log("=== End Loading Bookings ===");
         }
     };
+    const loadOverrideInfo = async (groupId: number) => {
+        setLoadingOverrideInfo(true);
+        try {
+            const res = await fetch(
+                `${beBaseUrl}/Schedule/override-count?userId=${currentUserId}&groupId=${groupId}`,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    credentials: "include"
+                }
+            );
 
-    // ===== EFFECTS =====
+            if (!res.ok) {
+                throw new Error("Không thể lấy thông tin override");
+            }
+
+            const data: OverrideInfo = await res.json();
+            console.log("✅ Override info loaded:", data);
+            setOverrideInfo(data);
+        } catch (error: any) {
+            console.error("❌ Error loading override info:", error);
+            // Không hiển thị toast error ở đây để tránh spam khi page load
+        } finally {
+            setLoadingOverrideInfo(false);
+        }
+    };
+
+
     // Effect 1: Initialize data on mount
     useEffect(() => {
         const initData = async () => {
             console.log("=== Initializing Data ===");
             await loadGroupId();
             await loadVehicles();
+
+            // Load override info sau khi có groupId
+            const groupIdsStr = localStorage.getItem("groupIds");
+            if (groupIdsStr) {
+                const groupIds: number[] = JSON.parse(groupIdsStr);
+                if (groupIds.length > 0) {
+                    await loadOverrideInfo(groupIds[0]); // Load cho group đầu tiên
+                }
+            }
         };
 
         initData();
     }, []); // Run once on mount
+
 
     // Effect 2: Load bookings when vehicles are available
     useEffect(() => {
@@ -382,48 +432,37 @@ export default function VehicleBooking() {
 
     const handleTimeSelection = () => {
         if (!selectedStartTime || !selectedEndTime) return;
+
         const timeRange = `${selectedStartTime}-${selectedEndTime}`;
-        const selectedV = vehicles.find(v => String(v.vehicleId) === selectedVehicle);
-        const hasOverlap = existingBookings.filter(booking => booking.status !== "canceled")
-            .some(booking =>
-                booking.vehicleId === Number(selectedVehicle) &&
-                booking.date === selectedDate &&
-                rangesOverlap(booking.time, timeRange)
-            );
-        if (hasOverlap) {
-            showToast("Xung đột thời gian", "Khung giờ bạn chọn bị chồng lấn với lịch đã đặt.", "destructive");
-            return;
-        }
+
         setSelectedTime(timeRange);
         setShowTimeSelector(false);
-        showToast("Đã chọn thời gian", `Thời gian: ${timeRange}`);
+        showToast("Đã chọn thời gian", `Thời gian ${timeRange}`);
     };
+
 
     const handleBooking = async () => {
         if (!selectedVehicle || !selectedDate || !selectedTime) {
             showToast("Thiếu thông tin", "Vui lòng chọn xe, ngày và khung giờ trước khi đặt.", "destructive");
             return;
         }
+
+        // Validation về giới hạn 14 ngày/tháng (GIỮ LẠI)
         const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
         const alreadyCounted = daysSet.has(selectedDate);
         const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
-        if (prospectiveDaysCount > 3) {
+        if (prospectiveDaysCount > 14) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
             return;
         }
-        const hasConflict = existingBookings.filter(booking => booking.status !== "canceled")
-            .some(booking =>
-                booking.vehicleId === Number(selectedVehicle) && booking.date === selectedDate && rangesOverlap(booking.time, selectedTime)
-            );
-        if (hasConflict) {
-            showToast("Khung giờ đã được đặt", `Xe ${getSelectedVehicleName()} vào ${selectedDate} từ ${selectedTime} đã có người đặt.`, "destructive");
-            return;
-        }
+
+        // KHÔNG check conflict nữa, để backend xử lý override logic
 
         // Gọi BE để tạo lịch mới
         try {
             const currentGroupId = localStorage.getItem("groupId");
             const [start, end] = selectedTime.split("-");
+
             console.log("Sending schedule request:", {
                 startTime: toLocalDateTime(selectedDate, start),
                 endTime: toLocalDateTime(selectedDate, end),
@@ -456,24 +495,58 @@ export default function VehicleBooking() {
                     status: res.status,
                     response: errorText
                 });
-                throw new Error(`HTTP ${res.status}: ${errorText}`);
+
+                // Xử lý các loại error từ backend
+                if (errorText.includes("Override limit exceeded")) {
+                    showToast(
+                        "Đã hết lượt override",
+                        "Bạn đã dùng hết 3 lượt override trong tháng này.",
+                        "destructive"
+                    );
+                } else if (errorText.includes("Lower ownership") || errorText.includes("Cannot override")) {
+                    showToast(
+                        "Không thể override",
+                        "Ownership của bạn thấp hơn người đã đặt lịch này.",
+                        "destructive"
+                    );
+                } else if (errorText.includes("Equal ownership")) {
+                    showToast(
+                        "Không thể override",
+                        "Ownership bằng nhau - người đặt trước được ưu tiên.",
+                        "destructive"
+                    );
+                } else {
+                    showToast("Lỗi đặt lịch", errorText || "Không thể đặt lịch.", "destructive");
+                }
+                return;
             }
 
+            // Thành công
             await loadBookings();
+
+            // Reload override info
+            const groupId = Number(localStorage.getItem("groupId"));
+            await loadOverrideInfo(groupId);
+
             showToast("Đặt lịch thành công", `Đã đặt ${getSelectedVehicleName()} vào ${selectedDate} từ ${selectedTime}.`);
+
+            // Reset form
             setSelectedVehicle("");
             setSelectedDate("");
             setSelectedTime("");
             setSelectedStartTime("");
             setSelectedEndTime("");
+
             if (bookingsListRef.current) {
                 bookingsListRef.current.scrollIntoView({behavior: 'smooth', block: 'start'});
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("Booking error:", e);
-            showToast("Lỗi đặt lịch", "Không thể đặt lịch. Vui lòng thử lại.", "destructive");
+            showToast("Lỗi đặt lịch", e.message || "Không thể đặt lịch. Vui lòng thử lại.", "destructive");
         }
     };
+
+
 
     // Sửa handleCancelBooking: gọi API BE để xóa lịch
     const handleCancelBooking = async (scheduleId: number) => {
@@ -696,9 +769,35 @@ export default function VehicleBooking() {
                         </div>
                     </div>
 
+                    {/* OVERRIDE INFO */}
+                    {overrideInfo && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <AlertCircle className="h-5 w-5 text-blue-600"/>
+                                    <span className="font-medium text-blue-900">Thông tin Override</span>
+                                </div>
+                                <Badge variant={overrideInfo.overridesRemaining > 0 ? "default" : "destructive"}>
+                                    {overrideInfo.overridesRemaining}/{overrideInfo.maxOverridesPerMonth} lượt còn lại
+                                </Badge>
+                            </div>
+                            <div className="mt-2 text-sm text-blue-800">
+                                <p>Đã sử dụng: <span className="font-semibold">{overrideInfo.overridesUsed}</span> lượt
+                                    trong tháng {overrideInfo.currentMonth}</p>
+                                <p className="text-xs text-blue-600 mt-1">Reset vào: {overrideInfo.nextResetDate}</p>
+                            </div>
+                            {overrideInfo.overridesRemaining === 0 && (
+                                <div className="mt-2 text-xs text-red-600 font-medium">
+                                    ⚠️ Bạn đã hết lượt override trong tháng này. Chỉ có thể đặt khung giờ trống.
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <Button onClick={handleBooking} className="w-full"
                             disabled={!selectedVehicle || !selectedDate || !selectedTime}>Đặt lịch</Button>
 
+                    {/* 5. DIALOG CHỌN THỜI GIAN VỚI WARNING - SỬA LẠI DIALOG NÀY */}
                     <Dialog open={showTimeSelector} onOpenChange={setShowTimeSelector}>
                         <DialogContent className="max-w-2xl">
                             <DialogHeader>
@@ -711,7 +810,21 @@ export default function VehicleBooking() {
                                 </div>
                             </DialogHeader>
                             <div className="space-y-6">
-                                {/* Hiển thị chi tiết các khung giờ đã đăng ký cho xe/ngày này */}
+                                {/* THÊM WARNING VỀ OVERRIDE */}
+                                {overrideInfo && overrideInfo.overridesRemaining === 0 && (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                        <div className="flex items-start space-x-2">
+                                            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5"/>
+                                            <div className="text-sm text-yellow-800">
+                                                <p className="font-medium">Cảnh báo: Đã hết lượt override</p>
+                                                <p className="mt-1">Bạn chỉ có thể đặt khung giờ trống. Không thể
+                                                    override lịch của người khác.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* HIỂN THỊ LỊCH ĐÃ ĐĂNG KÝ - SỬA FILTER ĐỂ ẨN "overridden" */}
                                 {selectedVehicle && selectedDate && (
                                     <div className="mb-2">
                                         <div className="text-sm font-medium mb-1">Lịch đã đăng ký cho xe này:</div>
@@ -720,33 +833,34 @@ export default function VehicleBooking() {
                                                 .filter(
                                                     b =>
                                                         String(b.vehicleId) === String(selectedVehicle) &&
-                                                        b.date === selectedDate
+                                                        b.date === selectedDate &&
+                                                        b.status !== "canceled" &&
+                                                        b.status !== "overridden"  // ẨN BOOKING BỊ OVERRIDE
                                                 )
                                                 .map(b => (
                                                     <div
                                                         key={b.scheduleId}
                                                         className="flex items-center gap-3 px-3 py-2 rounded border bg-gray-50 text-xs"
                                                     >
-                                                            <span
-                                                                className="font-semibold text-blue-700">{b.time}</span>
+                                                        <span className="font-semibold text-blue-700">{b.time}</span>
                                                         <span className="text-gray-700">{b.brand} {b.model}</span>
-                                                        <span
-                                                            className="text-gray-500">Người đặt: {b.bookedBy}</span>
-                                                        <span
-                                                            className="text-gray-500">Trạng thái: {b.status}</span>
+                                                        <span className="text-gray-500">Người đặt: {b.bookedBy}</span>
+                                                        <span className="text-gray-500">Trạng thái: {b.status}</span>
                                                     </div>
                                                 ))}
                                             {existingBookings.filter(
                                                 b =>
                                                     String(b.vehicleId) === String(selectedVehicle) &&
-                                                    b.date === selectedDate
+                                                    b.date === selectedDate &&
+                                                    b.status !== "canceled" &&
+                                                    b.status !== "overridden"  // ẨN BOOKING BỊ OVERRIDE
                                             ).length === 0 && (
-                                                <span
-                                                    className="text-xs text-muted-foreground">Chưa có lịch nào</span>
+                                                <span className="text-xs text-muted-foreground">Chưa có lịch nào</span>
                                             )}
                                         </div>
                                     </div>
                                 )}
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
@@ -882,6 +996,7 @@ export default function VehicleBooking() {
                         </Card>
                     )}
 
+                    {/* 6. FILTER BOOKINGS ĐỂ ẨN CÁC BOOKING ĐÃ BỊ OVERRIDE */}
                     <div>
                         <h4 className="font-semibold mb-3 flex items-center space-x-2">
                             <Clock className="h-4 w-4"/>
@@ -893,43 +1008,54 @@ export default function VehicleBooking() {
                             ) : existingBookings.length === 0 ? (
                                 <div className="text-center py-4 text-muted-foreground">Chưa có lịch đặt nào</div>
                             ) : (
-                                existingBookings.map((booking) => (
-                                    <div key={booking.scheduleId}
-                                         className={`flex items-center justify-between p-3 border rounded-lg transition-all ${editingBooking === booking.scheduleId ? 'bg-primary/10 border-primary/50' : newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' : 'bg-accent/20'}`}>
-                                        <div className="flex-1">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="flex items-center space-x-2">
-                                                    <Car className="h-4 w-4"/>
-                                                    <span
-                                                        className="font-medium">{booking.brand} {booking.model}</span>
+                                existingBookings
+                                    .filter(booking => booking.status !== "overridden") // ẨN BOOKING ĐÃ BỊ OVERRIDE
+                                    .map((booking) => (
+                                        <div key={booking.scheduleId}
+                                             className={`flex items-center justify-between p-3 border rounded-lg transition-all ${
+                                                 editingBooking === booking.scheduleId ? 'bg-primary/10 border-primary/50' :
+                                                     newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' :
+                                                         booking.status === "canceled" ? 'bg-gray-100 opacity-50' :
+                                                             'bg-accent/20'
+                                             }`}>
+                                            <div className="flex-1">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Car className="h-4 w-4"/>
+                                                        <span
+                                                            className="font-medium">{booking.brand} {booking.model}</span>
+                                                    </div>
+                                                    <Badge variant="secondary">{booking.bookedBy}</Badge>
+                                                    <Badge
+                                                        variant={booking.status === "pending" ? "outline" : "default"}>
+                                                        {booking.status}
+                                                    </Badge>
+                                                    {newlyCreatedBooking === booking.scheduleId &&
+                                                        <Badge className="bg-green-100 text-green-800">Mới</Badge>}
                                                 </div>
-                                                <Badge variant="secondary">{booking.bookedBy}</Badge>
-                                                <Badge
-                                                    variant={booking.status === "pending" ? "outline" : "default"}>{booking.status}</Badge>
-                                                {newlyCreatedBooking === booking.scheduleId &&
-                                                    <Badge className="bg-green-100 text-green-800">Mới</Badge>}
+                                                <div className="text-sm text-muted-foreground mt-1">
+                                                    {booking.date} • {booking.time}
+                                                </div>
                                             </div>
-                                            <div
-                                                className="text-sm text-muted-foreground mt-1">{booking.date} • {booking.time}</div>
+                                            <div className="flex items-center space-x-2">
+                                                <Button size="sm" variant="outline"
+                                                        onClick={() => handleEditBooking(booking.scheduleId)}
+                                                        disabled={editingBooking === booking.scheduleId}>
+                                                    <Edit className="h-4 w-4 mr-1"/>Sửa
+                                                </Button>
+                                                <Button size="sm" variant="outline"
+                                                        onClick={() => handleCancelBooking(booking.scheduleId)}>
+                                                    <X className="h-4 w-4 mr-1"/>Hủy
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Button size="sm" variant="outline"
-                                                    onClick={() => handleEditBooking(booking.scheduleId)}
-                                                    disabled={editingBooking === booking.scheduleId}>
-                                                <Edit className="h-4 w-4 mr-1"/>Sửa
-                                            </Button>
-                                            <Button size="sm" variant="outline"
-                                                    onClick={() => handleCancelBooking(booking.scheduleId)}>
-                                                <X className="h-4 w-4 mr-1"/>Hủy
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))
+                                    ))
                             )}
                         </div>
                     </div>
                 </CardContent>
             </Card>
         </div>
+
     );
 }
