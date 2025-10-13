@@ -113,7 +113,6 @@ public class DataInitializer implements CommandLineRunner {
         }
 
 
-
         if (userService.getAllUsers().isEmpty()) {
             UserRole role = userRoleService.findUserRoleByRoleId(1); // roleId = 1 như JSON của bạn
 
@@ -140,6 +139,30 @@ public class DataInitializer implements CommandLineRunner {
 
             RegisterUserReq ur2 = modelMapper.map(u2, RegisterUserReq.class);
             authenticationService.register(ur2);
+
+            Users u3 = new Users();
+            u3.setHovaTen("lamvantuan");
+            u3.setEmail("tlamvantuan@gmail.com");
+            u3.setPassword("123123"); // mã hóa mật khẩu
+            u3.setCccd("123123124");
+            u3.setGplx("123123124");
+            u3.setPhone("0877762076");
+            u3.setRole(role);
+
+            RegisterUserReq ur3 = modelMapper.map(u3, RegisterUserReq.class);
+            authenticationService.register(ur3);
+
+            Users u4 = new Users();
+            u4.setHovaTen("tuan");
+            u4.setEmail("tuanlv.skillcetera@gmail.com");
+            u4.setPassword("123123"); // mã hóa mật khẩu
+            u4.setCccd("123123125");
+            u4.setGplx("123123125");
+            u4.setPhone("0877762075");
+            u4.setRole(role);
+
+            RegisterUserReq ur4 = modelMapper.map(u4, RegisterUserReq.class);
+            authenticationService.register(ur4);
         }
 
     }
