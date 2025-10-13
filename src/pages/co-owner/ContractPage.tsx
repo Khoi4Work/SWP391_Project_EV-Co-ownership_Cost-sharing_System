@@ -6,6 +6,7 @@ import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
+import { uploadPDFToFirebase } from "./uploadToFirebase";
 export default function ContractPreviewPage() {
     const { toast } = useToast();
     const location = useLocation();
@@ -109,7 +110,7 @@ export default function ContractPreviewPage() {
                 alert("Không tạo được file PDF!");
                 return;
             }
-            const { fileUrl, blob } = pdfResult;
+            const { blob } = pdfResult;
             console.log(user.id)
             const key = 'contractId_' + user.id;
             console.log(key)
@@ -124,7 +125,9 @@ export default function ContractPreviewPage() {
                 alert("Không tìm thấy thông tin người dùng");
                 return;
             }
-
+            const pdfFileName = `HopDong_${idContract}.pdf`;
+            const documentUrl = await uploadPDFToFirebase(blob, pdfFileName);
+            console.log("Link PDF đã upload:", documentUrl);
             const payload = {
                 idContract,
                 idUser: user.id,
