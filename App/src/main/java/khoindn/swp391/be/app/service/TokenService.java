@@ -42,12 +42,12 @@ public class TokenService {
 
     public String generateToken(Users account) {
         long now = System.currentTimeMillis();
-        long exp = now + 24L * 60 * 60 * 1000; // 24 giờ
+        long exp = now + 1000 * 60 * 60 * 24; // 24 giờ
 
         return Jwts.builder()
                 .subject(String.valueOf(account.getId()))
                 .issuedAt(new Date(now))
-                .expiration(new Date(exp))     // cộng, không phải nhân
+                .expiration(new Date(exp))
                 .signWith(getSignInKey())
                 .compact();
     }

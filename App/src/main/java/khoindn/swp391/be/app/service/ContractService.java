@@ -6,13 +6,11 @@ import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
-import khoindn.swp391.be.app.pojo.Contract;
-import khoindn.swp391.be.app.pojo.ContractSigner;
-import khoindn.swp391.be.app.pojo.Users;
-import khoindn.swp391.be.app.repository.IContractRepository;
-import khoindn.swp391.be.app.repository.IContractSignerRepository;
-import khoindn.swp391.be.app.repository.IUserRepository;
+import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
+import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.repository.*;
 import org.apache.catalina.User;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -41,6 +39,12 @@ public class ContractService implements IContractService {
     private UserService userService;
     @Autowired
     private AuthenticationService authenticationService;
+    @Autowired
+    private IGroupMemberRepository iGroupMemberRepository;
+    @Autowired
+    private IVehicleRepository iVehicleRepository;
+    @Autowired
+    private ModelMapper modelMapper;
 
 
     @Override
@@ -165,7 +169,7 @@ public class ContractService implements IContractService {
 
             // ✅ TẠO TOKEN RIÊNG CHO USER
             String token = tokenService.generateToken(users);
-            String secureUrl = req.getDocumentUrl() + contract.getContractId()+"?token=" + token;
+            String secureUrl = req.getDocumentUrl() + contract.getContractId() + "?token=" + token;
 
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
@@ -183,6 +187,18 @@ public class ContractService implements IContractService {
         }
         return signerList;
 
+    }
+
+    @Override
+    public ContractHistoryRes getHistoryContractsByUser(Users user) {
+        Contract contract = iContractSignerRepository.findContractSignerByUser(user).getContract();
+        GroupMember member = iGroupMemberRepository.findGroupMembersByUsers(user);
+        Vehicle vehicle = iVehicleRepository.findVehicleByGroup(member.getGroup());
+        ContractHistoryRes res = modelMapper.map(contract, ContractHistoryRes.class);
+        modelMapper.map(vehicle, res);
+        modelMapper.map(member, res);
+        System.out.println("SendBack: " + res);
+        return res;
     }
 
 

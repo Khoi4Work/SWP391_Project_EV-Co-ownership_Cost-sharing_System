@@ -13,4 +13,5 @@ public interface IGroupMemberRepository extends JpaRepository<GroupMember, Integ
     List<GroupMember> findAllByUsersId(int userId);
 
 
+    GroupMember findGroupMembersByUsers(Users users);
 }

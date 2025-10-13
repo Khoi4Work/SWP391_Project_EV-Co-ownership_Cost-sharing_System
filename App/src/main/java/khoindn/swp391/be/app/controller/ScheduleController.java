@@ -47,7 +47,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/vehicle")
-    public ResponseEntity<List<VehicleRes>> getCarsByGroupAndUser(
+    public ResponseEntity<List<VehicleRes>> getVehicleByGroupAndUser(
             @RequestParam int groupId,
             @RequestParam int userId) {
         List<VehicleRes> resList = scheduleService.getCarsByGroupIdAndUserId(groupId, userId);

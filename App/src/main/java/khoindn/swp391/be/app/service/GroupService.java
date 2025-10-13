@@ -56,6 +56,10 @@ public class GroupService implements IGroupService {
         group.setCreatedAt(LocalDateTime.now());
         iGroupRepository.save(group);
 
+        Contract contract = iContractRepository.findContractByContractId(request.getContractId());
+        contract.setGroup(group);
+        contract.setDocumentUrl(request.getDocumentrUrl());
+
         // Tim vehicle
         Vehicle vehicle = iVehicleRepository.getVehiclesByVehicleId(request.getVehicleId());
         if(vehicle==null){

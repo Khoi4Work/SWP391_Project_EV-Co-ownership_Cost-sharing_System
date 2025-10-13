@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
+import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
 import khoindn.swp391.be.app.pojo.Users;
@@ -79,5 +80,18 @@ public class ContractController {
         }
         Contract contract = iContractService.getContractByUser(user.getId());
         return ResponseEntity.status(HttpStatus.OK).body(contract);
+    }
+
+    @GetMapping("/history")
+    public  ResponseEntity<ContractHistoryRes> getHistoryContractsByUser() {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        ContractHistoryRes res = iContractService.getHistoryContractsByUser(user);
+        if (res == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        return ResponseEntity.status(HttpStatus.FOUND).body(res);
     }
 }

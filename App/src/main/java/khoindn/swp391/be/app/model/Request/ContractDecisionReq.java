@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.model.Request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,4 +22,5 @@ public class ContractDecisionReq {
     @Min(value = 0, message = "Choice must be 0 (Declined) or 1 (Signed)")
     @Max(value = 1, message = "Choice must be 0 (Declined) or 1 (Signed)")
     private int idChoice;
+
 }
