@@ -7,7 +7,7 @@ import { Car, ArrowLeft, Clock } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import axiosClient from "@/api/axiosClient";
 export default function VerifyOTP() {
     const [otp, setOtp] = useState("");
     const [isResending, setIsResending] = useState(false);
@@ -40,7 +40,7 @@ export default function VerifyOTP() {
             otp: randomOtp,
         });
         try {
-            await axios.post("http://localhost:8080/email/send-otp", {
+            await axiosClient.post("/email/send-otp", {
                 email: userData.email,
                 otp: randomOtp,
 
@@ -87,7 +87,7 @@ export default function VerifyOTP() {
     // 🔹 Chỉ gọi 1 lần API tạo tài khoản khi OTP đúng
     const handleVerify = async () => {
         try {
-            await axios.post("http://localhost:8080/auth/register", userData);
+            await axiosClient.post("/auth/register", userData);
             toast({
                 title: "Xác thực thành công",
                 description: "Tài khoản đã được tạo!",

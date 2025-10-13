@@ -1,6 +1,6 @@
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     Car,
     FileText,
@@ -11,34 +11,17 @@ import {
     Bell,
     Plus
 } from "lucide-react";
-import {Link, useNavigate} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ChatBox from "@/components/ChatBox";
 import UserDropdown from "@/components/UserDropdown";
 import VehicleBooking from "@/components/VehicleBooking";
-import {useState} from "react";
+import { useEffect, useState } from "react";
+import mockAPI from "@/api/mockApiClient";
 
 export default function CoOwnerDashboard() {
     const [showChat, setShowChat] = useState(false);
     const navigate = useNavigate();
-    const registrations = [
-        {
-            id: "VX-001",
-            vehicle: "VinFast VF8",
-            status: "approved",
-            ownership: "35%",
-            date: "2024-01-15",
-            contract: "contract-vx001.pdf"
-        },
-        {
-            id: "VX-002",
-            vehicle: "Tesla Model Y",
-            status: "pending",
-            ownership: "40%",
-            date: "2024-01-20",
-            contract: null
-        }
-    ];
-
+    const [registrations, setRegistrations] = useState([]);
     const getStatusColor = (status: string) => {
         switch (status) {
             case "approved":
@@ -51,7 +34,24 @@ export default function CoOwnerDashboard() {
                 return "outline";
         }
     };
-
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await mockAPI.get("/user");
+                const mapped = res.data.map((item) => ({
+                    id: `Contract-${item.id}`,
+                    vehicle: item.vehicle || "Chưa cập nhật",
+                    ownership: item.ownership || "Chưa cập nhật",
+                    status: item.status || "pending",
+                    date: item.date,
+                }))
+                setRegistrations(mapped);
+            } catch (err) {
+                console.error("Lỗi fetch:", err);
+            }
+        };
+        fetchData();
+    }, []);
     const getStatusText = (status: string) => {
         switch (status) {
             case "approved":
@@ -71,7 +71,7 @@ export default function CoOwnerDashboard() {
             <header className="bg-gradient-primary text-white p-4 shadow-glow">
                 <div className="container mx-auto flex justify-between items-center">
                     <div className="flex items-center space-x-3">
-                        <Car className="h-8 w-8"/>
+                        <Car className="h-8 w-8" />
                         <div>
                             <h1 className="text-2xl font-bold">EcoShare</h1>
                             <p className="text-sm opacity-90">Bảng điều khiển chủ sở hữu</p>
@@ -80,14 +80,14 @@ export default function CoOwnerDashboard() {
                     <div className="flex items-center space-x-4">
                         <Link to="/co-owner/vehicle-registration">
                             <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                                <Plus className="h-4 w-4 mr-2"/>
+                                <Plus className="h-4 w-4 mr-2" />
                                 Đăng ký xe
                             </Button>
                         </Link>
                         <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                            <Bell className="h-4 w-4"/>
+                            <Bell className="h-4 w-4" />
                         </Button>
-                        <UserDropdown/>
+                        <UserDropdown />
                     </div>
                 </div>
             </header>
@@ -97,7 +97,7 @@ export default function CoOwnerDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card className="shadow-elegant">
                         <CardHeader className="text-center">
-                            <Users className="h-8 w-8 text-primary mx-auto mb-2"/>
+                            <Users className="h-8 w-8 text-primary mx-auto mb-2" />
                             <CardTitle>Nhóm của tôi</CardTitle>
                             <CardDescription>
                                 Quản lý các nhóm đồng sở hữu đã tham gia
@@ -112,7 +112,7 @@ export default function CoOwnerDashboard() {
 
                     <Card className="shadow-elegant">
                         <CardHeader className="text-center">
-                            <FileText className="h-8 w-8 text-primary mx-auto mb-2"/>
+                            <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
                             <CardTitle>Hợp đồng</CardTitle>
                             <CardDescription>
                                 Xem và tải xuống hợp đồng đồng sở hữu
@@ -120,7 +120,7 @@ export default function CoOwnerDashboard() {
                         </CardHeader>
                         <CardContent>
                             <Button variant="outline" className="w-full"
-                                    onClick={() => navigate('/co-owner/contracts')}>
+                                onClick={() => navigate('/co-owner/contracts')}>
                                 Xem hợp đồng
                             </Button>
                         </CardContent>
@@ -128,13 +128,13 @@ export default function CoOwnerDashboard() {
                 </div>
 
                 {/* Vehicle Booking */}
-                <VehicleBooking/>
+                <VehicleBooking />
 
                 {/* Registration History */}
                 <Card className="shadow-elegant">
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-2">
-                            <Calendar className="h-5 w-5"/>
+                            <Calendar className="h-5 w-5" />
                             <span>Lịch sử đăng ký xe</span>
                         </CardTitle>
                         <CardDescription>
@@ -173,7 +173,7 @@ export default function CoOwnerDashboard() {
                         size="lg"
                         className="rounded-full bg-gradient-primary hover:shadow-glow shadow-lg"
                     >
-                        <MessageCircle className="h-5 w-5 mr-2"/>
+                        <MessageCircle className="h-5 w-5 mr-2" />
                         Hỗ trợ AI
                     </Button>
                 </div>

@@ -45,7 +45,7 @@ export default function CoOwnerForm({
       ownership: Yup.number()
         .required("Vui lòng nhập tỷ lệ sở hữu")
         .min(15, "Tỷ lệ sở hữu tối thiểu là 15%")
-        .max(90, "Tỷ lệ sở hữu tối đa là 90%")
+        .max(90, "Tỷ lệ sở hữu, tối đa là 90%")
         .test(
           "max-main-owner",
           `Tỷ lệ đồng sở hữu phải nhỏ hơn hoặc bằng ${mainOwnership}%`,

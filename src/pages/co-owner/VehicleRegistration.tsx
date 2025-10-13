@@ -159,7 +159,7 @@ export default function VehicleRegistration() {
       email: "",
       phone: "",
       idNumber: "",
-      address: "",
+      address: localStorage.getItem("address") || "",
       ownership: 0,
     },
     enableReinitialize: true,
@@ -394,7 +394,6 @@ export default function VehicleRegistration() {
       documentUrl: pdfUrl,
       contractType: "Vehicle Registration",
     };
-    const tempContractId = Date.now(); // tạo id tạm thời để gắn vào URL
     var documentUrl = `${window.location.origin}/contract/preview/`;
     // ✅ Payload contract
     const contract = {
@@ -411,6 +410,7 @@ export default function VehicleRegistration() {
     try {
 
       const resData = await axiosClient.post("/contract/create", contract);
+      localStorage.removeItem("address");
       resData.data.forEach((user) => {
         const key = `contractId_${user.user.id}`;
         localStorage.setItem(key, user.contract.contractId);
@@ -717,6 +717,7 @@ export default function VehicleRegistration() {
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                         const v = e.target.value;
                         formik.setFieldValue("address", v);
+                        localStorage.setItem("address", v);
                       }}
                     />
                     <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
