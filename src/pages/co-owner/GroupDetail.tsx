@@ -30,7 +30,7 @@ export default function GroupDetail() {
 
   const [amount, setAmount] = useState<string>("");
   const [showQR, setShowQR] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"ecoshare" | "momo">("ecoshare");
+  const [paymentMethod, setPaymentMethod] = useState<"ecoshare" | "momo" | "bank">("ecoshare");
   const [openHistory, setOpenHistory] = useState(false);
   const [openAddMember, setOpenAddMember] = useState(false);
   const [openRemoveMember, setOpenRemoveMember] = useState(false);
@@ -83,6 +83,7 @@ export default function GroupDetail() {
     };
     return usageMap[userId] || 0;
   };
+  
   const getMonthlyContribution = (userId: string) => {
     const usage = getUserUsage(userId);
     const baseAmount = 2000000;
@@ -110,11 +111,20 @@ export default function GroupDetail() {
 
   const myTransactions = group.transactions.filter(t => t.userId === CURRENT_USER_ID);
 
-  // Giá trị QR EcoShare nội bộ
-  const qrValue = `ecoshare:pay?group=${group.id}&amount=${Number(amount) || 0}&currency=VND`;
+  // Thông tin ngân hàng của bạn
+  const bankId = "970422"; // Mã ngân hàng MB Bank
+  const accountNo = "0926711233"; // Số tài khoản MB Bank
+  const accountName = "ECOSHARE"; // Tên chủ tài khoản (thay bằng tên thật của bạn)
+  
+  // QR Code theo chuẩn VietQR (dùng cho tất cả app ngân hàng VN)
+  const qrValue = `00020101021238${(38 + accountNo.length).toString().padStart(2, '0')}0010A00000072701${(14 + accountNo.length).toString().padStart(2, '0')}0006${bankId}01${accountNo.length.toString().padStart(2, '0')}${accountNo}0208QRIBFTTA5303704540${String(Number(amount) || 0).length.toString().padStart(2, '0')}${Number(amount) || 0}5802VN62${(8 + String(group.name).length).toString().padStart(2, '0')}08${String(group.name).length.toString().padStart(2, '0')}${group.name}6304`;
+  
   // Giá trị QR MoMo
-  const momoPhone = "0379864870"; // Số điện thoại MoMo nhận tiền
+  const momoPhone = "0901234567";
   const qrMomoValue = `2|99|${momoPhone}|||0|0|${Number(amount) || 0}|Chuyen tien cho ${group.name}`;
+  
+  // Giá trị QR Ngân hàng (giống qrValue)
+  const qrBankValue = qrValue;
 
   return (
     <div className="container mx-auto p-6">
@@ -161,14 +171,21 @@ export default function GroupDetail() {
                     onClick={() => setPaymentMethod("ecoshare")}
                     className="flex-1"
                   >
-                    EcoShare QR
+                    EcoShare
                   </Button>
                   <Button
                     variant={paymentMethod === "momo" ? "default" : "outline"}
                     onClick={() => setPaymentMethod("momo")}
                     className="flex-1"
                   >
-                    MoMo QR
+                    MoMo
+                  </Button>
+                  <Button
+                    variant={paymentMethod === "bank" ? "default" : "outline"}
+                    onClick={() => setPaymentMethod("bank")}
+                    className="flex-1"
+                  >
+                    Ngân hàng
                   </Button>
                 </div>
               </div>
@@ -184,19 +201,26 @@ export default function GroupDetail() {
               <div className="mt-6 flex items-center gap-6">
                 <div className="rounded-md border p-4 bg-background">
                   <QRCode
-                    value={paymentMethod === "ecoshare" ? qrValue : qrMomoValue}
+                    value={paymentMethod === "ecoshare" ? qrValue : paymentMethod === "momo" ? qrMomoValue : qrBankValue}
                     size={144}
                   />
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">
-                    {paymentMethod === "ecoshare" ? "QR cho nhóm" : "QR MoMo"}
+                    {paymentMethod === "ecoshare" ? "QR Ngân hàng (VietQR)" : paymentMethod === "momo" ? "QR MoMo" : "QR Ngân hàng (VietQR)"}
                   </div>
                   <div className="font-semibold">{group.name}</div>
                   <div className="text-sm">
                     Số tiền: {Number(amount).toLocaleString("vi-VN")} VNĐ
                   </div>
                   {paymentMethod === "momo" && <div className="text-xs text-muted-foreground mt-1">Quét QR bằng app MoMo</div>}
+                  {(paymentMethod === "bank" || paymentMethod === "ecoshare") && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <div>STK: {accountNo}</div>
+                      <div>Ngân hàng: MB Bank</div>
+                      <div>Chủ TK: {accountName}</div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -254,7 +278,6 @@ export default function GroupDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {/* Đồng sở hữu */}
                 {members.map(m => <div key={m.id} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Avatar>
@@ -350,22 +373,22 @@ export default function GroupDetail() {
                               </Badge>
                               {request.status === "pending" && <div className="flex gap-1">
                                   <Button size="sm" variant="outline" onClick={() => {
-                            setEditingRequest(request.id);
-                            setSelectedVehicle(request.vehicleId);
-                            setPaymentType(request.paymentType);
-                            setServiceType(request.serviceType);
-                            setServiceDescription(request.description);
-                            setOpenServiceRequest(true);
-                          }}>
+                                    setEditingRequest(request.id);
+                                    setSelectedVehicle(request.vehicleId);
+                                    setPaymentType(request.paymentType);
+                                    setServiceType(request.serviceType);
+                                    setServiceDescription(request.description);
+                                    setOpenServiceRequest(true);
+                                  }}>
                                     Sửa
                                   </Button>
                                   <Button size="sm" variant="destructive" onClick={() => {
-                            setServiceRequests(prev => prev.filter(r => r.id !== request.id));
-                            toast({
-                              title: "Đã xóa yêu cầu",
-                              description: "Yêu cầu dịch vụ đã được xóa thành công"
-                            });
-                          }}>
+                                    setServiceRequests(prev => prev.filter(r => r.id !== request.id));
+                                    toast({
+                                      title: "Đã xóa yêu cầu",
+                                      description: "Yêu cầu dịch vụ đã được xóa thành công"
+                                    });
+                                  }}>
                                     Xóa
                                   </Button>
                                 </div>}
@@ -393,15 +416,15 @@ export default function GroupDetail() {
             </TabsList>
             <TabsContent value="mine">
               <TransactionTable rows={myTransactions.map(t => ({
-              ...t,
-              groupName: group.name
-            }))} />
+                ...t,
+                groupName: group.name
+              }))} />
             </TabsContent>
             <TabsContent value="all">
               <TransactionTable rows={group.transactions.map(t => ({
-              ...t,
-              groupName: group.name
-            }))} />
+                ...t,
+                groupName: group.name
+              }))} />
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -424,21 +447,21 @@ export default function GroupDetail() {
             </div>
             <div className="flex gap-2">
               <Button onClick={() => {
-              if (confirmText === "Xác nhận thêm thành viên" && newMemberEmail.trim()) {
-                toast({
-                  title: "Yêu cầu đã được gửi",
-                  description: "Staff sẽ xử lý yêu cầu thêm thành viên trong 24h"
-                });
-                setOpenAddMember(false);
-                setNewMemberEmail("");
-                setConfirmText("");
-              } else {
-                toast({
-                  title: "Thông tin không hợp lệ",
-                  description: "Vui lòng nhập đúng text xác nhận và email"
-                });
-              }
-            }} className="flex-1">
+                if (confirmText === "Xác nhận thêm thành viên" && newMemberEmail.trim()) {
+                  toast({
+                    title: "Yêu cầu đã được gửi",
+                    description: "Staff sẽ xử lý yêu cầu thêm thành viên trong 24h"
+                  });
+                  setOpenAddMember(false);
+                  setNewMemberEmail("");
+                  setConfirmText("");
+                } else {
+                  toast({
+                    title: "Thông tin không hợp lệ",
+                    description: "Vui lòng nhập đúng text xác nhận và email"
+                  });
+                }
+              }} className="flex-1">
                 Gửi yêu cầu
               </Button>
               <Button variant="outline" onClick={() => setOpenAddMember(false)}>
@@ -463,21 +486,21 @@ export default function GroupDetail() {
             </div>
             <div className="flex gap-2">
               <Button variant="destructive" onClick={() => {
-              if (confirmText === "Xác nhận xóa thành viên") {
-                toast({
-                  title: "Yêu cầu đã được gửi",
-                  description: "Staff sẽ xử lý yêu cầu xóa thành viên trong 24h"
-                });
-                setOpenRemoveMember(false);
-                setConfirmText("");
-                setSelectedMemberToRemove("");
-              } else {
-                toast({
-                  title: "Text xác nhận không đúng",
-                  description: "Vui lòng nhập đúng text xác nhận"
-                });
-              }
-            }} className="flex-1">
+                if (confirmText === "Xác nhận xóa thành viên") {
+                  toast({
+                    title: "Yêu cầu đã được gửi",
+                    description: "Staff sẽ xử lý yêu cầu xóa thành viên trong 24h"
+                  });
+                  setOpenRemoveMember(false);
+                  setConfirmText("");
+                  setSelectedMemberToRemove("");
+                } else {
+                  toast({
+                    title: "Text xác nhận không đúng",
+                    description: "Vui lòng nhập đúng text xác nhận"
+                  });
+                }
+              }} className="flex-1">
                 Gửi yêu cầu xóa
               </Button>
               <Button variant="outline" onClick={() => setOpenRemoveMember(false)}>
@@ -541,62 +564,58 @@ export default function GroupDetail() {
             
             <div className="flex gap-2">
               <Button onClick={() => {
-              if (!selectedVehicle || !paymentType || !serviceType || !serviceDescription.trim()) {
-                toast({
-                  title: "Thông tin chưa đầy đủ",
-                  description: "Vui lòng điền đầy đủ thông tin yêu cầu"
-                });
-                return;
-              }
-              if (editingRequest) {
-                // Update existing request
-                setServiceRequests(prev => prev.map(req => req.id === editingRequest ? {
-                  ...req,
-                  vehicleId: selectedVehicle,
-                  vehicleName: group.vehicles.find(v => v.id === selectedVehicle)?.name || "",
-                  paymentType,
-                  serviceType,
-                  description: serviceDescription
-                } : req));
-                toast({
-                  title: "Cập nhật thành công",
-                  description: "Yêu cầu dịch vụ đã được cập nhật"
-                });
-              } else {
-                // Create new request
-                const newRequest = {
-                  id: `req-${Date.now()}`,
-                  vehicleId: selectedVehicle,
-                  vehicleName: group.vehicles.find(v => v.id === selectedVehicle)?.name || "",
-                  paymentType,
-                  serviceType,
-                  description: serviceDescription,
-                  status: "pending" as const,
-                  date: new Date().toLocaleDateString("vi-VN")
-                };
-                setServiceRequests(prev => [...prev, newRequest]);
-                toast({
-                  title: "Gửi yêu cầu thành công",
-                  description: "Staff sẽ xử lý yêu cầu của bạn trong 24h"
-                });
-              }
-
-              // Reset form
-              setOpenServiceRequest(false);
-              setEditingRequest(null);
-              setPaymentType("");
-              setServiceType("");
-              setServiceDescription("");
-            }} className="flex-1">
+                if (!selectedVehicle || !paymentType || !serviceType || !serviceDescription.trim()) {
+                  toast({
+                    title: "Thông tin chưa đầy đủ",
+                    description: "Vui lòng điền đầy đủ thông tin yêu cầu"
+                  });
+                  return;
+                }
+                if (editingRequest) {
+                  setServiceRequests(prev => prev.map(req => req.id === editingRequest ? {
+                    ...req,
+                    vehicleId: selectedVehicle,
+                    vehicleName: group.vehicles.find(v => v.id === selectedVehicle)?.name || "",
+                    paymentType,
+                    serviceType,
+                    description: serviceDescription
+                  } : req));
+                  toast({
+                    title: "Cập nhật thành công",
+                    description: "Yêu cầu dịch vụ đã được cập nhật"
+                  });
+                } else {
+                  const newRequest = {
+                    id: `req-${Date.now()}`,
+                    vehicleId: selectedVehicle,
+                    vehicleName: group.vehicles.find(v => v.id === selectedVehicle)?.name || "",
+                    paymentType,
+                    serviceType,
+                    description: serviceDescription,
+                    status: "pending" as const,
+                    date: new Date().toLocaleDateString("vi-VN")
+                  };
+                  setServiceRequests(prev => [...prev, newRequest]);
+                  toast({
+                    title: "Gửi yêu cầu thành công",
+                    description: "Staff sẽ xử lý yêu cầu của bạn trong 24h"
+                  });
+                }
+                setOpenServiceRequest(false);
+                setEditingRequest(null);
+                setPaymentType("");
+                setServiceType("");
+                setServiceDescription("");
+              }} className="flex-1">
                 {editingRequest ? "Cập nhật yêu cầu" : "Gửi yêu cầu"}
               </Button>
               <Button variant="outline" onClick={() => {
-              setOpenServiceRequest(false);
-              setEditingRequest(null);
-              setPaymentType("");
-              setServiceType("");
-              setServiceDescription("");
-            }}>
+                setOpenServiceRequest(false);
+                setEditingRequest(null);
+                setPaymentType("");
+                setServiceType("");
+                setServiceDescription("");
+              }}>
                 Hủy
               </Button>
             </div>
@@ -616,12 +635,9 @@ interface TxRow {
   groupName: string;
 }
 
-function TransactionTable({
-  rows
-}: {
-  rows: TxRow[];
-}) {
-  return <div className="mt-4">
+function TransactionTable({ rows }: { rows: TxRow[] }) {
+  return (
+    <div className="mt-4">
       <Table>
         <TableHeader>
           <TableRow>
@@ -632,13 +648,16 @@ function TransactionTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(r => <TableRow key={r.id}>
-              <TableCell>{r.date}</TableCell>
+          {rows.map(r => (
+            <TableRow key={r.id}>
+              <TableCell>{new Date(r.date).toLocaleDateString("vi-VN")}</TableCell>
               <TableCell>{r.name}</TableCell>
-              <TableCell>{r.type}</TableCell>
-              <TableCell className="text-right">{r.amount.toLocaleString()} VNĐ</TableCell>
-            </TableRow>)}
+              <TableCell>{r.type === "in" ? "Nạp quỹ" : "Chi quỹ"}</TableCell>
+              <TableCell className="text-right">{r.amount.toLocaleString("vi-VN")}</TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
-    </div>;
+    </div>
+  );
 }
