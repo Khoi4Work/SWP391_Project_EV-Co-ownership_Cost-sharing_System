@@ -16,7 +16,7 @@ import ChatBox from "@/components/ChatBox";
 import UserDropdown from "@/components/UserDropdown";
 import VehicleBooking from "@/components/VehicleBooking";
 import { useEffect, useState } from "react";
-import mockAPI from "@/api/mockApiClient";
+import axiosClient from "@/api/axiosClient";
 
 export default function CoOwnerDashboard() {
     const [showChat, setShowChat] = useState(false);
@@ -37,10 +37,10 @@ export default function CoOwnerDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await mockAPI.get("/user");
+                const res = await axiosClient.get("/user");
                 const mapped = res.data.map((item) => ({
                     id: `Contract-${item.id}`,
-                    vehicle: item.vehicle || "Chưa cập nhật",
+                    vehicleName: item.vehicle || "Chưa cập nhật",
                     ownership: item.ownership || "Chưa cập nhật",
                     status: item.status || "pending",
                     date: item.date,
