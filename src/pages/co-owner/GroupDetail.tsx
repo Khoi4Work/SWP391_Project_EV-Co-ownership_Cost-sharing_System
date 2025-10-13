@@ -113,7 +113,7 @@ export default function GroupDetail() {
 
   // Thông tin ngân hàng của bạn
   const bankId = "970422"; // Mã ngân hàng MB Bank
-  const accountNo = "0926711233"; // Số tài khoản MB Bank
+  const accountNo = "100614072002"; // Số tài khoản MB Bank
   const accountName = "ECOSHARE"; // Tên chủ tài khoản (thay bằng tên thật của bạn)
   
   // QR Code theo chuẩn VietQR (dùng cho tất cả app ngân hàng VN)
