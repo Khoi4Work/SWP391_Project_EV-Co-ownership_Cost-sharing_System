@@ -7,6 +7,7 @@ import khoindn.swp391.be.app.pojo.Schedule;
 import khoindn.swp391.be.app.pojo.Vehicle;
 
 import java.util.List;
+import java.util.Map;
 
 public interface IScheduleService {
     ScheduleRes createSchedule(ScheduleReq req);
@@ -19,5 +20,6 @@ public interface IScheduleService {
 
     void cancelSchedule(int scheduleId);
     List<ScheduleRes> findByGroupMember_Group_GroupId(int groupId);
+    Map<String, Object> getOverrideCountForUser(int userId, int groupId);
 
 }
