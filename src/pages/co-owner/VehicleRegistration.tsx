@@ -112,7 +112,13 @@ export default function VehicleRegistration() {
         params: { email }
       });
       const user = res.data;
-      if (!user) return null;
+      if (!user) {
+        toast({
+          title: "Không tìm thấy",
+          description: `Không tìm thấy người dùng với email ${email}. Vui lòng nhập thông tin thủ công.`,
+          variant: "destructive"
+        })
+      };
       return {
         id: user.id,
         name: user.hovaTen,       // map hovaTen -> name

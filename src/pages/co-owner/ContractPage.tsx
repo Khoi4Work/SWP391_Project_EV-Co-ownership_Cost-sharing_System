@@ -77,7 +77,8 @@ export default function ContractPreviewPage() {
             html2pdf()
                 .set(opt)
                 .from(element)
-                .outputPdf("blob")
+                .toPdf()
+                .output("blob")
                 .then((blob) => {
                     setStatus(oldStatus);
                     const fileUrl = URL.createObjectURL(blob); // tạm thời tạo link blob

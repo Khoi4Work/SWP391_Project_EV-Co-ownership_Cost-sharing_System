@@ -37,7 +37,7 @@ export default function CoOwnerDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axiosClient.get("/user");
+                const res = await axiosClient.get("/contract/history");
                 const mapped = res.data.map((item) => ({
                     id: `Contract-${item.id}`,
                     vehicleName: item.vehicle || "Chưa cập nhật",
