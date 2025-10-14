@@ -27,6 +27,7 @@ export default function Contracts() {
 
         // Lọc các contract status = active
         const activeContracts = res.data;
+        console.log("Fetched contracts:", activeContracts);
         setContracts(activeContracts);
       } catch (error) {
         console.error("Lỗi khi tải hợp đồng:", error);
@@ -38,11 +39,6 @@ export default function Contracts() {
 
     fetchContracts();
   }, []);
-  const filteredContracts = contracts.filter(contract =>
-    contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.groupName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active": return "default";
