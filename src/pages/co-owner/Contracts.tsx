@@ -39,6 +39,8 @@ export default function Contracts() {
 
     fetchContracts();
   }, []);
+
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active": return "default";
