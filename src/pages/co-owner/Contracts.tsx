@@ -13,27 +13,30 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { groups } from "@/data/mockGroups";
 import axiosClient from "@/api/axiosClient.ts";
-
+import { useEffect } from "react";
 export default function Contracts() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
-  // Mock contract data based on groups
-  const contracts = groups.map(group => ({
-    id: `CONTRACT-${group.id}`,
-    title: `Hợp đồng đồng sở hữu - ${group.name}`,
-    groupName: group.name,
-    groupId: group.id,
-    signedDate: "2024-01-15",
-    status: "active",
-    vehicleCount: group.vehicles.length,
-    memberCount: group.users.length,
-    contractType: "Đồng sở hữu xe điện",
-    fileSize: "2.5 MB",
-    downloadUrl: "#"
-  }));
+  useEffect(() => {
+    const fetchContracts = async () => {
+      try {
+        const res = await axiosClient.get("/contract/history");
+        // Lọc các contract status = active
+        const activeContracts = res.data;
+        setContracts(activeContracts);
+      } catch (error) {
+        console.error("Lỗi khi tải hợp đồng:", error);
+        setContracts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchContracts();
+  }, []);
   const filteredContracts = contracts.filter(contract =>
     contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.groupName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -54,16 +57,6 @@ export default function Contracts() {
       case "expired": return "Hết hạn";
       case "pending": return "Chờ ký";
       default: return "Không xác định";
-    }
-  };
-  const ViewPDF = async () => {
-    try {
-      const res = await axiosClient.get(PREVIEW_PATH);
-      const pdfUrl = typeof res === 'string' ? res : res.data;
-      window.open(pdfUrl, '_blank');
-    } catch (error) {
-      console.error("Lỗi khi mở PDF:", error);
-      alert("Không thể mở hợp đồng. Vui lòng thử lại sau.");
     }
   };
   return (
