@@ -95,16 +95,20 @@ public class ContractController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<ContractHistoryRes> getHistoryContractsByUser() {
+    public ResponseEntity<List<ContractHistoryRes>> getHistoryContractsByUser() {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        ContractHistoryRes res = iContractService.getHistoryContractsByUser(user);
+        List<ContractHistoryRes> res = iContractService.getHistoryContractsByUser(user)
+                .stream()
+                .filter(contractHistory ->
+                        contractHistory.getStatus().equalsIgnoreCase("activated"))
+                .toList();
         if (res == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        return ResponseEntity.status(HttpStatus.FOUND).body(res);
+        return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 
     @GetMapping("/preview")
@@ -140,22 +144,6 @@ public class ContractController {
                 .toList();
 
 
-//        ModelAndView mav = new ModelAndView("contract-preview"); // file contract-preview.html
-
-        // Dữ liệu mẫu
-//        mav.addObject("ownerName", owner.getUsers().getHovaTen());
-//        mav.addObject("ownerEmail", owner.getUsers().getEmail());
-//        mav.addObject("ownerShare", owner.getOwnershipPercentage());
-//        mav.addObject("vehicleModel", vehicle.getModel());
-//        mav.addObject("vehiclePlate", vehicle.getPlateNo());
-//        mav.addObject("coOwners", coOwners.stream()
-//                .map(member -> Map.of(
-//                        "name", member.getUsers().getHovaTen(),
-//                        "share", member.getOwnershipPercentage()
-//                ))
-//                .toList());
-//        mav.addObject("status", contract.getStatus());
-
         Context context = new Context();
         context.setVariable("ownerName", owner.getUsers().getHovaTen());
         context.setVariable("ownerEmail", owner.getUsers().getEmail());
@@ -169,7 +157,7 @@ public class ContractController {
 
         // render thymeleaf template to HTML string
         String html = templateEngine.process("contract-preview", context);
-
+        System.out.println("HTML: " + html);
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
                 .body(html);
