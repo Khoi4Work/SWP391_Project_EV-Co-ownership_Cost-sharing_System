@@ -48,27 +48,14 @@ public class ScheduleService implements IScheduleService {
         if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
             throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
-//        List<Schedule> allSchedules = iScheduleRepository
-//                .findByGroupMember_Group_GroupId(req.getGroupId());
-//
-//        boolean hasConflict = allSchedules.stream()
-//                .filter(s -> !s.getStatus().equals("canceled"))
-//                .filter(s -> s.getGroupMember().getGroup().getGroupId() == req.getGroupId())
-//                .anyMatch(s ->
-//                        s.getStartTime().isBefore(req.getEndTime()) &&
-//                                s.getEndTime().isAfter(req.getStartTime())
-//                );
-//
-//        if (hasConflict) {
-//            throw new RuntimeException("Time slot already booked for this vehicle");
-//        }
+
         // Find conflicting schedules
         List<Schedule> conflictingSchedules = iScheduleRepository
                 .findByGroupMember_Group_GroupId(req.getGroupId())
                 .stream()
                 .filter(s -> !s.getStatus().equals("canceled") &&
                         !s.getStatus().equals("overridden") &&
-                        !s.getStatus().equals("override_tracker")) // Thêm filter này
+                        !s.getStatus().equals("override_tracker"))
                 .filter(s -> s.getStartTime().isBefore(req.getEndTime()) &&
                         s.getEndTime().isAfter(req.getStartTime()))
                 .collect(Collectors.toList());
@@ -113,8 +100,8 @@ public class ScheduleService implements IScheduleService {
                     iScheduleRepository.save(conflictSchedule);
 
                     Schedule tracker = new Schedule();
-                    tracker.setGroupMember(gm); // User đang override
-                    tracker.setStatus("override_tracker"); // Status đặc biệt
+                    tracker.setGroupMember(gm);
+                    tracker.setStatus("override_tracker");
                     tracker.setStartTime(LocalDateTime.now());
                     tracker.setEndTime(LocalDateTime.now());
                     tracker.setCreatedAt(LocalDateTime.now());
@@ -299,11 +286,10 @@ public class ScheduleService implements IScheduleService {
                 .withMinute(59)
                 .withSecond(59);
 
-        // ✅ Đếm tracker schedule
         long overrideCount = iScheduleRepository
                 .countByGroupMember_IdAndStatusAndCreatedAtBetween(
                         gm.getId(),
-                        "override_tracker", // Đếm tracker
+                        "override_tracker",
                         startOfMonth,
                         endOfMonth
                 );
