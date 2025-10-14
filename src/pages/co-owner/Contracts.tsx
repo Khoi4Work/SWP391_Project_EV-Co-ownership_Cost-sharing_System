@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { groups } from "@/data/mockGroups";
+import axiosClient from "@/api/axiosClient.ts";
 
 export default function Contracts() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -159,17 +160,45 @@ export default function Contracts() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col space-y-2 ml-4">
-                        <Button size="sm" className="flex items-center space-x-2">
-                          <Download className="h-4 w-4" />
-                          <span>Tải xuống</span>
-                        </Button>
-                        <Link to={`/co-owner/groups/${contract.groupId}`}>
-                          <Button size="sm" variant="outline" className="w-full">
-                            Xem nhóm
-                          </Button>
-                        </Link>
-                      </div>
+                        <div className="flex flex-col space-y-2 ml-4">
+                            <Button size="sm" className="flex items-center space-x-2">
+                                <Download className="h-4 w-4" />
+                                <span>Tải xuống</span>
+                            </Button>
+
+                            {/* Nút xem hợp đồng */}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full"
+                                onClick={async () => {
+                                    try {
+                                        const res = await axiosClient.get(
+                                            `/contract/preview?contractId=1`,
+                                            { responseType: "text" } // ⚠️ HTML text
+                                        );
+
+                                        const newWindow = window.open("", "_blank");
+                                        newWindow!.document.open();
+                                        newWindow!.document.write(res.data); // render Thymeleaf HTML
+                                        newWindow!.document.close();
+                                    } catch (error) {
+                                        console.error("Error previewing contract:", error);
+                                        alert("Không thể xem hợp đồng. Vui lòng thử lại.");
+                                    }
+                                }}
+                            >
+                                Xem hợp đồng
+                            </Button>
+
+
+                            <Link to={`/co-owner/groups/${contract.groupId}`}>
+                                <Button size="sm" variant="outline" className="w-full">
+                                    Xem nhóm
+                                </Button>
+                            </Link>
+                        </div>
+
                     </div>
                   </div>
                 ))
