@@ -14,13 +14,15 @@ import khoindn.swp391.be.app.service.IVehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
-
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.context.Context;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.MediaType;
+
+
 
 @RestController
 @RequestMapping("/contract")
@@ -37,6 +39,8 @@ public class ContractController {
     private IGroupMemberService iGroupMemberService;
     @Autowired
     private IVehicleService iVehicleService;
+    @Autowired
+    private SpringTemplateEngine templateEngine;
 
     // Lấy contract
     @GetMapping("/user/{id}")
@@ -104,7 +108,7 @@ public class ContractController {
     }
 
     @GetMapping("/preview")
-    public ResponseEntity<ModelAndView> renderContract(int contractId) {
+    public ResponseEntity<String> renderContract(@RequestParam("contractId") int contractId) {
         // Lay nguoi dung hien tai
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
@@ -136,22 +140,38 @@ public class ContractController {
                 .toList();
 
 
-        ModelAndView mav = new ModelAndView("contract-preview"); // file contract-preview.html
+//        ModelAndView mav = new ModelAndView("contract-preview"); // file contract-preview.html
 
         // Dữ liệu mẫu
-        mav.addObject("ownerName", owner.getUsers().getHovaTen());
-        mav.addObject("ownerEmail", owner.getUsers().getEmail());
-        mav.addObject("ownerShare", owner.getOwnershipPercentage());
-        mav.addObject("vehicleModel", vehicle.getModel());
-        mav.addObject("vehiclePlate", vehicle.getPlateNo());
-        mav.addObject("coOwners", coOwners.stream()
-                .map(member -> Map.of(
-                        "name", member.getUsers().getHovaTen(),
-                        "share", member.getOwnershipPercentage()
-                ))
-                .toList());
-        mav.addObject("status", contract.getStatus());
+//        mav.addObject("ownerName", owner.getUsers().getHovaTen());
+//        mav.addObject("ownerEmail", owner.getUsers().getEmail());
+//        mav.addObject("ownerShare", owner.getOwnershipPercentage());
+//        mav.addObject("vehicleModel", vehicle.getModel());
+//        mav.addObject("vehiclePlate", vehicle.getPlateNo());
+//        mav.addObject("coOwners", coOwners.stream()
+//                .map(member -> Map.of(
+//                        "name", member.getUsers().getHovaTen(),
+//                        "share", member.getOwnershipPercentage()
+//                ))
+//                .toList());
+//        mav.addObject("status", contract.getStatus());
 
-        return ResponseEntity.status(HttpStatus.FOUND).body(mav);
+        Context context = new Context();
+        context.setVariable("ownerName", owner.getUsers().getHovaTen());
+        context.setVariable("ownerEmail", owner.getUsers().getEmail());
+        context.setVariable("ownerShare", owner.getOwnershipPercentage());
+        context.setVariable("vehicleModel", vehicle.getModel());
+        context.setVariable("vehiclePlate", vehicle.getPlateNo());
+        context.setVariable("coOwners", coOwners.stream()
+                .map(member -> Map.of("name", member.getUsers().getHovaTen(), "share", member.getOwnershipPercentage()))
+                .toList());
+        context.setVariable("status", contract.getStatus());
+
+        // render thymeleaf template to HTML string
+        String html = templateEngine.process("contract-preview", context);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
     }
 }
