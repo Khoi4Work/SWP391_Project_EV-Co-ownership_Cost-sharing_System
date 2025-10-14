@@ -112,7 +112,6 @@ export default function VehicleBooking() {
                 throw new Error("Không thể lấy thông tin nhóm");
             }
 
-            // API trả về trực tiếp array of integers: [1, 2]
             const groupIds: number[] = await groupRes.json();
 
             if (!groupIds || groupIds.length === 0) {
@@ -120,10 +119,8 @@ export default function VehicleBooking() {
                 return;
             }
 
-            // Lưu array groupIds vào localStorage (phải stringify)
             localStorage.setItem("groupIds", JSON.stringify(groupIds));
 
-            // Lưu groupId đầu tiên làm mặc định cho loadVehicles
             localStorage.setItem("groupId", groupIds[0].toString());
 
             console.log("✅ All GroupIds loaded:", groupIds);
@@ -140,7 +137,6 @@ export default function VehicleBooking() {
         setVehiclesError(null);
 
         try {
-            // Lấy tất cả groupIds thay vì chỉ 1
             const groupIdsStr = localStorage.getItem("groupIds");
 
             if (!groupIdsStr) {
@@ -175,12 +171,10 @@ export default function VehicleBooking() {
                 })
             );
 
-            // Chờ tất cả requests hoàn thành
             const allVehiclesData = await Promise.all(fetchPromises);
 
             console.log("All vehicles data:", allVehiclesData);
 
-            // Filter out null values và flatten thành single array
             const vehiclesArr: Vehicle[] = allVehiclesData
                 .filter(data => data !== null)
                 .flatMap(data => Array.isArray(data) ? data : (data ? [data] : []));
@@ -210,7 +204,6 @@ export default function VehicleBooking() {
         console.log("Current vehicles count:", vehicles.length);
 
         try {
-            // Lấy tất cả groupIds từ localStorage
             const groupIdsStr = localStorage.getItem('groupIds');
 
             if (!groupIdsStr) {
@@ -348,7 +341,6 @@ export default function VehicleBooking() {
             setOverrideInfo(data);
         } catch (error: any) {
             console.error("❌ Error loading override info:", error);
-            // Không hiển thị toast error ở đây để tránh spam khi page load
         } finally {
             setLoadingOverrideInfo(false);
         }
@@ -451,7 +443,7 @@ export default function VehicleBooking() {
         const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
         const alreadyCounted = daysSet.has(selectedDate);
         const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
-        if (prospectiveDaysCount > 14) {
+        if (prospectiveDaysCount > 3) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
             return;
         }
@@ -545,7 +537,6 @@ export default function VehicleBooking() {
             showToast("Lỗi đặt lịch", e.message || "Không thể đặt lịch. Vui lòng thử lại.", "destructive");
         }
     };
-
 
 
     // Sửa handleCancelBooking: gọi API BE để xóa lịch
