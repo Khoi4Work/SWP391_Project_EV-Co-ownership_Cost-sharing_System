@@ -24,6 +24,7 @@ export default function Contracts() {
     const fetchContracts = async () => {
       try {
         const res = await axiosClient.get("/contract/history");
+
         // Lọc các contract status = active
         const activeContracts = res.data;
         setContracts(activeContracts);
@@ -124,16 +125,23 @@ export default function Contracts() {
               Tất cả hợp đồng đồng sở hữu mà bạn đã tham gia
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             <div className="space-y-4">
-              {filteredContracts.length > 0 ? (
-                filteredContracts.map((contract) => (
-                  <div key={contract.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+              {contracts.length > 0 ? (
+                contracts.map((contract) => (
+                  <div
+                    key={contract.contractId}
+                    className="border rounded-lg p-6 hover:shadow-md transition-shadow"
+                  >
                     <div className="flex items-start justify-between">
+                      {/* Thông tin bên trái */}
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold">{contract.title}</h3>
-                          <Badge variant={getStatusColor(contract.status) as any}>
+                          <h3 className="text-lg font-semibold">
+                            Hợp đồng - {contract.vehicleName}
+                          </h3>
+                          <Badge variant={getStatusColor(contract.status)}>
                             {getStatusText(contract.status)}
                           </Badge>
                         </div>
@@ -141,51 +149,54 @@ export default function Contracts() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-4">
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4" />
-                            <span>Ngày ký: {contract.signedDate}</span>
+                            <span>Ngày ký: {contract.signedAt}</span>
                           </div>
+
                           <div className="flex items-center space-x-2">
                             <Users className="h-4 w-4" />
-                            <span>{contract.memberCount} thành viên</span>
+                            <span>Sở hữu: {contract.ownership}</span>
                           </div>
+
                           <div className="flex items-center space-x-2">
                             <Car className="h-4 w-4" />
-                            <span>{contract.vehicleCount} xe điện</span>
+                            <span>Xe: {contract.vehicleName}</span>
                           </div>
                         </div>
 
                         <div className="text-sm">
-                          <span className="font-medium">Mã hợp đồng:</span> {contract.id}
-                          <span className="mx-3">•</span>
-                          <span className="font-medium">Loại:</span> {contract.contractType}
-                          <span className="mx-3">•</span>
-                          <span className="font-medium">Kích thước:</span> {contract.fileSize}
+                          <span className="font-medium">Mã hợp đồng:</span>{" "}
+                          {contract.contractId}
                         </div>
                       </div>
 
+                      {/* Nút hành động */}
                       <div className="flex flex-col space-y-2 ml-4">
                         <Button size="sm" className="flex items-center space-x-2">
                           <Download className="h-4 w-4" />
                           <span>Tải xuống</span>
                         </Button>
 
-                        {/* Nút xem hợp đồng */}
                         <Button
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={() => window.open(`contract/preview.pdf/${contract.id}`, "_blank")}
+                          onClick={() =>
+                            window.open(
+                              `/contract/preview.pdf/${contract.contractId}`,
+                              "_blank"
+                            )
+                          }
                         >
                           Xem hợp đồng
                         </Button>
                       </div>
-
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Không tìm thấy hợp đồng nào phù hợp với từ khóa tìm kiếm.</p>
+                  <p>Không có hợp đồng nào.</p>
                 </div>
               )}
             </div>
