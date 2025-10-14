@@ -6,17 +6,21 @@ import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
-import khoindn.swp391.be.app.pojo.Contract;
-import khoindn.swp391.be.app.pojo.ContractSigner;
-import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.service.AuthenticationService;
 import khoindn.swp391.be.app.service.IContractService;
+import khoindn.swp391.be.app.service.IGroupMemberService;
+import khoindn.swp391.be.app.service.IVehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/contract")
@@ -29,11 +33,15 @@ public class ContractController {
 
     @Autowired
     private AuthenticationService authenticationService;
+    @Autowired
+    private IGroupMemberService iGroupMemberService;
+    @Autowired
+    private IVehicleService iVehicleService;
 
     // Lấy contract
     @GetMapping("/user/{id}")
-    public ResponseEntity<Contract> getContractByUserId(@PathVariable int id) {
-        Contract contract = iContractService.getContractByUser(id);
+    public ResponseEntity<Contract> getContractByContractId(@PathVariable int id) {
+        Contract contract = iContractService.getContractByContractId(id);
         if (contract == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -78,12 +86,12 @@ public class ContractController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Contract contract = iContractService.getContractByUser(user.getId());
+        Contract contract = iContractService.getContractByContractId(user.getId());
         return ResponseEntity.status(HttpStatus.OK).body(contract);
     }
 
     @GetMapping("/history")
-    public  ResponseEntity<ContractHistoryRes> getHistoryContractsByUser() {
+    public ResponseEntity<ContractHistoryRes> getHistoryContractsByUser() {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -93,5 +101,57 @@ public class ContractController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
         return ResponseEntity.status(HttpStatus.FOUND).body(res);
+    }
+
+    @GetMapping("/preview")
+    public ResponseEntity<ModelAndView> renderContract(int contractId) {
+        // Lay nguoi dung hien tai
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        // Lay contract dang muon view
+        Contract contract = iContractService.getContractByContractId(contractId);
+        if (contract == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        // Lay xe
+        Vehicle vehicle = iVehicleService.findVehicleByGroupId(contract.getGroup().getGroupId());
+        // Lay tat ca thanh vien
+        if (vehicle == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        //Lay tat ca thanh vien co trong group
+        List<GroupMember> allmembers = iGroupMemberService.getMembersByGroupId(contract.getGroup().getGroupId());
+        //Lay owner
+        GroupMember owner = allmembers.stream()
+                .max(Comparator.comparing(GroupMember::getOwnershipPercentage))
+                .orElse(null);
+        if (owner == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        //Lay coOwner
+        List<GroupMember> coOwners = allmembers.stream()
+                .filter(member -> !member.getUsers().getId().equals(owner.getUsers().getId()))
+                .toList();
+
+
+        ModelAndView mav = new ModelAndView("contract-preview"); // file contract-preview.html
+
+        // Dữ liệu mẫu
+        mav.addObject("ownerName", owner.getUsers().getHovaTen());
+        mav.addObject("ownerEmail", owner.getUsers().getEmail());
+        mav.addObject("ownerShare", owner.getOwnershipPercentage());
+        mav.addObject("vehicleModel", vehicle.getModel());
+        mav.addObject("vehiclePlate", vehicle.getPlateNo());
+        mav.addObject("coOwners", coOwners.stream()
+                .map(member -> Map.of(
+                        "name", member.getUsers().getHovaTen(),
+                        "share", member.getOwnershipPercentage()
+                ))
+                .toList());
+        mav.addObject("status", contract.getStatus());
+
+        return ResponseEntity.status(HttpStatus.FOUND).body(mav);
     }
 }

@@ -51,4 +51,9 @@ public class VehicleService implements IVehicleService{
         }
         return vehicles;
     }
+
+    @Override
+    public Vehicle findVehicleByGroupId(int groupId) {
+        return iVehicleRepository.findVehicleByGroup_GroupId(groupId);
+    }
 }

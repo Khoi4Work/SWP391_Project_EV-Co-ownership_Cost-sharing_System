@@ -11,7 +11,7 @@ import khoindn.swp391.be.app.pojo.Users;
 import java.util.List;
 
 public interface IContractService {
-    public Contract getContractByUser(int id);
+    public Contract getContractByContractId(int id);
 
     public ContractSigner setContract(ContractDecisionReq req);
 
@@ -22,4 +22,5 @@ public interface IContractService {
     public ContractHistoryRes getHistoryContractsByUser(Users user);
 
 
+    public List<ContractSigner> getContractSignerByContractId(int id);
 }

@@ -25,4 +25,14 @@ public class GroupMemberService implements IGroupMemberService {
                 .map(gm -> gm.getGroup().getGroupId())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<GroupMember> getMembersByGroupId(int groupId) {
+        return iGroupMemberRepository.findAllByGroup_GroupId(groupId);
+    }
+
+    @Override
+    public GroupMember getGroupOwnerByGroupIdAndUserId(int groupId, int userId) {
+        return iGroupMemberRepository.findGroupMembersByUsers_IdAndGroup_GroupId(userId, groupId);
+    }
 }

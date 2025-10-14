@@ -21,7 +21,7 @@ public class GroupCreateReq {
     @NotNull(message = "Contract ID cannot be null")
     private Integer contractId;
     @NotBlank(message = "url is needed!!")
-    private String documentrUrl;
+    private String documentUrl;
     @NotNull(message = "Member list cannot be null")
     @Size(min = 1, message = "At least one co-owner is required")
     private List<CoOwner_Info> members;

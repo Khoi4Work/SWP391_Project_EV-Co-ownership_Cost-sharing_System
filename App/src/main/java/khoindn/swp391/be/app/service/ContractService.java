@@ -48,7 +48,7 @@ public class ContractService implements IContractService {
 
 
     @Override
-    public Contract getContractByUser(int id) {
+    public Contract getContractByContractId(int id) {
         Contract contract = iContractRepository.findContractByContractId(id);
 
         if (contract == null) throw new ContractNotExistedException("Contract cannot found!");
@@ -191,6 +191,7 @@ public class ContractService implements IContractService {
 
     @Override
     public ContractHistoryRes getHistoryContractsByUser(Users user) {
+        //get all info
         Contract contract = iContractSignerRepository.findContractSignerByUser(user).getContract();
         GroupMember member = iGroupMemberRepository.findGroupMembersByUsers(user);
         Vehicle vehicle = iVehicleRepository.findVehicleByGroup(member.getGroup());
@@ -200,6 +201,12 @@ public class ContractService implements IContractService {
         System.out.println("SendBack: " + res);
         return res;
     }
+
+    @Override
+    public List<ContractSigner> getContractSignerByContractId(int id) {
+        return iContractSignerRepository.findAllByContract_ContractId(id);
+    }
+
 
 
 }

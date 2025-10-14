@@ -9,5 +9,8 @@ public interface IGroupMemberService {
 
     List<Integer> getGroupIdsByUserId(int userId);
 
+    List<GroupMember> getMembersByGroupId(int groupId);
+
+    GroupMember getGroupOwnerByGroupIdAndUserId(int groupId,  int userId);
 
 }
