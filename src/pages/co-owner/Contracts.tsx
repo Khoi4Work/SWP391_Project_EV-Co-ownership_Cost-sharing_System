@@ -38,10 +38,7 @@ export default function Contracts() {
 
     fetchContracts();
   }, []);
-  const filteredContracts = contracts.filter(contract =>
-    contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.groupName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
