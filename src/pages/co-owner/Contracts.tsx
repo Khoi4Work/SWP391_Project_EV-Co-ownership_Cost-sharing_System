@@ -2,10 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  FileText, 
-  Download, 
-  Search, 
+import {
+  FileText,
+  Download,
+  Search,
   ArrowLeft,
   Calendar,
   Users,
@@ -14,10 +14,11 @@ import {
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { groups } from "@/data/mockGroups";
+import axiosClient from "@/api/axiosClient";
 
 export default function Contracts() {
   const [searchTerm, setSearchTerm] = useState("");
-
+  const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
   // Mock contract data based on groups
   const contracts = groups.map(group => ({
     id: `CONTRACT-${group.id}`,
@@ -55,7 +56,16 @@ export default function Contracts() {
       default: return "Không xác định";
     }
   };
-
+  const ViewPDF = async () => {
+    try {
+      const res = await axiosClient.get(PREVIEW_PATH);
+      const pdfUrl = typeof res === 'string' ? res : res.data;
+      window.open(pdfUrl, '_blank');
+    } catch (error) {
+      console.error("Lỗi khi mở PDF:", error);
+      alert("Không thể mở hợp đồng. Vui lòng thử lại sau.");
+    }
+  };
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -103,7 +113,7 @@ export default function Contracts() {
               </CardContent>
             </Card>
           </div>
-          
+
           <Card className="shadow-elegant">
             <CardHeader className="text-center">
               <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
@@ -134,7 +144,7 @@ export default function Contracts() {
                             {getStatusText(contract.status)}
                           </Badge>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-4">
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4" />
@@ -164,11 +174,9 @@ export default function Contracts() {
                           <Download className="h-4 w-4" />
                           <span>Tải xuống</span>
                         </Button>
-                        <Link to={`/co-owner/groups/${contract.groupId}`}>
-                          <Button size="sm" variant="outline" className="w-full">
-                            Xem nhóm
-                          </Button>
-                        </Link>
+                        <Button size="sm" variant="outline" className="w-full" onClick={ViewPDF}>
+                          Xem Hợp Đồng
+                        </Button>
                       </div>
                     </div>
                   </div>

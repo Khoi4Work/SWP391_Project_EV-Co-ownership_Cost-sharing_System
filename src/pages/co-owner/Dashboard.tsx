@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import axiosClient from "@/api/axiosClient";
 
 export default function CoOwnerDashboard() {
+    const HISTORY_CONTRACT = import.meta.env.VITE_CONTRACT_HISTORY_PATH
     const [showChat, setShowChat] = useState(false);
     const navigate = useNavigate();
     const [registrations, setRegistrations] = useState([]);
@@ -37,7 +38,7 @@ export default function CoOwnerDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axiosClient.get("/contract/history");
+                const res = await axiosClient.get(HISTORY_CONTRACT);
                 const mapped = res.data.map((item) => ({
                     id: `Contract-${item.id}`,
                     vehicleName: item.vehicle || "Chưa cập nhật",

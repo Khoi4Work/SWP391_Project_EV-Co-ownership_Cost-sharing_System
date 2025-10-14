@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
 export default function ContractPreviewPage() {
+    const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
     const { toast } = useToast();
     const location = useLocation();
     const { id } = useParams(); // lấy id tạm từ URL
@@ -31,7 +32,7 @@ export default function ContractPreviewPage() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axios.get("http://localhost:8080/auth/current", {
+                const res = await axios.get(AUTH_CURRENT_PATH, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -132,7 +133,8 @@ export default function ContractPreviewPage() {
                 idUser: user.id,
                 idChoice: status,
             };
-            const res = await axiosClient.post("/contract/set", payload, {
+            const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
+            const res = await axiosClient.post(SET_CONTRACT, payload, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -182,9 +184,8 @@ export default function ContractPreviewPage() {
                 };
 
                 console.log("groupPayload gửi đi:", groupPayload);
-
-                const resGroup = await axiosClient.post("/group/create", groupPayload);
-
+                const CREATE_GROUP = import.meta.env.VITE_GROUP_CREATE_PATH;
+                const resGroup = await axiosClient.post(CREATE_GROUP, groupPayload);
                 if (resGroup.status === 200 || resGroup.status === 201) {
                     toast({
                         title: "Đăng ký thành công",

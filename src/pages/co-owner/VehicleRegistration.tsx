@@ -105,10 +105,11 @@ export default function VehicleRegistration() {
 
     setStep(4);
   };
+  const GET_USERS = import.meta.env.VITE_USERS_GET;
   const fetchUserByEmail = async (email: string) => {
     try {
       // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
-      const res = await axiosClient.get(`/users/get`, {
+      const res = await axiosClient.get(GET_USERS, {
         params: { email }
       });
       const user = res.data;
@@ -133,10 +134,11 @@ export default function VehicleRegistration() {
       return null;
     }
   };
+  const VEHICLES = import.meta.env.VITE_VEHICLES;
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
-        const response = await axiosClient.get("/vehicle/");
+        const response = await axiosClient.get(VEHICLES);
         // ⚙️ Map lại dữ liệu backend cho phù hợp UI
         const mappedVehicles = response.data.map((v) => ({
           id: v.vehicleId,
@@ -359,7 +361,7 @@ export default function VehicleRegistration() {
     if (updated.length === 0) localStorage.removeItem("coOwners");
     else localStorage.setItem("coOwners", JSON.stringify(updated));
   };
-
+  const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
   const handleSubmit = async () => {
     if (totalOwnership !== 100) {
       toast({
@@ -415,7 +417,7 @@ export default function VehicleRegistration() {
     console.log("📨 Payload gửi createContract:", contract);
     try {
 
-      const resData = await axiosClient.post("/contract/create", contract);
+      const resData = await axiosClient.post(CREATE_CONTRACT, contract);
       localStorage.removeItem("address");
       resData.data.forEach((user) => {
         const key = `contractId_${user.user.id}`;

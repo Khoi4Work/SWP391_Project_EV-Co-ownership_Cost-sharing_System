@@ -14,7 +14,7 @@ export default function Login() {
     const [userTypes, setUserTypes] = useState<string[]>([]);
     const navigate = useNavigate();
     const { toast } = useToast();
-
+    const LOGIN = import.meta.env.VITE_AUTH_LOGIN;
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !password || userTypes.length === 0) {
@@ -36,7 +36,7 @@ export default function Login() {
         const roleId = roleMap[selectedType];
 
         try {
-            const response = await axiosClient.post(`/auth/login/${roleId}`, {
+            const response = await axiosClient.post(`${LOGIN}/${roleId}`, {
                 email,
                 password,
             });

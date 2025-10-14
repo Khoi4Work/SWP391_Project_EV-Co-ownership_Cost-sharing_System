@@ -1,7 +1,7 @@
 import axios from "axios";
-
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 const axiosClient = axios.create({
-    baseURL: "http://localhost:8080", // URL backend
+    baseURL: API_BASE_URL, // URL backend
 });
 
 // ✅ Interceptor để tự thêm token
