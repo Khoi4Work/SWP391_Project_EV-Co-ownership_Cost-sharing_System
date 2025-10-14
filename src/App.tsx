@@ -17,6 +17,7 @@ import Contracts from "./pages/co-owner/Contracts";
 import NotFound from "./pages/NotFound";
 import Footer from "./components/ui/footnote";
 import ContractPreviewPage from "./pages/co-owner/ContractPage";
+import PDFContract from "./pages/co-owner/PDFContract";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -31,6 +32,7 @@ const App = () => (
                     <Route path="/register" element={<Register />} />
                     <Route path="/verify-otp" element={<VerifyOTP />} />
                     <Route path="/contract/preview/:id" element={<ContractPreviewPage />} />
+                    <Route path="/contract/preview.pdf/:contractId" element={<PDFContract />} />
                     {/* Co-owner routes */}
                     <Route path="/co-owner/dashboard" element={<CoOwnerDashboard />} />
                     <Route path="/co-owner/vehicle-registration" element={<VehicleRegistration />} />

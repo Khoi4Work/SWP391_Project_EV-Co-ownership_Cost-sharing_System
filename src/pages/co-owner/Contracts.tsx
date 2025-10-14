@@ -33,6 +33,7 @@ export default function Contracts() {
     fileSize: "2.5 MB",
     downloadUrl: "#"
   }));
+
   const filteredContracts = contracts.filter(contract =>
     contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.groupName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -179,7 +180,7 @@ export default function Contracts() {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={ViewPDF}
+                          onClick={() => window.open(`contract/preview.pdf/${contract.id}`, "_blank")}
                         >
                           Xem hợp đồng
                         </Button>
