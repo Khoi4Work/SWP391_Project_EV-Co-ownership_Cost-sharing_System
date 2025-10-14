@@ -33,7 +33,6 @@ export default function Contracts() {
     fileSize: "2.5 MB",
     downloadUrl: "#"
   }));
-
   const filteredContracts = contracts.filter(contract =>
     contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.groupName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -180,32 +179,10 @@ export default function Contracts() {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={async () => {
-                            try {
-                              const res = await axiosClient.get(
-                                `/contract/preview?contractId=1`,
-                                { responseType: "text" } // ⚠️ HTML text
-                              );
-
-                              const newWindow = window.open("", "_blank");
-                              newWindow!.document.open();
-                              newWindow!.document.write(res.data); // render Thymeleaf HTML
-                              newWindow!.document.close();
-                            } catch (error) {
-                              console.error("Error previewing contract:", error);
-                              alert("Không thể xem hợp đồng. Vui lòng thử lại.");
-                            }
-                          }}
+                          onClick={ViewPDF}
                         >
                           Xem hợp đồng
                         </Button>
-
-
-                        <Link to={`/co-owner/groups/${contract.groupId}`}>
-                          <Button size="sm" variant="outline" className="w-full">
-                            Xem nhóm
-                          </Button>
-                        </Link>
                       </div>
 
                     </div>
