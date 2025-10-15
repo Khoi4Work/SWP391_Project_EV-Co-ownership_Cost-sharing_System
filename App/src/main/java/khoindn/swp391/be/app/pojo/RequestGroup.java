@@ -20,7 +20,7 @@ public class RequestGroup {
 
     private String nameRequestGroup;
     private String descriptionRequestGroup;
-    private String statusRequestGroup; // pending, approved, rejected
+    private String statusRequestGroup = "pending"; // pending, approved, rejected
     private LocalDateTime createdAt = LocalDateTime.now();
 
     //relationships

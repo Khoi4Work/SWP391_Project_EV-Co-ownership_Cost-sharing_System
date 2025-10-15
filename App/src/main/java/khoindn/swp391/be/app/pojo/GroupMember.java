@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,5 +36,6 @@ public class GroupMember {
     @JoinColumn(name = "user_id")
     private Users users;
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<RequestGroup> requestGroups = new ArrayList<>();
 }

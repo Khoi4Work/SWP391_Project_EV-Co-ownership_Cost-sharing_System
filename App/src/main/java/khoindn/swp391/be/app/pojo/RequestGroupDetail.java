@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @AllArgsConstructor
@@ -13,13 +15,14 @@ public class RequestGroupDetail {
 
     // attributes
     @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String status; // pending, approved, rejected
+    private String status = "pending"; // pending, approved, rejected
+    private LocalDateTime solvedAt;
 
     // relationships
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hovaTen")
+    @JoinColumn(name = "user_id")
     private Users user;
 
     @OneToOne

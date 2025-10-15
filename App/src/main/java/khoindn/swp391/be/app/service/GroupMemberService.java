@@ -1,20 +1,24 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
+import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
 import khoindn.swp391.be.app.repository.IGroupRepository;
 import khoindn.swp391.be.app.repository.IUserRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class GroupMemberService implements IGroupMemberService {
 
     @Autowired
@@ -26,6 +30,8 @@ public class GroupMemberService implements IGroupMemberService {
 
     @Autowired
     private IUserRepository userRepository;
+    @Autowired
+    private ModelMapper modelMapper;
 
     // ---------------------- EXISTING CODE ----------------------
     @Override
@@ -44,6 +50,17 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public List<GroupMember> getMembersByGroupId(int groupId) {
         return iGroupMemberRepository.findAllByGroup_GroupId(groupId);
+    }
+
+    @Override
+    public List<AllGroupsOfMember> getAllGroupsOfMember(Users user) {
+        List<GroupMember> gm = iGroupMemberRepository.findAllByUsersId(user.getId());
+        List<AllGroupsOfMember> res = new ArrayList<>();
+        for (GroupMember each : gm) {
+            AllGroupsOfMember agm = modelMapper.map(each, AllGroupsOfMember.class);
+            res.add(agm);
+        }
+        return res;
     }
 
     @Override

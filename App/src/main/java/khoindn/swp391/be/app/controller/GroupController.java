@@ -3,11 +3,18 @@ package khoindn.swp391.be.app.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
+import khoindn.swp391.be.app.model.Request.GroupRequest;
+import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
-import khoindn.swp391.be.app.service.GroupService;
+import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.service.AuthenticationService;
+import khoindn.swp391.be.app.service.IGroupMemberService;
+import khoindn.swp391.be.app.service.IGroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/group")
@@ -17,16 +24,43 @@ import org.springframework.web.bind.annotation.*;
 public class GroupController {
 
     @Autowired
-    private GroupService groupService;
+    private IGroupService iGroupService;
+    @Autowired
+    private AuthenticationService authenticationService;
+    @Autowired
+    private IGroupMemberService iGroupMemberService;
 
     @PostMapping("/create")
     public ResponseEntity<RegisterVehicleRes> createGroup
             (@RequestBody @Valid GroupCreateReq request) {
-        RegisterVehicleRes group = groupService.addMemberToGroupByContract(request);
+        RegisterVehicleRes group = iGroupService.addMemberToGroupByContract(request);
         return ResponseEntity.status(201).body(group); // 201 Created
     }
 
-    
+    @GetMapping("/get")
+    public ResponseEntity getGroup() {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        List<AllGroupsOfMember> groups = iGroupMemberService.getAllGroupsOfMember(user);
+        return ResponseEntity.status(200).body(groups);
+    }
+
+    @PostMapping("/request")
+    public ResponseEntity CreateRequestGroup(@Valid GroupRequest request) {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        try{
+            iGroupService.createRequestGroup(request, user);
+        }catch (Exception e){
+            e.getMessage();
+        }
+
+        return ResponseEntity.status(201).body("Created Request Successfully");
+    }
 
 
 }

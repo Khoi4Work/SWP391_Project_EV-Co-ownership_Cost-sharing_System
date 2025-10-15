@@ -1,8 +1,10 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.exception.exceptions.GroupNotFoundException;
 import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
 import khoindn.swp391.be.app.exception.exceptions.VehicleIsRegisteredException;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
+import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
@@ -40,8 +42,10 @@ public class GroupService implements IGroupService {
 
     @Autowired
     private ModelMapper modelMapper;
-
-
+    @Autowired
+    private IRequestGroupRepository iRequestGroupRepository;
+    @Autowired
+    private IRequestGroupDetailRepository iRequestGroupDetailRepository;
 
 
     @Override
@@ -62,12 +66,12 @@ public class GroupService implements IGroupService {
 
         // Tim vehicle
         Vehicle vehicle = iVehicleRepository.getVehiclesByVehicleId(request.getVehicleId());
-        if(vehicle==null){
+        if (vehicle == null) {
             throw new VehicleIsNotExistedException("This Vehicle does not exist");
         } else if (vehicle.getGroup() != null) {
-            throw  new VehicleIsRegisteredException(
-                    "This "+vehicle.getGroup().getGroupName()+" is already registered this vehicle");
-        }else {
+            throw new VehicleIsRegisteredException(
+                    "This " + vehicle.getGroup().getGroupName() + " is already registered this vehicle");
+        } else {
             vehicle.setGroup(group);
             iVehicleRepository.save(vehicle);
         }
@@ -109,7 +113,38 @@ public class GroupService implements IGroupService {
 
     @Override
     public void deleteGroup(int groupId) {
-        iGroupRepository.deleteById(groupId);
+        Group group = iGroupRepository.findGroupByGroupId(groupId);
+        if (group != null) {
+            group.setStatus("deleted");
+        }
     }
+
+    @Override
+    public void createRequestGroup(GroupRequest request, Users user) {
+        // Tim group nao gui request va kiem tra ton tai
+        Group group = iGroupRepository.findGroupByGroupId(request.getGroupId());
+        if (group == null) {
+            throw new GroupNotFoundException("Group not found");
+        }
+        // Lay member nao trong group tao request
+        GroupMember member = iGroupMemberRepository.findByGroupAndUsers(group, user).orElse(null);
+        // tao request
+        RequestGroup requestGroup = new RequestGroup();
+        requestGroup.setGroupMember(member);
+        if (request.getDescriptionRequestGroup().isBlank()) {
+            requestGroup.setNameRequestGroup(request.getNameRequestGroup());
+        }
+        requestGroup.setDescriptionRequestGroup(request.getDescriptionRequestGroup());
+
+        // tao group detail
+        RequestGroupDetail detail = new RequestGroupDetail();
+        detail.setRequestGroup(requestGroup);
+
+        // luu vao db
+        iRequestGroupRepository.save(requestGroup);
+        iRequestGroupDetailRepository.save(detail);
+    }
+
+
 
 }

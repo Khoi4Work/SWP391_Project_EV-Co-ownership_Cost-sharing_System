@@ -22,7 +22,7 @@ public class UserController {
 
     // Lấy user theo email (query param)
     @GetMapping("/get")
-    public ResponseEntity<Users> getUserByEmail( @RequestParam String email) {
+    public ResponseEntity<Users> getUserByEmail( @RequestParam("email") String email) {
         return ResponseEntity.ok(iUserService.getUserByEmail(email));
     }
 
