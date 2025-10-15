@@ -2,7 +2,8 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.model.Request.ChatRequest;
 import khoindn.swp391.be.app.model.Response.ChatResponse;
-import khoindn.swp391.be.app.pojo.LlmResult;
+import khoindn.swp391.be.app.model.Response.LlmResult;
+
 import khoindn.swp391.be.app.pojo.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

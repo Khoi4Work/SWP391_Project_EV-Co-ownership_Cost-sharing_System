@@ -4,7 +4,7 @@ package khoindn.swp391.be.app.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import khoindn.swp391.be.app.pojo.LlmResult;
+import khoindn.swp391.be.app.model.Response.LlmResult;
 import khoindn.swp391.be.app.pojo.Message;
 import okhttp3.*;
 import org.slf4j.Logger;

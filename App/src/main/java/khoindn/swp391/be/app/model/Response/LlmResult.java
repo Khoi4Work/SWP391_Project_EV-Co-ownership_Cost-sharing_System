@@ -1,4 +1,4 @@
-package khoindn.swp391.be.app.pojo;
+package khoindn.swp391.be.app.model.Response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
