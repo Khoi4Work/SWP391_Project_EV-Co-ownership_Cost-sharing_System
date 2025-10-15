@@ -26,4 +26,9 @@ public class GroupController {
         return ResponseEntity.status(201).body(group); // 201 Created
     }
 
+    @PostMapping
+    public void deleteGroup(@RequestParam int groupId) {
+        groupService.deleteGroup(groupId);
+    }
+
 }
