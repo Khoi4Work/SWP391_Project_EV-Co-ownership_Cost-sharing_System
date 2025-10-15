@@ -5,10 +5,7 @@ import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.service.IGroupMemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -16,18 +13,35 @@ import java.util.List;
 @RequestMapping("/groupMember")
 @SecurityRequirement(name = "api")
 public class GroupMemberController {
+
     @Autowired
     private IGroupMemberService groupMemberService;
 
+    // ---------------------- EXISTING CODE ----------------------
     @GetMapping("/getByUserId")
     public ResponseEntity<List<GroupMember>> getGroupMembersByUserId(@RequestParam("userId") int userId) {
         List<GroupMember> groupMember = groupMemberService.findAllByUsersId(userId);
         return ResponseEntity.ok(groupMember);
     }
+
     @GetMapping("/getGroupIdsByUserId")
     public ResponseEntity<List<Integer>> getGroupIdsByUserId(@RequestParam("userId") int userId) {
         List<Integer> groupIds = groupMemberService.getGroupIdsByUserId(userId);
         return ResponseEntity.ok(groupIds);
     }
 
+    // ---------------------- NEW CODE: Add member to group ----------------------
+    @PostMapping("/add")
+    public ResponseEntity<GroupMember> addMember(
+            @RequestParam("groupId") int groupId,
+            @RequestBody GroupMember request
+    ) {
+        GroupMember saved = groupMemberService.addMemberToGroup(
+                groupId,
+                request.getUsers().getId(),
+                request.getRoleInGroup(),
+                request.getOwnershipPercentage()
+        );
+        return ResponseEntity.ok(saved);
+    }
 }
