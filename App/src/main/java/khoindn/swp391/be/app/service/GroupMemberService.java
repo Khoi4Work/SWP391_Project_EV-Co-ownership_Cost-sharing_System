@@ -1,18 +1,33 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
+import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.GroupMember;
+import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
+import khoindn.swp391.be.app.repository.IGroupRepository;
+import khoindn.swp391.be.app.repository.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class GroupMemberService implements IGroupMemberService {
+
     @Autowired
     private IGroupMemberRepository iGroupMemberRepository;
 
+    // ---------------------- NEW REPO INJECTION ----------------------
+    @Autowired
+    private IGroupRepository groupRepository;
+
+    @Autowired
+    private IUserRepository userRepository;
+
+    // ---------------------- EXISTING CODE ----------------------
     @Override
     public List<GroupMember> findAllByUsersId(int userId) {
         return iGroupMemberRepository.findAllByUsersId(userId);
@@ -34,5 +49,31 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public GroupMember getGroupOwnerByGroupIdAndUserId(int groupId, int userId) {
         return iGroupMemberRepository.findGroupMembersByUsers_IdAndGroup_GroupId(userId, groupId);
+    }
+
+    // ---------------------- NEW CODE: Add member to group ----------------------
+    @Override
+    @Transactional
+    public GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("GROUP_NOT_FOUND"));
+
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("USER_NOT_FOUND"));
+
+        // Check duplicate
+        iGroupMemberRepository.findByGroupAndUsers(group, user).ifPresent(gm -> {
+            throw new IllegalStateException("ALREADY_IN_GROUP");
+        });
+
+        GroupMember gm = new GroupMember();
+        gm.setGroup(group);
+        gm.setUsers(user);
+        gm.setRoleInGroup((roleInGroup == null || roleInGroup.isBlank()) ? "MEMBER" : roleInGroup.trim());
+        gm.setStatus("ACTIVE");
+        gm.setCreatedAt(LocalDateTime.now());
+        gm.setOwnershipPercentage(ownershipPercentage == null ? 0f : ownershipPercentage);
+
+        return iGroupMemberRepository.save(gm);
     }
 }
