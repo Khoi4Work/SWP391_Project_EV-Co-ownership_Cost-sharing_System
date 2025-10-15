@@ -15,6 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Group {
+    // Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "group_id")
@@ -25,6 +26,9 @@ public class Group {
     private String description;
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
+    @Column
+    private boolean status = true; // active by default
+    // Relationships
     @OneToMany(mappedBy = "group")
     private List<GroupMember> groupMembers = new ArrayList<>();
     @OneToMany(mappedBy = "group")

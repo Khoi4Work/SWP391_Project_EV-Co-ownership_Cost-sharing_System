@@ -107,4 +107,9 @@ public class GroupService implements IGroupService {
         return res;
     }
 
+    @Override
+    public void deleteGroup(int groupId) {
+        iGroupRepository.deleteById(groupId);
+    }
+
 }

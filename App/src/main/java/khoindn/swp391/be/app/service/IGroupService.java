@@ -6,5 +6,5 @@ import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 public interface IGroupService {
     public RegisterVehicleRes addMemberToGroup(GroupCreateReq request);
 
-
+    public void deleteGroup(int groupId);
 }
