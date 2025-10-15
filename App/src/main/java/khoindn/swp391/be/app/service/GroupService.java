@@ -45,7 +45,7 @@ public class GroupService implements IGroupService {
 
 
     @Override
-    public RegisterVehicleRes addMemberToGroup(GroupCreateReq request) {
+    public RegisterVehicleRes addMemberToGroupByContract(GroupCreateReq request) {
         System.out.println(request);
 
 

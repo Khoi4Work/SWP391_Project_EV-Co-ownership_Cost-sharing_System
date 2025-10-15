@@ -22,13 +22,11 @@ public class GroupController {
     @PostMapping("/create")
     public ResponseEntity<RegisterVehicleRes> createGroup
             (@RequestBody @Valid GroupCreateReq request) {
-        RegisterVehicleRes group = groupService.addMemberToGroup(request);
+        RegisterVehicleRes group = groupService.addMemberToGroupByContract(request);
         return ResponseEntity.status(201).body(group); // 201 Created
     }
 
-    @PostMapping
-    public void deleteGroup(@RequestParam int groupId) {
-        groupService.deleteGroup(groupId);
-    }
+    
+
 
 }
