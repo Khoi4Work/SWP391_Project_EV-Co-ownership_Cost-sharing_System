@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface IContractRepository extends JpaRepository<Contract, Integer> {
     Contract findContractByContractId(int contractId);
+
+    Contract findContractByGroup_GroupId(int groupGroupId);
 }

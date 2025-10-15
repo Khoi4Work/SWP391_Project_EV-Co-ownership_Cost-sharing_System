@@ -19,7 +19,7 @@ public interface IContractService {
 
     public List<ContractSigner> createContract(ContractCreateReq req);
 
-    public ContractHistoryRes getHistoryContractsByUser(Users user);
+    public List<ContractHistoryRes> getHistoryContractsByUser(Users user);
 
 
     public List<ContractSigner> getContractSignerByContractId(int id);

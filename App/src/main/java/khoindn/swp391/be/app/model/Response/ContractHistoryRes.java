@@ -13,7 +13,7 @@ import java.time.LocalDate;
 public class ContractHistoryRes {
     private int contractId;
     private String vehicleName;
-    private int ownership;
+    private float ownership;
     private String status;
     private LocalDate signedAt;
 }

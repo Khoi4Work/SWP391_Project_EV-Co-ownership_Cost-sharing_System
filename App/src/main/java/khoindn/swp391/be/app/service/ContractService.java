@@ -190,16 +190,32 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public ContractHistoryRes getHistoryContractsByUser(Users user) {
-        //get all info
-        Contract contract = iContractSignerRepository.findContractSignerByUser(user).getContract();
-        GroupMember member = iGroupMemberRepository.findGroupMembersByUsers(user);
-        Vehicle vehicle = iVehicleRepository.findVehicleByGroup(member.getGroup());
-        ContractHistoryRes res = modelMapper.map(contract, ContractHistoryRes.class);
-        modelMapper.map(vehicle, res);
-        modelMapper.map(member, res);
-        System.out.println("SendBack: " + res);
-        return res;
+    public List<ContractHistoryRes> getHistoryContractsByUser(Users user) {
+        List<ContractHistoryRes> historyRes = new ArrayList<>();
+        List<GroupMember> userGroup = iGroupMemberRepository.findAllByUsersId(user.getId());
+        for (GroupMember groupMember : userGroup) {
+
+            ContractHistoryRes contractHistoryRes = new ContractHistoryRes();
+
+
+            Contract contract = iContractRepository.findContractByGroup_GroupId(groupMember.getGroup().getGroupId());
+            if (contract == null) {
+                throw new IllegalArgumentException("Invalid userId value");
+            }
+            Vehicle vehicle = iVehicleRepository.findVehicleByGroup(groupMember.getGroup());
+            if (vehicle == null) {
+                throw new IllegalArgumentException("Invalid Group value");
+            }
+
+
+            modelMapper.map(contract, contractHistoryRes);
+            modelMapper.map(vehicle, contractHistoryRes);
+            contractHistoryRes.setOwnership(groupMember.getOwnershipPercentage());
+
+            historyRes.add(contractHistoryRes);
+        }
+
+        return historyRes;
     }
 
     @Override
