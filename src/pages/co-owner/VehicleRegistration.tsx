@@ -45,42 +45,42 @@ export default function VehicleRegistration() {
   const [status, setStatus] = useState<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  // useEffect(() => {
-  //   const demoVehicles = [
-  //     {
-  //       id: 1,
-  //       name: "VinFast VF e34",
-  //       image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
-  //       price: "690,000,000₫",
-  //       brand: "Vinfast",
-  //       color: "red",
-  //       batteryCapacity: 3.6,
-  //       plateNo: "56789"
-  //     },
-  //     {
-  //       id: 2,
-  //       name: "Tesla Model 3",
-  //       image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
-  //       price: "1,500,000,000₫",
-  //       brand: "Tesla",
-  //       color: "yellow",
-  //       batteryCapacity: 3.7,
-  //       plateNo: "12345"
-  //     },
-  //     {
-  //       id: 3,
-  //       name: "Hyundai Ioniq 5",
-  //       image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
-  //       price: "1,200,000,000₫",
-  //       brand: "Hyundai",
-  //       color: "white",
-  //       batteryCapacity: 3.8,
-  //       plateNo: "1231313"
-  //     }
-  //   ];
+  useEffect(() => {
+    const demoVehicles = [
+      {
+        id: 1,
+        name: "VinFast VF e34",
+        image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
+        price: "690,000,000₫",
+        brand: "Vinfast",
+        color: "red",
+        batteryCapacity: 3.6,
+        plateNo: "56789"
+      },
+      {
+        id: 2,
+        name: "Tesla Model 3",
+        image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
+        price: "1,500,000,000₫",
+        brand: "Tesla",
+        color: "yellow",
+        batteryCapacity: 3.7,
+        plateNo: "12345"
+      },
+      {
+        id: 3,
+        name: "Hyundai Ioniq 5",
+        image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
+        price: "1,200,000,000₫",
+        brand: "Hyundai",
+        color: "white",
+        batteryCapacity: 3.8,
+        plateNo: "1231313"
+      }
+    ];
 
-  //   setVehicles(demoVehicles);
-  // }, []);
+    setVehicles(demoVehicles);
+  }, []);
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -105,14 +105,21 @@ export default function VehicleRegistration() {
 
     setStep(4);
   };
+  const GET_USERS = import.meta.env.VITE_USERS_GET;
   const fetchUserByEmail = async (email: string) => {
     try {
       // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
-      const res = await axiosClient.get(`/users/get`, {
+      const res = await axiosClient.get(GET_USERS, {
         params: { email }
       });
       const user = res.data;
-      if (!user) return null;
+      if (!user) {
+        toast({
+          title: "Không tìm thấy",
+          description: `Không tìm thấy người dùng với email ${email}. Vui lòng nhập thông tin thủ công.`,
+          variant: "destructive"
+        })
+      };
       return {
         id: user.id,
         name: user.hovaTen,       // map hovaTen -> name
@@ -127,10 +134,11 @@ export default function VehicleRegistration() {
       return null;
     }
   };
+  const VEHICLES = import.meta.env.VITE_VEHICLES;
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
-        const response = await axiosClient.get("/vehicle/");
+        const response = await axiosClient.get(VEHICLES);
         // ⚙️ Map lại dữ liệu backend cho phù hợp UI
         const mappedVehicles = response.data.map((v) => ({
           id: v.vehicleId,
@@ -353,7 +361,7 @@ export default function VehicleRegistration() {
     if (updated.length === 0) localStorage.removeItem("coOwners");
     else localStorage.setItem("coOwners", JSON.stringify(updated));
   };
-
+  const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
   const handleSubmit = async () => {
     if (totalOwnership !== 100) {
       toast({
@@ -409,7 +417,7 @@ export default function VehicleRegistration() {
     console.log("📨 Payload gửi createContract:", contract);
     try {
 
-      const resData = await axiosClient.post("/contract/create", contract);
+      const resData = await axiosClient.post(CREATE_CONTRACT, contract);
       localStorage.removeItem("address");
       resData.data.forEach((user) => {
         const key = `contractId_${user.user.id}`;
@@ -717,7 +725,6 @@ export default function VehicleRegistration() {
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                         const v = e.target.value;
                         formik.setFieldValue("address", v);
-                        localStorage.setItem("address", v);
                       }}
                     />
                     <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />

@@ -31,6 +31,7 @@ export default function VerifyOTP() {
     }, [userData]);
 
     // 🔹 Frontend tạo OTP và gửi tới backend để backend gửi mail
+    const SEND_OTP = import.meta.env.VITE_EMAIL_SENTOTP;
     const sendOtpEmail = async () => {
         const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
         setOtp(randomOtp);
@@ -40,7 +41,7 @@ export default function VerifyOTP() {
             otp: randomOtp,
         });
         try {
-            await axiosClient.post("/email/send-otp", {
+            await axiosClient.post(SEND_OTP, {
                 email: userData.email,
                 otp: randomOtp,
 
@@ -83,11 +84,11 @@ export default function VerifyOTP() {
         await sendOtpEmail();
         setIsResending(false);
     };
-
+    const REGISTER = import.meta.env.VITE_AUTH_REGISTER;
     // 🔹 Chỉ gọi 1 lần API tạo tài khoản khi OTP đúng
     const handleVerify = async () => {
         try {
-            await axiosClient.post("/auth/register", userData);
+            await axiosClient.post(REGISTER, userData);
             toast({
                 title: "Xác thực thành công",
                 description: "Tài khoản đã được tạo!",

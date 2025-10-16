@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button"; // nếu bạn dùng ShadCN but
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
+import html2pdf from "html2pdf.js";
 export default function ContractPreviewPage() {
+    const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
     const { toast } = useToast();
     const location = useLocation();
     const { id } = useParams(); // lấy id tạm từ URL
@@ -30,7 +32,7 @@ export default function ContractPreviewPage() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axios.get("http://localhost:8080/auth/current", {
+                const res = await axios.get(AUTH_CURRENT_PATH, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -46,6 +48,46 @@ export default function ContractPreviewPage() {
 
         fetchUser();
     }, [token]);
+    const generatePDF = async () => {
+        const element = document.getElementById("contract-area");
+        if (!element) {
+            alert("Không tìm thấy nội dung hợp đồng để xuất PDF");
+            return null;
+        }
+
+        const oldStatus = status;
+        setStatus(null);
+
+        const opt = {
+            margin: 10,
+            filename: `HopDong_${id}.pdf`,
+            image: {
+                type: "jpeg" as const,   // ✅ TS hiểu đúng literal
+                quality: 0.98,
+            },
+            html2canvas: {
+                scale: 2,
+            },
+            jsPDF: {
+                unit: "mm" as const,
+                format: "a4" as const,
+                orientation: "portrait" as const, // ✅ literal type
+            },
+        };
+        return new Promise((resolve) => {
+            html2pdf()
+                .set(opt)
+                .from(element)
+                .toPdf()
+                .output("blob")
+                .then((blob) => {
+                    setStatus(oldStatus);
+                    const fileUrl = URL.createObjectURL(blob); // tạm thời tạo link blob
+                    resolve({ blob, fileUrl });
+                });
+        });
+    };
+
     useEffect(() => {
         // TODO: Lấy dữ liệu từ localStorage hoặc state chung
         const savedOwner = JSON.parse(localStorage.getItem("ownerInfo") || "{}");
@@ -64,6 +106,12 @@ export default function ContractPreviewPage() {
         }
 
         try {
+            const pdfResult: any = await generatePDF();
+            if (!pdfResult) {
+                alert("Không tạo được file PDF!");
+                return;
+            }
+            const { blob, fileUrl } = pdfResult;
             console.log(user.id)
             const key = 'contractId_' + user.id;
             console.log(key)
@@ -78,23 +126,28 @@ export default function ContractPreviewPage() {
                 alert("Không tìm thấy thông tin người dùng");
                 return;
             }
-
+            const pdfFileName = `HopDong_${idContract}.pdf`;
+            console.log("Link PDF đã upload:", fileUrl);
             const payload = {
                 idContract,
                 idUser: user.id,
                 idChoice: status,
             };
-            const res = await axiosClient.post("/contract/set", payload, {
+            const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
+            const res = await axiosClient.post(SET_CONTRACT, payload, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
             console.log("Payload gửi đi:", payload);
-            alert("Gửi quyết định thành công!");
             console.log(res.data.contract.status);
             if (res.data.contract.status === "Activated") {
                 // ✅ Khi hợp đồng thành công thì tạo group:
                 // Gom owner chính + các coOwners
+                if (!ownerInfo?.id || !vehicleData?.id) {
+                    alert("Thiếu dữ liệu owner hoặc vehicle!");
+                    return;
+                }
                 const allMembers = [
                     {
                         userId: ownerInfo?.id,
@@ -127,12 +180,12 @@ export default function ContractPreviewPage() {
                     contractId: idContract,
                     vehicleId: vehicleData.id,
                     members: membersWithRole,
+                    documentUrl: fileUrl,
                 };
 
                 console.log("groupPayload gửi đi:", groupPayload);
-
-                const resGroup = await axiosClient.post("/group/create", groupPayload);
-
+                const CREATE_GROUP = import.meta.env.VITE_GROUP_CREATE_PATH;
+                const resGroup = await axiosClient.post(CREATE_GROUP, groupPayload);
                 if (resGroup.status === 200 || resGroup.status === 201) {
                     toast({
                         title: "Đăng ký thành công",
@@ -174,6 +227,9 @@ export default function ContractPreviewPage() {
             <div className="flex gap-4">
                 <Button onClick={handleConfirm} disabled={status === null}>
                     Xác nhận hợp đồng
+                </Button>
+                <Button onClick={generatePDF} variant="secondary">
+                    Xuất PDF
                 </Button>
                 {status !== null && (
                     <p className={status === 1 ? "text-green-600" : "text-red-600"}>
