@@ -36,7 +36,7 @@ export default function GroupDetail() {
   const [openRemoveMember, setOpenRemoveMember] = useState(false);
   const [selectedMemberToRemove, setSelectedMemberToRemove] = useState<string>("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [confirmText, setConfirmText] = useState("");
+  const [newMemberOwnership, setNewMemberOwnership] = useState("");
 
   // Service request states
   const [selectedVehicle, setSelectedVehicle] = useState<string>("");
@@ -111,19 +111,15 @@ export default function GroupDetail() {
 
   const myTransactions = group.transactions.filter(t => t.userId === CURRENT_USER_ID);
 
-  // Thông tin ngân hàng của bạn
-  const bankId = "970422"; // Mã ngân hàng MB Bank
-  const accountNo = "100614072002"; // Số tài khoản MB Bank
-  const accountName = "ECOSHARE"; // Tên chủ tài khoản (thay bằng tên thật của bạn)
+  const bankId = "970422";
+  const accountNo = "100614072002";
+  const accountName = "ECOSHARE";
   
-  // QR Code theo chuẩn VietQR (dùng cho tất cả app ngân hàng VN)
   const qrValue = `00020101021238${(38 + accountNo.length).toString().padStart(2, '0')}0010A00000072701${(14 + accountNo.length).toString().padStart(2, '0')}0006${bankId}01${accountNo.length.toString().padStart(2, '0')}${accountNo}0208QRIBFTTA5303704540${String(Number(amount) || 0).length.toString().padStart(2, '0')}${Number(amount) || 0}5802VN62${(8 + String(group.name).length).toString().padStart(2, '0')}08${String(group.name).length.toString().padStart(2, '0')}${group.name}6304`;
   
-  // Giá trị QR MoMo
   const momoPhone = "0901234567";
   const qrMomoValue = `2|99|${momoPhone}|||0|0|${Number(amount) || 0}|Chuyen tien cho ${group.name}`;
   
-  // Giá trị QR Ngân hàng (giống qrValue)
   const qrBankValue = qrValue;
 
   return (
@@ -136,7 +132,6 @@ export default function GroupDetail() {
         </div>
       </header>
 
-      {/* Thanh ngang quỹ chung + chuyển tiền + lịch sử */}
       <section className="mb-6">
         <Card className="shadow-sm">
           <CardContent className="pt-6">
@@ -164,7 +159,6 @@ export default function GroupDetail() {
                   onChange={e => setAmount(e.target.value)}
                 />
 
-                {/* Chọn phương thức thanh toán */}
                 <div className="mt-2 flex gap-2">
                   <Button
                     variant={paymentMethod === "ecoshare" ? "default" : "outline"}
@@ -196,7 +190,6 @@ export default function GroupDetail() {
               </div>
             </div>
 
-            {/* Hiển thị QR */}
             {showQR && (
               <div className="mt-6 flex items-center gap-6">
                 <div className="rounded-md border p-4 bg-background">
@@ -228,9 +221,7 @@ export default function GroupDetail() {
         </Card>
       </section>
 
-      {/* 3 phần nội dung */}
       <main className="grid gap-6 lg:grid-cols-2">
-        {/* Phần 1: Profile chủ sở hữu */}
         <section>
           <Card>
             <CardHeader>
@@ -262,7 +253,6 @@ export default function GroupDetail() {
           </Card>
         </section>
 
-        {/* Phần 2: Đồng sở hữu */}
         <section>
           <Card>
             <CardHeader>
@@ -316,7 +306,6 @@ export default function GroupDetail() {
           </Card>
         </section>
 
-        {/* Phần 3: Xe */}
         <section className="lg:col-span-2">
           <Card>
             <CardHeader>
@@ -403,7 +392,6 @@ export default function GroupDetail() {
         </section>
       </main>
 
-      {/* Lịch sử giao dịch */}
       <Dialog open={openHistory} onOpenChange={setOpenHistory}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -430,41 +418,66 @@ export default function GroupDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog thêm thành viên */}
       <Dialog open={openAddMember} onOpenChange={setOpenAddMember}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Thêm thành viên mới</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Email thành viên mới:</label>
-              <Input value={newMemberEmail} onChange={e => setNewMemberEmail(e.target.value)} placeholder="Nhập email thành viên" />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="member-email" className="text-sm font-medium">Email thành viên mới:</Label>
+              <Input 
+                id="member-email"
+                type="email"
+                value={newMemberEmail} 
+                onChange={e => setNewMemberEmail(e.target.value)} 
+                placeholder="example@gmail.com" 
+              />
             </div>
-            <div>
-              <label className="text-sm font-medium">Xác nhận hành động:</label>
-              <Input value={confirmText} onChange={e => setConfirmText(e.target.value)} placeholder="Nhập 'Xác nhận thêm thành viên'" />
+            <div className="space-y-2">
+              <Label htmlFor="member-ownership" className="text-sm font-medium">Tỉ lệ sở hữu (%):</Label>
+              <Input 
+                id="member-ownership"
+                type="number"
+                min="1"
+                max="100"
+                value={newMemberOwnership} 
+                onChange={e => setNewMemberOwnership(e.target.value)} 
+                placeholder="Nhập tỉ lệ từ 1-100%" 
+              />
+              <p className="text-xs text-muted-foreground">
+                Tỉ lệ sở hữu sẽ ảnh hưởng đến mức đóng góp quỹ hàng tháng
+              </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2">
               <Button onClick={() => {
-                if (confirmText === "Xác nhận thêm thành viên" && newMemberEmail.trim()) {
+                const ownership = Number(newMemberOwnership);
+                if (newMemberEmail.trim() 
+                    && newMemberEmail.includes("@gmail.com")
+                    && ownership > 0 
+                    && ownership <= 100) {
                   toast({
                     title: "Yêu cầu đã được gửi",
-                    description: "Staff sẽ xử lý yêu cầu thêm thành viên trong 24h"
+                    description: `Thêm ${newMemberEmail} với tỉ lệ sở hữu ${ownership}%. Staff sẽ xử lý trong 24h.`
                   });
                   setOpenAddMember(false);
                   setNewMemberEmail("");
-                  setConfirmText("");
+                  setNewMemberOwnership("");
                 } else {
                   toast({
                     title: "Thông tin không hợp lệ",
-                    description: "Vui lòng nhập đúng text xác nhận và email"
+                    description: "Vui lòng nhập đúng Gmail và tỉ lệ sở hữu (1-100%)",
+                    variant: "destructive"
                   });
                 }
               }} className="flex-1">
                 Gửi yêu cầu
               </Button>
-              <Button variant="outline" onClick={() => setOpenAddMember(false)}>
+              <Button variant="outline" onClick={() => {
+                setOpenAddMember(false);
+                setNewMemberEmail("");
+                setNewMemberOwnership("");
+              }}>
                 Hủy
               </Button>
             </div>
@@ -472,7 +485,6 @@ export default function GroupDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog xóa thành viên */}
       <Dialog open={openRemoveMember} onOpenChange={setOpenRemoveMember}>
         <DialogContent>
           <DialogHeader>
@@ -480,26 +492,14 @@ export default function GroupDetail() {
           </DialogHeader>
           <div className="space-y-4">
             <p>Bạn có chắc chắn muốn xóa thành viên này khỏi nhóm?</p>
-            <div>
-              <label className="text-sm font-medium">Xác nhận hành động:</label>
-              <Input value={confirmText} onChange={e => setConfirmText(e.target.value)} placeholder="Nhập 'Xác nhận xóa thành viên'" />
-            </div>
             <div className="flex gap-2">
               <Button variant="destructive" onClick={() => {
-                if (confirmText === "Xác nhận xóa thành viên") {
-                  toast({
-                    title: "Yêu cầu đã được gửi",
-                    description: "Staff sẽ xử lý yêu cầu xóa thành viên trong 24h"
-                  });
-                  setOpenRemoveMember(false);
-                  setConfirmText("");
-                  setSelectedMemberToRemove("");
-                } else {
-                  toast({
-                    title: "Text xác nhận không đúng",
-                    description: "Vui lòng nhập đúng text xác nhận"
-                  });
-                }
+                toast({
+                  title: "Yêu cầu đã được gửi",
+                  description: "Staff sẽ xử lý yêu cầu xóa thành viên trong 24h"
+                });
+                setOpenRemoveMember(false);
+                setSelectedMemberToRemove("");
               }} className="flex-1">
                 Gửi yêu cầu xóa
               </Button>
@@ -511,7 +511,6 @@ export default function GroupDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog yêu cầu dịch vụ */}
       <Dialog open={openServiceRequest} onOpenChange={setOpenServiceRequest}>
         <DialogContent className="max-w-md">
           <DialogHeader>
