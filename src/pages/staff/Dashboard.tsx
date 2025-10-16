@@ -1,9 +1,9 @@
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Users,
     FileCheck,
@@ -21,92 +21,55 @@ import {
     Activity
 } from "lucide-react";
 import ChatBox from "@/components/ChatBox";
-import {useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {toast} from "@/hooks/use-toast";
-
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
+import { groups as initialGroups, leaveRequests as initialLeaveRequests } from "@/data/mockGroups";
 export default function StaffDashboard() {
     const [showChat, setShowChat] = useState(false);
     const [selectedApp, setSelectedApp] = useState<any>(null);
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
-
+    const [groups, setGroups] = useState(initialGroups);
+    const [leaveRequests, setLeaveRequests] = useState(initialLeaveRequests);
     const stats = [
-        {label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning"},
-        {label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success"},
-        {label: "Nhóm quản lý", value: 8, icon: Users, color: "primary"},
-        {label: "Xe hoạt động", value: 24, icon: Car, color: "primary"}
+        { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
+        { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
+        { label: "Nhóm quản lý", value: 8, icon: Users, color: "primary" },
+        { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
+    const pendingLeaveRequests = leaveRequests.filter(r => r.status === "pending");
 
-    const pendingApplications = [
-        {
-            id: "APP-001",
-            applicant: "Nguyễn Văn A",
-            vehicle: "VinFast VF8",
-            ownership: "40%",
-            date: "2024-01-20",
-            status: "pending",
-            details: {
-                email: "nguyenvana@email.com",
-                phone: "0123456789",
-                idNumber: "001234567890",
-                address: "123 Đường ABC, Quận 1, TP.HCM",
-                coOwners: [
-                    {name: "Trần Thị B", email: "tranthib@email.com", ownership: "35%"},
-                    {name: "Lê Văn C", email: "levanc@email.com", ownership: "25%"}
-                ],
-                totalAmount: "1,200,000,000 VNĐ"
-            }
-        },
-        {
-            id: "APP-002",
-            applicant: "Trần Thị B",
-            vehicle: "Tesla Model Y",
-            ownership: "35%",
-            date: "2024-01-21",
-            status: "pending",
-            details: {
-                email: "tranthib@email.com",
-                phone: "0987654321",
-                idNumber: "001987654321",
-                address: "456 Đường XYZ, Quận 3, TP.HCM",
-                coOwners: [
-                    {name: "Nguyễn Văn A", email: "nguyenvana@email.com", ownership: "40%"},
-                    {name: "Phạm Văn D", email: "phamvand@email.com", ownership: "25%"}
-                ],
-                totalAmount: "1,800,000,000 VNĐ"
-            }
-        },
-        {
-            id: "APP-003",
-            applicant: "Lê Văn C",
-            vehicle: "Hyundai Kona",
-            ownership: "50%",
-            date: "2024-01-22",
-            status: "pending",
-            details: {
-                email: "levanc@email.com",
-                phone: "0369852147",
-                idNumber: "001369852147",
-                address: "789 Đường DEF, Quận 7, TP.HCM",
-                coOwners: [
-                    {name: "Hoàng Thị E", email: "hoangthie@email.com", ownership: "30%"},
-                    {name: "Vũ Văn F", email: "vuvanf@email.com", ownership: "20%"}
-                ],
-                totalAmount: "800,000,000 VNĐ"
-            }
-        }
-    ];
 
     const handleApprove = (appId: string) => {
-        console.log("Approved application:", appId);
-        // Add approval logic here
+        const request = leaveRequests.find(r => r.id === appId);
+        if (!request) return;
+        setLeaveRequests(prev =>
+            prev.map(r =>
+                r.id === appId ? { ...r, status: "approved" } : r));
+        setGroups(prev =>
+            prev.map(g =>
+                g.id === request.groupId ? { ...g, users: g.users.filter(u => u.id !== request.userId) } : g));
+        toast({
+            title: "Đơn đã duyệt",
+            description: `Thành viên đã được rời khỏi nhóm.`,
+        });
     };
 
+
     const handleReject = (appId: string) => {
-        console.log("Rejected application:", appId);
-        // Add rejection logic here
+        setLeaveRequests(prev =>
+            prev.map(r =>
+                r.id === appId ? { ...r, status: "rejected" } : r
+            )
+        );
+
+        toast({
+            title: "Đã từ chối đơn",
+            description: "Yêu cầu rời nhóm không được chấp nhận.",
+        });
     };
+
 
     return (
         <div className="min-h-screen bg-background">
@@ -124,7 +87,7 @@ export default function StaffDashboard() {
                             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                             onClick={() => window.history.back()}
                         >
-                            <ArrowLeft className="h-4 w-4 mr-1"/>
+                            <ArrowLeft className="h-4 w-4 mr-1" />
                             Quay lại
                         </Button>
                         <Button
@@ -133,7 +96,7 @@ export default function StaffDashboard() {
                             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                             onClick={() => navigate('/login')}
                         >
-                            <LogOut className="h-4 w-4 mr-1"/>
+                            <LogOut className="h-4 w-4 mr-1" />
                             Đăng xuất
                         </Button>
                     </div>
@@ -151,7 +114,7 @@ export default function StaffDashboard() {
                                         <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
                                         <p className="text-2xl font-bold">{stat.value}</p>
                                     </div>
-                                    <stat.icon className={`h-8 w-8 text-${stat.color}`}/>
+                                    <stat.icon className={`h-8 w-8 text-${stat.color}`} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -172,7 +135,7 @@ export default function StaffDashboard() {
                         <Card className="shadow-elegant">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <FileCheck className="h-5 w-5"/>
+                                    <FileCheck className="h-5 w-5" />
                                     <span>Đơn đăng ký chờ duyệt</span>
                                 </CardTitle>
                                 <CardDescription>
@@ -181,49 +144,16 @@ export default function StaffDashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {pendingApplications.map((app) => (
-                                        <div key={app.id}
-                                             className="flex items-center justify-between p-4 border rounded-lg">
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-3">
-                                                    <h3 className="font-semibold">{app.applicant}</h3>
-                                                    <Badge variant="secondary">{app.vehicle}</Badge>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground mt-1">
-                                                    <span>Mã: {app.id}</span>
-                                                    <span className="mx-2">•</span>
-                                                    <span>Tỷ lệ sở hữu: {app.ownership}</span>
-                                                    <span className="mx-2">•</span>
-                                                    <span>Ngày nộp: {app.date}</span>
-                                                </div>
+                                    {pendingLeaveRequests.map((req) => (
+                                        <div key={req.id} className="p-4 border rounded-lg flex justify-between">
+                                            <div>
+                                                <p><strong>Nhóm:</strong> {req.groupName}</p>
+                                                <p><strong>Người yêu cầu:</strong> {req.userId}</p>
+                                                <p><strong>Ngày gửi:</strong> {new Date(req.createdAt).toLocaleString()}</p>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => setSelectedApp(app)}
-                                                >
-                                                    <Eye className="h-4 w-4 mr-1"/>
-                                                    Chi tiết
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="text-success border-success hover:bg-success hover:text-success-foreground"
-                                                    onClick={() => handleApprove(app.id)}
-                                                >
-                                                    <CheckCircle className="h-4 w-4 mr-1"/>
-                                                    Duyệt
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                                    onClick={() => handleReject(app.id)}
-                                                >
-                                                    <XCircle className="h-4 w-4 mr-1"/>
-                                                    Từ chối
-                                                </Button>
+                                            <div className="flex space-x-2">
+                                                <Button size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>
+                                                <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>Từ chối</Button>
                                             </div>
                                         </div>
                                     ))}
@@ -237,7 +167,7 @@ export default function StaffDashboard() {
                         <Card className="shadow-elegant">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <Users className="h-5 w-5"/>
+                                    <Users className="h-5 w-5" />
                                     <span>Quản lý nhóm</span>
                                 </CardTitle>
                                 <CardDescription>
@@ -278,7 +208,7 @@ export default function StaffDashboard() {
                                                     <p className="text-sm text-muted-foreground">12 thành viên</p>
                                                 </div>
                                                 <div className="flex flex-col items-end">
-                                                    <MapPin className="h-6 w-6 text-primary"/>
+                                                    <MapPin className="h-6 w-6 text-primary" />
                                                     <Badge variant="destructive" className="mt-1 text-xs">2 yêu
                                                         cầu</Badge>
                                                 </div>
@@ -317,7 +247,7 @@ export default function StaffDashboard() {
                                                     <p className="text-sm text-muted-foreground">8 thành viên</p>
                                                 </div>
                                                 <div className="flex flex-col items-end">
-                                                    <MapPin className="h-6 w-6 text-primary"/>
+                                                    <MapPin className="h-6 w-6 text-primary" />
                                                     <Badge variant="destructive" className="mt-1 text-xs">1 yêu
                                                         cầu</Badge>
                                                 </div>
@@ -356,7 +286,7 @@ export default function StaffDashboard() {
                                             }
                                         ].map((record, index) => (
                                             <div key={index}
-                                                 className="flex justify-between items-center p-3 border rounded">
+                                                className="flex justify-between items-center p-3 border rounded">
                                                 <div>
                                                     <p className="font-medium">{record.user}</p>
                                                     <p className="text-sm text-muted-foreground">{record.vehicle}</p>
@@ -378,7 +308,7 @@ export default function StaffDashboard() {
                         <Card className="shadow-elegant">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <Car className="h-5 w-5"/>
+                                    <Car className="h-5 w-5" />
                                     <span>Quản lý xe nhóm</span>
                                 </CardTitle>
                                 <CardDescription>
@@ -390,7 +320,7 @@ export default function StaffDashboard() {
                                 <div className="space-y-6">
                                     <div>
                                         <h4 className="font-medium mb-4 flex items-center space-x-2">
-                                            <Users className="h-4 w-4"/>
+                                            <Users className="h-4 w-4" />
                                             <span>Xe theo nhóm</span>
                                         </h4>
                                         <div className="space-y-4">
@@ -411,7 +341,7 @@ export default function StaffDashboard() {
                                                         <div className="border rounded p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <Badge variant="secondary">Đang sử dụng</Badge>
-                                                                <Activity className="h-4 w-4 text-success"/>
+                                                                <Activity className="h-4 w-4 text-success" />
                                                             </div>
                                                             <h5 className="font-semibold">VinFast VF8</h5>
                                                             <p className="text-sm text-muted-foreground">51A-123.45</p>
@@ -420,7 +350,7 @@ export default function StaffDashboard() {
                                                         <div className="border rounded p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <Badge variant="outline">Sẵn sàng</Badge>
-                                                                <Activity className="h-4 w-4 text-muted-foreground"/>
+                                                                <Activity className="h-4 w-4 text-muted-foreground" />
                                                             </div>
                                                             <h5 className="font-semibold">Tesla Model Y</h5>
                                                             <p className="text-sm text-muted-foreground">30A-678.90</p>
@@ -429,7 +359,7 @@ export default function StaffDashboard() {
                                                         <div className="border rounded p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <Badge variant="destructive">Bảo trì</Badge>
-                                                                <Activity className="h-4 w-4 text-destructive"/>
+                                                                <Activity className="h-4 w-4 text-destructive" />
                                                             </div>
                                                             <h5 className="font-semibold">Hyundai Kona</h5>
                                                             <p className="text-sm text-muted-foreground">29A-111.22</p>
@@ -457,7 +387,7 @@ export default function StaffDashboard() {
                                                         <div className="border rounded p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <Badge variant="outline">Sẵn sàng</Badge>
-                                                                <Activity className="h-4 w-4 text-muted-foreground"/>
+                                                                <Activity className="h-4 w-4 text-muted-foreground" />
                                                             </div>
                                                             <h5 className="font-semibold">BMW iX3</h5>
                                                             <p className="text-sm text-muted-foreground">30B-456.78</p>
@@ -466,7 +396,7 @@ export default function StaffDashboard() {
                                                         <div className="border rounded p-3">
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <Badge variant="secondary">Đang sử dụng</Badge>
-                                                                <Activity className="h-4 w-4 text-success"/>
+                                                                <Activity className="h-4 w-4 text-success" />
                                                             </div>
                                                             <h5 className="font-semibold">Audi e-tron</h5>
                                                             <p className="text-sm text-muted-foreground">30B-789.01</p>
@@ -481,7 +411,7 @@ export default function StaffDashboard() {
                                     {/* Service Payment Requests */}
                                     <div>
                                         <h4 className="font-medium mb-4 flex items-center space-x-2">
-                                            <DollarSign className="h-4 w-4"/>
+                                            <DollarSign className="h-4 w-4" />
                                             <span>Yêu cầu chi trả dịch vụ</span>
                                             <Badge variant="destructive">4 yêu cầu</Badge>
                                         </h4>
@@ -603,7 +533,7 @@ export default function StaffDashboard() {
                                                                         });
                                                                     }}
                                                                 >
-                                                                    <DollarSign className="h-4 w-4 mr-1"/>
+                                                                    <DollarSign className="h-4 w-4 mr-1" />
                                                                     Thanh toán
                                                                 </Button>
                                                                 <Button
@@ -618,7 +548,7 @@ export default function StaffDashboard() {
                                                                         });
                                                                     }}
                                                                 >
-                                                                    <XCircle className="h-4 w-4 mr-1"/>
+                                                                    <XCircle className="h-4 w-4 mr-1" />
                                                                     Từ chối
                                                                 </Button>
                                                             </div>
@@ -638,7 +568,7 @@ export default function StaffDashboard() {
                         <Card className="shadow-elegant">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <TrendingUp className="h-5 w-5"/>
+                                    <TrendingUp className="h-5 w-5" />
                                     <span>Báo cáo hoạt động</span>
                                 </CardTitle>
                                 <CardDescription>
@@ -649,7 +579,7 @@ export default function StaffDashboard() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <Calendar className="h-8 w-8 mx-auto mb-2 text-primary"/>
+                                            <Calendar className="h-8 w-8 mx-auto mb-2 text-primary" />
                                             <p className="text-2xl font-bold">142</p>
                                             <p className="text-sm text-muted-foreground">Lượt sử dụng (tháng)</p>
                                         </CardContent>
@@ -657,7 +587,7 @@ export default function StaffDashboard() {
 
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <DollarSign className="h-8 w-8 mx-auto mb-2 text-success"/>
+                                            <DollarSign className="h-8 w-8 mx-auto mb-2 text-success" />
                                             <p className="text-2xl font-bold">25.5M</p>
                                             <p className="text-sm text-muted-foreground">Doanh thu (tháng)</p>
                                         </CardContent>
@@ -665,7 +595,7 @@ export default function StaffDashboard() {
 
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <Users className="h-8 w-8 mx-auto mb-2 text-warning"/>
+                                            <Users className="h-8 w-8 mx-auto mb-2 text-warning" />
                                             <p className="text-2xl font-bold">85%</p>
                                             <p className="text-sm text-muted-foreground">Tỷ lệ sử dụng</p>
                                         </CardContent>
@@ -673,7 +603,7 @@ export default function StaffDashboard() {
 
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <Car className="h-8 w-8 mx-auto mb-2 text-primary"/>
+                                            <Car className="h-8 w-8 mx-auto mb-2 text-primary" />
                                             <p className="text-2xl font-bold">24/26</p>
                                             <p className="text-sm text-muted-foreground">Xe hoạt động</p>
                                         </CardContent>
@@ -688,16 +618,16 @@ export default function StaffDashboard() {
                                         <CardContent>
                                             <div className="space-y-3">
                                                 {[
-                                                    {group: "Nhóm HCM - Q1", usage: "45 lượt", revenue: "12.5M VNĐ"},
+                                                    { group: "Nhóm HCM - Q1", usage: "45 lượt", revenue: "12.5M VNĐ" },
                                                     {
                                                         group: "Nhóm HN - Cầu Giấy",
                                                         usage: "32 lượt",
                                                         revenue: "8.2M VNĐ"
                                                     },
-                                                    {group: "Nhóm ĐN - Hải Châu", usage: "28 lượt", revenue: "4.8M VNĐ"}
+                                                    { group: "Nhóm ĐN - Hải Châu", usage: "28 lượt", revenue: "4.8M VNĐ" }
                                                 ].map((item, index) => (
                                                     <div key={index}
-                                                         className="flex justify-between items-center p-3 bg-muted/50 rounded">
+                                                        className="flex justify-between items-center p-3 bg-muted/50 rounded">
                                                         <div>
                                                             <p className="font-medium">{item.group}</p>
                                                             <p className="text-sm text-muted-foreground">{item.usage}</p>
@@ -720,7 +650,7 @@ export default function StaffDashboard() {
                                                     <div className="flex items-center space-x-2">
                                                         <div className="w-24 bg-muted rounded-full h-2">
                                                             <div className="bg-primary h-2 rounded-full"
-                                                                 style={{width: '70%'}}></div>
+                                                                style={{ width: '70%' }}></div>
                                                         </div>
                                                         <span className="text-sm">70%</span>
                                                     </div>
@@ -730,7 +660,7 @@ export default function StaffDashboard() {
                                                     <div className="flex items-center space-x-2">
                                                         <div className="w-24 bg-muted rounded-full h-2">
                                                             <div className="bg-primary h-2 rounded-full"
-                                                                 style={{width: '85%'}}></div>
+                                                                style={{ width: '85%' }}></div>
                                                         </div>
                                                         <span className="text-sm">85%</span>
                                                     </div>
@@ -740,7 +670,7 @@ export default function StaffDashboard() {
                                                     <div className="flex items-center space-x-2">
                                                         <div className="w-24 bg-muted rounded-full h-2">
                                                             <div className="bg-primary h-2 rounded-full"
-                                                                 style={{width: '90%'}}></div>
+                                                                style={{ width: '90%' }}></div>
                                                         </div>
                                                         <span className="text-sm">90%</span>
                                                     </div>
@@ -750,7 +680,7 @@ export default function StaffDashboard() {
                                                     <div className="flex items-center space-x-2">
                                                         <div className="w-24 bg-muted rounded-full h-2">
                                                             <div className="bg-primary h-2 rounded-full"
-                                                                 style={{width: '75%'}}></div>
+                                                                style={{ width: '75%' }}></div>
                                                         </div>
                                                         <span className="text-sm">75%</span>
                                                     </div>
@@ -770,7 +700,7 @@ export default function StaffDashboard() {
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center space-x-2">
-                            <FileCheck className="h-5 w-5"/>
+                            <FileCheck className="h-5 w-5" />
                             <span>Chi tiết đơn đăng ký - {selectedApp?.id}</span>
                         </DialogTitle>
                         <DialogDescription>
@@ -784,7 +714,7 @@ export default function StaffDashboard() {
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center space-x-2">
-                                        <Car className="h-5 w-5"/>
+                                        <Car className="h-5 w-5" />
                                         <span>Thông tin xe</span>
                                     </CardTitle>
                                 </CardHeader>
@@ -807,7 +737,7 @@ export default function StaffDashboard() {
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center space-x-2">
-                                        <Users className="h-5 w-5"/>
+                                        <Users className="h-5 w-5" />
                                         <span>Chủ sở hữu chính</span>
                                     </CardTitle>
                                 </CardHeader>
@@ -860,7 +790,7 @@ export default function StaffDashboard() {
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center space-x-2">
-                                        <Users className="h-5 w-5"/>
+                                        <Users className="h-5 w-5" />
                                         <span>Đồng sở hữu ({selectedApp.details.coOwners.length})</span>
                                     </CardTitle>
                                 </CardHeader>
@@ -868,7 +798,7 @@ export default function StaffDashboard() {
                                     <div className="space-y-4">
                                         {selectedApp.details.coOwners.map((coOwner: any, index: number) => (
                                             <div key={index}
-                                                 className="flex items-center space-x-4 p-4 border rounded-lg">
+                                                className="flex items-center space-x-4 p-4 border rounded-lg">
                                                 <Avatar>
                                                     <AvatarFallback className="bg-accent text-accent-foreground">
                                                         {coOwner.name.charAt(0)}
@@ -910,8 +840,8 @@ export default function StaffDashboard() {
                                         <div className="border-t pt-3 flex justify-between items-center font-bold">
                                             <span>Tổng cộng:</span>
                                             <span className="text-primary">
-                        {(parseFloat(selectedApp.ownership) + selectedApp.details.coOwners.reduce((sum: number, co: any) => sum + parseFloat(co.ownership), 0))}%
-                      </span>
+                                                {(parseFloat(selectedApp.ownership) + selectedApp.details.coOwners.reduce((sum: number, co: any) => sum + parseFloat(co.ownership), 0))}%
+                                            </span>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -927,7 +857,7 @@ export default function StaffDashboard() {
                                         setSelectedApp(null);
                                     }}
                                 >
-                                    <XCircle className="h-4 w-4 mr-2"/>
+                                    <XCircle className="h-4 w-4 mr-2" />
                                     Từ chối
                                 </Button>
                                 <Button
@@ -937,7 +867,7 @@ export default function StaffDashboard() {
                                         setSelectedApp(null);
                                     }}
                                 >
-                                    <CheckCircle className="h-4 w-4 mr-2"/>
+                                    <CheckCircle className="h-4 w-4 mr-2" />
                                     Phê duyệt
                                 </Button>
                             </div>
@@ -951,7 +881,7 @@ export default function StaffDashboard() {
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center space-x-2">
-                            <Users className="h-5 w-5"/>
+                            <Users className="h-5 w-5" />
                             <span>Chi tiết nhóm: {selectedGroup?.name}</span>
                         </DialogTitle>
                         <DialogDescription>
@@ -1030,7 +960,7 @@ export default function StaffDashboard() {
                                                             });
                                                         }}
                                                     >
-                                                        <CheckCircle className="h-4 w-4 mr-1"/>
+                                                        <CheckCircle className="h-4 w-4 mr-1" />
                                                         Duyệt
                                                     </Button>
                                                     <Button
@@ -1046,7 +976,7 @@ export default function StaffDashboard() {
                                                             });
                                                         }}
                                                     >
-                                                        <XCircle className="h-4 w-4 mr-1"/>
+                                                        <XCircle className="h-4 w-4 mr-1" />
                                                         Từ chối
                                                     </Button>
                                                 </div>

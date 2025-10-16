@@ -1,9 +1,9 @@
-import {useMemo, useState} from "react";
-import {useNavigate, Link} from "react-router-dom";
-import {Card, CardHeader, CardTitle, CardDescription, CardContent} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import { useMemo, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Dialog,
     DialogContent,
@@ -12,11 +12,10 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog";
-import {Users, ArrowLeft, LogOut, AlertTriangle} from "lucide-react";
-import {useToast} from "@/hooks/use-toast";
-import {groups, CURRENT_USER_ID} from "@/data/mockGroups";
-import {useSEO} from "@/hooks/useSEO";
-
+import { Users, ArrowLeft, LogOut, AlertTriangle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { groups, CURRENT_USER_ID, leaveRequests, LeaveRequest } from "@/data/mockGroups";
+import { useSEO } from "@/hooks/useSEO";
 export default function MyGroups() {
     useSEO({
         title: "Nhóm của tôi | EcoShare",
@@ -25,7 +24,7 @@ export default function MyGroups() {
     });
 
     const navigate = useNavigate();
-    const {toast} = useToast();
+    const { toast } = useToast();
     const [leaveRequestDialogOpen, setLeaveRequestDialogOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string>("");
 
@@ -38,12 +37,29 @@ export default function MyGroups() {
 
     const confirmRequestLeave = () => {
         const group = groups.find(g => g.id === selectedGroup);
-        if (group) {
+        if (!group) {
             toast({
-                title: "Yêu cầu rời nhóm đã được gửi",
-                description: `Yêu cầu rời nhóm "${group.name}" đã được gửi đến staff để xét duyệt.`,
+                title: "Lỗi",
+                description: "Nhóm không tồn tại.",
+                variant: "destructive"
             });
+            setLeaveRequestDialogOpen(false);
+            return;
         }
+        const newRequest: LeaveRequest = {
+            id: `lr_${Date.now()}`,         // hoặc uuid
+            groupId: group.id,
+            groupName: group.name,
+            userId: CURRENT_USER_ID,
+            staffId: group.staffId,         // ✅ gán staff quản lý nhóm
+            status: "pending",
+            createdAt: new Date().toISOString(),
+        };
+        leaveRequests.push(newRequest);
+        toast({
+            title: "Yêu cầu đã gửi",
+            description: `Yêu cầu rời nhóm của bạn đã được gửi đến staff ${group.staffId} để xét duyệt.`,
+        });
         setLeaveRequestDialogOpen(false);
         setSelectedGroup("");
     };
@@ -56,7 +72,7 @@ export default function MyGroups() {
                     <div className="flex items-center space-x-4">
                         <Link to="/co-owner/dashboard">
                             <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                                <ArrowLeft className="h-4 w-4 mr-2"/>
+                                <ArrowLeft className="h-4 w-4 mr-2" />
                                 Quay lại
                             </Button>
                         </Link>
@@ -71,7 +87,7 @@ export default function MyGroups() {
             <div className="container mx-auto p-6">
                 <main>
                     <section aria-label="Danh sách nhóm"
-                             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {data.map((g) => {
                             const owner = g.users.find((u) => u.id === g.ownerId)!;
                             const me = g.users.find((u) => u.id === CURRENT_USER_ID);
@@ -83,7 +99,7 @@ export default function MyGroups() {
                                     <CardHeader>
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
-                                                <Users className="h-5 w-5 text-primary"/>
+                                                <Users className="h-5 w-5 text-primary" />
                                                 <div>
                                                     <CardTitle className="text-base">{g.name}</CardTitle>
                                                     <CardDescription>Chủ sở hữu: {owner.name} <Badge
@@ -100,7 +116,7 @@ export default function MyGroups() {
                                                 {otherMembers.slice(0, 5).map((m) => (
                                                     <Avatar key={m.id} className="border">
                                                         <AvatarImage src={m.avatar} alt={`Ảnh đại diện ${m.name}`}
-                                                                     loading="lazy"/>
+                                                            loading="lazy" />
                                                         <AvatarFallback>{m.name.charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                 ))}
@@ -116,7 +132,7 @@ export default function MyGroups() {
                                             </div>
                                             <div className="flex gap-2">
                                                 <Button variant="outline" className="flex-1"
-                                                        onClick={() => navigate(`/co-owner/groups/${g.id}`)}>
+                                                    onClick={() => navigate(`/co-owner/groups/${g.id}`)}>
                                                     Xem chi tiết
                                                 </Button>
                                                 <Button
@@ -125,7 +141,7 @@ export default function MyGroups() {
                                                     onClick={() => handleRequestLeave(g.id)}
                                                     className="px-3"
                                                 >
-                                                    <LogOut className="h-4 w-4"/>
+                                                    <LogOut className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </div>
@@ -142,7 +158,7 @@ export default function MyGroups() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-destructive"/>
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
                             Yêu cầu rời nhóm
                         </DialogTitle>
                         <DialogDescription>
