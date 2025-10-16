@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import khoindn.swp391.be.app.exception.exceptions.NoVehicleInGroupException;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -33,16 +35,42 @@ public class ScheduleController {
 
     @GetMapping("/all")
     public ResponseEntity<List<ScheduleRes>> getAllSchedules() {
+
         List<ScheduleRes> schedules = scheduleService.getAllSchedules();
         return ResponseEntity.ok(schedules);
     }
 
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<List<ScheduleRes>> getSchedulesByGroupId(@PathVariable int groupId) {
+        List<ScheduleRes> schedules = scheduleService.findByGroupMember_Group_GroupId(groupId);
+        return ResponseEntity.ok(schedules);
+    }
+
     @GetMapping("/vehicle")
-    public ResponseEntity<VehicleRes> getCarsByGroupAndUser(
+    public ResponseEntity<List<VehicleRes>> getCarsByGroupAndUser(
             @RequestParam int groupId,
             @RequestParam int userId) {
-        VehicleRes res = scheduleService.getCarByGroupIdAndUserId(groupId, userId);
-        return ResponseEntity.ok(res);
+        List<VehicleRes> resList = scheduleService.getCarsByGroupIdAndUserId(groupId, userId);
+        System.out.println("Vehicles found: " + resList.size());
+
+        if (resList.isEmpty()) {
+            throw new NoVehicleInGroupException("No vehicle in user's group");
+        }
+
+        return ResponseEntity.ok(resList);
+    }
+
+    @PutMapping("/update/{scheduleId}")
+    public ResponseEntity<Void> updateSchedule(@PathVariable int scheduleId,
+                                               @RequestBody ScheduleReq req) {
+        scheduleService.updateSchedule(req, scheduleId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/delete/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable int scheduleId) {
+        scheduleService.cancelSchedule(scheduleId);
+        return ResponseEntity.noContent().build();
     }
 //    @PutMapping("/{id}")
 //    public ResponseEntity<ScheduleRes> updateSchedule(@PathVariable Integer id,

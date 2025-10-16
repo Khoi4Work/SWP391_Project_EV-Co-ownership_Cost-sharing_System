@@ -1,9 +1,10 @@
 package khoindn.swp391.be.app.service;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
-import khoindn.swp391.be.app.model.Request.ContractReq;
+import khoindn.swp391.be.app.model.Request.ContractCreateReq;
+import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
@@ -13,14 +14,18 @@ import khoindn.swp391.be.app.repository.IContractSignerRepository;
 import khoindn.swp391.be.app.repository.IUserRepository;
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
+@Transactional
 public class ContractService implements IContractService {
     @Autowired
     private IContractRepository iContractRepository;
@@ -28,22 +33,33 @@ public class ContractService implements IContractService {
     private IContractSignerRepository iContractSignerRepository;
     @Autowired
     private JavaMailSender javaMailSender;
+    @Autowired
+    private IUserRepository iUserRepository;
+    @Autowired
+    private TokenService tokenService;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private AuthenticationService authenticationService;
 
 
     @Override
-    public Contract getContract(int id) {
+    public Contract getContractByUser(int id) {
         Contract contract = iContractRepository.findContractByContractId(id);
 
-        if(contract==null) throw new ContractNotExistedException("Contract cannot found!");
+        if (contract == null) throw new ContractNotExistedException("Contract cannot found!");
         return contract;
     }
 
 
     @Override
-    public ContractSigner setContract(ContractReq req) {
-        if (iContractSignerRepository.existsByUser_Id(req.getIdUserSigned())) {
+    public ContractSigner setContract(ContractDecisionReq req) {
+        System.out.println("Update contract...");
+        Users user = iUserRepository.findUsersById(req.getIdUser());
+        System.out.println(user);
+        if (iContractSignerRepository.existsByUser_Id(user.getId())) {
             ContractSigner contractSigner = iContractSignerRepository
-                    .findByUser_IdAndContract_ContractId(req.getIdUserSigned(),req.getIdContract());
+                    .findByUser_IdAndContract_ContractId(user.getId(), req.getIdContract());
             // Cập nhật decision
             if (req.getIdChoice() == 1) {
                 contractSigner.setDecision("Signed");
@@ -69,6 +85,7 @@ public class ContractService implements IContractService {
 
             if (anyDeclined) {
                 contract.setStatus("Declined");
+                contract.setEndDate(LocalDate.now());
             } else if (allSigned) {
                 contract.setStatus("Activated");
             } else if (stillPending) {
@@ -79,7 +96,7 @@ public class ContractService implements IContractService {
 
 
             return contractSigner;
-        }else  {
+        } else {
             throw new IllegalArgumentException("Invalid userId value");
         }
     }
@@ -98,7 +115,7 @@ public class ContractService implements IContractService {
 //    }
 
     @Override
-    public void SendEmail(SendEmailReq emailReq) {
+    public void SendBulkEmail(SendEmailReq emailReq) {
         for (String eachEmail : emailReq.getEmail()) {
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
@@ -107,7 +124,7 @@ public class ContractService implements IContractService {
                 helper.setTo(eachEmail);
                 helper.setSubject("[EcoShare System] E-Contract");
                 helper.setText(
-                        "<a href='" + emailReq.getDocumentUrl() +
+                        "<a href='" + emailReq.getContent() +
                                 "'>Nhấn vào đây để xem hợp đồng</a>", true);
 
                 javaMailSender.send(message);
@@ -117,6 +134,56 @@ public class ContractService implements IContractService {
         }
     }
 
+    @Override
+    public List<ContractSigner> createContract(ContractCreateReq req) {
+
+        List<ContractSigner> signerList = new ArrayList<>();
+
+        Contract contract = new Contract();
+
+        contract.setContractType(req.getContractType());
+        contract.setStartDate(LocalDate.now());
+        contract.setDocumentUrl(req.getDocumentUrl());
+        contract.setStatus("Pending");
+        iContractRepository.save(contract);
+
+
+        for (Integer userId : req.getUserId()) {
+            Users users = iUserRepository.findUsersById(userId);
+            ContractSigner contractSigner = new ContractSigner();
+            // Tao Contract
+
+
+            // Tao nguoi ky contract
+
+            contractSigner.setContract(contract);
+            contractSigner.setUser(users);
+            contractSigner.setDecision("Pending");
+            iContractSignerRepository.save(contractSigner);
+
+            signerList.add(contractSigner);
+
+            // ✅ TẠO TOKEN RIÊNG CHO USER
+            String token = tokenService.generateToken(users);
+            String secureUrl = req.getDocumentUrl() + contract.getContractId()+"?token=" + token;
+
+            try {
+                MimeMessage message = javaMailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+                helper.setTo(users.getEmail());
+                helper.setSubject("[EcoShare System] Send E-Contract to User");
+                helper.setText("Kính mời Quý khách truy cập vào " +
+                        "<a href='" + secureUrl + "'>liên kết này</a>" +
+                        " để xem thông tin chi tiết về hợp đồng đồng sở hữu.", true);
+                javaMailSender.send(message);
+            } catch (Exception e) {
+                e.getMessage();
+            }
+        }
+        return signerList;
+
+    }
 
 
 }

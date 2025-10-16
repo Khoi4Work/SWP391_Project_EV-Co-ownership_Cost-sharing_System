@@ -18,4 +18,5 @@ public class ScheduleRes {
     private int vehicleId;
     private int userId;
     private int groupId;
+    private String userName;
 }

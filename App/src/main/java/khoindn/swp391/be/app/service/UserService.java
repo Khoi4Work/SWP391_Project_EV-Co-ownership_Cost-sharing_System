@@ -1,17 +1,13 @@
 package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.UserNotFoundException;
-import khoindn.swp391.be.app.model.Request.RegisterVehicleReq;
-import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
-import khoindn.swp391.be.app.model.Response.UsersResponse;
-import khoindn.swp391.be.app.pojo.Group;
-import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IUserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -63,6 +59,11 @@ public class UserService implements IUserService {
             throw new UserNotFoundException("User with email " + email + " not found");
         }
         return user;
+    }
+
+    @Override
+    public List<Users> getAllUsers() {
+        return iUserRepository.findAll();
     }
 
 

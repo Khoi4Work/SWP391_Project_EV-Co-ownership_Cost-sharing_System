@@ -1,9 +1,6 @@
 package khoindn.swp391.be.app.service;
 
-import khoindn.swp391.be.app.exception.exceptions.CCCDDuplicatedException;
-import khoindn.swp391.be.app.exception.exceptions.EmailDuplicatedException;
-import khoindn.swp391.be.app.exception.exceptions.GPLXDuplicatedException;
-import khoindn.swp391.be.app.exception.exceptions.PhoneDuplicatedException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
@@ -17,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -52,33 +50,40 @@ public class AuthenticationService implements UserDetailsService {
 
     public Users register(RegisterUserReq users) {
         // Kiểm tra email
-        if (iAuthenticationRepository.existsByEmail((users.getEmail()))){
+        if (iAuthenticationRepository.existsByEmail((users.getEmail()))) {
             throw new EmailDuplicatedException("Email đã được sử dụng");
         }
 
         // Kiểm tra CCCD
-        if (iAuthenticationRepository.existsByCccd((users.getCccd()))){
+        if (iAuthenticationRepository.existsByCccd((users.getCccd()))) {
             throw new CCCDDuplicatedException("CCCD đã được sử dụng");
         }
 
         // Kiểm tra GPLX
-        if (iAuthenticationRepository.existsByGplx((users.getGplx()))){
+        if (iAuthenticationRepository.existsByGplx((users.getGplx()))) {
             throw new GPLXDuplicatedException("GPLX đã được sử dụng");
         }
 
         // Kiểm tra phone
-        if (iAuthenticationRepository.existsByPhone((users.getPhone()))){
-            throw new PhoneDuplicatedException( "Số điện thoại đã được sử dụng");
+        if (iAuthenticationRepository.existsByPhone((users.getPhone()))) {
+            throw new PhoneDuplicatedException("Số điện thoại đã được sử dụng");
 
         }
 
         //process login from register controller
         users.setPassword(passwordEncoder.encode(users.getPassword()));
         Users user = modelMapper.map(users, Users.class);
-        user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId()));
+        user.setId(null);
+        user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId().getRoleId()));
         //encode old password to new password
-        // save to DB
-        return iAuthenticationRepository.save(user);
+
+        System.out.println("Req: " + users);
+
+        System.out.println("User: " + user);
+
+
+            // save to DB
+            return iAuthenticationRepository.save(user);
     }
 
     public UsersResponse login(LoginUser loginUser) {
@@ -89,14 +94,27 @@ public class AuthenticationService implements UserDetailsService {
                         loginUser.getEmail(),
                         loginUser.getPassword()));
         Users users = (Users) authentication.getPrincipal();
-        if (loginUser.getRoleId() != null && !loginUser.getRoleId().equals(users.getRole().getRoleId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai loại tài khoản");
-        }
+//        if (loginUser.getRoleId() != null && !loginUser.getRoleId().equals(users.getRole().getRoleId())) {
+//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai loại tài khoản");
+//        }
         //map account --> accountResponse
         UsersResponse usersResponse = modelMapper.map(users, UsersResponse.class);
         String token = tokenService.generateToken(users);
         usersResponse.setToken(token);
         return usersResponse;
+    }
+
+    public Users getCurrentAccount() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        System.out.println("Principal type: " +
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal().getClass());
+
+
+        if (principal instanceof Users) {
+            return (Users) principal;
+        } else {
+            throw new AuthenticationException("User is not logged in or token is invalid");
+        }
     }
 
 

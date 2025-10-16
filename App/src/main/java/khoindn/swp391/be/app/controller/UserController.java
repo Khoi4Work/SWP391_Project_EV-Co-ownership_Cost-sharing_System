@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/Users")
+@RequestMapping("/users")
 @CrossOrigin(origins = "http://localhost:8081")
 @SecurityRequirement(name = "api")
 
@@ -21,8 +21,8 @@ public class UserController {
     private IUserService iUserService;
 
     // Lấy user theo email (query param)
-    @GetMapping
-    public ResponseEntity<Users> getUserByEmail(@RequestParam String email) {
+    @GetMapping("/get")
+    public ResponseEntity<Users> getUserByEmail( @RequestParam String email) {
         return ResponseEntity.ok(iUserService.getUserByEmail(email));
     }
 
