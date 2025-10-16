@@ -25,13 +25,15 @@ export default function Contracts() {
       try {
         const res = await axiosClient.get("/contract/history");
 
-        // Lọc các contract status = active
-        const activeContracts = res.data;
-        console.log("Fetched contracts:", activeContracts);
-        setContracts(activeContracts);
+        // Nếu backend không trả về hoặc trả rỗng thì set mảng trống
+        if (!res || !res.data || !Array.isArray(res.data)) {
+          setContracts([]);
+        } else {
+          setContracts(res.data);
+        }
       } catch (error) {
         console.error("Lỗi khi tải hợp đồng:", error);
-        setContracts([]);
+        setContracts([]); // Đảm bảo vẫn có giao diện
       } finally {
         setLoading(false);
       }
@@ -39,6 +41,7 @@ export default function Contracts() {
 
     fetchContracts();
   }, []);
+
 
 
   const getStatusColor = (status: string) => {

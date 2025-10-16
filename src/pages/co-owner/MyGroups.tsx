@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Users, ArrowLeft, LogOut, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { groups, CURRENT_USER_ID, leaveRequests, LeaveRequest } from "@/data/mockGroups";
+import { groups, CURRENT_USER_ID } from "@/data/mockGroups";
 import { useSEO } from "@/hooks/useSEO";
+import axiosClient from "@/api/axiosClient";
 export default function MyGroups() {
     useSEO({
         title: "Nhóm của tôi | EcoShare",
@@ -27,42 +28,134 @@ export default function MyGroups() {
     const { toast } = useToast();
     const [leaveRequestDialogOpen, setLeaveRequestDialogOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string>("");
-
+    const [currentGroup, setCurrentGroup] = useState<any>(null);
     const data = useMemo(() => groups, []);
 
     const handleRequestLeave = (groupId: string) => {
         setSelectedGroup(groupId);
         setLeaveRequestDialogOpen(true);
     };
+    useEffect(() => {
+        const fetchGroup = async () => {
+            try {
+                console.log("⏳ Đang gọi API: /group/get/current...");
+                const res = await axiosClient.get("/group/get/current");
 
-    const confirmRequestLeave = () => {
-        const group = groups.find(g => g.id === selectedGroup);
-        if (!group) {
+                // Kiểm tra dữ liệu trả về có đúng không
+                if (!res || !res.data || !res.data.group) {
+                    console.warn("⚠️ API trả về nhưng không có group:", res);
+                    setCurrentGroup(null);
+                    return;
+                }
+
+                console.log("✅ Nhận được group từ API:", res.data.group);
+                setCurrentGroup(res.data.group);
+            } catch (error: any) {
+                console.error("❌ Lỗi khi gọi API /group/get/current:", error);
+
+                // Nếu có phản hồi từ server (4xx, 5xx)
+                if (error.response) {
+                    console.error("📌 Response error:", {
+                        status: error.response.status,
+                        data: error.response.data,
+                    });
+                }
+                // Nếu không kết nối được tới server
+                else if (error.request) {
+                    console.error("📌 Không nhận phản hồi từ server:", error.request);
+                }
+                // Lỗi khác (code, cấu hình axios, v.v.)
+                else {
+                    console.error("📌 Lỗi không xác định:", error.message);
+                }
+
+                setCurrentGroup(null); // Tránh để undefined gây lỗi chỗ khác
+            }
+        };
+
+        fetchGroup();
+    }, []);
+
+    const confirmRequestLeave = async () => {
+        try {
+            console.log("⏳ Gửi yêu cầu rời nhóm...");
+
+            // 1. Lấy group hiện tại
+            const res = await axiosClient.get("/group/get/current");
+            console.log("✅ API /group/get/current trả về:", res);
+
+            const group = res?.data?.group;
+            if (!group) {
+                console.warn("⚠️ Không tìm thấy group trong dữ liệu trả về:", res);
+                toast({
+                    title: "Lỗi",
+                    description: "Bạn hiện không nằm trong nhóm nào.",
+                    variant: "destructive"
+                });
+                setLeaveRequestDialogOpen(false);
+                return;
+            }
+
+            // 2. Lấy user từ token/localStorage
+            const tokenUser = JSON.parse(localStorage.getItem("accessToken") || "{}");
+            const currentUserId = tokenUser?.id;
+            if (!currentUserId) {
+                console.error("❌ Không tìm thấy userId trong accessToken:", tokenUser);
+                toast({
+                    title: "Lỗi xác thực",
+                    description: "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // 3. Gửi request rời nhóm
+            console.log("📤 Đang gửi request rời nhóm với payload:", {
+                groupId: group.id,
+                userId: currentUserId,
+            });
+
+            await axiosClient.post("/group/request", {
+                groupId: group.id,
+                userId: currentUserId,
+                nameRequestGroup: `Yêu cầu rời nhóm - ${currentUserId}`,
+                descriptionRequestGroup: "Người dùng yêu cầu rời nhóm",
+                statusRequestGroup: "pending"
+            });
+
+            console.log("✅ Gửi request thành công!");
+
+            toast({
+                title: "Đã gửi yêu cầu",
+                description: `Yêu cầu rời nhóm đã được gửi đến nhân viên xử lý.`,
+            });
+
+            setLeaveRequestDialogOpen(false);
+
+        } catch (error: any) {
+            console.error("❌ Lỗi khi gửi request rời nhóm:", error);
+
+            // Phân loại lỗi giống ở đoạn trước
+            if (error.response) {
+                console.error("📌 Backend trả lỗi:", {
+                    status: error.response.status,
+                    data: error.response.data,
+                });
+            } else if (error.request) {
+                console.error("📌 Không nhận được phản hồi từ server:", error.request);
+            } else {
+                console.error("📌 Lỗi khác:", error.message);
+            }
+
             toast({
                 title: "Lỗi",
-                description: "Nhóm không tồn tại.",
-                variant: "destructive"
+                description: "Không thể gửi yêu cầu. Vui lòng thử lại.",
+                variant: "destructive",
             });
-            setLeaveRequestDialogOpen(false);
-            return;
         }
-        const newRequest: LeaveRequest = {
-            id: `lr_${Date.now()}`,         // hoặc uuid
-            groupId: group.id,
-            groupName: group.name,
-            userId: CURRENT_USER_ID,
-            staffId: group.staffId,         // ✅ gán staff quản lý nhóm
-            status: "pending",
-            createdAt: new Date().toISOString(),
-        };
-        leaveRequests.push(newRequest);
-        toast({
-            title: "Yêu cầu đã gửi",
-            description: `Yêu cầu rời nhóm của bạn đã được gửi đến staff ${group.staffId} để xét duyệt.`,
-        });
-        setLeaveRequestDialogOpen(false);
-        setSelectedGroup("");
     };
+
+
 
     return (
         <div className="min-h-screen bg-background">
