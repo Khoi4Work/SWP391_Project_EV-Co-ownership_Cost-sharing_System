@@ -458,7 +458,7 @@ export default function VehicleBooking() {
             console.log("Sending schedule request:", {
                 startTime: toLocalDateTime(selectedDate, start),
                 endTime: toLocalDateTime(selectedDate, end),
-                status: "pending",
+                status: "booked",
                 groupId: currentGroupId,
                 userId: currentUserId,
                 vehicleId: Number(selectedVehicle)
@@ -474,7 +474,7 @@ export default function VehicleBooking() {
                 body: JSON.stringify({
                     startTime: toLocalDateTime(selectedDate, start),
                     endTime: toLocalDateTime(selectedDate, end),
-                    status: "pending",
+                    status: "booked",
                     groupId: currentGroupId,
                     userId: currentUserId,
                     vehicleId: Number(selectedVehicle),
@@ -1018,7 +1018,15 @@ export default function VehicleBooking() {
                                                     </div>
                                                     <Badge variant="secondary">{booking.bookedBy}</Badge>
                                                     <Badge
-                                                        variant={booking.status === "pending" ? "outline" : "default"}>
+                                                        variant={booking.status === "BOOKED" ? "outline" : "default"}
+                                                        className={
+                                                            booking.status === "canceled"
+                                                                ? "bg-red-100 text-red-700 border-red-300 font-semibold"
+                                                                : booking.status === "BOOKED"
+                                                                    ? "bg-green-100 text-green-700 border-green-300 font-semibold"
+                                                                    : ""
+                                                        }
+                                                    >
                                                         {booking.status}
                                                     </Badge>
                                                     {newlyCreatedBooking === booking.scheduleId &&
