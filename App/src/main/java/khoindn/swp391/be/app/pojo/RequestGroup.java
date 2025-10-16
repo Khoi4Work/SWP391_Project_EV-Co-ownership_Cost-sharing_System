@@ -24,7 +24,7 @@ public class RequestGroup {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     //relationships
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "groupMember_id")
     private GroupMember groupMember;
 

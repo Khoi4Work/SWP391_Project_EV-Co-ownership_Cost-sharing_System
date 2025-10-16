@@ -1,13 +1,15 @@
 package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import khoindn.swp391.be.app.pojo.RequestGroup;
 import khoindn.swp391.be.app.service.GroupService;
 import khoindn.swp391.be.app.service.IGroupService;
+import khoindn.swp391.be.app.service.IRequestGroupService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/staff")
@@ -15,10 +17,26 @@ import org.springframework.web.bind.annotation.RestController;
 public class StaffController {
     @Autowired
     private IGroupService iGroupService;
+    @Autowired
+    private IRequestGroupService iRequestGroupService;
 
     @PostMapping("/delete-group")
     public void deleteGroup(@RequestParam int groupId) {
         iGroupService.deleteGroup(groupId);
+    }
+
+    @GetMapping("/get/all/request-group")
+    public ResponseEntity getAllRequestGroup() {
+        List<RequestGroup> res = iRequestGroupService.getAllRequestGroup();
+        if (res.isEmpty()) {
+            return ResponseEntity.status(204).body("No Content");
+        }
+        return ResponseEntity.status(200).body(res);
+    }
+
+    @PostMapping("/update/request-group")
+    public ResponseEntity updateRequestGroup() {
+        return null;
     }
 
 

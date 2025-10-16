@@ -23,7 +23,7 @@ public class RequestGroupDetail {
 
     // relationships
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "staff_id")
     private Users user;
 
     @OneToOne

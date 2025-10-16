@@ -55,9 +55,16 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public List<AllGroupsOfMember> getAllGroupsOfMember(Users user) {
         List<GroupMember> gm = iGroupMemberRepository.findAllByUsersId(user.getId());
+
+
         List<AllGroupsOfMember> res = new ArrayList<>();
         for (GroupMember each : gm) {
             AllGroupsOfMember agm = modelMapper.map(each, AllGroupsOfMember.class);
+            agm.setMembers(iGroupMemberRepository.findAllByGroup_GroupId(each.getGroup().getGroupId())
+                    .stream()
+                    .filter(groupMember ->
+                            !user.getId().equals(groupMember.getUsers().getId()))
+                    .toList());
             res.add(agm);
         }
         return res;

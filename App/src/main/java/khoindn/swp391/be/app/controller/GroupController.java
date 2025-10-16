@@ -11,6 +11,7 @@ import khoindn.swp391.be.app.service.AuthenticationService;
 import khoindn.swp391.be.app.service.IGroupMemberService;
 import khoindn.swp391.be.app.service.IGroupService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,10 +39,11 @@ public class GroupController {
     }
 
     @GetMapping("/get/current")
-    public ResponseEntity getBelongedGroup() {
+    public ResponseEntity<List<AllGroupsOfMember>> getBelongedGroup() {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
-            return ResponseEntity.status(401).body("Unauthorized");
+//             throw new RuntimeException("Current account is null");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         List<AllGroupsOfMember> groups = iGroupMemberService.getAllGroupsOfMember(user);
         return ResponseEntity.status(200).body(groups);
