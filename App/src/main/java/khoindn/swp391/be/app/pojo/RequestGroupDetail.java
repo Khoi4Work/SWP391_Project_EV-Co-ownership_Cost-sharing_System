@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,6 +28,7 @@ public class RequestGroupDetail {
 
     @OneToOne
     @JoinColumn(name = "request_group_id")
+    @JsonIgnore
     private RequestGroup requestGroup;
 
 }

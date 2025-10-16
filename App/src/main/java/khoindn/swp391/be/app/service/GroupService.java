@@ -131,10 +131,10 @@ public class GroupService implements IGroupService {
         // tao request
         RequestGroup requestGroup = new RequestGroup();
         requestGroup.setGroupMember(member);
-        if (request.getDescriptionRequestGroup().isBlank()) {
-            requestGroup.setNameRequestGroup(request.getNameRequestGroup());
+        requestGroup.setNameRequestGroup(request.getNameRequestGroup());
+        if (!request.getDescriptionRequestGroup().isEmpty()) {
+            requestGroup.setDescriptionRequestGroup(request.getDescriptionRequestGroup());
         }
-        requestGroup.setDescriptionRequestGroup(request.getDescriptionRequestGroup());
 
         // tao group detail
         RequestGroupDetail detail = new RequestGroupDetail();
@@ -144,7 +144,6 @@ public class GroupService implements IGroupService {
         iRequestGroupRepository.save(requestGroup);
         iRequestGroupDetailRepository.save(detail);
     }
-
 
 
 }

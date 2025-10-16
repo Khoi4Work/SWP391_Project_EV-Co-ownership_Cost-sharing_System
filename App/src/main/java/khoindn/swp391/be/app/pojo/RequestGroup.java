@@ -19,7 +19,7 @@ public class RequestGroup {
     private Long id;
 
     private String nameRequestGroup;
-    private String descriptionRequestGroup;
+    private String descriptionRequestGroup = "No description";
     private String statusRequestGroup = "pending"; // pending, approved, rejected
     private LocalDateTime createdAt = LocalDateTime.now();
 

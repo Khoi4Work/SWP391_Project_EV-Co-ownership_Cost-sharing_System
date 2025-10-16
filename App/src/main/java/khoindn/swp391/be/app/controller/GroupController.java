@@ -37,8 +37,8 @@ public class GroupController {
         return ResponseEntity.status(201).body(group); // 201 Created
     }
 
-    @GetMapping("/get")
-    public ResponseEntity getGroup() {
+    @GetMapping("/get/current")
+    public ResponseEntity getBelongedGroup() {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -48,7 +48,7 @@ public class GroupController {
     }
 
     @PostMapping("/request")
-    public ResponseEntity CreateRequestGroup(@Valid GroupRequest request) {
+    public ResponseEntity createRequestGroup(@Valid GroupRequest request) {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(401).body("Unauthorized");
