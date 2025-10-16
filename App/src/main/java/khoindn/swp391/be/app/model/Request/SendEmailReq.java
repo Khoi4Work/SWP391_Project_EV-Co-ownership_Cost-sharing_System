@@ -10,6 +10,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SendEmailReq {
-    private String documentUrl;
+    private String content;
     private List<String> email;
 }

@@ -27,6 +27,7 @@ export default function Contracts() {
 
         // Lọc các contract status = active
         const activeContracts = res.data;
+        console.log("Fetched contracts:", activeContracts);
         setContracts(activeContracts);
       } catch (error) {
         console.error("Lỗi khi tải hợp đồng:", error);

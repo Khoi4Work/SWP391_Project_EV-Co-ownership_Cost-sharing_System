@@ -13,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterVehicleRes {
+
     private List<ResponseVehicleRegisteration> owners;
 
     int vehicleId;
@@ -21,8 +22,6 @@ public class RegisterVehicleRes {
     String model;
     String color;
     int batteryCapacity;
-    LocalDateTime createdAt;
-    private Group groupId;
-    private ContractSigner contractSigner;
-    private Contract contract;
+    private Group group;
+
 }

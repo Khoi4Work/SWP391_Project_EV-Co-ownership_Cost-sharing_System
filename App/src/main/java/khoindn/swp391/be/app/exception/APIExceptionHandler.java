@@ -43,6 +43,10 @@ public class APIExceptionHandler {
     public ResponseEntity handleInternalAuthenticationServiceException(InternalAuthenticationServiceException exception) {
         return ResponseEntity.status(401).body("Username or password invalid!"); // 401
     }
+    @ExceptionHandler(UserIsExistedException.class)
+    public ResponseEntity handleUserIsExistedException(UserIsExistedException exception) {
+        return ResponseEntity.status(401).body("Username is existed!"); // 401
+    }
 
     // ==========================
     // 3. Common Runtime Exceptions (fallback cho code cũ chưa custom)
