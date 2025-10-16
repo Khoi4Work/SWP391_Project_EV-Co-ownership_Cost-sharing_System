@@ -22,14 +22,25 @@ export default function MyGroups() {
         description: "Quản lý các nhóm đồng sở hữu bạn tham gia: chủ sở hữu, vai trò và thành viên.",
         canonicalPath: "/co-owner/groups",
     });
-    const tokenUser = JSON.parse(localStorage.getItem("accessToken") || "{}");
-    const currentUserId = tokenUser?.id;
+    const tokenUser = localStorage.getItem("accessToken") || "{}";
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const navigate = useNavigate();
     const { toast } = useToast();
     const [leaveRequestDialogOpen, setLeaveRequestDialogOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<string | number>("");
     const [groups, setGroups] = useState<any[]>([]);
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const res = await axiosClient.get("/auth/current");
 
+                setCurrentUserId(res.data.id);
+            } catch (err) {
+                console.error("Lỗi lấy user hiện tại:", err);
+            }
+        };
+        fetchCurrentUser();
+    }, []);
     const handleRequestLeave = (groupId: number) => {
         setSelectedGroup(groupId);
         setLeaveRequestDialogOpen(true);
@@ -65,7 +76,7 @@ export default function MyGroups() {
             console.log("⏳ Gửi yêu cầu rời nhóm...");
 
             // 1. Lấy group hiện tại
-            const group = groups.find((g) => g.id === selectedGroup);
+            const group = groups.find(g => g.group.groupId === selectedGroup);
             if (!group) {
                 console.warn("⚠️ Không tìm thấy group trong dữ liệu trả về:", groups);
                 toast({
@@ -90,12 +101,12 @@ export default function MyGroups() {
 
             // 3. Gửi request rời nhóm
             console.log("📤 Đang gửi request rời nhóm với payload:", {
-                groupId: group.id,
+                groupId: group.group.groupId,
                 userId: currentUserId,
             });
 
             await axiosClient.post("/group/request", {
-                groupId: group.id,
+                groupId: group.group.groupId,
                 userId: currentUserId,
                 nameRequestGroup: `Yêu cầu rời nhóm - ${currentUserId}`,
                 descriptionRequestGroup: "Người dùng yêu cầu rời nhóm",
@@ -133,9 +144,13 @@ export default function MyGroups() {
             });
         }
     };
-
-
-
+    if (currentUserId === null) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p>Đang tải thông tin người dùng...</p>
+            </div>
+        );
+    }
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
@@ -162,90 +177,86 @@ export default function MyGroups() {
                         aria-label="Danh sách nhóm"
                         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                     >
-                        {groups
-                            .filter((g) => g.users.some((u) => u.id === currentUserId)) // ✅ chỉ lấy nhóm user tham gia
-                            .map((g) => {
-                                const owner = g.users.find((u) => u.id === g.ownerId)!;
-                                const me = g.users.find((u) => u.id === currentUserId);
-                                const myRole = me?.role ?? "member";
-                                const otherMembers = g.users.filter((u) => u.id !== g.ownerId);
 
-                                return (
-                                    <Card key={g.id} className="relative hover:shadow-elegant transition">
-                                        <CardHeader>
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <Users className="h-5 w-5 text-primary" />
-                                                    <div>
-                                                        <CardTitle className="text-base">{g.name}</CardTitle>
-                                                        <CardDescription>
-                                                            Chủ sở hữu: {owner.name}{" "}
-                                                            <Badge className="ml-1">Admin</Badge>
-                                                        </CardDescription>
-                                                    </div>
-                                                </div>
-                                                <Badge variant="secondary">
-                                                    Vai trò: {myRole === "admin" ? "Admin" : "Member"}
-                                                </Badge>
-                                            </div>
-                                        </CardHeader>
+                        {groups.map((g) => {
+                            const myRole = g.roleInGroup || "member";
+                            const status = g.status || "active";
+                            const ownership = g.ownershipPercentage ?? 0;
+                            const groupName = g.group?.groupName || "Không có tên nhóm";
+                            const createdAt = g.group?.createdAt ? new Date(g.group.createdAt).toLocaleDateString("vi-VN") : "-";
 
-                                        <CardContent>
-                                            <div className="space-y-3">
-                                                <div className="flex -space-x-2">
-                                                    {otherMembers.slice(0, 5).map((m) => (
-                                                        <Avatar key={m.id} className="border">
-                                                            <AvatarImage
-                                                                src={m.avatar}
-                                                                alt={`Ảnh đại diện ${m.name}`}
-                                                                loading="lazy"
-                                                            />
-                                                            <AvatarFallback>{m.name?.charAt(0) || "?"}</AvatarFallback>
-                                                        </Avatar>
-                                                    ))}
-                                                </div>
+                            // Lấy các member khác (trừ chính user hiện tại)
+                            const otherMembers = g.members
+                                ?.filter((m) => m.users.id !== currentUserId)
+                                .map((m) => ({
+                                    id: m.users.id,
+                                    name: m.users.hovaTen,
+                                    avatar: m.users.avatar ?? "",
+                                })) || [];
 
-                                                <p className="text-sm text-muted-foreground">
-                                                    Thành viên:{" "}
-                                                    {otherMembers
-                                                        .map((m) => m.name)
-                                                        .slice(0, 3)
-                                                        .join(", ")}
-                                                    {otherMembers.length > 3
-                                                        ? ` và +${otherMembers.length - 3} nữa`
-                                                        : ""}
-                                                </p>
-
-                                                <div className="flex items-center justify-between text-sm">
-                                                    <span>Quỹ nhóm:</span>
-                                                    <span className="font-semibold">
-                                                        {Number(g.fund || 0).toLocaleString("vi-VN")} VNĐ
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        className="flex-1"
-                                                        onClick={() => navigate(`/co-owner/groups/${g.id}`)}
-                                                    >
-                                                        Xem chi tiết
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={() => handleRequestLeave(g.id)}
-                                                        className="px-3"
-                                                    >
-                                                        <LogOut className="h-4 w-4" />
-                                                    </Button>
+                            return (
+                                <Card key={g.group.groupId} className="relative hover:shadow-elegant transition">
+                                    <CardHeader>
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <Users className="h-5 w-5 text-primary" />
+                                                <div>
+                                                    <CardTitle className="text-base">{groupName}</CardTitle>
+                                                    <CardDescription>
+                                                        Vai trò: <Badge className="ml-1">{myRole.toUpperCase()}</Badge> | Trạng thái: {status}
+                                                    </CardDescription>
+                                                    <CardDescription>
+                                                        Ngày tạo: {createdAt} | Sở hữu: {ownership}%
+                                                    </CardDescription>
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                                        </div>
+                                    </CardHeader>
+
+                                    <CardContent>
+                                        <div className="space-y-3">
+                                            <div className="flex -space-x-2">
+                                                {otherMembers.slice(0, 5).map((m) => (
+                                                    <Avatar key={m.id} className="border">
+                                                        <AvatarImage src={m.avatar} alt={`Avatar ${m.name}`} loading="lazy" />
+                                                        <AvatarFallback>{m.name?.charAt(0) || "?"}</AvatarFallback>
+                                                    </Avatar>
+                                                ))}
+                                            </div>
+
+                                            <p className="text-sm text-muted-foreground">
+                                                Thành viên: {otherMembers.map((m) => m.name).slice(0, 3).join(", ")}
+                                                {otherMembers.length > 3 ? ` và +${otherMembers.length - 3} nữa` : ""}
+                                            </p>
+
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span>Phần trăm sở hữu của bạn:</span>
+                                                <span className="font-semibold">{ownership}%</span>
+                                            </div>
+
+                                            <div className="flex gap-2 mt-2">
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    onClick={() => navigate(`/co-owner/groups/${g.group.groupId}`)}
+                                                >
+                                                    Xem chi tiết
+                                                </Button>
+
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => handleRequestLeave(g.group.groupId)}
+                                                    className="px-3"
+                                                >
+                                                    <LogOut className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </section>
                 </main>
             </div>

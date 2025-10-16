@@ -20,6 +20,7 @@ export default function ContractPreviewPage() {
     const [error, setError] = useState("");
     const queryParams = new URLSearchParams(location.search);
     const token = queryParams.get("token");
+    const BASE_URL = import.meta.env.VITE_API_URL;
     console.log("Contract ID:", id);
     console.log("Token từ query string:", token);
     useEffect(() => {
@@ -32,7 +33,7 @@ export default function ContractPreviewPage() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axios.get(AUTH_CURRENT_PATH, {
+                const res = await axios.get(``, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
