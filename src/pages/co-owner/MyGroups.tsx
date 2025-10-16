@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Users, ArrowLeft, LogOut, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { groups, CURRENT_USER_ID } from "@/data/mockGroups";
 import { useSEO } from "@/hooks/useSEO";
 import axiosClient from "@/api/axiosClient";
 export default function MyGroups() {
@@ -23,70 +22,52 @@ export default function MyGroups() {
         description: "Quản lý các nhóm đồng sở hữu bạn tham gia: chủ sở hữu, vai trò và thành viên.",
         canonicalPath: "/co-owner/groups",
     });
-
+    const tokenUser = JSON.parse(localStorage.getItem("accessToken") || "{}");
+    const currentUserId = tokenUser?.id;
     const navigate = useNavigate();
     const { toast } = useToast();
     const [leaveRequestDialogOpen, setLeaveRequestDialogOpen] = useState(false);
-    const [selectedGroup, setSelectedGroup] = useState<string>("");
-    const [currentGroup, setCurrentGroup] = useState<any>(null);
-    const data = useMemo(() => groups, []);
+    const [selectedGroup, setSelectedGroup] = useState<string | number>("");
+    const [groups, setGroups] = useState<any[]>([]);
 
-    const handleRequestLeave = (groupId: string) => {
+    const handleRequestLeave = (groupId: number) => {
         setSelectedGroup(groupId);
         setLeaveRequestDialogOpen(true);
     };
     useEffect(() => {
-        const fetchGroup = async () => {
+        const fetchGroups = async () => {
             try {
                 console.log("⏳ Đang gọi API: /group/get/current...");
                 const res = await axiosClient.get("/group/get/current");
+                const data = res?.data;
 
-                // Kiểm tra dữ liệu trả về có đúng không
-                if (!res || !res.data || !res.data.group) {
-                    console.warn("⚠️ API trả về nhưng không có group:", res);
-                    setCurrentGroup(null);
+                // Kiểm tra dữ liệu trả về có đúng dạng mảng không
+                if (!Array.isArray(data)) {
+                    console.warn("⚠️ API không trả về mảng group:", data);
+                    setGroups([]);
                     return;
                 }
 
-                console.log("✅ Nhận được group từ API:", res.data.group);
-                setCurrentGroup(res.data.group);
-            } catch (error: any) {
+                console.log("✅ Danh sách group nhận được:", data);
+                setGroups(data);
+            } catch (error) {
                 console.error("❌ Lỗi khi gọi API /group/get/current:", error);
-
-                // Nếu có phản hồi từ server (4xx, 5xx)
-                if (error.response) {
-                    console.error("📌 Response error:", {
-                        status: error.response.status,
-                        data: error.response.data,
-                    });
-                }
-                // Nếu không kết nối được tới server
-                else if (error.request) {
-                    console.error("📌 Không nhận phản hồi từ server:", error.request);
-                }
-                // Lỗi khác (code, cấu hình axios, v.v.)
-                else {
-                    console.error("📌 Lỗi không xác định:", error.message);
-                }
-
-                setCurrentGroup(null); // Tránh để undefined gây lỗi chỗ khác
+                setGroups([]);
             }
         };
 
-        fetchGroup();
+        fetchGroups();
     }, []);
+
 
     const confirmRequestLeave = async () => {
         try {
             console.log("⏳ Gửi yêu cầu rời nhóm...");
 
             // 1. Lấy group hiện tại
-            const res = await axiosClient.get("/group/get/current");
-            console.log("✅ API /group/get/current trả về:", res);
-
-            const group = res?.data?.group;
+            const group = groups.find((g) => g.id === selectedGroup);
             if (!group) {
-                console.warn("⚠️ Không tìm thấy group trong dữ liệu trả về:", res);
+                console.warn("⚠️ Không tìm thấy group trong dữ liệu trả về:", groups);
                 toast({
                     title: "Lỗi",
                     description: "Bạn hiện không nằm trong nhóm nào.",
@@ -97,8 +78,6 @@ export default function MyGroups() {
             }
 
             // 2. Lấy user từ token/localStorage
-            const tokenUser = JSON.parse(localStorage.getItem("accessToken") || "{}");
-            const currentUserId = tokenUser?.id;
             if (!currentUserId) {
                 console.error("❌ Không tìm thấy userId trong accessToken:", tokenUser);
                 toast({
@@ -179,69 +158,94 @@ export default function MyGroups() {
 
             <div className="container mx-auto p-6">
                 <main>
-                    <section aria-label="Danh sách nhóm"
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {data.map((g) => {
-                            const owner = g.users.find((u) => u.id === g.ownerId)!;
-                            const me = g.users.find((u) => u.id === CURRENT_USER_ID);
-                            const myRole = me?.role ?? "member";
-                            const otherMembers = g.users.filter((u) => u.id !== g.ownerId);
+                    <section
+                        aria-label="Danh sách nhóm"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    >
+                        {groups
+                            .filter((g) => g.users.some((u) => u.id === currentUserId)) // ✅ chỉ lấy nhóm user tham gia
+                            .map((g) => {
+                                const owner = g.users.find((u) => u.id === g.ownerId)!;
+                                const me = g.users.find((u) => u.id === currentUserId);
+                                const myRole = me?.role ?? "member";
+                                const otherMembers = g.users.filter((u) => u.id !== g.ownerId);
 
-                            return (
-                                <Card key={g.id} className="relative hover:shadow-elegant transition">
-                                    <CardHeader>
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <Users className="h-5 w-5 text-primary" />
-                                                <div>
-                                                    <CardTitle className="text-base">{g.name}</CardTitle>
-                                                    <CardDescription>Chủ sở hữu: {owner.name} <Badge
-                                                        className="ml-1">Admin</Badge></CardDescription>
+                                return (
+                                    <Card key={g.id} className="relative hover:shadow-elegant transition">
+                                        <CardHeader>
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <Users className="h-5 w-5 text-primary" />
+                                                    <div>
+                                                        <CardTitle className="text-base">{g.name}</CardTitle>
+                                                        <CardDescription>
+                                                            Chủ sở hữu: {owner.name}{" "}
+                                                            <Badge className="ml-1">Admin</Badge>
+                                                        </CardDescription>
+                                                    </div>
+                                                </div>
+                                                <Badge variant="secondary">
+                                                    Vai trò: {myRole === "admin" ? "Admin" : "Member"}
+                                                </Badge>
+                                            </div>
+                                        </CardHeader>
+
+                                        <CardContent>
+                                            <div className="space-y-3">
+                                                <div className="flex -space-x-2">
+                                                    {otherMembers.slice(0, 5).map((m) => (
+                                                        <Avatar key={m.id} className="border">
+                                                            <AvatarImage
+                                                                src={m.avatar}
+                                                                alt={`Ảnh đại diện ${m.name}`}
+                                                                loading="lazy"
+                                                            />
+                                                            <AvatarFallback>{m.name?.charAt(0) || "?"}</AvatarFallback>
+                                                        </Avatar>
+                                                    ))}
+                                                </div>
+
+                                                <p className="text-sm text-muted-foreground">
+                                                    Thành viên:{" "}
+                                                    {otherMembers
+                                                        .map((m) => m.name)
+                                                        .slice(0, 3)
+                                                        .join(", ")}
+                                                    {otherMembers.length > 3
+                                                        ? ` và +${otherMembers.length - 3} nữa`
+                                                        : ""}
+                                                </p>
+
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span>Quỹ nhóm:</span>
+                                                    <span className="font-semibold">
+                                                        {Number(g.fund || 0).toLocaleString("vi-VN")} VNĐ
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="flex-1"
+                                                        onClick={() => navigate(`/co-owner/groups/${g.id}`)}
+                                                    >
+                                                        Xem chi tiết
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => handleRequestLeave(g.id)}
+                                                        className="px-3"
+                                                    >
+                                                        <LogOut className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             </div>
-                                            <Badge variant="secondary">Vai
-                                                trò: {myRole === "admin" ? "Admin" : "Member"}</Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            <div className="flex -space-x-2">
-                                                {otherMembers.slice(0, 5).map((m) => (
-                                                    <Avatar key={m.id} className="border">
-                                                        <AvatarImage src={m.avatar} alt={`Ảnh đại diện ${m.name}`}
-                                                            loading="lazy" />
-                                                        <AvatarFallback>{m.name.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                ))}
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Thành viên: {otherMembers.map((m) => m.name).slice(0, 3).join(", ")}
-                                                {otherMembers.length > 3 ? ` và +${otherMembers.length - 3} nữa` : ""}
-                                            </p>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span>Quỹ nhóm:</span>
-                                                <span
-                                                    className="font-semibold">{g.fund.toLocaleString("vi-VN")} VNĐ</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button variant="outline" className="flex-1"
-                                                    onClick={() => navigate(`/co-owner/groups/${g.id}`)}>
-                                                    Xem chi tiết
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() => handleRequestLeave(g.id)}
-                                                    className="px-3"
-                                                >
-                                                    <LogOut className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                     </section>
                 </main>
             </div>
@@ -265,7 +269,10 @@ export default function MyGroups() {
                         </p>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setLeaveRequestDialogOpen(false)}>
+                        <Button variant="outline" onClick={() => {
+                            setLeaveRequestDialogOpen(false);
+                            setSelectedGroup("");
+                        }}>
                             Hủy
                         </Button>
                         <Button variant="destructive" onClick={confirmRequestLeave}>
