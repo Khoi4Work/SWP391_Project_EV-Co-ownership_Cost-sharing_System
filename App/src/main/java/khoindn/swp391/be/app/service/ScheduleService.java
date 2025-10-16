@@ -77,7 +77,7 @@ public class ScheduleService implements IScheduleService {
             long overrideCount = iScheduleRepository
                     .countByGroupMember_IdAndStatusAndCreatedAtBetween(
                             gm.getId(),
-                            "override_tracker", // Đếm tracker thay vì "overridden"
+                            "override_tracker",
                             startOfMonth,
                             endOfMonth
                     );
@@ -134,7 +134,7 @@ public class ScheduleService implements IScheduleService {
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
-        schedule.setStatus("pending");
+        schedule.setStatus("booked");
         schedule.setGroupMember(gm);
 
         Schedule saved = iScheduleRepository.save(schedule);
