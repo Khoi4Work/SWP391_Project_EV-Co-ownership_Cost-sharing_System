@@ -33,7 +33,7 @@ export default function ContractPreviewPage() {
         const fetchUser = async () => {
             try {
                 setLoading(true);
-                const res = await axios.get(``, {
+                const res = await axios.get(`${BASE_URL}${AUTH_CURRENT_PATH}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

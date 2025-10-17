@@ -155,7 +155,7 @@ export default function Contracts() {
 
                           <div className="flex items-center space-x-2">
                             <Users className="h-4 w-4" />
-                            <span>Sở hữu: {contract.ownership}</span>
+                            <span>Sở hữu: {contract.ownership}%</span>
                           </div>
 
                           <div className="flex items-center space-x-2">

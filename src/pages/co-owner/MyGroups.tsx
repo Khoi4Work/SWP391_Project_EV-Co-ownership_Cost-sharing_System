@@ -51,7 +51,7 @@ export default function MyGroups() {
                 console.log("⏳ Đang gọi API: /group/get/current...");
                 const res = await axiosClient.get("/group/get/current");
                 const data = res?.data;
-
+                console.log("📥 Dữ liệu nhận được từ API /group/get/current:", data);
                 // Kiểm tra dữ liệu trả về có đúng dạng mảng không
                 if (!Array.isArray(data)) {
                     console.warn("⚠️ API không trả về mảng group:", data);
