@@ -1,10 +1,9 @@
 package khoindn.swp391.be.app.service;
 
-import khoindn.swp391.be.app.exception.exceptions.GroupNotFoundException;
-import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
-import khoindn.swp391.be.app.exception.exceptions.VehicleIsRegisteredException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
+import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
@@ -143,6 +142,37 @@ public class GroupService implements IGroupService {
         // luu vao db
         iRequestGroupRepository.save(requestGroup);
         iRequestGroupDetailRepository.save(detail);
+    }
+
+    @Override
+    public void updateRequestGroup(UpdateRequestGroup update, Users staff) {
+        RequestGroup req = iRequestGroupRepository.findRequestGroupById(update.getIdRequestGroup());
+        if (req == null) {
+            throw new RequestGroupNotFoundException("RequestGroup not found");
+        }
+
+        if (update.getIdChoice()==1){
+            req.setStatusRequestGroup("solved");
+            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStatus("solved");
+            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
+            iRequestGroupRepository.save(req);
+        }else if (update.getIdChoice()==0){
+            req.setStatusRequestGroup("denied");
+            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStatus("denied");
+            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
+            iRequestGroupRepository.save(req);
+        }else if (update.getIdChoice()==2){
+            req.setStatusRequestGroup("processing");
+            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStatus("processing");
+            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
+            iRequestGroupRepository.save(req);
+        }else{
+            throw new UndefinedChoiceException("Undefined Choice");
+
+        }
     }
 
 

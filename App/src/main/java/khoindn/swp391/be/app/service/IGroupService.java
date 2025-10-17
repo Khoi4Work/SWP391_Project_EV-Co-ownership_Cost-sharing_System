@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
+import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.pojo.Users;
 
@@ -12,4 +13,5 @@ public interface IGroupService {
 
     public void createRequestGroup(GroupRequest request, Users user);
 
+    public void updateRequestGroup(UpdateRequestGroup update, Users staff);
 }

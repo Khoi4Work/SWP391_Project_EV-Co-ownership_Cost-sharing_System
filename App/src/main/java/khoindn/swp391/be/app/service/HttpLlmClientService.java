@@ -1,4 +1,4 @@
-// src/main/java/khoindn/swp391/be/app/service/HttpLlmClient.java
+// src/main/java/khoindn/swp391/be/app/service/HttpLlmClientService.java
 package khoindn.swp391.be.app.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class HttpLlmClient implements LlmClient {
+public class HttpLlmClientService implements LlmClientService {
 
-    private static final Logger log = LoggerFactory.getLogger(HttpLlmClient.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpLlmClientService.class);
 
     private final OkHttpClient client;
     private final ObjectMapper mapper;
@@ -40,7 +40,7 @@ public class HttpLlmClient implements LlmClient {
     @Value("${openai.timeout-ms:60000}")
     private long timeoutMs;
 
-    public HttpLlmClient(ObjectMapper mapper) {
+    public HttpLlmClientService(ObjectMapper mapper) {
         this.mapper = mapper;
         this.client = new OkHttpClient.Builder()
                 .callTimeout(Duration.ofMillis(60000))
