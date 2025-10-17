@@ -56,12 +56,12 @@ export default function Login() {
             const token = response.data.token;
             const userId = response.data.id;
             const hovaten = response.data.hovaten; // Tên field từ backend
-
+            const role = response.data.role.roleName;
             // ✅ Lưu vào localStorage
             localStorage.setItem("accessToken", token);
             localStorage.setItem("userId", userId.toString());
             localStorage.setItem("hovaten", hovaten);
-
+            console.log("Role:", role);
             console.log("Token:", token);
             console.log("User ID:", userId);
 
@@ -70,11 +70,11 @@ export default function Login() {
                 description: `Chào mừng ${hovaten} đến với EcoShare!`,
             });
             //Điều hướng theo loại tài khoản
-            if (selectedType === "co-owner") {
+            if (selectedType === "co-owner" && role.toLowerCase() === "co-owner") {
                 navigate("/co-owner/dashboard");
-            } else if (selectedType === "staff") {
+            } else if (selectedType === "staff" && role.toLowerCase() === "staff") {
                 navigate("/staff/dashboard");
-            } else if (selectedType === "admin") {
+            } else if (selectedType === "admin" && role.toLowerCase() === "admin") {
                 navigate("/admin/dashboard");
             }
         } catch (err) {
@@ -85,9 +85,9 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        finally {
-            navigate("/co-owner/dashboard");
-        }
+        // finally {
+        //     navigate("/co-owner/dashboard");
+        // }
     };
 
 
