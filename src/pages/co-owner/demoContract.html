@@ -372,6 +372,8 @@
       </div>
     </section>
     <!-- ✅ Xác nhận -->
+    <!-- ✅ Phần ký xác nhận -->
+    <!-- ✅ Phần xác nhận -->
     <section style="margin-top: 2rem">
       <h2 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem">
         5. Xác nhận
@@ -379,24 +381,96 @@
       <p>Vui lòng xác nhận đồng ý hoặc không đồng ý với các điều khoản trong hợp đồng:</p>
 
       <label style="display: block; margin: 0.5rem 0; cursor: pointer">
-        <input type="radio" name="agreement" value="1" />
+        <input type="radio" name="agreement" value="1" id="agreeYes" />
         Đồng ý
       </label>
 
       <label style="display: block; margin: 0.5rem 0; cursor: pointer">
-        <input type="radio" name="agreement" value="0" />
+        <input type="radio" name="agreement" value="0" id="agreeNo" />
         Không đồng ý
       </label>
-    </section>
 
-    <p style="
-        margin-top: 2rem;
-        font-style: italic;
-        font-size: 0.9rem;
-        color: #555;
-      ">
-      Lưu ý: Khi tick "Đồng ý", bạn đồng ý với tất cả các điều khoản nêu trong hợp đồng này.
-    </p>
+      <p style="
+    margin-top: 1.5rem;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: #555;
+  ">
+        Lưu ý: Khi tick "Đồng ý", bạn đồng ý với tất cả các điều khoản nêu trong hợp đồng này.
+      </p>
+
+      <!-- ✅ Khu vực chữ ký (ẩn mặc định) -->
+      <div id="signatureSection" style="display:none; margin-top:2rem;">
+        <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">
+          6. Xác nhận chữ ký điện tử
+        </h3>
+        <p>Vui lòng ký xác nhận vào ô bên dưới để hoàn tất hợp đồng:</p>
+
+        <div style="text-align:center; margin-top:1rem;">
+          <canvas id="signaturePad" width="500" height="200"
+            style="border:1px solid #aaa; border-radius:4px; background-color:#fff;"></canvas>
+          <div style="margin-top:1rem;">
+            <button id="clearSig" style="padding:0.5rem 1rem; margin-right:0.5rem;">Xóa</button>
+            <button id="saveSig" style="padding:0.5rem 1rem;">Lưu chữ ký</button>
+          </div>
+        </div>
+
+        <div id="signatureResult" style="margin-top:2rem; display:none;">
+          <p><strong>Chữ ký đã xác nhận:</strong></p>
+          <img id="savedSignature" src="" alt="Chữ ký đã lưu"
+            style="border:1px solid #ccc; max-width:300px; display:block; margin:1rem auto;">
+          <p style="text-align:center;"><em>Người ký: {{ownerInfo.name}}</em></p>
+        </div>
+      </div>
+
+      <!-- ✅ Script điều khiển hiển thị chữ ký -->
+      <script>
+        const agreeYes = document.getElementById("agreeYes");
+        const agreeNo = document.getElementById("agreeNo");
+        const sigSection = document.getElementById("signatureSection");
+        const canvas = document.getElementById("signaturePad");
+        const ctx = canvas.getContext("2d");
+        let drawing = false;
+
+        // Ẩn/hiện phần chữ ký khi chọn radio
+        agreeYes.addEventListener("change", () => {
+          if (agreeYes.checked) sigSection.style.display = "block";
+        });
+        agreeNo.addEventListener("change", () => {
+          if (agreeNo.checked) {
+            sigSection.style.display = "none";
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById("signatureResult").style.display = "none";
+          }
+        });
+
+        // --- Vẽ chữ ký ---
+        canvas.addEventListener("mousedown", () => (drawing = true));
+        canvas.addEventListener("mouseup", () => (drawing = false, ctx.beginPath()));
+        canvas.addEventListener("mousemove", draw);
+        function draw(event) {
+          if (!drawing) return;
+          ctx.lineWidth = 2;
+          ctx.lineCap = "round";
+          ctx.strokeStyle = "#000";
+          const rect = canvas.getBoundingClientRect();
+          ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
+        }
+
+        // --- Nút xóa & lưu chữ ký ---
+        document.getElementById("clearSig").onclick = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
+        document.getElementById("saveSig").onclick = () => {
+          const dataURL = canvas.toDataURL("image/png");
+          document.getElementById("savedSignature").src = dataURL;
+          document.getElementById("signatureResult").style.display = "block";
+        };
+      </script>
+    </section>
   </div>
 </body>
 
