@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
+import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -284,7 +285,7 @@ public class ScheduleService implements IScheduleService {
     }
 
     @Override
-    public Map<String, Object> getOverrideCountForUser(int userId, int groupId) {
+    public OverrideInfoRes  getOverrideCountForUser(int userId, int groupId) {
         Users user = iUserRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -314,16 +315,14 @@ public class ScheduleService implements IScheduleService {
                         endOfMonth
                 );
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("userId", userId);
-        result.put("groupId", groupId);
-        result.put("overridesUsed", overrideCount);
-        result.put("overridesRemaining", 3 - overrideCount);
-        result.put("maxOverridesPerMonth", 3);
-        result.put("currentMonth", startOfMonth.getMonth().toString());
-        result.put("nextResetDate", startOfMonth.plusMonths(1).toLocalDate());
-
-        return result;
+        return new OverrideInfoRes(
+                userId,
+                groupId,
+                overrideCount,
+                3 - overrideCount,
+                3,
+                startOfMonth.getMonth().toString(),
+                startOfMonth.plusMonths(1).toLocalDate());
     }
 
 

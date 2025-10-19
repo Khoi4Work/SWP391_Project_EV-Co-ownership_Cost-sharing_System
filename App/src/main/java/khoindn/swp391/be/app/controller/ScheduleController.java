@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.exception.exceptions.NoVehicleInGroupException;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
+import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.service.IScheduleService;
@@ -75,11 +76,11 @@ public class ScheduleController {
     }
 
     @GetMapping("/override-count")
-    public ResponseEntity<Map<String, Object>> getOverrideCount(
+    public ResponseEntity<OverrideInfoRes> getOverrideCount(
             @RequestParam int userId,
             @RequestParam int groupId) {
 
-        Map<String, Object> result = scheduleService.getOverrideCountForUser(userId, groupId);
+        OverrideInfoRes result = scheduleService.getOverrideCountForUser(userId, groupId);
         return ResponseEntity.ok(result);
     }
 
