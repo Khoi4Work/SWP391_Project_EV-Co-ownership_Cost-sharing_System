@@ -9,6 +9,7 @@ import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
 @ToString(exclude = {"role", "userOfGroupMember"})
 @AllArgsConstructor
 public class Users implements UserDetails {
+    //attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
@@ -48,6 +50,10 @@ public class Users implements UserDetails {
     @Column(name = "phone", nullable = false, unique = true)
     private String phone;
 
+    @Column(name = "publicKey", length = 3000)
+    private String publicKey;
+
+    //relationships
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role; // Default role ID for regular users

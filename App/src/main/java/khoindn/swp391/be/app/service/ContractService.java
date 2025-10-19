@@ -16,9 +16,14 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -59,14 +64,64 @@ public class ContractService implements IContractService {
     @Override
     public ContractSigner setContract(ContractDecisionReq req) {
         System.out.println("Update contract...");
+
         Users user = iUserRepository.findUsersById(req.getIdUser());
         System.out.println(user);
+
+        //Parse privateKey va publicKey sang byte
+        byte[] privateKeyReceived = Base64.getDecoder().decode(req.getContract_signature());
+        byte[] publicKeyUser = Base64.getDecoder().decode(user.getPublicKey());
+
+
+
+
+
+
+
+
         if (iContractSignerRepository.existsByUser_Id(user.getId())) {
             ContractSigner contractSigner = iContractSignerRepository
                     .findByUser_IdAndContract_ContractId(user.getId(), req.getIdContract());
             // Cập nhật decision
             if (req.getIdChoice() == 1) {
+
                 contractSigner.setDecision("Signed");
+
+                // Kiểm tra privateKey và publicKey có khớp không
+                try {
+                    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
+                    PrivateKey privateKey = keyFactory.generatePrivate(
+                            new PKCS8EncodedKeySpec(privateKeyReceived));
+                    PublicKey publicKey = keyFactory.generatePublic(
+                            new X509EncodedKeySpec(publicKeyUser));
+
+                    // Nếu không có exception thì khóa hợp lệ
+                    byte[] contractBytes = req.getContractContent().getBytes();
+                    // ký
+                    Signature signature = Signature.getInstance("SHA256withRSA");
+                    signature.initSign(privateKey);
+                    signature.update(contractBytes);
+                    byte[] signatureBytes = signature.sign();
+                    // verify
+                    Signature verifier = Signature.getInstance("SHA256withRSA");
+                    verifier.initVerify(publicKey);
+                    verifier.update(contractBytes);
+                    boolean isVerified = verifier.verify(signatureBytes);
+                    if (!isVerified) {
+                        throw new IllegalArgumentException("Private key does not match public key");
+                    }
+                    System.out.println("✅ Private key matches public key.");
+                    // Lưu chữ ký dưới dạng Base64
+                    contractSigner.setSignature(Base64.getEncoder().encodeToString(signatureBytes));
+
+                }catch (NoSuchAlgorithmException | InvalidKeySpecException | SignatureException e ) {
+                    System.out.println(e.getMessage());;
+                } catch (InvalidKeyException e) {
+                    throw new RuntimeException(e);
+                }
+
+
             } else if (req.getIdChoice() == 0) {
                 contractSigner.setDecision("Declined");
             } else {
@@ -118,25 +173,7 @@ public class ContractService implements IContractService {
 //
 //    }
 
-    @Override
-    public void SendBulkEmail(SendEmailReq emailReq) {
-        for (String eachEmail : emailReq.getEmail()) {
-            try {
-                MimeMessage message = javaMailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-                helper.setTo(eachEmail);
-                helper.setSubject("[EcoShare System] E-Contract");
-                helper.setText(
-                        "<a href='" + emailReq.getContent() +
-                                "'>Nhấn vào đây để xem hợp đồng</a>", true);
-
-                javaMailSender.send(message);
-            } catch (Exception e) {
-                e.getMessage();
-            }
-        }
-    }
 
     @Override
     public List<ContractSigner> createContract(ContractCreateReq req) {
@@ -147,7 +184,6 @@ public class ContractService implements IContractService {
 
         contract.setContractType(req.getContractType());
         contract.setStartDate(LocalDate.now());
-        contract.setDocumentUrl(req.getDocumentUrl());
         contract.setStatus("Pending");
         iContractRepository.save(contract);
 

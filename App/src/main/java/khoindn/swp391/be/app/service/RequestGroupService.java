@@ -18,6 +18,10 @@ public class RequestGroupService implements IRequestGroupService {
 
     @Override
     public List<RequestGroup> getAllRequestGroup() {
-        return iRequestGroupRepository.findAll();
+        return iRequestGroupRepository.findAll().stream()
+                .filter(requestGroup ->
+                        requestGroup.getRequestGroupDetail().getStatus()
+                                .equalsIgnoreCase("pending"))
+                .toList();
     }
 }

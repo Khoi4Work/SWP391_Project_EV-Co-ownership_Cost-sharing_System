@@ -34,4 +34,7 @@ public class ContractSigner {
 
     @Column(name = "signed_at")
     private LocalDateTime signedAt;
+
+    @Column(name = "signature", length = 3000)
+    private String signature;
 }

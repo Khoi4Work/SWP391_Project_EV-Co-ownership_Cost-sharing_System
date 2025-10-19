@@ -7,8 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OtpSender {
+public class ContentSender {
 
+    private String subject;
     private String email;
-    private String otp;
+    private String content;
+    private String attachmentPath;
 }

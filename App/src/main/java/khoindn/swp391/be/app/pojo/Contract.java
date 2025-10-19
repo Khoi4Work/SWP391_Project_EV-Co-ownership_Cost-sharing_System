@@ -20,8 +20,8 @@ public class Contract {
     private LocalDate startDate;
     private LocalDate endDate;
     private String status; // pending, active, decline
-    @Column(name = "document_url")
-    private String documentUrl; // link PDF do FE render
+    @Column(name = "content_string", length = 5000)
+    private String htmlString; // link PDF do FE render
 
     // Relationships
     @ManyToOne
