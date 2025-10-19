@@ -75,6 +75,8 @@ export default function VehicleBooking() {
     const [loadingBookings, setLoadingBookings] = useState(false);
     const [overrideInfo, setOverrideInfo] = useState<OverrideInfo | null>(null);
     const [loadingOverrideInfo, setLoadingOverrideInfo] = useState(false);
+    const [daysUsedThisMonth, setDaysUsedThisMonth] = useState(0);
+
 
     // ===== REFS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
@@ -387,6 +389,33 @@ export default function VehicleBooking() {
         }
     }, [vehicles]); // Run when vehicles change
 
+    // Effect 3: Calculate days used when selectedDate or existingBookings change
+    useEffect(() => {
+        if (!selectedDate) {
+            setDaysUsedThisMonth(0);
+            return;
+        }
+
+        const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
+        const alreadyCounted = daysSet.has(selectedDate);
+        const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
+        if (prospectiveDaysCount > 3 && !alreadyCounted) {
+            showToast(
+                "Đã hết lượt đặt lịch",
+                `Bạn đã sử dụng hết 14 ngày trong tháng}.`,
+                "destructive"
+            );
+        }
+        else if (prospectiveDaysCount > 2 && !alreadyCounted) {
+            showToast(
+                "Sắp hết lượt đăt lịch",
+                `Cảnh báo: Bạn còn 1 ngày trong tháng này.`,
+                "default"
+            );
+        }
+        setDaysUsedThisMonth(prospectiveDaysCount);
+    }, [selectedDate, existingBookings]);
+
 
     const toLocalDateTime = (date: string, hhmm: string) => {
         const [hh, mm] = hhmm.split(":");
@@ -447,16 +476,13 @@ export default function VehicleBooking() {
             return;
         }
 
-        // Validation về giới hạn 14 ngày/tháng (GIỮ LẠI)
-        const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
-        const alreadyCounted = daysSet.has(selectedDate);
-        const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
-        if (prospectiveDaysCount > 3) {
+
+        if (daysUsedThisMonth  > 3) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
             return;
         }
 
-        // KHÔNG check conflict nữa, để backend xử lý override logic
+
 
         // Gọi BE để tạo lịch mới
         try {
@@ -814,8 +840,8 @@ export default function VehicleBooking() {
                     )}
 
                     <Button onClick={handleBooking} className="w-full"
-                            disabled={!selectedVehicle || !selectedDate || !selectedTime}>Đặt lịch</Button>
-
+                            disabled={!selectedVehicle || !selectedDate || !selectedTime ||daysUsedThisMonth >3}>Đặt lịch</Button>
+                    {daysUsedThisMonth > 14 ? "Đã hết quota tháng này" : "Đặt lịch"}
                     {/* 5. DIALOG CHỌN THỜI GIAN VỚI WARNING - SỬA LẠI DIALOG NÀY */}
                     <Dialog open={showTimeSelector} onOpenChange={setShowTimeSelector}>
                         <DialogContent className="max-w-2xl">
@@ -840,19 +866,6 @@ export default function VehicleBooking() {
                                         </div>
                                     </div>
                                 )}
-                                {overrideInfo && overrideInfo.overridesRemaining === 0 && (
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                        <div className="flex items-start space-x-2">
-                                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5"/>
-                                            <div className="text-sm text-red-800">
-                                                <p className="font-medium">Cảnh báo: Đã hết lượt override</p>
-                                                <p className="mt-1">Bạn chỉ có thể đặt khung giờ trống. Không thể
-                                                    override lịch của người khác.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* HIỂN THỊ LỊCH ĐÃ ĐĂNG KÝ - SỬA FILTER ĐỂ ẨN "overridden" */}
                                 {selectedVehicle && selectedDate && (
                                     <div className="mb-2">
@@ -918,23 +931,86 @@ export default function VehicleBooking() {
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
                                         <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
-                                            <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
-                                            <SelectContent>{timeSlots.map((time) => (<SelectItem key={time}
-                                                                                                 value={time}>{time}</SelectItem>))}</SelectContent>
+                                            <SelectTrigger><SelectValue placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
+                                            <SelectContent>
+                                                {timeSlots.map((time) => {
+                                                    // Lấy danh sách booking cho xe và ngày đã chọn
+                                                    const filteredBookings = existingBookings.filter(
+                                                        b =>
+                                                            String(b.vehicleId) === String(selectedVehicle) &&
+                                                            b.date === selectedDate &&
+                                                            b.status !== "canceled" &&
+                                                            b.status !== "overridden"
+                                                    );
+
+                                                    // Check xem time slot này có bị người khác đặt không
+                                                    const isBookedByOthers = filteredBookings.some(b => {
+                                                        const [bookedStart] = b.time.split('-');
+                                                        return bookedStart === time && b.userId !== currentUserId;
+                                                    });
+
+                                                    // Disable nếu hết override và có người khác đặt
+                                                    const noOverrideLeft = overrideInfo && overrideInfo.overridesRemaining === 0;
+                                                    const shouldDisable = isBookedByOthers && noOverrideLeft;
+
+                                                    return (
+                                                        <SelectItem
+                                                            key={time}
+                                                            value={time}
+                                                            disabled={shouldDisable}
+                                                            className={shouldDisable ? "opacity-50 cursor-not-allowed line-through" : ""}
+                                                        >
+                                                            {time}
+                                                            {shouldDisable && " (Bạn đã hết lượt override)"}
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
                                         </Select>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
                                         <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
-                                            <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ kết thúc"/></SelectTrigger>
-                                            <SelectContent>{timeSlots.map((time) => (
-                                                <SelectItem key={time} value={time}
-                                                            disabled={selectedStartTime && time <= selectedStartTime}>{time}</SelectItem>))}</SelectContent>
+                                            <SelectTrigger><SelectValue placeholder="Chọn giờ kết thúc"/></SelectTrigger>
+                                            <SelectContent>
+                                                {timeSlots.map((time) => {
+                                                    // Lấy danh sách booking cho xe và ngày đã chọn
+                                                    const filteredBookings = existingBookings.filter(
+                                                        b =>
+                                                            String(b.vehicleId) === String(selectedVehicle) &&
+                                                            b.date === selectedDate &&
+                                                            b.status !== "canceled" &&
+                                                            b.status !== "overridden"
+                                                    );
+
+                                                    // Check xem time slot này có bị người khác đặt không
+                                                    const isBookedByOthers = filteredBookings.some(b => {
+                                                        const [, bookedEnd] = b.time.split('-');
+                                                        return bookedEnd === time && b.userId !== currentUserId;
+                                                    });
+
+                                                    // Disable nếu hết override và có người khác đặt, HOẶC nếu giờ kết thúc <= giờ bắt đầu
+                                                    const noOverrideLeft = overrideInfo && overrideInfo.overridesRemaining === 0;
+                                                    const shouldDisable = (selectedStartTime && time <= selectedStartTime) ||
+                                                        (isBookedByOthers && noOverrideLeft);
+
+                                                    return (
+                                                        <SelectItem
+                                                            key={time}
+                                                            value={time}
+                                                            disabled={shouldDisable}
+                                                            className={shouldDisable ? "opacity-50 cursor-not-allowed line-through" : ""}
+                                                        >
+                                                            {time}
+                                                            {isBookedByOthers && noOverrideLeft && " (Bạn đã hết lượt override)"}
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
+
                                 <div className="flex space-x-2">
                                     <Button onClick={handleTimeSelection}
                                             disabled={!selectedStartTime || !selectedEndTime}><Check
