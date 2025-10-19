@@ -27,6 +27,7 @@ interface BookingSlot {
     userId: number;
     groupId: number;
     status: string;
+    ownershipPercentage: number;
 }
 
 interface Vehicle {
@@ -294,7 +295,8 @@ export default function VehicleBooking() {
                             bookedBy: item.userName,
                             userId: item.userId,
                             groupId: item.groupId,
-                            status: item.status
+                            status: item.status,
+                            ownershipPercentage: item.ownershipPercentage
                         };
                     } catch (itemError: any) {
                         console.error(`❌ Lỗi xử lý item ${index}:`, itemError.message);
@@ -744,11 +746,31 @@ export default function VehicleBooking() {
                         </div>
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
-                            <input type="date"
-                                   className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                   value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
-                                   min={new Date().toISOString().split('T')[0]}/>
+                            <input
+                                type="date"
+                                className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                                value={selectedDate}
+                                onChange={(e) => {
+                                    setSelectedDate(e.target.value);
+                                    setSelectedTime("");
+                                }}
+                                onBlur={(e) => {
+                                    const selectedValue = e.target.value;
+                                    const today = new Date().toISOString().split('T')[0];
+
+                                    if (selectedValue && selectedValue < today) {
+                                        showToast(
+                                            "Ngày không hợp lệ",
+                                            "Không thể chọn ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.",
+                                            "destructive"
+                                        );
+                                        setSelectedDate("");
+                                    }
+                                }}
+                                min={new Date().toISOString().split('T')[0]}
+                            />
                         </div>
+
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
                             <Button variant="outline" className="w-full justify-start text-left font-normal"
@@ -836,6 +858,10 @@ export default function VehicleBooking() {
                                                         <span className="font-semibold text-blue-700">{b.time}</span>
                                                         <span className="text-gray-700">{b.brand} {b.model}</span>
                                                         <span className="text-gray-500">Người đặt: {b.bookedBy}</span>
+                                                        <span
+                                                            className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">
+                                                            {b.ownershipPercentage.toFixed(1)}%
+                                                        </span>
                                                         <span className="text-gray-500">Trạng thái: {b.status}</span>
                                                     </div>
                                                 ))}
@@ -960,10 +986,30 @@ export default function VehicleBooking() {
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
-                                        <input type="date"
-                                               className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                               value={editDate} onChange={(e) => setEditDate(e.target.value)}
-                                               min={new Date().toISOString().split('T')[0]}/>
+                                        <input
+                                            type="date"
+                                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                                            value={editDate}
+                                            onChange={(e) => {
+                                                setEditDate(e.target.value);
+                                                setEditTime("");
+                                            }}
+                                            onBlur={(e) => {
+                                                const selectedValue = e.target.value;
+                                                const today = new Date().toISOString().split('T')[0];
+
+                                                //
+                                                if (selectedValue && selectedValue < today) {
+                                                    showToast(
+                                                        "Ngày không hợp lệ",
+                                                        "Không thể chọn ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.",
+                                                        "destructive"
+                                                    );
+                                                    setEditDate("");
+                                                }
+                                            }}
+                                            min={new Date().toISOString().split('T')[0]}
+                                        />
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
@@ -1017,6 +1063,10 @@ export default function VehicleBooking() {
                                                             className="font-medium">{booking.brand} {booking.model}</span>
                                                     </div>
                                                     <Badge variant="secondary">{booking.bookedBy}</Badge>
+                                                    <Badge variant="outline"
+                                                           className="bg-blue-50 text-blue-700 border-blue-200">
+                                                        {booking.ownershipPercentage.toFixed(1)}%
+                                                    </Badge>
                                                     <Badge
                                                         variant={booking.status === "BOOKED" ? "outline" : "default"}
                                                         className={
