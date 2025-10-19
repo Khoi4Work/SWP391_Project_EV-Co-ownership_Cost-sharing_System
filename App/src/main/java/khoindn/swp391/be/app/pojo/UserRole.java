@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.pojo;
 
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +23,7 @@ public class UserRole {
     private String roleName;
 
     // relationship
-    @OneToMany(mappedBy = "hovaTen", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Users> users = new ArrayList<>();
+    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Users> users;
 }

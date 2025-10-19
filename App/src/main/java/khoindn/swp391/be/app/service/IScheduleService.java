@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
+import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.Schedule;
@@ -20,6 +21,6 @@ public interface IScheduleService {
 
     void cancelSchedule(int scheduleId);
     List<ScheduleRes> findByGroupMember_Group_GroupId(int groupId);
-    Map<String, Object> getOverrideCountForUser(int userId, int groupId);
+    OverrideInfoRes getOverrideCountForUser(int userId, int groupId);
 
 }

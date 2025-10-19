@@ -67,6 +67,11 @@ public class APIExceptionHandler {
         return ResponseEntity.status(404).body("This contract is not existed!"); // 404
     }
 
+    @ExceptionHandler(UndefinedChoiceException.class)
+    public ResponseEntity handleUndefinedChoiceException(UndefinedChoiceException ex) {
+        return ResponseEntity.status(404).body("Choice is undefined!"); // 404 Not Found
+    }
+
     // ==========================
     // Vehicle-related Exceptions
     // ==========================
@@ -105,13 +110,19 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(UserNotBelongException.class)
     public ResponseEntity handleUserNotBelong(UserNotBelongException ex) {
-        return ResponseEntity.status(403).body("User ko thuoc group"); // 403
+        return ResponseEntity.status(403).body("User is not belonged to this group"); // 403
     }
 
     @ExceptionHandler(RoleNotFoundException.class)
-    public ResponseEntity handleRoleNotFound(RoleNotFoundException ex) {
-        return ResponseEntity.status(404).body(ex.getMessage()); // 404 Not Found
+    public ResponseEntity handleRoleNotFoundException(RoleNotFoundException ex) {
+        return ResponseEntity.status(404).body("Role not found!"); // 404 Not Found
     }
+
+    @ExceptionHandler(RequestGroupNotFoundException.class)
+    public ResponseEntity handleRequestGroupNotFoundException(RequestGroupNotFoundException ex) {
+        return ResponseEntity.status(404).body("Request Group not found!"); // 404 Not Found
+    }
+
 
     // ==========================
     // Duplicate Data Exceptions
@@ -147,5 +158,10 @@ public class APIExceptionHandler {
     @ExceptionHandler(LowerOwnershipException.class)
     public ResponseEntity handleLowerOwnership(LowerOwnershipException ex) {
         return ResponseEntity.status(403).body(ex.getMessage()); // 403 Forbidden
+    }
+
+    @ExceptionHandler(PastDateBookingException.class)
+    public ResponseEntity handlePastDateBooking(PastDateBookingException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
     }
 }

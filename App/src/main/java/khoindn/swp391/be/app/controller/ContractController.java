@@ -7,10 +7,7 @@ import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.pojo.*;
-import khoindn.swp391.be.app.service.AuthenticationService;
-import khoindn.swp391.be.app.service.IContractService;
-import khoindn.swp391.be.app.service.IGroupMemberService;
-import khoindn.swp391.be.app.service.IVehicleService;
+import khoindn.swp391.be.app.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +38,8 @@ public class ContractController {
     private IVehicleService iVehicleService;
     @Autowired
     private SpringTemplateEngine templateEngine;
+    @Autowired
+    private IEmailService iEmailService;
 
     // Lấy contract
     @GetMapping("/user/{id}")
@@ -66,7 +65,7 @@ public class ContractController {
     @PostMapping("/send-email")
     public ResponseEntity<String> sendEmail(@RequestBody SendEmailReq emailReq) {
         try {
-            iContractService.SendBulkEmail(emailReq);
+            iEmailService.SendBulkEmail(emailReq);
             return ResponseEntity.status(HttpStatus.OK).body("Email sent successfully");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send email");

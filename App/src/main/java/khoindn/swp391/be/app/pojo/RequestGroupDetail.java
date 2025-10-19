@@ -1,9 +1,12 @@
 package khoindn.swp391.be.app.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -13,17 +16,19 @@ public class RequestGroupDetail {
 
     // attributes
     @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String status; // pending, approved, rejected
+    private String status = "pending"; // pending, approved, rejected
+    private LocalDateTime solvedAt;
 
     // relationships
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hovaTen")
+    @JoinColumn(name = "staff_id")
     private Users user;
 
     @OneToOne
     @JoinColumn(name = "request_group_id")
+    @JsonIgnore
     private RequestGroup requestGroup;
 
 }

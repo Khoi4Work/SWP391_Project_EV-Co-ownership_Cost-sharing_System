@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.*;
+import khoindn.swp391.be.app.model.Request.ContentSender;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
@@ -10,7 +11,6 @@ import khoindn.swp391.be.app.repository.IUserRepository;
 import khoindn.swp391.be.app.repository.IUserRoleRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,7 +20,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 @Service
 public class AuthenticationService implements UserDetailsService {
@@ -38,6 +44,10 @@ public class AuthenticationService implements UserDetailsService {
     TokenService tokenService;
     @Autowired
     private IUserRoleRepository iUserRoleRepository;
+    @Autowired
+    private EmailService emailService;
+    @Autowired
+    private TemplateEngine templateEngine;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -75,8 +85,45 @@ public class AuthenticationService implements UserDetailsService {
         Users user = modelMapper.map(users, Users.class);
         user.setId(null);
         user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId().getRoleId()));
-        //encode old password to new password
 
+        //create key pairs for user
+
+        KeyPairGenerator generator = null;
+        try {
+
+            generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            KeyPair keyPair = generator.generateKeyPair();
+            System.out.println("✅ Private & Public Key đã được tạo.");
+
+            //set public key to user to save to database
+            byte[] publicKey = keyPair.getPublic().getEncoded();
+            String publicKeyString = Base64.getEncoder().encodeToString(publicKey);
+            user.setPublicKey(publicKeyString);
+
+            //transmit private ket to byte to send email to this user
+            byte[] privateKeyBytes = keyPair.getPrivate().getEncoded();
+
+            // Truyền dữ liệu cho Thymeleaf
+            Context context = new Context();
+            context.setVariable("fullName", user.getHovaTen());
+            context.setVariable("systemName", "EcoShare Management");
+            context.setVariable("privateKeyBase64",
+                    Base64.getEncoder().encodeToString(privateKeyBytes));
+
+            String htmlContent = templateEngine.process("sendPrivateKey", context);
+
+            ContentSender contentSender = new ContentSender();
+            contentSender.setEmail(user.getEmail());
+            contentSender.setSubject("[EcoShare][Important] Your Private Key");
+            contentSender.setContent(htmlContent);
+            emailService.sendEmail(contentSender);
+
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        //encode old password to new password
         System.out.println("Req: " + users);
 
         System.out.println("User: " + user);

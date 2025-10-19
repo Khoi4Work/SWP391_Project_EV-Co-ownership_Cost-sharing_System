@@ -15,7 +15,6 @@ public interface IContractService {
 
     public ContractSigner setContract(ContractDecisionReq req);
 
-    public void SendBulkEmail(SendEmailReq emailReq);
 
     public List<ContractSigner> createContract(ContractCreateReq req);
 

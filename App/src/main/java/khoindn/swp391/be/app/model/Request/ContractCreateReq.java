@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ContractCreateReq {
 
+
     @NotBlank(message = "Can't get url!!")
     private String documentUrl;
     @NotBlank(message = "Can't get contractType!!")

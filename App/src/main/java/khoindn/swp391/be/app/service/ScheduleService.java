@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
+import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -35,6 +36,26 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public ScheduleRes createSchedule(ScheduleReq req) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (req.getStartTime().isBefore(now)) {
+            throw new PastDateBookingException(
+                    "Cannot book schedule in the past"
+            );
+        }
+
+        if (req.getEndTime().isBefore(now)) {
+            throw new PastDateBookingException(
+                    "End time must be in the future"
+            );
+        }
+
+        if (req.getEndTime().isBefore(req.getStartTime())) {
+            throw new PastDateBookingException(
+                    "End time must be after start time"
+            );
+        }
         Users user = iUserRepository.findById(req.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -77,7 +98,7 @@ public class ScheduleService implements IScheduleService {
             long overrideCount = iScheduleRepository
                     .countByGroupMember_IdAndStatusAndCreatedAtBetween(
                             gm.getId(),
-                            "override_tracker", // Đếm tracker thay vì "overridden"
+                            "override_tracker",
                             startOfMonth,
                             endOfMonth
                     );
@@ -134,7 +155,7 @@ public class ScheduleService implements IScheduleService {
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
-        schedule.setStatus("pending");
+        schedule.setStatus("booked");
         schedule.setGroupMember(gm);
 
         Schedule saved = iScheduleRepository.save(schedule);
@@ -252,7 +273,7 @@ public class ScheduleService implements IScheduleService {
                     res.setUserId(schedule.getGroupMember().getUsers().getId());
                     res.setUserName(schedule.getGroupMember().getUsers().getUsername());
                     res.setGroupId(schedule.getGroupMember().getGroup().getGroupId());
-
+                    res.setOwnershipPercentage(schedule.getGroupMember().getOwnershipPercentage());
                     Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
                     if (vehicle != null) {
                         res.setVehicleId(vehicle.getVehicleId());
@@ -264,7 +285,7 @@ public class ScheduleService implements IScheduleService {
     }
 
     @Override
-    public Map<String, Object> getOverrideCountForUser(int userId, int groupId) {
+    public OverrideInfoRes  getOverrideCountForUser(int userId, int groupId) {
         Users user = iUserRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -294,16 +315,14 @@ public class ScheduleService implements IScheduleService {
                         endOfMonth
                 );
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("userId", userId);
-        result.put("groupId", groupId);
-        result.put("overridesUsed", overrideCount);
-        result.put("overridesRemaining", 3 - overrideCount);
-        result.put("maxOverridesPerMonth", 3);
-        result.put("currentMonth", startOfMonth.getMonth().toString());
-        result.put("nextResetDate", startOfMonth.plusMonths(1).toLocalDate());
-
-        return result;
+        return new OverrideInfoRes(
+                userId,
+                groupId,
+                overrideCount,
+                3 - overrideCount,
+                3,
+                startOfMonth.getMonth().toString(),
+                startOfMonth.plusMonths(1).toLocalDate());
     }
 
 

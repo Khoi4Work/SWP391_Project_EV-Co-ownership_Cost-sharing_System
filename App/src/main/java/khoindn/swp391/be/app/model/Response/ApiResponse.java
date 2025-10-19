@@ -1,4 +1,4 @@
-package khoindn.swp391.be.app.model;
+package khoindn.swp391.be.app.model.Response;
 
 public class ApiResponse<T> {
     private String status;

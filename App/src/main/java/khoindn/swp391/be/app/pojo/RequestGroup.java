@@ -19,12 +19,12 @@ public class RequestGroup {
     private Long id;
 
     private String nameRequestGroup;
-    private String descriptionRequestGroup;
-    private String statusRequestGroup; // pending, approved, rejected
+    private String descriptionRequestGroup = "No description";
+    private String statusRequestGroup = "pending"; // pending, approved, rejected
     private LocalDateTime createdAt = LocalDateTime.now();
 
     //relationships
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "groupMember_id")
     private GroupMember groupMember;
 
