@@ -124,7 +124,6 @@ public class APIExceptionHandler {
     }
 
 
-
     // ==========================
     // Duplicate Data Exceptions
     // ==========================
@@ -159,5 +158,10 @@ public class APIExceptionHandler {
     @ExceptionHandler(LowerOwnershipException.class)
     public ResponseEntity handleLowerOwnership(LowerOwnershipException ex) {
         return ResponseEntity.status(403).body(ex.getMessage()); // 403 Forbidden
+    }
+
+    @ExceptionHandler(PastDateBookingException.class)
+    public ResponseEntity handlePastDateBooking(PastDateBookingException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
     }
 }

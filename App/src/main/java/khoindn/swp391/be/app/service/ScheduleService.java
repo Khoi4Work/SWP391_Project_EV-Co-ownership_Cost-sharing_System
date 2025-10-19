@@ -35,6 +35,26 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public ScheduleRes createSchedule(ScheduleReq req) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (req.getStartTime().isBefore(now)) {
+            throw new PastDateBookingException(
+                    "Cannot book schedule in the past"
+            );
+        }
+
+        if (req.getEndTime().isBefore(now)) {
+            throw new PastDateBookingException(
+                    "End time must be in the future"
+            );
+        }
+
+        if (req.getEndTime().isBefore(req.getStartTime())) {
+            throw new PastDateBookingException(
+                    "End time must be after start time"
+            );
+        }
         Users user = iUserRepository.findById(req.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -252,7 +272,7 @@ public class ScheduleService implements IScheduleService {
                     res.setUserId(schedule.getGroupMember().getUsers().getId());
                     res.setUserName(schedule.getGroupMember().getUsers().getUsername());
                     res.setGroupId(schedule.getGroupMember().getGroup().getGroupId());
-
+                    res.setOwnershipPercentage(schedule.getGroupMember().getOwnershipPercentage());
                     Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
                     if (vehicle != null) {
                         res.setVehicleId(vehicle.getVehicleId());
