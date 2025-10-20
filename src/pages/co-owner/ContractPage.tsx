@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
 export default function ContractPreviewPage() {
+    const [savedPrivateKey, setSavedPrivateKey] = useState("");
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
     const { toast } = useToast();
     const location = useLocation();
@@ -23,6 +24,9 @@ export default function ContractPreviewPage() {
     const BASE_URL = import.meta.env.VITE_API_URL;
     console.log("Contract ID:", id);
     console.log("Token từ query string:", token);
+    const handleSavePrivateKey = (key: string) => {
+        setSavedPrivateKey(key);   // <-- Lưu lại để dùng khi gọi API
+    };
     useEffect(() => {
         if (!token) {
             setError("Token không hợp lệ");
@@ -142,7 +146,7 @@ export default function ContractPreviewPage() {
                 idUser: user.id,
                 idChoice: status,
                 contractContent: pdfBase64,
-                contract_signature: ;
+                contract_signature: savedPrivateKey,
             };
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, payload, {
@@ -232,6 +236,7 @@ export default function ContractPreviewPage() {
                     vehicleData={vehicleData}
                     status={status}
                     setStatus={setStatus}
+                    onSavePrivateKey={handleSavePrivateKey}
                 />
             </div>
 
