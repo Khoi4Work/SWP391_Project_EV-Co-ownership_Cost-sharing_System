@@ -88,7 +88,14 @@ export default function ContractPreviewPage() {
                 });
         });
     };
-
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob); // chuyển sang base64 dạng data:application/pdf;base64,...
+        });
+    };
     useEffect(() => {
         // TODO: Lấy dữ liệu từ localStorage hoặc state chung
         const savedOwner = JSON.parse(localStorage.getItem("ownerInfo") || "{}");
@@ -113,6 +120,7 @@ export default function ContractPreviewPage() {
                 return;
             }
             const { blob, fileUrl } = pdfResult;
+            const pdfBase64 = await blobToBase64(blob);
             console.log(user.id)
             const key = 'contractId_' + user.id;
             console.log(key)
@@ -133,7 +141,7 @@ export default function ContractPreviewPage() {
                 idContract,
                 idUser: user.id,
                 idChoice: status,
-                contractContent: ;
+                contractContent: pdfBase64,
                 contract_signature: ;
             };
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
