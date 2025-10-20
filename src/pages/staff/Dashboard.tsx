@@ -32,38 +32,86 @@ export default function StaffDashboard() {
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
-    const [leaveRequests, setLeaveRequests] = useState([]);
+    const [leaveRequests, setLeaveRequests] = useState([
+        {
+            id: "1",
+            nameRequestGroup: "Nhóm HCM",
+            descriptionRequestGroup: "Tôi muốn rời nhóm A",
+            statusRequestGroup: "pending",
+            createdAt: "2024-01-28T14:35:22",
+            groupMember: {
+                id: "100",
+                users: {
+                    id: "5",
+                    username: "jake123"
+                }
+            },
+            requestGroupDetail: {}
+        }
+    ]);
+
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
         { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
         { label: "Nhóm quản lý", value: 8, icon: Users, color: "primary" },
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
-    useEffect(() => {
-        axiosClient.get("/staff/get/all/request-group")
-            .then(res => {
-                if (res.status === 204) {
-                    setLeaveRequests([]);
-                } else {
-                    setLeaveRequests(res.data);
-                }
-            })
-            .catch(err => console.error(err));
-    }, []);
-    const handleApprove = (appId: string) => {
+    // useEffect(() => {
+    //     axiosClient.get("/staff/get/all/request-group")
+    //         .then(res => {
+    //             if (res.status === 204) {
+    //                 setLeaveRequests([]);
+    //             } else {
+    //                 setLeaveRequests(res.data);
+    //             }
+    //         })
+    //         .catch(err => console.error(err));
+    // }, []);
+    const handleApprove = async (appId: string) => {
         const request = leaveRequests.find(r => r.id === appId);
-        if (!request) return;
+        if (!request) {
+            toast({
+                title: "Lỗi",
+                description: "Không tìm thấy yêu cầu.",
+                variant: "destructive"
+            })
+            return;
+        }
+        // ✅ 1. Cập nhật trạng thái đơn ở FE
         setLeaveRequests(prev =>
             prev.map(r =>
-                r.id === appId ? { ...r, status: "approved" } : r));
-        setGroups(prev =>
-            prev.map(g =>
-                g.id === request.groupMember.id ? { ...g, users: g.users.filter(u => u.id !== request.groupMember.users.id) } : g));
-        toast({
-            title: "Đơn đã duyệt",
-            description: `Thành viên đã được rời khỏi nhóm.`,
-        });
+                r.id === appId ? { ...r, status: "approved" } : r
+            )
+        );
+
+        try {
+            const res = await axiosClient.post("/api/groups/leave", {
+                groupId: request.groupMember.id,
+                userId: request.groupMember.users.id
+            });
+
+            if (res.status === 200) {
+                setLeaveRequests(prev => prev.filter(r => r.id !== appId));
+                toast({
+                    title: "Đã duyệt",
+                    description: "Thành viên đã được rời khỏi nhóm.",
+                });
+            } else {
+                toast({
+                    title: "Lỗi",
+                    description: "Backend trả về trạng thái không mong muốn.",
+                });
+            }
+
+        } catch (error) {
+            toast({
+                title: "Lỗi",
+                description: "Xử lý không thành công ở backend.",
+            });
+        }
+
     };
+
 
 
     const handleReject = (appId: string) => {
@@ -157,6 +205,7 @@ export default function StaffDashboard() {
                                         <div key={req.id} className="p-4 border rounded-lg flex justify-between">
                                             <div>
                                                 <p><strong>Nhóm:</strong> {req.nameRequestGroup}</p>
+                                                <p><strong>Loại đơn:</strong> {req.descriptionRequestGroup}</p>
                                                 <p><strong>Người yêu cầu:</strong> {req.groupMember?.users?.username || "Không rõ"}</p>
                                                 <p><strong>Ngày gửi:</strong> {new Date(req.createdAt).toLocaleString()}</p>
                                             </div>

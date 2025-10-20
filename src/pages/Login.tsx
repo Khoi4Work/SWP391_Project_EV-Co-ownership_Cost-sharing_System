@@ -86,7 +86,7 @@ export default function Login() {
             });
         }
         finally {
-            navigate("/staff/dashboard");
+            navigate("/co-owner/dashboard");
         }
     };
 
