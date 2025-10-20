@@ -5,6 +5,7 @@ import khoindn.swp391.be.app.model.Request.ContentSender;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
+import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IAuthenticationRepository;
 import khoindn.swp391.be.app.repository.IUserRepository;
@@ -15,6 +16,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -80,11 +82,16 @@ public class AuthenticationService implements UserDetailsService {
 
         }
 
+        if (!iUserRoleRepository.existsUserRoleByRoleId((users.getRoleId()))) {
+            throw new RoleIsNotExistedException("Vai trò đã tồn tại");
+        }
+
         //process login from register controller
+
         users.setPassword(passwordEncoder.encode(users.getPassword()));
         Users user = modelMapper.map(users, Users.class);
         user.setId(null);
-        user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId().getRoleId()));
+        user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId()));
 
         //create key pairs for user
 

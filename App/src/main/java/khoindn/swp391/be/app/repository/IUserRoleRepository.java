@@ -10,4 +10,6 @@ public interface IUserRoleRepository extends JpaRepository<UserRole, Integer> {
     boolean existsByRoleName(String roleName);
 
     UserRole findUserRoleByRoleId(int roleId);
+
+    boolean existsUserRoleByRoleId(int roleId);
 }
