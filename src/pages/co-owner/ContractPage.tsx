@@ -133,6 +133,8 @@ export default function ContractPreviewPage() {
                 idContract,
                 idUser: user.id,
                 idChoice: status,
+                contractContent: ;
+                contract_signature: ;
             };
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, payload, {
