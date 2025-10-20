@@ -5,13 +5,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,8 +19,10 @@ import java.util.List;
 @Data
 @Table(name = "users")
 @NoArgsConstructor
+@ToString(exclude = {"role", "userOfGroupMember"})
 @AllArgsConstructor
 public class Users implements UserDetails {
+    //attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
@@ -38,6 +38,7 @@ public class Users implements UserDetails {
     private String email;
 
     @Column(name = "Password", nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column(name = "CCCD", nullable = false, unique = true)
@@ -49,13 +50,16 @@ public class Users implements UserDetails {
     @Column(name = "phone", nullable = false, unique = true)
     private String phone;
 
+    @Column(name = "publicKey", length = 3000)
+    private String publicKey;
+
+    //relationships
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)
     private UserRole role; // Default role ID for regular users
 
     @OneToMany(mappedBy = "users")
     @JsonIgnore
-    @ToString.Exclude
     private List<GroupMember> userOfGroupMember = new ArrayList<>();
 
     public Users(String hovaTen, String email, String password, String cccd, String gplx) {

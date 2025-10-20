@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 public class APIExceptionHandler {
 
     // ==========================
-    // 1. Validation Exceptions
+    // Validation Exceptions
     // ==========================
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity handleBadRequest(MethodArgumentNotValidException exception) {
@@ -27,7 +27,7 @@ public class APIExceptionHandler {
     }
 
     // ==========================
-    // 2. Authentication / Security Exceptions
+    //  Authentication / Security Exceptions
     // ==========================
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity handleBadCredentialsException(BadCredentialsException exception) {
@@ -43,13 +43,14 @@ public class APIExceptionHandler {
     public ResponseEntity handleInternalAuthenticationServiceException(InternalAuthenticationServiceException exception) {
         return ResponseEntity.status(401).body("Username or password invalid!"); // 401
     }
+
     @ExceptionHandler(UserIsExistedException.class)
     public ResponseEntity handleUserIsExistedException(UserIsExistedException exception) {
         return ResponseEntity.status(401).body("Username is existed!"); // 401
     }
 
     // ==========================
-    // 3. Common Runtime Exceptions (fallback cho code cũ chưa custom)
+    // Common Runtime Exceptions
     // ==========================
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity handleNoSuchElementException(NoSuchElementException ex) {
@@ -60,13 +61,19 @@ public class APIExceptionHandler {
     public ResponseEntity handleNullPointerException(NullPointerException ex) {
         return ResponseEntity.status(404).body("This car does not register to any group!"); // 404
     }
+
     @ExceptionHandler(ContractNotExistedException.class)
     public ResponseEntity handleContractNotExisted(ContractNotExistedException ex) {
         return ResponseEntity.status(404).body("This contract is not existed!"); // 404
     }
 
+    @ExceptionHandler(UndefinedChoiceException.class)
+    public ResponseEntity handleUndefinedChoiceException(UndefinedChoiceException ex) {
+        return ResponseEntity.status(404).body("Choice is undefined!"); // 404 Not Found
+    }
+
     // ==========================
-    // 4. Vehicle-related Exceptions
+    // Vehicle-related Exceptions
     // ==========================
     @ExceptionHandler(VehicleNotBelongException.class)
     public ResponseEntity handleVehicleNotBelongException(VehicleNotBelongException ex) {
@@ -89,7 +96,7 @@ public class APIExceptionHandler {
     }
 
     // ==========================
-    // 5. User / Group Exceptions
+    // User / Group Exceptions
     // ==========================
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity handleUserNotFound(UserNotFoundException ex) {
@@ -103,16 +110,22 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(UserNotBelongException.class)
     public ResponseEntity handleUserNotBelong(UserNotBelongException ex) {
-        return ResponseEntity.status(403).body("User ko thuoc group"); // 403
+        return ResponseEntity.status(403).body("User is not belonged to this group"); // 403
     }
+
     @ExceptionHandler(RoleNotFoundException.class)
-    public ResponseEntity handleRoleNotFound(RoleNotFoundException ex) {
-        return ResponseEntity.status(404).body(ex.getMessage()); // 404 Not Found
+    public ResponseEntity handleRoleNotFoundException(RoleNotFoundException ex) {
+        return ResponseEntity.status(404).body("Role not found!"); // 404 Not Found
+    }
+
+    @ExceptionHandler(RequestGroupNotFoundException.class)
+    public ResponseEntity handleRequestGroupNotFoundException(RequestGroupNotFoundException ex) {
+        return ResponseEntity.status(404).body("Request Group not found!"); // 404 Not Found
     }
 
 
     // ==========================
-    // 6. Duplicate Data Exceptions
+    // Duplicate Data Exceptions
     // ==========================
     @ExceptionHandler(EmailDuplicatedException.class)
     public ResponseEntity handleEmailDuplicatedException(EmailDuplicatedException ex) {
@@ -134,4 +147,21 @@ public class APIExceptionHandler {
         return ResponseEntity.status(409).body("Phone is existed!"); // 409
     }
 
+    // ==========================
+    // Override / Schedule Exceptions
+    // ==========================
+    @ExceptionHandler(OverrideLimitExceededException.class)
+    public ResponseEntity handleOverrideLimitExceeded(OverrideLimitExceededException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
+    }
+
+    @ExceptionHandler(LowerOwnershipException.class)
+    public ResponseEntity handleLowerOwnership(LowerOwnershipException ex) {
+        return ResponseEntity.status(403).body(ex.getMessage()); // 403 Forbidden
+    }
+
+    @ExceptionHandler(PastDateBookingException.class)
+    public ResponseEntity handlePastDateBooking(PastDateBookingException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
+    }
 }

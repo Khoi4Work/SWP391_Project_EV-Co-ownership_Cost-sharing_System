@@ -19,4 +19,5 @@ public class ScheduleRes {
     private int userId;
     private int groupId;
     private String userName;
+    private Float ownershipPercentage;
 }

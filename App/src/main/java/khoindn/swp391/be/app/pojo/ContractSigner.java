@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ContractSigner {
 
+    // Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
@@ -33,4 +34,7 @@ public class ContractSigner {
 
     @Column(name = "signed_at")
     private LocalDateTime signedAt;
+
+    @Column(name = "signature", length = 3000)
+    private String signature;
 }

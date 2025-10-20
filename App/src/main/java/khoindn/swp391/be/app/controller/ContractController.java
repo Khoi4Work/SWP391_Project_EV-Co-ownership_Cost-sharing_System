@@ -5,17 +5,21 @@ import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
-import khoindn.swp391.be.app.pojo.Contract;
-import khoindn.swp391.be.app.pojo.ContractSigner;
-import khoindn.swp391.be.app.pojo.Users;
-import khoindn.swp391.be.app.service.AuthenticationService;
-import khoindn.swp391.be.app.service.IContractService;
+import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
+import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.context.Context;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import org.springframework.http.MediaType;
+
+
 
 @RestController
 @RequestMapping("/contract")
@@ -28,11 +32,19 @@ public class ContractController {
 
     @Autowired
     private AuthenticationService authenticationService;
+    @Autowired
+    private IGroupMemberService iGroupMemberService;
+    @Autowired
+    private IVehicleService iVehicleService;
+    @Autowired
+    private SpringTemplateEngine templateEngine;
+    @Autowired
+    private IEmailService iEmailService;
 
     // Lấy contract
     @GetMapping("/user/{id}")
-    public ResponseEntity<Contract> getContractByUserId(@PathVariable int id) {
-        Contract contract = iContractService.getContractByUser(id);
+    public ResponseEntity<Contract> getContractByContractId(@PathVariable int id) {
+        Contract contract = iContractService.getContractByContractId(id);
         if (contract == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -53,7 +65,7 @@ public class ContractController {
     @PostMapping("/send-email")
     public ResponseEntity<String> sendEmail(@RequestBody SendEmailReq emailReq) {
         try {
-            iContractService.SendBulkEmail(emailReq);
+            iEmailService.SendBulkEmail(emailReq);
             return ResponseEntity.status(HttpStatus.OK).body("Email sent successfully");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send email");
@@ -77,7 +89,76 @@ public class ContractController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Contract contract = iContractService.getContractByUser(user.getId());
+        Contract contract = iContractService.getContractByContractId(user.getId());
         return ResponseEntity.status(HttpStatus.OK).body(contract);
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<List<ContractHistoryRes>> getHistoryContractsByUser() {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<ContractHistoryRes> res = iContractService.getHistoryContractsByUser(user)
+                .stream()
+                .filter(contractHistory ->
+                        contractHistory.getStatus().equalsIgnoreCase("activated"))
+                .toList();
+        if (res == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
+    @GetMapping("/preview")
+    public ResponseEntity<String> renderContract(@RequestParam("contractId") int contractId) {
+        // Lay nguoi dung hien tai
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        // Lay contract dang muon view
+        Contract contract = iContractService.getContractByContractId(contractId);
+        if (contract == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        // Lay xe
+        Vehicle vehicle = iVehicleService.findVehicleByGroupId(contract.getGroup().getGroupId());
+        // Lay tat ca thanh vien
+        if (vehicle == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        //Lay tat ca thanh vien co trong group
+        List<GroupMember> allmembers = iGroupMemberService.getMembersByGroupId(contract.getGroup().getGroupId());
+        //Lay owner
+        GroupMember owner = allmembers.stream()
+                .max(Comparator.comparing(GroupMember::getOwnershipPercentage))
+                .orElse(null);
+        if (owner == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        //Lay coOwner
+        List<GroupMember> coOwners = allmembers.stream()
+                .filter(member -> !member.getUsers().getId().equals(owner.getUsers().getId()))
+                .toList();
+
+
+        Context context = new Context();
+        context.setVariable("ownerName", owner.getUsers().getHovaTen());
+        context.setVariable("ownerEmail", owner.getUsers().getEmail());
+        context.setVariable("ownerShare", owner.getOwnershipPercentage());
+        context.setVariable("vehicleModel", vehicle.getModel());
+        context.setVariable("vehiclePlate", vehicle.getPlateNo());
+        context.setVariable("coOwners", coOwners.stream()
+                .map(member -> Map.of("name", member.getUsers().getHovaTen(), "share", member.getOwnershipPercentage()))
+                .toList());
+        context.setVariable("status", contract.getStatus());
+
+        // render thymeleaf template to HTML string
+        String html = templateEngine.process("contract-preview", context);
+        System.out.println("HTML: " + html);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
     }
 }

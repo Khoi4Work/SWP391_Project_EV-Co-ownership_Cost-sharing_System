@@ -1,8 +1,9 @@
 package khoindn.swp391.be.app.service;
 
-import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
-import khoindn.swp391.be.app.exception.exceptions.VehicleIsRegisteredException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
+import khoindn.swp391.be.app.model.Request.GroupRequest;
+import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
@@ -40,12 +41,14 @@ public class GroupService implements IGroupService {
 
     @Autowired
     private ModelMapper modelMapper;
-
-
+    @Autowired
+    private IRequestGroupRepository iRequestGroupRepository;
+    @Autowired
+    private IRequestGroupDetailRepository iRequestGroupDetailRepository;
 
 
     @Override
-    public RegisterVehicleRes addMemberToGroup(GroupCreateReq request) {
+    public RegisterVehicleRes addMemberToGroupByContract(GroupCreateReq request) {
         System.out.println(request);
 
 
@@ -56,14 +59,17 @@ public class GroupService implements IGroupService {
         group.setCreatedAt(LocalDateTime.now());
         iGroupRepository.save(group);
 
+        Contract contract = iContractRepository.findContractByContractId(request.getContractId());
+        contract.setGroup(group);
+        iContractRepository.save(contract);
         // Tim vehicle
         Vehicle vehicle = iVehicleRepository.getVehiclesByVehicleId(request.getVehicleId());
-        if(vehicle==null){
+        if (vehicle == null) {
             throw new VehicleIsNotExistedException("This Vehicle does not exist");
         } else if (vehicle.getGroup() != null) {
-            throw  new VehicleIsRegisteredException(
-                    "This "+vehicle.getGroup().getGroupName()+" is already registered this vehicle");
-        }else {
+            throw new VehicleIsRegisteredException(
+                    "This " + vehicle.getGroup().getGroupName() + " is already registered this vehicle");
+        } else {
             vehicle.setGroup(group);
             iVehicleRepository.save(vehicle);
         }
@@ -102,5 +108,71 @@ public class GroupService implements IGroupService {
         System.out.println(res);
         return res;
     }
+
+    @Override
+    public void deleteGroup(int groupId) {
+        Group group = iGroupRepository.findGroupByGroupId(groupId);
+        if (group != null) {
+            group.setStatus("deleted");
+        }
+    }
+
+    @Override
+    public void createRequestGroup(GroupRequest request, Users user) {
+        // Tim group nao gui request va kiem tra ton tai
+        Group group = iGroupRepository.findGroupByGroupId(request.getGroupId());
+        if (group == null) {
+            throw new GroupNotFoundException("Group not found");
+        }
+        // Lay member nao trong group tao request
+        GroupMember member = iGroupMemberRepository.findByGroupAndUsers(group, user).orElse(null);
+        // tao request
+        RequestGroup requestGroup = new RequestGroup();
+        requestGroup.setGroupMember(member);
+        requestGroup.setNameRequestGroup(request.getNameRequestGroup());
+        if (!request.getDescriptionRequestGroup().isEmpty()) {
+            requestGroup.setDescriptionRequestGroup(request.getDescriptionRequestGroup());
+        }
+
+        // tao group detail
+        RequestGroupDetail detail = new RequestGroupDetail();
+        detail.setRequestGroup(requestGroup);
+
+        // luu vao db
+        iRequestGroupRepository.save(requestGroup);
+        iRequestGroupDetailRepository.save(detail);
+    }
+
+    @Override
+    public void updateRequestGroup(UpdateRequestGroup update, Users staff) {
+        RequestGroup req = iRequestGroupRepository.findRequestGroupById(update.getIdRequestGroup());
+        if (req == null) {
+            throw new RequestGroupNotFoundException("RequestGroup not found");
+        }
+
+        if (update.getIdChoice()==1){
+            req.setStatusRequestGroup("solved");
+            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStatus("solved");
+            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
+            iRequestGroupRepository.save(req);
+        }else if (update.getIdChoice()==0){
+            req.setStatusRequestGroup("denied");
+            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStatus("denied");
+            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
+            iRequestGroupRepository.save(req);
+        }else if (update.getIdChoice()==2){
+            req.setStatusRequestGroup("processing");
+            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStatus("processing");
+            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
+            iRequestGroupRepository.save(req);
+        }else{
+            throw new UndefinedChoiceException("Undefined Choice");
+
+        }
+    }
+
 
 }

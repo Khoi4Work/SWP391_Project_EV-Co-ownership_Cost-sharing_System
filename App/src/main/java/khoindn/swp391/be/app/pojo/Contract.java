@@ -12,19 +12,19 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Contract {
+    // Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int contractId;
-
-    @ManyToOne
-    @JoinColumn(name = "group_id")
-    private Group group;
-
     private String contractType;
     private LocalDate startDate;
     private LocalDate endDate;
     private String status; // pending, active, decline
+    @Column(name = "content_string", length = 5000)
+    private String htmlString; // link PDF do FE render
 
-    @Column(name = "document_url")
-    private String documentUrl; // link PDF do FE render
+    // Relationships
+    @ManyToOne
+    @JoinColumn(name = "group_id")
+    private Group group;
 }

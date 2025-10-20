@@ -2,7 +2,8 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.model.Request.ChatRequest;
 import khoindn.swp391.be.app.model.Response.ChatResponse;
-import khoindn.swp391.be.app.pojo.LlmResult;
+import khoindn.swp391.be.app.model.Response.LlmResult;
+
 import khoindn.swp391.be.app.pojo.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,11 +18,11 @@ public class ChatGPTService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatGPTService.class);
 
-    private final LlmClient llmClient;
+    private final LlmClientService llmClientService;
     private final KnowledgeSearchService knowledgeSearchService;
 
-    public ChatGPTService(LlmClient llmClient, KnowledgeSearchService knowledgeSearchService) {
-        this.llmClient = llmClient;
+    public ChatGPTService(LlmClientService llmClientService, KnowledgeSearchService knowledgeSearchService) {
+        this.llmClientService = llmClientService;
         this.knowledgeSearchService = knowledgeSearchService;
     }
 
@@ -74,7 +75,7 @@ public class ChatGPTService {
         String reply;
         Integer promptT = null, completionT = null, totalT = null;
         try {
-            LlmResult result = llmClient.chat(messages);
+            LlmResult result = llmClientService.chat(messages);
             reply = (result != null && result.firstText() != null)
                     ? result.firstText()
                     : (hasAnyContext

@@ -24,7 +24,7 @@ public class VehicleController {
     private IVehicleService iVehicleService;
 
     @GetMapping("/")
-    public ResponseEntity<List<Vehicle>> getAllUnregisteredVehicle() {
+    public ResponseEntity<List<Vehicle>> getAllUnregisteredVehicleAndPending() {
         List<Vehicle> vehicles = iVehicleService.getAllUnregisteredVehicle();
         return ResponseEntity.status(HttpStatus.OK).body(vehicles);
     }

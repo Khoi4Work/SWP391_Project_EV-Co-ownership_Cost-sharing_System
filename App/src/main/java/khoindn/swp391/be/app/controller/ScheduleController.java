@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.exception.exceptions.NoVehicleInGroupException;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
+import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.service.IScheduleService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/Schedule")
@@ -47,7 +49,7 @@ public class ScheduleController {
     }
 
     @GetMapping("/vehicle")
-    public ResponseEntity<List<VehicleRes>> getCarsByGroupAndUser(
+    public ResponseEntity<List<VehicleRes>> getVehicleByGroupAndUser(
             @RequestParam int groupId,
             @RequestParam int userId) {
         List<VehicleRes> resList = scheduleService.getCarsByGroupIdAndUserId(groupId, userId);
@@ -72,11 +74,22 @@ public class ScheduleController {
         scheduleService.cancelSchedule(scheduleId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/override-count")
+    public ResponseEntity<OverrideInfoRes> getOverrideCount(
+            @RequestParam int userId,
+            @RequestParam int groupId) {
+
+        OverrideInfoRes result = scheduleService.getOverrideCountForUser(userId, groupId);
+        return ResponseEntity.ok(result);
+    }
+
 //    @PutMapping("/{id}")
 //    public ResponseEntity<ScheduleRes> updateSchedule(@PathVariable Integer id,
 //                                                      @RequestBody ScheduleReq req) {
 //        return ResponseEntity.notFound().build();
 //    }
+
 
 }
 

@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
+import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -10,7 +11,10 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +36,26 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public ScheduleRes createSchedule(ScheduleReq req) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (req.getStartTime().isBefore(now)) {
+            throw new PastDateBookingException(
+                    "Cannot book schedule in the past"
+            );
+        }
+
+        if (req.getEndTime().isBefore(now)) {
+            throw new PastDateBookingException(
+                    "End time must be in the future"
+            );
+        }
+
+        if (req.getEndTime().isBefore(req.getStartTime())) {
+            throw new PastDateBookingException(
+                    "End time must be after start time"
+            );
+        }
         Users user = iUserRepository.findById(req.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -45,25 +69,93 @@ public class ScheduleService implements IScheduleService {
         if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
             throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
-        List<Schedule> allSchedules = iScheduleRepository
-                .findByGroupMember_Group_GroupId(req.getGroupId());
 
-        boolean hasConflict = allSchedules.stream()
-                .filter(s -> !s.getStatus().equals("canceled"))
-                .filter(s -> s.getGroupMember().getGroup().getGroupId() == req.getGroupId())
-                .anyMatch(s ->
-                        s.getStartTime().isBefore(req.getEndTime()) &&
-                                s.getEndTime().isAfter(req.getStartTime())
+        // Find conflicting schedules
+        List<Schedule> conflictingSchedules = iScheduleRepository
+                .findByGroupMember_Group_GroupId(req.getGroupId())
+                .stream()
+                .filter(s -> !s.getStatus().equals("canceled") &&
+                        !s.getStatus().equals("overridden") &&
+                        !s.getStatus().equals("override_tracker"))
+                .filter(s -> s.getStartTime().isBefore(req.getEndTime()) &&
+                        s.getEndTime().isAfter(req.getStartTime()))
+                .collect(Collectors.toList());
+
+        // Handle conflicts with ownership priority
+        if (!conflictingSchedules.isEmpty()) {
+            LocalDateTime startOfMonth = LocalDateTime.now()
+                    .withDayOfMonth(1)
+                    .withHour(0)
+                    .withMinute(0)
+                    .withSecond(0);
+
+            LocalDateTime endOfMonth = LocalDateTime.now()
+                    .withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
+                    .withHour(23)
+                    .withMinute(59)
+                    .withSecond(59);
+
+            long overrideCount = iScheduleRepository
+                    .countByGroupMember_IdAndStatusAndCreatedAtBetween(
+                            gm.getId(),
+                            "override_tracker",
+                            startOfMonth,
+                            endOfMonth
+                    );
+
+            if (overrideCount >= 3) {
+                throw new OverrideLimitExceededException(
+                        "Override limit exceeded. You have used all 3 overrides this month. " +
+                                "Next reset: " + startOfMonth.plusMonths(1).toLocalDate()
                 );
+            }
 
-        if (hasConflict) {
-            throw new RuntimeException("Time slot already booked for this vehicle");
+            // Process each conflicting schedule
+            for (Schedule conflictSchedule : conflictingSchedules) {
+                float existingOwnership = conflictSchedule.getGroupMember().getOwnershipPercentage();
+                float newOwnership = gm.getOwnershipPercentage();
+
+                if (newOwnership > existingOwnership) {
+                    // Higher ownership -> override existing schedule
+                    conflictSchedule.setStatus("overridden");
+                    iScheduleRepository.save(conflictSchedule);
+
+                    Schedule tracker = new Schedule();
+                    tracker.setGroupMember(gm);
+                    tracker.setStatus("override_tracker");
+                    tracker.setStartTime(LocalDateTime.now());
+                    tracker.setEndTime(LocalDateTime.now());
+                    tracker.setCreatedAt(LocalDateTime.now());
+                    iScheduleRepository.save(tracker);
+
+                    System.out.println(String.format(
+                            "Schedule overridden: User %s (%.1f%% ownership) overrode User %s (%.1f%% ownership)",
+                            user.getUsername(),
+                            newOwnership,
+                            conflictSchedule.getGroupMember().getUsers().getUsername(),
+                            existingOwnership
+                    ));
+
+                } else if (newOwnership == existingOwnership) {
+                    throw new LowerOwnershipException(
+                            "Cannot override schedule. Equal ownership percentage - first come first served principle applies"
+                    );
+                } else {
+                    throw new LowerOwnershipException(
+                            String.format(
+                                    "Cannot override schedule. Your ownership (%.1f%%) is lower than existing booking (%.1f%%)",
+                                    newOwnership,
+                                    existingOwnership
+                            )
+                    );
+                }
+            }
         }
 
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
-        schedule.setStatus("pending");
+        schedule.setStatus("booked");
         schedule.setGroupMember(gm);
 
         Schedule saved = iScheduleRepository.save(schedule);
@@ -80,6 +172,7 @@ public class ScheduleService implements IScheduleService {
     @Override
     public List<ScheduleRes> getAllSchedules() {
         return iScheduleRepository.findAll().stream()
+                .filter(s -> !s.getStatus().equals("override_tracker"))
                 .map(s -> {
                     ScheduleRes res = modelMapper.map(s, ScheduleRes.class);
                     res.setUserId(s.getGroupMember().getUsers().getId());
@@ -168,21 +261,19 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public List<ScheduleRes> findByGroupMember_Group_GroupId(int groupId) {
-        // Validate group exists
         Group group = iGroupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
 
         List<Schedule> schedules = iScheduleRepository.findByGroupMember_Group_GroupId(groupId);
 
-        // Convert entities to DTOs
         return schedules.stream()
+                .filter(s -> !s.getStatus().equals("override_tracker"))
                 .map(schedule -> {
                     ScheduleRes res = modelMapper.map(schedule, ScheduleRes.class);
                     res.setUserId(schedule.getGroupMember().getUsers().getId());
                     res.setUserName(schedule.getGroupMember().getUsers().getUsername());
                     res.setGroupId(schedule.getGroupMember().getGroup().getGroupId());
-
-                    // Get vehicle for this schedule's group
+                    res.setOwnershipPercentage(schedule.getGroupMember().getOwnershipPercentage());
                     Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
                     if (vehicle != null) {
                         res.setVehicleId(vehicle.getVehicleId());
@@ -191,6 +282,47 @@ public class ScheduleService implements IScheduleService {
                     return res;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public OverrideInfoRes  getOverrideCountForUser(int userId, int groupId) {
+        Users user = iUserRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
+                .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
+
+        LocalDateTime startOfMonth = LocalDateTime.now()
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0);
+
+        LocalDateTime endOfMonth = LocalDateTime.now()
+                .withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
+                .withHour(23)
+                .withMinute(59)
+                .withSecond(59);
+
+        long overrideCount = iScheduleRepository
+                .countByGroupMember_IdAndStatusAndCreatedAtBetween(
+                        gm.getId(),
+                        "override_tracker",
+                        startOfMonth,
+                        endOfMonth
+                );
+
+        return new OverrideInfoRes(
+                userId,
+                groupId,
+                overrideCount,
+                3 - overrideCount,
+                3,
+                startOfMonth.getMonth().toString(),
+                startOfMonth.plusMonths(1).toLocalDate());
     }
 
 
