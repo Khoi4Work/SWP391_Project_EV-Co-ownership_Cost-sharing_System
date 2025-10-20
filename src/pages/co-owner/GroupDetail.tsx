@@ -21,7 +21,7 @@ export default function GroupDetail() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const group = useMemo(() => groupId ? getGroupById(groupId) : undefined, [groupId]);
-  
+
   useSEO({
     title: group ? `${group.name} | Nhóm | EcoShare` : "Nhóm | EcoShare",
     description: group ? `Thông tin nhóm ${group.name}, chủ sở hữu, thành viên và xe.` : "Chi tiết nhóm đồng sở hữu",
@@ -83,7 +83,7 @@ export default function GroupDetail() {
     };
     return usageMap[userId] || 0;
   };
-  
+
   const getMonthlyContribution = (userId: string) => {
     const usage = getUserUsage(userId);
     const baseAmount = 2000000;
@@ -114,12 +114,12 @@ export default function GroupDetail() {
   const bankId = "970422";
   const accountNo = "100614072002";
   const accountName = "ECOSHARE";
-  
+
   const qrValue = `00020101021238${(38 + accountNo.length).toString().padStart(2, '0')}0010A00000072701${(14 + accountNo.length).toString().padStart(2, '0')}0006${bankId}01${accountNo.length.toString().padStart(2, '0')}${accountNo}0208QRIBFTTA5303704540${String(Number(amount) || 0).length.toString().padStart(2, '0')}${Number(amount) || 0}5802VN62${(8 + String(group.name).length).toString().padStart(2, '0')}08${String(group.name).length.toString().padStart(2, '0')}${group.name}6304`;
-  
+
   const momoPhone = "0901234567";
   const qrMomoValue = `2|99|${momoPhone}|||0|0|${Number(amount) || 0}|Chuyen tien cho ${group.name}`;
-  
+
   const qrBankValue = qrValue;
 
   return (
@@ -145,9 +145,9 @@ export default function GroupDetail() {
                 <div className="mb-3">
                   <div className="text-sm text-muted-foreground mb-2">Đóng góp hàng tháng của bạn theo tỉ lệ sử dụng:</div>
                   {me && <div className="flex items-center justify-between text-xs">
-                      <span>{me.name}: {getUserUsage(me.id)}%</span>
-                      <span className="font-medium text-primary">{getMonthlyContribution(me.id).toLocaleString()} VNĐ</span>
-                    </div>}
+                    <span>{me.name}: {getUserUsage(me.id)}%</span>
+                    <span className="font-medium text-primary">{getMonthlyContribution(me.id).toLocaleString()} VNĐ</span>
+                  </div>}
                 </div>
 
                 <Input
@@ -237,7 +237,7 @@ export default function GroupDetail() {
                   </Avatar>
                   <div>
                     <div className="text-lg font-semibold flex items-center gap-2">
-                      {owner.name} 
+                      {owner.name}
                       <Badge>Admin</Badge>
                       {owner.id === CURRENT_USER_ID && <Badge variant="outline">Bạn</Badge>}
                     </div>
@@ -262,45 +262,45 @@ export default function GroupDetail() {
                   <CardDescription>Các thành viên trong nhóm</CardDescription>
                 </div>
                 {myRole === "admin" && <Button onClick={() => setOpenAddMember(true)} size="sm">
-                    Thêm thành viên
-                  </Button>}
+                  Thêm thành viên
+                </Button>}
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {members.map(m => <div key={m.id} className="flex items-center justify-between p-3 bg-accent/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={m.avatar} alt={`Ảnh đại diện ${m.name}`} loading="lazy" />
-                        <AvatarFallback>{m.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium flex items-center gap-2">
-                          {m.name}
-                          {m.id === CURRENT_USER_ID && <Badge variant="outline">Bạn</Badge>}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Member</div>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={m.avatar} alt={`Ảnh đại diện ${m.name}`} loading="lazy" />
+                      <AvatarFallback>{m.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium flex items-center gap-2">
+                        {m.name}
+                        {m.id === CURRENT_USER_ID && <Badge variant="outline">Bạn</Badge>}
                       </div>
+                      <div className="text-sm text-muted-foreground">Member</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-primary">{getUserUsage(m.id)}%</div>
-                        <div className="text-xs text-muted-foreground">Tỉ lệ sử dụng</div>
-                      </div>
-                      {myRole === "admin" && m.id !== CURRENT_USER_ID && (
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => {
-                            setSelectedMemberToRemove(m.id);
-                            setOpenRemoveMember(true);
-                          }}
-                        >
-                          Xóa
-                        </Button>
-                      )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-primary">{getUserUsage(m.id)}%</div>
+                      <div className="text-xs text-muted-foreground">Tỉ lệ sử dụng</div>
                     </div>
-                  </div>)}
+                    {myRole === "admin" && m.id !== CURRENT_USER_ID && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedMemberToRemove(m.id);
+                          setOpenRemoveMember(true);
+                        }}
+                      >
+                        Xóa
+                      </Button>
+                    )}
+                  </div>
+                </div>)}
               </div>
             </CardContent>
           </Card>
@@ -325,65 +325,65 @@ export default function GroupDetail() {
                   <TabsTrigger value="vehicles">Danh sách xe</TabsTrigger>
                   <TabsTrigger value="requests">Yêu cầu dịch vụ ({serviceRequests.length})</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="vehicles">
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {group.vehicles.map(v => <div key={v.id} className={`border rounded-md p-3 cursor-pointer transition-colors ${selectedVehicle === v.id ? "border-primary bg-primary/5" : "hover:bg-accent/50"}`} onClick={() => setSelectedVehicle(v.id)}>
-                        <img src={v.imageUrl} alt={`Hình ảnh xe ${v.name}`} loading="lazy" className="w-full h-32 object-cover rounded mb-2" />
-                        <div className="font-semibold flex items-center gap-2">
-                          {v.name}
-                          {selectedVehicle === v.id && <Badge variant="outline">Đã chọn</Badge>}
-                        </div>
-                        <div className="text-sm text-muted-foreground mb-2">{v.info}</div>
-                        <Badge variant={v.status === "maintenance" ? "destructive" : v.status === "in-use" ? "secondary" : "default"}>
-                          {v.status === "available" ? "Sẵn sàng" : v.status === "in-use" ? "Đang sử dụng" : "Bảo dưỡng"}
-                        </Badge>
-                      </div>)}
+                      <img src={v.imageUrl} alt={`Hình ảnh xe ${v.name}`} loading="lazy" className="w-full h-32 object-cover rounded mb-2" />
+                      <div className="font-semibold flex items-center gap-2">
+                        {v.name}
+                        {selectedVehicle === v.id && <Badge variant="outline">Đã chọn</Badge>}
+                      </div>
+                      <div className="text-sm text-muted-foreground mb-2">{v.info}</div>
+                      <Badge variant={v.status === "maintenance" ? "destructive" : v.status === "in-use" ? "secondary" : "default"}>
+                        {v.status === "available" ? "Sẵn sàng" : v.status === "in-use" ? "Đang sử dụng" : "Bảo dưỡng"}
+                      </Badge>
+                    </div>)}
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="requests">
                   <div className="space-y-3">
                     {serviceRequests.length === 0 ? <div className="text-center py-6 text-muted-foreground">
-                        Chưa có yêu cầu dịch vụ nào
-                      </div> : serviceRequests.map(request => <div key={request.id} className="border rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="font-medium">{request.vehicleName}</div>
-                              <div className="text-sm text-muted-foreground">{request.serviceType}</div>
-                              <div className="text-sm mt-1">{request.description}</div>
-                              <div className="text-xs text-muted-foreground mt-2">
-                                {request.paymentType === "self" ? "Tự chi trả" : "Dùng quỹ chung"} • {request.date}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={request.status === "pending" ? "secondary" : request.status === "approved" ? "default" : "destructive"}>
-                                {request.status === "pending" ? "Chờ duyệt" : request.status === "approved" ? "Đã duyệt" : "Từ chối"}
-                              </Badge>
-                              {request.status === "pending" && <div className="flex gap-1">
-                                  <Button size="sm" variant="outline" onClick={() => {
-                                    setEditingRequest(request.id);
-                                    setSelectedVehicle(request.vehicleId);
-                                    setPaymentType(request.paymentType);
-                                    setServiceType(request.serviceType);
-                                    setServiceDescription(request.description);
-                                    setOpenServiceRequest(true);
-                                  }}>
-                                    Sửa
-                                  </Button>
-                                  <Button size="sm" variant="destructive" onClick={() => {
-                                    setServiceRequests(prev => prev.filter(r => r.id !== request.id));
-                                    toast({
-                                      title: "Đã xóa yêu cầu",
-                                      description: "Yêu cầu dịch vụ đã được xóa thành công"
-                                    });
-                                  }}>
-                                    Xóa
-                                  </Button>
-                                </div>}
-                            </div>
+                      Chưa có yêu cầu dịch vụ nào
+                    </div> : serviceRequests.map(request => <div key={request.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium">{request.vehicleName}</div>
+                          <div className="text-sm text-muted-foreground">{request.serviceType}</div>
+                          <div className="text-sm mt-1">{request.description}</div>
+                          <div className="text-xs text-muted-foreground mt-2">
+                            {request.paymentType === "self" ? "Tự chi trả" : "Dùng quỹ chung"} • {request.date}
                           </div>
-                        </div>)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={request.status === "pending" ? "secondary" : request.status === "approved" ? "default" : "destructive"}>
+                            {request.status === "pending" ? "Chờ duyệt" : request.status === "approved" ? "Đã duyệt" : "Từ chối"}
+                          </Badge>
+                          {request.status === "pending" && <div className="flex gap-1">
+                            <Button size="sm" variant="outline" onClick={() => {
+                              setEditingRequest(request.id);
+                              setSelectedVehicle(request.vehicleId);
+                              setPaymentType(request.paymentType);
+                              setServiceType(request.serviceType);
+                              setServiceDescription(request.description);
+                              setOpenServiceRequest(true);
+                            }}>
+                              Sửa
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => {
+                              setServiceRequests(prev => prev.filter(r => r.id !== request.id));
+                              toast({
+                                title: "Đã xóa yêu cầu",
+                                description: "Yêu cầu dịch vụ đã được xóa thành công"
+                              });
+                            }}>
+                              Xóa
+                            </Button>
+                          </div>}
+                        </div>
+                      </div>
+                    </div>)}
                   </div>
                 </TabsContent>
               </Tabs>
@@ -426,24 +426,24 @@ export default function GroupDetail() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="member-email" className="text-sm font-medium">Email thành viên mới:</Label>
-              <Input 
+              <Input
                 id="member-email"
                 type="email"
-                value={newMemberEmail} 
-                onChange={e => setNewMemberEmail(e.target.value)} 
-                placeholder="example@gmail.com" 
+                value={newMemberEmail}
+                onChange={e => setNewMemberEmail(e.target.value)}
+                placeholder="example@gmail.com"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="member-ownership" className="text-sm font-medium">Tỉ lệ sở hữu (%):</Label>
-              <Input 
+              <Input
                 id="member-ownership"
                 type="number"
                 min="1"
                 max="100"
-                value={newMemberOwnership} 
-                onChange={e => setNewMemberOwnership(e.target.value)} 
-                placeholder="Nhập tỉ lệ từ 1-100%" 
+                value={newMemberOwnership}
+                onChange={e => setNewMemberOwnership(e.target.value)}
+                placeholder="Nhập tỉ lệ từ 1-100%"
               />
               <p className="text-xs text-muted-foreground">
                 Tỉ lệ sở hữu sẽ ảnh hưởng đến mức đóng góp quỹ hàng tháng
@@ -452,10 +452,10 @@ export default function GroupDetail() {
             <div className="flex gap-2 pt-2">
               <Button onClick={() => {
                 const ownership = Number(newMemberOwnership);
-                if (newMemberEmail.trim() 
-                    && newMemberEmail.includes("@gmail.com")
-                    && ownership > 0 
-                    && ownership <= 100) {
+                if (newMemberEmail.trim()
+                  && newMemberEmail.includes("@gmail.com")
+                  && ownership > 0
+                  && ownership <= 100) {
                   toast({
                     title: "Yêu cầu đã được gửi",
                     description: `Thêm ${newMemberEmail} với tỉ lệ sở hữu ${ownership}%. Staff sẽ xử lý trong 24h.`
@@ -523,7 +523,7 @@ export default function GroupDetail() {
                 {group.vehicles.find(v => v.id === selectedVehicle)?.name || "Chưa chọn xe"}
               </div>
             </div>
-            
+
             <div>
               <Label className="text-sm font-medium">Hình thức thanh toán:</Label>
               <RadioGroup value={paymentType} onValueChange={setPaymentType} className="mt-2">
@@ -537,7 +537,7 @@ export default function GroupDetail() {
                 </div>
               </RadioGroup>
             </div>
-            
+
             <div>
               <Label className="text-sm font-medium">Loại dịch vụ:</Label>
               <Select value={serviceType} onValueChange={setServiceType}>
@@ -555,12 +555,12 @@ export default function GroupDetail() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label className="text-sm font-medium">Mô tả chi tiết:</Label>
               <Textarea value={serviceDescription} onChange={e => setServiceDescription(e.target.value)} placeholder="Nhập mô tả chi tiết về dịch vụ cần thực hiện..." className="mt-1" rows={3} />
             </div>
-            
+
             <div className="flex gap-2">
               <Button onClick={() => {
                 if (!selectedVehicle || !paymentType || !serviceType || !serviceDescription.trim()) {

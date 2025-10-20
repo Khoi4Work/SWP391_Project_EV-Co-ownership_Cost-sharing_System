@@ -120,7 +120,7 @@ export default function StaffDashboard() {
                 r.id === appId ? { ...r, status: "rejected" } : r
             )
         );
-
+        setLeaveRequests(prev => prev.filter(r => r.id !== appId));
         toast({
             title: "Đã từ chối đơn",
             description: "Yêu cầu rời nhóm không được chấp nhận.",
