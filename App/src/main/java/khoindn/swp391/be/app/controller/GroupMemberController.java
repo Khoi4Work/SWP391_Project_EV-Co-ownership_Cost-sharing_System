@@ -37,9 +37,7 @@ public class GroupMemberController {
 
     // ---------------------- NEW CODE: Add member to group ----------------------
     @PostMapping(
-            path = "/add",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
+            path = "/add"
     )
     public ResponseEntity<GroupMemberResponse> addMember(
             @RequestParam("groupId") int groupId,
@@ -47,7 +45,9 @@ public class GroupMemberController {
 
         GroupMember saved = groupMemberService.addMemberToGroup(
                 groupId, req.getUserId(), req.getRoleInGroup(), req.getOwnershipPercentage());
-
+        if (saved == null) {
+            return ResponseEntity.badRequest().build();
+        }
         GroupMemberResponse body = new GroupMemberResponse(
                 saved.getId(),
                 saved.getGroup().getGroupId(),
@@ -57,6 +57,9 @@ public class GroupMemberController {
                 saved.getCreatedAt(),
                 saved.getOwnershipPercentage()
         );
+        if (body == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }

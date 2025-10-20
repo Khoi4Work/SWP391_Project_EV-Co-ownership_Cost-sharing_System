@@ -34,6 +34,11 @@ public class APIExceptionHandler {
         return ResponseEntity.status(401).body("Username or password invalid!"); // 401
     }
 
+    @ExceptionHandler(RoleIsNotExistedException.class)
+    public ResponseEntity handleRoleIsNotExistedException(RoleIsNotExistedException exception) {
+        return ResponseEntity.status(401).body("Role is not existed!"); // 401
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity handleAuthenticationException(AuthenticationException exception) {
         return ResponseEntity.status(401).body(exception.getMessage()); // 401

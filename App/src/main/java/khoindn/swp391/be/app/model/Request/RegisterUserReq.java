@@ -39,5 +39,5 @@ public class RegisterUserReq {
 
 
 
-    private UserRole roleId; // Default role ID for regular users
+    private int  roleId; // Default role ID for regular users
 }

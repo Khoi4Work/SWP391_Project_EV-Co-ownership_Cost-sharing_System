@@ -18,4 +18,8 @@ public interface IAuthenticationRepository extends JpaRepository<Users, Integer>
     boolean existsByGplx(String gplx);
 
     boolean existsByPhone(String phone);
+
+    boolean existsByRole(UserRole role);
+
+    boolean existsByRole_RoleId(int roleRoleId);
 }
