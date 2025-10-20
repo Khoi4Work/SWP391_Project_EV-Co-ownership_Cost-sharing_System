@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.RoleNotFoundException;
 import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.repository.IUserRoleRepository;
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 
 @Service
-
+@Transactional
 public class UserRoleService implements IUserRoleService {
 
     @Autowired

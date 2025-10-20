@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Random;
 
 @Service
+@Transactional
 public class GroupService implements IGroupService {
 
     @Autowired

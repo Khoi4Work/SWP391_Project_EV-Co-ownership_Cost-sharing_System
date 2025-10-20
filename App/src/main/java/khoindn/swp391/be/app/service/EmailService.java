@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.model.Request.ContentSender;
 import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 
 @Service
+@Transactional
 public class EmailService implements IEmailService {
 
     @Autowired

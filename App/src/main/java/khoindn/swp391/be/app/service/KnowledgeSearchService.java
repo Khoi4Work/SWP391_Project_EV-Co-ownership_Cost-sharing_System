@@ -1,11 +1,13 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class KnowledgeSearchService {
 
     private final JdbcTemplate jdbcTemplate;

@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.model.Request.ChatRequest;
 import khoindn.swp391.be.app.model.Response.ChatResponse;
 import khoindn.swp391.be.app.model.Response.LlmResult;
@@ -14,6 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class ChatGPTService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatGPTService.class);

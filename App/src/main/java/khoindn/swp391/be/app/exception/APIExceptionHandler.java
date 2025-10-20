@@ -169,4 +169,27 @@ public class APIExceptionHandler {
     public ResponseEntity handlePastDateBooking(PastDateBookingException ex) {
         return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
     }
+
+    // ==========================
+    // Contract Exceptions
+    // ==========================
+    @ExceptionHandler(InvalidKeySpecException.class)
+    public ResponseEntity handleInvalidKeySpecException(InvalidKeySpecException ex) {
+        return ResponseEntity.status(400).body("Wrong Private Key format!"+ex.getMessage()); // 400 Conflict
+    }
+    @ExceptionHandler(NoSuchAlgorithmException.class)
+    public ResponseEntity handleNoSuchAlgorithmException(NoSuchAlgorithmException ex) {
+        return ResponseEntity.status(500).body("Algorithm is not existed!"+ex.getMessage()); // 500 Conflict
+    }
+    @ExceptionHandler(SignatureException.class)
+    public ResponseEntity handleSignatureException(SignatureException ex) {
+        return ResponseEntity.status(400).body("Signature is wrong! " +
+                "Private key is not match!"+ex.getMessage()); // 400 Conflict
+    }
+    @ExceptionHandler(InvalidKeyException.class)
+    public ResponseEntity handleInvalidKeyException(InvalidKeyException ex) {
+        return ResponseEntity.status(400).body("Key is not match with algorithm! or " +
+                "Key is not match with public key"+ex.getMessage()); // 400 Conflict
+    }
+
 }

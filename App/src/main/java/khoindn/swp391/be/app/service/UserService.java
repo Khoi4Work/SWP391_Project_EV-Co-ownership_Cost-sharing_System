@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.UserNotFoundException;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IUserRepository;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class UserService implements IUserService {
 
     @Autowired

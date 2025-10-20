@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IAuthenticationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import java.util.function.Function;
 
 
 @Service
-
+@Transactional
 public class TokenService {
     private final String SECRET_KEY = "khoimapu2k56h7l8o9p3r4s5t6u7v8w9x0y1z2a3b4c5d6e7f8g9h0i1j2k3l4m5n6";
     @Autowired

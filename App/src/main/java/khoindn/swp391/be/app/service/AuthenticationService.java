@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.ContentSender;
 import khoindn.swp391.be.app.model.Request.LoginUser;
@@ -31,6 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 @Service
+@Transactional
 public class AuthenticationService implements UserDetailsService {
     @Autowired
     private IAuthenticationRepository iAuthenticationRepository;

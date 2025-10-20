@@ -30,7 +30,7 @@ public class ContractSigner {
 
 
     @Column(name = "decision")
-    private String decision; // pending | signed | declined
+    private String decision = "pending"; // pending | signed | declined
 
     @Column(name = "signed_at")
     private LocalDateTime signedAt;

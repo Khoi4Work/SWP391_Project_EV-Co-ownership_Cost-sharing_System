@@ -4,6 +4,7 @@ package khoindn.swp391.be.app.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.model.Response.LlmResult;
 import khoindn.swp391.be.app.pojo.Message;
 import okhttp3.*;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional
 public class HttpLlmClientService implements LlmClientService {
 
     private static final Logger log = LoggerFactory.getLogger(HttpLlmClientService.class);

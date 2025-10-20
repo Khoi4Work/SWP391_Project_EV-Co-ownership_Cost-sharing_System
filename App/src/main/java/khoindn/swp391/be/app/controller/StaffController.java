@@ -44,12 +44,12 @@ public class StaffController {
     public ResponseEntity updateRequestGroup(@RequestBody @Valid UpdateRequestGroup update) {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
+        iRequestGroupService.updateRequestGroup(update);
 
 
-
-        return null;
+        return ResponseEntity.status(200).body("Update successfully");
     }
 
 

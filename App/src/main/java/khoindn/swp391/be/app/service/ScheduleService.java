@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class ScheduleService implements IScheduleService {
     @Autowired
     private IScheduleRepository iScheduleRepository;

@@ -22,6 +22,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -72,13 +73,6 @@ public class ContractService implements IContractService {
         byte[] privateKeyReceived = Base64.getDecoder().decode(req.getContract_signature());
         byte[] publicKeyUser = Base64.getDecoder().decode(user.getPublicKey());
 
-
-
-
-
-
-
-
         if (iContractSignerRepository.existsByUser_Id(user.getId())) {
             ContractSigner contractSigner = iContractSignerRepository
                     .findByUser_IdAndContract_ContractId(user.getId(), req.getIdContract());
@@ -112,15 +106,21 @@ public class ContractService implements IContractService {
                         throw new IllegalArgumentException("Private key does not match public key");
                     }
                     System.out.println("✅ Private key matches public key.");
+
                     // Lưu chữ ký dưới dạng Base64
                     contractSigner.setSignature(Base64.getEncoder().encodeToString(signatureBytes));
 
-                }catch (NoSuchAlgorithmException | InvalidKeySpecException | SignatureException e ) {
-                    System.out.println(e.getMessage());;
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidKeySpecException e) {
+                    throw new RuntimeException(e);
+                } catch (SignatureException e) {
+                    throw new RuntimeException(e);
                 } catch (InvalidKeyException e) {
                     throw new RuntimeException(e);
                 }
 
+                contractSigner.setSignedAt(LocalDateTime.now());
 
             } else if (req.getIdChoice() == 0) {
                 contractSigner.setDecision("Declined");
@@ -172,7 +172,6 @@ public class ContractService implements IContractService {
 //        }
 //
 //    }
-
 
 
     @Override
@@ -258,7 +257,6 @@ public class ContractService implements IContractService {
     public List<ContractSigner> getContractSignerByContractId(int id) {
         return iContractSignerRepository.findAllByContract_ContractId(id);
     }
-
 
 
 }
