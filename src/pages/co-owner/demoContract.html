@@ -399,76 +399,85 @@
         Lưu ý: Khi tick "Đồng ý", bạn đồng ý với tất cả các điều khoản nêu trong hợp đồng này.
       </p>
 
-      <!-- ✅ Khu vực chữ ký (ẩn mặc định) -->
-      <div id="signatureSection" style="display:none; margin-top:2rem;">
+      <!-- ✅ Mục chữ ký private key (ẩn mặc định, xuất hiện khi chọn “Đồng ý”) -->
+      <div id="signatureSection" style="margin-top:2rem; display:none;">
         <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">
-          6. Xác nhận chữ ký điện tử
+          6. Xác nhận bằng Private Key
         </h3>
-        <p>Vui lòng ký xác nhận vào ô bên dưới để hoàn tất hợp đồng:</p>
+        <p>Vui lòng nhập private key để hoàn tất xác nhận:</p>
 
-        <div style="text-align:center; margin-top:1rem;">
-          <canvas id="signaturePad" width="500" height="200"
-            style="border:1px solid #aaa; border-radius:4px; background-color:#fff;"></canvas>
-          <div style="margin-top:1rem;">
-            <button id="clearSig" style="padding:0.5rem 1rem; margin-right:0.5rem;">Xóa</button>
-            <button id="saveSig" style="padding:0.5rem 1rem;">Lưu chữ ký</button>
+        <div id="privateKeyContainer" style="margin-top:1rem;">
+          <label for="privateKeyArea" style="display:block; margin-bottom:0.3rem;">Private Key</label>
+          <textarea id="privateKeyArea" rows="6"
+            style="width:100%; max-width:700px; border:1px solid #aaa; padding:0.6rem; border-radius:4px; box-sizing:border-box;"
+            placeholder="Dán private key ở đây"></textarea>
+
+          <div style="
+  margin-top:0.6rem;
+  display:flex;
+  gap:0.5rem;
+  justify-content:flex-end;
+">
+            <button id="clearKey" type="button" style="padding:0.5rem 1rem;">Xóa</button>
+            <button id="saveKey" type="button" style="padding:0.5rem 1rem;">Lưu</button>
           </div>
         </div>
 
-        <div id="signatureResult" style="margin-top:2rem; display:none;">
-          <p><strong>Chữ ký đã xác nhận:</strong></p>
-          <img id="savedSignature" src="" alt="Chữ ký đã lưu"
-            style="border:1px solid #ccc; max-width:300px; display:block; margin:1rem auto;">
-          <p style="text-align:center;"><em>Người ký: {{ownerInfo.name}}</em></p>
+        <div id="signatureResult" style="margin-top:1.5rem; display:none">
+          <p><strong>Private key đã xác nhận:</strong></p>
+          <div style="border:1px dashed #ccc; padding:0.8rem; border-radius:6px; max-width:700px;">
+            <p id="maskedKey" style="word-break:break-all; font-family:monospace; margin:0.2rem 0;"></p>
+            <p style="margin:0.5rem 0 0 0;"><em>Người xác nhận: {{ownerInfo.name}}</em></p>
+          </div>
         </div>
       </div>
 
-      <!-- ✅ Script điều khiển hiển thị chữ ký -->
       <script>
-        const agreeYes = document.getElementById("agreeYes");
-        const agreeNo = document.getElementById("agreeNo");
-        const sigSection = document.getElementById("signatureSection");
-        const canvas = document.getElementById("signaturePad");
-        const ctx = canvas.getContext("2d");
-        let drawing = false;
+        (function () {
+          // --- PHẦN XỬ LÝ HIỂN THỊ THEO RADIO 5 ---
+          const agreeYes = document.getElementById('agreeYes');
+          const agreeNo = document.getElementById('agreeNo');
+          const signatureSection = document.getElementById('signatureSection');
 
-        // Ẩn/hiện phần chữ ký khi chọn radio
-        agreeYes.addEventListener("change", () => {
-          if (agreeYes.checked) sigSection.style.display = "block";
-        });
-        agreeNo.addEventListener("change", () => {
-          if (agreeNo.checked) {
-            sigSection.style.display = "none";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            document.getElementById("signatureResult").style.display = "none";
-          }
-        });
+          agreeYes.addEventListener('change', () => {
+            if (agreeYes.checked) {
+              signatureSection.style.display = 'block';
+            }
+          });
 
-        // --- Vẽ chữ ký ---
-        canvas.addEventListener("mousedown", () => (drawing = true));
-        canvas.addEventListener("mouseup", () => (drawing = false, ctx.beginPath()));
-        canvas.addEventListener("mousemove", draw);
-        function draw(event) {
-          if (!drawing) return;
-          ctx.lineWidth = 2;
-          ctx.lineCap = "round";
-          ctx.strokeStyle = "#000";
-          const rect = canvas.getBoundingClientRect();
-          ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
-        }
+          agreeNo.addEventListener('change', () => {
+            if (agreeNo.checked) {
+              signatureSection.style.display = 'none';
+            }
+          });
 
-        // --- Nút xóa & lưu chữ ký ---
-        document.getElementById("clearSig").onclick = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        };
-        document.getElementById("saveSig").onclick = () => {
-          const dataURL = canvas.toDataURL("image/png");
-          document.getElementById("savedSignature").src = dataURL;
-          document.getElementById("signatureResult").style.display = "block";
-        };
+          // --- PHẦN PRIVATE KEY ĐÃ LƯỢC GỌN ---
+          const area = document.getElementById('privateKeyArea');
+          const clearBtn = document.getElementById('clearKey');
+          const saveBtn = document.getElementById('saveKey');
+          const resultBox = document.getElementById('signatureResult');
+          const maskedKeyP = document.getElementById('maskedKey');
+
+          clearBtn.addEventListener('click', () => {
+            area.value = '';
+            resultBox.style.display = 'none';
+          });
+
+          saveBtn.addEventListener('click', () => {
+            const keyValue = area.value.trim();
+            if (!keyValue) {
+              alert('Vui lòng nhập hoặc dán private key trước khi lưu.');
+              return;
+            }
+
+            // ✅ Hiển thị nguyên văn, không che
+            maskedKeyP.textContent = keyValue;
+            resultBox.style.display = 'block';
+
+            saveBtn.textContent = 'Đã lưu';
+            setTimeout(() => saveBtn.textContent = 'Lưu', 1500);
+          });
+        })();
       </script>
     </section>
   </div>
