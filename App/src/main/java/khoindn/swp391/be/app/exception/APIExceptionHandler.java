@@ -100,6 +100,11 @@ public class APIExceptionHandler {
         return ResponseEntity.status(404).body("There is no vehicle available!"); // 404
     }
 
+    @ExceptionHandler(VehicleIsNotRegisteredException.class)
+    public ResponseEntity handleVehicleIsNotRegisteredException(VehicleIsNotRegisteredException ex) {
+        return ResponseEntity.status(404).body("No vehicle is registered in this group!"); // 404
+    }
+
     // ==========================
     // User / Group Exceptions
     // ==========================
@@ -126,6 +131,11 @@ public class APIExceptionHandler {
     @ExceptionHandler(RequestGroupNotFoundException.class)
     public ResponseEntity handleRequestGroupNotFoundException(RequestGroupNotFoundException ex) {
         return ResponseEntity.status(404).body("Request Group not found!"); // 404 Not Found
+    }
+
+    @ExceptionHandler(GroupMemberNotFoundException.class)
+    public ResponseEntity handleGroupMemberNotFoundException(GroupMemberNotFoundException ex) {
+        return ResponseEntity.status(404).body("No members found in the group!"); // 404 Not Found
     }
 
 

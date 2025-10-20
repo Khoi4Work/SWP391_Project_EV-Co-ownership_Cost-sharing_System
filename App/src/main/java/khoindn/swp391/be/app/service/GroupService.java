@@ -115,7 +115,26 @@ public class GroupService implements IGroupService {
     public void deleteGroup(int groupId) {
         Group group = iGroupRepository.findGroupByGroupId(groupId);
         if (group != null) {
-            group.setStatus("deleted");
+            Vehicle vehicle = iVehicleRepository.findVehicleByGroup(group);
+            if (vehicle != null) {
+                List<GroupMember> members = iGroupMemberRepository.findAllByGroup_GroupId(groupId);
+                if (members != null) {
+                    members.forEach(member -> {
+                        member.setStatus("deleted");
+                        iGroupMemberRepository.save(member);
+                    });
+                    vehicle.setGroup(null);
+                    iVehicleRepository.save(vehicle);
+                    group.setStatus("deleted");
+                    iGroupRepository.save(group);
+                } else {
+                    throw new GroupMemberNotFoundException("No members found in the group");
+                }
+            }else {
+                throw new VehicleIsNotRegisteredException("No vehicle is registered in this group");
+            }
+        }else {
+            throw new GroupNotFoundException("Group not found");
         }
     }
 

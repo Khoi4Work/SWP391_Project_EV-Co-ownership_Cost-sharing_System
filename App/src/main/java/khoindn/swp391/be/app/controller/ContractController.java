@@ -14,9 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.context.Context;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
+
 import org.springframework.http.MediaType;
 
 
@@ -112,53 +112,97 @@ public class ContractController {
 
     @GetMapping("/preview")
     public ResponseEntity<String> renderContract(@RequestParam("contractId") int contractId) {
-        // Lay nguoi dung hien tai
+        // ✅ Lấy người dùng hiện tại
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        // Lay contract dang muon view
+
+        // ✅ Lấy hợp đồng
         Contract contract = iContractService.getContractByContractId(contractId);
         if (contract == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy hợp đồng.");
         }
-        // Lay xe
+
+        // ✅ Lấy xe
         Vehicle vehicle = iVehicleService.findVehicleByGroupId(contract.getGroup().getGroupId());
-        // Lay tat ca thanh vien
         if (vehicle == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy xe thuộc nhóm này.");
         }
-        //Lay tat ca thanh vien co trong group
-        List<GroupMember> allmembers = iGroupMemberService.getMembersByGroupId(contract.getGroup().getGroupId());
-        //Lay owner
-        GroupMember owner = allmembers.stream()
+
+        // ✅ Lấy danh sách thành viên nhóm
+        List<GroupMember> allMembers = iGroupMemberService.getMembersByGroupId(contract.getGroup().getGroupId());
+        if (allMembers == null || allMembers.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không có thành viên trong nhóm.");
+        }
+
+        // ✅ Xác định chủ sở hữu chính (tỷ lệ cao nhất)
+        GroupMember ownerMember = allMembers.stream()
                 .max(Comparator.comparing(GroupMember::getOwnershipPercentage))
                 .orElse(null);
-        if (owner == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        if (ownerMember == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy chủ sở hữu chính.");
         }
-        //Lay coOwner
-        List<GroupMember> coOwners = allmembers.stream()
-                .filter(member -> !member.getUsers().getId().equals(owner.getUsers().getId()))
+
+        // ✅ Các đồng sở hữu khác
+        List<GroupMember> coOwnerMembers = allMembers.stream()
+                .filter(m -> !m.getUsers().getId().equals(ownerMember.getUsers().getId()))
                 .toList();
 
-
+        // ✅ Chuẩn bị dữ liệu Thymeleaf
         Context context = new Context();
-        context.setVariable("ownerName", owner.getUsers().getHovaTen());
-        context.setVariable("ownerEmail", owner.getUsers().getEmail());
-        context.setVariable("ownerShare", owner.getOwnershipPercentage());
-        context.setVariable("vehicleModel", vehicle.getModel());
-        context.setVariable("vehiclePlate", vehicle.getPlateNo());
-        context.setVariable("coOwners", coOwners.stream()
-                .map(member -> Map.of("name", member.getUsers().getHovaTen(), "share", member.getOwnershipPercentage()))
-                .toList());
-        context.setVariable("status", contract.getStatus());
 
-        // render thymeleaf template to HTML string
+        // --- Bên A: Chủ sở hữu chính ---
+        Map<String, Object> ownerMap = new HashMap<>();
+        ownerMap.put("name", ownerMember.getUsers().getHovaTen());
+        ownerMap.put("email", ownerMember.getUsers().getEmail());
+        ownerMap.put("idNumber", ownerMember.getUsers().getCccd());
+        ownerMap.put("ownership", ownerMember.getOwnershipPercentage());
+        context.setVariable("owner", ownerMap);
+
+        // --- Bên A: Các đồng sở hữu ---
+        List<Map<String, Object>> coOwnersList = new ArrayList<>();
+        for (GroupMember m : coOwnerMembers) {
+            Map<String, Object> co = new HashMap<>();
+            co.put("name", m.getUsers().getHovaTen());
+            co.put("email", m.getUsers().getEmail());
+            co.put("idNumber", m.getUsers().getCccd());
+            co.put("ownership", m.getOwnershipPercentage());
+            coOwnersList.add(co);
+        }
+        context.setVariable("coOwners", coOwnersList);
+
+        // --- Bên B: Thông tin xe ---
+        Map<String, Object> vehicleMap = new HashMap<>();
+        vehicleMap.put("brand", vehicle.getBrand());
+        vehicleMap.put("model", vehicle.getModel());
+        vehicleMap.put("plateNo", vehicle.getPlateNo());
+        vehicleMap.put("color", vehicle.getColor());
+        vehicleMap.put("batteryCapacity", vehicle.getBatteryCapacity());
+        context.setVariable("vehicle", vehicleMap);
+
+        // --- Trạng thái hợp đồng ---
+        int statusValue = switch (contract.getStatus().toLowerCase()) {
+            case "activated", "signed" -> 1;
+            case "declined" -> 0;
+            default -> -1;
+        };
+        context.setVariable("status", statusValue);
+
+        // --- Thông tin hợp đồng chung ---
+        context.setVariable("contractCode", contract.getContractId());
+        context.setVariable("contractDate", contract.getStartDate());
+        context.setVariable("groupName", contract.getGroup().getGroupName());
+
+        // ✅ Render HTML qua Thymeleaf (chưa có chữ ký)
         String html = templateEngine.process("contract-preview", context);
-        System.out.println("HTML: " + html);
+
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
                 .body(html);
     }
+
+
+
+
 }

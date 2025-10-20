@@ -16,6 +16,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -70,8 +71,16 @@ public class ContractService implements IContractService {
         System.out.println(user);
 
         //Parse privateKey va publicKey sang byte
-        byte[] privateKeyReceived = Base64.getDecoder().decode(req.getContract_signature());
-        byte[] publicKeyUser = Base64.getDecoder().decode(user.getPublicKey());
+
+        byte[] privateKeyReceived;
+        byte[] publicKeyUser;
+        try {
+            privateKeyReceived = Base64.getDecoder().decode(req.getContract_signature());
+            publicKeyUser = Base64.getDecoder().decode(user.getPublicKey());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid Base64 encoding for keys");
+        }
+
 
         if (iContractSignerRepository.existsByUser_Id(user.getId())) {
             ContractSigner contractSigner = iContractSignerRepository
@@ -160,18 +169,6 @@ public class ContractService implements IContractService {
         }
     }
 
-//    @Override
-//    public void SendEmail(SendEmailReq emailReq) {
-//        for (String eachEmail : emailReq.getEmail()) {
-//            SimpleMailMessage message = new SimpleMailMessage();
-//            message.setTo(eachEmail);
-//            message.setSubject("[EcoShare System] E-Contract");
-//            message.setText("Link Contract"+emailReq.getDocumentUrl());
-//
-//            javaMailSender.send(message);
-//        }
-//
-//    }
 
 
     @Override
