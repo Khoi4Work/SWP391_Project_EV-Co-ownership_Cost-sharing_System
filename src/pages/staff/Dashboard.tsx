@@ -21,26 +21,35 @@ import {
     Activity
 } from "lucide-react";
 import ChatBox from "@/components/ChatBox";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { groups as initialGroups, leaveRequests as initialLeaveRequests } from "@/data/mockGroups";
+import { groups as initialGroups } from "@/data/mockGroups";
+import axiosClient from "@/api/axiosClient";
 export default function StaffDashboard() {
     const [showChat, setShowChat] = useState(false);
     const [selectedApp, setSelectedApp] = useState<any>(null);
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
-    const [leaveRequests, setLeaveRequests] = useState(initialLeaveRequests);
+    const [leaveRequests, setLeaveRequests] = useState([]);
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
         { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
         { label: "Nhóm quản lý", value: 8, icon: Users, color: "primary" },
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
-    const pendingLeaveRequests = leaveRequests.filter(r => r.status === "pending");
-
-
+    useEffect(() => {
+        axiosClient.get("/staff/get/all/request-group")
+            .then(res => {
+                if (res.status === 204) {
+                    setLeaveRequests([]);
+                } else {
+                    setLeaveRequests(res.data);
+                }
+            })
+            .catch(err => console.error(err));
+    }, []);
     const handleApprove = (appId: string) => {
         const request = leaveRequests.find(r => r.id === appId);
         if (!request) return;
@@ -144,11 +153,11 @@ export default function StaffDashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {pendingLeaveRequests.map((req) => (
+                                    {leaveRequests.map((req) => (
                                         <div key={req.id} className="p-4 border rounded-lg flex justify-between">
                                             <div>
-                                                <p><strong>Nhóm:</strong> {req.groupName}</p>
-                                                <p><strong>Người yêu cầu:</strong> {req.userId}</p>
+                                                <p><strong>Nhóm:</strong> {req.nameRequestGroup}</p>
+                                                <p><strong>Người yêu cầu:</strong> {req.groupMember?.users?.username || "Không rõ"}</p>
                                                 <p><strong>Ngày gửi:</strong> {new Date(req.createdAt).toLocaleString()}</p>
                                             </div>
                                             <div className="flex space-x-2">
