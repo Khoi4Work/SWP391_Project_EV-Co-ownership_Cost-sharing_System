@@ -216,10 +216,16 @@ export default function ContractPreviewPage() {
             }
 
             alert("Gửi quyết định thành công!");
-        } catch (err) {
-            console.error("Lỗi khi gửi quyết định:", err);
-            alert("Gửi thất bại, vui lòng thử lại.");
+        } catch (err: any) {
+            console.error("Chi tiết lỗi:", err?.response || err);
+
+            toast({
+                title: "Lỗi",
+                description: err?.response?.data?.message || "Gửi quyết định thất bại!",
+                variant: "destructive",
+            });
         }
+
     };
 
     if (loading) return <div>Đang tải thông tin user...</div>;

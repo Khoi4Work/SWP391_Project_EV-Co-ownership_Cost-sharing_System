@@ -110,9 +110,10 @@ const ContractView: React.FC<ContractViewProps> = ({
             textTransform: "uppercase",
             margin: 0,
             marginLeft: "50px",
+            fontWeight: "bold",
           }}
         >
-          THỎA THUẬN ĐỒNG SỞ HỮU XE
+          <i>THỎA THUẬN ĐỒNG SỞ HỮU XE</i>
         </h1>
       </div>
 
@@ -121,12 +122,12 @@ const ContractView: React.FC<ContractViewProps> = ({
       {/* 1. Bên A */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          1. Bên A - Các đồng sở hữu
+          <strong>1. Bên A - Các đồng sở hữu</strong>
         </h2>
-
+        <h3><strong>A.ĐỒNG SỠ HỮU CHÍNH</strong></h3>
         <div style={{ marginBottom: "1rem" }}>
           <p>
-            <strong>Đồng sở hữu chính:</strong> {ownerInfo?.name || ""}
+            <strong>Họ Tên:</strong> {ownerInfo?.name || ""}
           </p>
           {ownerInfo?.email && (
             <p>
@@ -147,9 +148,9 @@ const ContractView: React.FC<ContractViewProps> = ({
 
         {coOwners && coOwners.length > 0 ? (
           <>
-            <p>
-              <strong>CÁC ĐỒNG SỞ HỮU KHÁC:</strong>
-            </p>
+            <h3>
+              <strong>B.CÁC ĐỒNG SỞ HỮU KHÁC:</strong>
+            </h3>
             <div
               style={{
                 display: "grid",
@@ -198,7 +199,7 @@ const ContractView: React.FC<ContractViewProps> = ({
       {/* 2. Bên B */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          2. Bên B - EcoShare Platform
+          <strong>2. Bên B - EcoShare Platform</strong>
         </h2>
         <p>
           <strong>Tên đơn vị:</strong> EcoShare Platform
@@ -217,7 +218,7 @@ const ContractView: React.FC<ContractViewProps> = ({
       {/* 3. Thông tin xe */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          3. Thông tin xe sở hữu
+          <strong>3. Thông tin xe sở hữu</strong>
         </h2>
 
         {vehicleData?.vehicleType && (
@@ -255,7 +256,7 @@ const ContractView: React.FC<ContractViewProps> = ({
       {/* (Các điều khoản dài...) */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          4. Chính sách và nghĩa vụ các bên liên quan
+          <strong>4. Chính sách và nghĩa vụ các bên liên quan</strong>
         </h2>
 
         <div style={{ marginTop: "0.8rem", padding: "0.8rem", border: "1px solid #e0e0e0", background: "#fff" }}>
@@ -294,7 +295,7 @@ const ContractView: React.FC<ContractViewProps> = ({
           <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 4. Cơ chế ra quyết định</strong></p>
           <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
             <p><strong>a)</strong> Các quyết định thông thường (ví dụ: lịch sử dụng hàng ngày, bảo dưỡng định kỳ thông thường) được thông qua khi đạt <strong>đa số theo tỷ lệ sở hữu</strong> (tổng tỷ lệ thuộc về các bên đồng ý lớn hơn 50%).</p>
-            <p><strong>b)</strong> Các quyết định quan trọng (ví dụ: bán hoặc chuyển nhượng toàn bộ phương tiện, thay đổi tỷ lệ sở hữu, thế chấp xe, sửa đổi điều khoản quan trọng của hợp đồng) phải được <strong>đồng thuận tối thiểu X%</strong> của tổng tỷ lệ sở hữu — (gợi ý: 75% hoặc 100% — phần trăm cụ thể cần được các bên thống nhất và ghi vào hợp đồng cuối cùng).</p>
+            <p><strong>b)</strong> Các quyết định quan trọng (ví dụ: bán hoặc chuyển nhượng toàn bộ phương tiện, thay đổi tỷ lệ sở hữu, thế chấp xe, sửa đổi điều khoản quan trọng của hợp đồng) phải được <strong>đồng thuận tối thiểu 70%</strong> của tổng tỷ lệ sở hữu</p>
             <p><strong>c)</strong> Người đại diện kỹ thuật để làm việc với bên thứ ba (như đơn vị bảo dưỡng, cơ quan đăng ký, nhà cung cấp bảo hiểm) mặc định là <em>Đồng sở hữu chính</em> trừ khi các bên chỉ định khác bằng văn bản.</p>
             <p><strong>d)</strong> Mọi quyết định phải được ghi nhận bằng văn bản (qua nền tảng của Bên B hoặc văn bản có chữ ký) và có giá trị ràng buộc đối với các bên.</p>
           </div>
@@ -308,10 +309,10 @@ const ContractView: React.FC<ContractViewProps> = ({
 
         <div style={{ marginTop: "0.8rem", padding: "0.8rem", border: "1px solid #e0e0e0", background: "#fff" }}>
           {/* Điều 5 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 5. Chi phí mua phương tiện</strong></p>
+          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 5. Giao Dịch phương tiện</strong></p>
           <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
             <p><strong>a)</strong> Tổng chi phí mua phương tiện sẽ được chia theo tỷ lệ sở hữu đã thỏa thuận. Các đồng sở hữu phải nộp phần góp của mình theo thời hạn đã thống nhất.</p>
-            <p><strong>b)</strong> Trường hợp có thay đổi giá mua (tăng/giảm do phí phụ, thuế, hoặc chi phí đăng ký), phần chênh lệch sẽ được phân chia theo tỷ lệ sở hữu tương ứng.</p>
+            <p><strong>b)</strong> Trường hợp có thay đổi giá bán (tăng/giảm do phí phụ, thuế, hoặc chi phí đăng ký), phần chênh lệch sẽ được phân chia theo tỷ lệ sở hữu tương ứng.</p>
           </div>
 
           <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
@@ -403,7 +404,7 @@ const ContractView: React.FC<ContractViewProps> = ({
       {/* Xác nhận section */}
       <section style={{ marginTop: "2rem" }}>
         <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          5. Xác nhận
+          <strong>5. Xác nhận</strong>
         </h2>
         <p>Vui lòng xác nhận đồng ý hoặc không đồng ý với các điều khoản trong hợp đồng:</p>
 

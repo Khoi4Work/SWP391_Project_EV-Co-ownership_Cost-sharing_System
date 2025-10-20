@@ -219,8 +219,13 @@ export default function VehicleRegistration() {
   };
 
   const getVehiclePrice = () => {
-    const vehicle = vehicles.find(v => v.id === selectedVehicle);
-    return vehicle ? parseInt(vehicle.price.replace(/[^0-9]/g, '')) : 0;
+    const vehicle = typeof selectedVehicle === "object"
+      ? selectedVehicle
+      : vehicles.find(v => v.id === selectedVehicle);
+
+    return vehicle
+      ? parseInt(vehicle.price.replace(/[^0-9]/g, ''))
+      : 0;
   };
 
   const getOwnershipAmount = (percentage: number) => {
