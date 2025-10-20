@@ -58,7 +58,7 @@ export default function StaffDashboard() {
                 r.id === appId ? { ...r, status: "approved" } : r));
         setGroups(prev =>
             prev.map(g =>
-                g.id === request.groupId ? { ...g, users: g.users.filter(u => u.id !== request.userId) } : g));
+                g.id === request.groupMember.id ? { ...g, users: g.users.filter(u => u.id !== request.groupMember.users.id) } : g));
         toast({
             title: "Đơn đã duyệt",
             description: `Thành viên đã được rời khỏi nhóm.`,
