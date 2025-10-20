@@ -89,7 +89,19 @@ public class GroupMemberService implements IGroupMemberService {
         iGroupMemberRepository.findByGroupAndUsers(group, user).ifPresent(gm -> {
             throw new IllegalStateException("ALREADY_IN_GROUP");
         });
+        double addPct = ownershipPercentage == null ? 0.0 : ownershipPercentage.doubleValue();
 
+// Khóa để tránh 2 request đồng thời vượt 100%
+        iGroupMemberRepository.lockAllByGroupId(groupId);
+
+// Lấy tổng hiện tại
+        float currentTotal = iGroupMemberRepository.sumOwnershipByGroupId(groupId);
+
+// Epsilon để tránh sai số số thực
+        final float EPS = 0.0001f;
+        if (currentTotal + addPct > 100.0f + EPS) {
+            throw new IllegalStateException("OWNERSHIP_TOTAL_EXCEEDS_100");
+        }
         GroupMember gm = new GroupMember();
         gm.setGroup(group);
         gm.setUsers(user);
