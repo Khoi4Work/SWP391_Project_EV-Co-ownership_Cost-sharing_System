@@ -405,8 +405,7 @@ export default function VehicleBooking() {
                 `Bạn đã sử dụng hết 14 ngày trong tháng}.`,
                 "destructive"
             );
-        }
-        else if (prospectiveDaysCount > 2 && !alreadyCounted) {
+        } else if (prospectiveDaysCount > 2 && !alreadyCounted) {
             showToast(
                 "Sắp hết lượt đăt lịch",
                 `Cảnh báo: Bạn còn 1 ngày trong tháng này.`,
@@ -477,11 +476,10 @@ export default function VehicleBooking() {
         }
 
 
-        if (daysUsedThisMonth  > 3) {
+        if (daysUsedThisMonth > 3) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
             return;
         }
-
 
 
         // Gọi BE để tạo lịch mới
@@ -529,7 +527,7 @@ export default function VehicleBooking() {
                         "Bạn đã dùng hết 3 lượt override trong tháng này.",
                         "destructive"
                     );
-                } else if (errorText.includes("Lower ownership") || errorText.includes("Cannot override")) {
+                } else if (errorText.includes("lower than existing booking")) {
                     showToast(
                         "Không thể override",
                         "Ownership của bạn thấp hơn người đã đặt lịch này.",
@@ -541,6 +539,10 @@ export default function VehicleBooking() {
                         "Ownership bằng nhau - người đặt trước được ưu tiên.",
                         "destructive"
                     );
+                } else if (errorText.includes("Cannot override schedule starting within 24 hours")) {
+                    showToast("Không thể override",
+                        "Chỉ có thể chèn lịch trước 24 tiếng.",
+                        "destructive");
                 } else {
                     showToast("Lỗi đặt lịch", errorText || "Không thể đặt lịch.", "destructive");
                 }
@@ -840,7 +842,8 @@ export default function VehicleBooking() {
                     )}
 
                     <Button onClick={handleBooking} className="w-full"
-                            disabled={!selectedVehicle || !selectedDate || !selectedTime ||daysUsedThisMonth >3}>Đặt lịch</Button>
+                            disabled={!selectedVehicle || !selectedDate || !selectedTime || daysUsedThisMonth > 3}>Đặt
+                        lịch</Button>
                     {daysUsedThisMonth > 14 ? "Đã hết quota tháng này" : "Đặt lịch"}
                     {/* 5. DIALOG CHỌN THỜI GIAN VỚI WARNING - SỬA LẠI DIALOG NÀY */}
                     <Dialog open={showTimeSelector} onOpenChange={setShowTimeSelector}>
@@ -861,7 +864,8 @@ export default function VehicleBooking() {
                                         <div className="flex items-start space-x-2">
                                             <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5"/>
                                             <div className="text-sm text-red-800">
-                                                <p className="font-medium">Cảnh báo: Bạn chỉ còn 1 lượt override trong tháng</p>
+                                                <p className="font-medium">Cảnh báo: Bạn chỉ còn 1 lượt override trong
+                                                    tháng</p>
                                             </div>
                                         </div>
                                     </div>
@@ -902,9 +906,11 @@ export default function VehicleBooking() {
                                                             key={b.scheduleId}
                                                             className="flex items-center gap-3 px-3 py-2 rounded border bg-gray-50 text-xs"
                                                         >
-                                                            <span className="font-semibold text-blue-700">{b.time}</span>
+                                                            <span
+                                                                className="font-semibold text-blue-700">{b.time}</span>
                                                             <span className="text-gray-700">{b.brand} {b.model}</span>
-                                                            <span className="text-gray-500">Người đặt: {b.bookedBy}</span>
+                                                            <span
+                                                                className="text-gray-500">Người đặt: {b.bookedBy}</span>
                                                             {/* ✅ OWNERSHIP BADGE VỚI MÀU ĐỘNG */}
                                                             <span
                                                                 className={`px-2 py-0.5 rounded-full font-medium ${
@@ -915,7 +921,8 @@ export default function VehicleBooking() {
                                                             >
                                 {b.ownershipPercentage.toFixed(1)}%
                             </span>
-                                                            <span className="text-gray-500">Trạng thái: {b.status}</span>
+                                                            <span
+                                                                className="text-gray-500">Trạng thái: {b.status}</span>
                                                             {shouldDim && (
                                                                 <span className="text-red-600 font-medium">(Không thể override - Hết lượt)</span>
                                                             )}
@@ -971,7 +978,8 @@ export default function VehicleBooking() {
                                     <div>
                                         <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
                                         <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
-                                            <SelectTrigger><SelectValue placeholder="Chọn giờ kết thúc"/></SelectTrigger>
+                                            <SelectTrigger><SelectValue
+                                                placeholder="Chọn giờ kết thúc"/></SelectTrigger>
                                             <SelectContent>
                                                 {timeSlots.map((time) => {
                                                     // Lấy danh sách booking cho xe và ngày đã chọn
@@ -1175,7 +1183,8 @@ export default function VehicleBooking() {
                                                     <div className="flex items-center space-x-3">
                                                         <div className="flex items-center space-x-2">
                                                             <Car className="h-4 w-4"/>
-                                                            <span className="font-medium">{booking.brand} {booking.model}</span>
+                                                            <span
+                                                                className="font-medium">{booking.brand} {booking.model}</span>
                                                         </div>
                                                         <Badge variant="secondary">{booking.bookedBy}</Badge>
                                                         {booking.ownershipPercentage !== undefined && (
