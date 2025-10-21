@@ -389,31 +389,60 @@ export default function VehicleBooking() {
         }
     }, [vehicles]); // Run when vehicles change
 
-    // Effect 3: Calculate days used when selectedDate or existingBookings change
+// Effect 3: Calculate days used when selectedDate OR editDate changes
     useEffect(() => {
-        if (!selectedDate) {
+        // Handle Create Dialog
+        if (selectedDate) {
+            const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
+            const alreadyCounted = daysSet.has(selectedDate);
+            const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
+
+            if (prospectiveDaysCount > 3 && !alreadyCounted) {
+                showToast(
+                    "Đã hết lượt đặt lịch",
+                    `Bạn đã sử dụng hết 14 ngày trong tháng.`,
+                    "destructive"
+                );
+            } else if (prospectiveDaysCount === 3 && !alreadyCounted) {
+                showToast(
+                    "Sắp hết lượt đặt lịch",
+                    `Cảnh báo: Đây là ngày cuối cùng trong tháng này.`,
+                    "default"
+                );
+            }
+            setDaysUsedThisMonth(prospectiveDaysCount);
+        } else {
             setDaysUsedThisMonth(0);
-            return;
         }
 
-        const daysSet = getUserBookedUniqueDaysInMonth(selectedDate);
-        const alreadyCounted = daysSet.has(selectedDate);
-        const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
-        if (prospectiveDaysCount > 3 && !alreadyCounted) {
-            showToast(
-                "Đã hết lượt đặt lịch",
-                `Bạn đã sử dụng hết 14 ngày trong tháng}.`,
-                "destructive"
-            );
-        } else if (prospectiveDaysCount > 2 && !alreadyCounted) {
-            showToast(
-                "Sắp hết lượt đăt lịch",
-                `Cảnh báo: Bạn còn 1 ngày trong tháng này.`,
-                "default"
-            );
+        // Handle Edit Dialog
+        if (editDate && editingBooking) {
+            const currentBooking = existingBookings.find(b => b.scheduleId === editingBooking);
+            const originalDate = currentBooking?.date;
+
+            // Chỉ show warning nếu đổi sang ngày mới
+            if (originalDate && originalDate !== editDate) {
+                const daysSet = getUserBookedUniqueDaysInMonth(editDate);
+                const alreadyCounted = daysSet.has(editDate);
+                const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
+
+                if (prospectiveDaysCount > 3 && !alreadyCounted) {
+                    showToast(
+                        "Đã hết lượt đặt lịch",
+                        `Bạn đã sử dụng hết 14 ngày trong tháng.`,
+                        "destructive"
+                    );
+                } else if (prospectiveDaysCount === 3 && !alreadyCounted) {
+                    showToast(
+                        "Sắp hết lượt đặt lịch",
+                        `Cảnh báo: Đây là ngày cuối cùng trong tháng này.`,
+                        "default"
+                    );
+                }
+            }
         }
-        setDaysUsedThisMonth(prospectiveDaysCount);
-    }, [selectedDate, existingBookings]);
+    }, [selectedDate, editDate, existingBookings, editingBooking]);
+
 
 
     const toLocalDateTime = (date: string, hhmm: string) => {
@@ -627,24 +656,21 @@ export default function VehicleBooking() {
         setEditEndTime("");
         setShowEditTimeSelector(false);
     };
-
     const handleEditTimeSelection = () => {
         if (!editStartTime || !editEndTime) return;
+
         const timeRange = `${editStartTime}-${editEndTime}`;
-        const hasOverlap = existingBookings.filter(booking => booking.status !== "canceled")
-            .some(booking =>
-                booking.scheduleId !== editingBooking && booking.vehicleId === Number(editVehicle) && booking.date === editDate && rangesOverlap(booking.time, timeRange)
-            );
-        if (hasOverlap) {
-            showToast("Xung đột thời gian", "Khung giờ bạn chọn bị chồng lấn với lịch đã đặt.", "destructive");
-            return;
-        }
+
         setEditTime(timeRange);
         setShowEditTimeSelector(false);
         showToast("Đã chọn thời gian", `Thời gian: ${timeRange}`);
     };
 
+
+
     // Sửa handleUpdateBooking: gọi API BE để cập nhật lịch
+    // ==================== UPDATED handleUpdateBooking ====================
+
     const handleUpdateBooking = async () => {
         if (!editVehicle || !editDate || !editTime) {
             showToast("Thiếu thông tin", "Vui lòng điền đầy đủ thông tin trước khi cập nhật.", "destructive");
@@ -654,6 +680,26 @@ export default function VehicleBooking() {
         try {
             const currentGroupId = localStorage.getItem("groupId");
             const [start, end] = editTime.split("-");
+
+            // 1. Validate time is not in the past
+            const startDateTime = new Date(`${editDate}T${start}:00`);
+            const endDateTime = new Date(`${editDate}T${end}:00`);
+            const now = new Date();
+
+            if (startDateTime < now) {
+                showToast("Thời gian không hợp lệ", "Không thể đặt lịch trong quá khứ", "destructive");
+                return;
+            }
+
+            if (endDateTime < now) {
+                showToast("Thời gian không hợp lệ", "Thời gian kết thúc phải ở tương lai", "destructive");
+                return;
+            }
+
+            if (endDateTime <= startDateTime) {
+                showToast("Thời gian không hợp lệ", "Thời gian kết thúc phải sau thời gian bắt đầu", "destructive");
+                return;
+            }
 
             console.log("Sending update request:", {
                 scheduleId: editingBooking,
@@ -686,19 +732,65 @@ export default function VehicleBooking() {
                     status: res.status,
                     response: errorText
                 });
-                throw new Error(`HTTP ${res.status}: ${errorText}`);
+
+                // Parse các loại error từ backend (giống như handleBooking)
+                if (errorText.includes("Override limit exceeded")) {
+                    showToast(
+                        "Đã hết lượt override",
+                        "Bạn đã dùng hết 3 lượt override trong tháng này.",
+                        "destructive"
+                    );
+                } else if (errorText.includes("lower than existing booking")) {
+                    showToast(
+                        "Không thể override",
+                        "Ownership của bạn thấp hơn người đã đặt lịch này.",
+                        "destructive"
+                    );
+                } else if (errorText.includes("Equal ownership")) {
+                    showToast(
+                        "Không thể override",
+                        "Ownership bằng nhau - người đặt trước được ưu tiên.",
+                        "destructive"
+                    );
+                } else if (errorText.includes("Cannot override schedule starting within 24 hours")) {
+                    showToast(
+                        "Không thể override",
+                        "Chỉ có thể chèn lịch trước 24 tiếng.",
+                        "destructive"
+                    );
+                } else if (errorText.includes("Cannot book schedule in the past")) {
+                    showToast(
+                        "Lỗi thời gian",
+                        "Không thể đặt lịch trong quá khứ.",
+                        "destructive"
+                    );
+                } else if (errorText.includes("End time must be after start time")) {
+                    showToast(
+                        "Lỗi thời gian",
+                        "Thời gian kết thúc phải sau thời gian bắt đầu.",
+                        "destructive"
+                    );
+                } else {
+                    showToast("Lỗi cập nhật", errorText || "Không thể cập nhật lịch.", "destructive");
+                }
+                return;
             }
 
             // Reload bookings from backend after successful update
             await loadBookings();
 
+            // Reload override info
+            const groupId = Number(localStorage.getItem("groupId"));
+            await loadOverrideInfo(groupId);
+
             showToast("Cập nhật thành công", "Lịch đặt xe đã được cập nhật thành công");
             handleCancelEdit();
-        } catch (e) {
+        } catch (e: any) {
             console.error("Update error:", e);
             showToast("Lỗi cập nhật", "Không thể cập nhật lịch. Vui lòng thử lại.", "destructive");
         }
     };
+
 
     // Thêm log cho việc chọn xe
     const handleVehicleSelect = (vehicleId: string) => {
@@ -1033,125 +1125,312 @@ export default function VehicleBooking() {
                         </DialogContent>
                     </Dialog>
 
+                    {/* ==================== EDIT TIME SELECTOR DIALOG - REFACTORED ==================== */}
                     <Dialog open={showEditTimeSelector} onOpenChange={setShowEditTimeSelector}>
-                        <DialogContent className="max-w-2xl">
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
-                                <DialogTitle className="flex items-center space-x-2">
-                                    <Clock className="h-5 w-5"/>
-                                    <span>Chỉnh sửa khung giờ</span>
-                                </DialogTitle>
+                                <DialogTitle>Chọn khung giờ sử dụng</DialogTitle>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Chọn khung giờ và xem các khung giờ đã đăng ký cho xe/ngày này.
+                                </p>
                             </DialogHeader>
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
-                                        <Select value={editStartTime} onValueChange={setEditStartTime}>
-                                            <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
-                                            <SelectContent>{timeSlots.map((time) => (<SelectItem key={time}
-                                                                                                 value={time}>{time}</SelectItem>))}</SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
-                                        <Select value={editEndTime} onValueChange={setEditEndTime}>
-                                            <SelectTrigger><SelectValue
-                                                placeholder="Chọn giờ kết thúc"/></SelectTrigger>
-                                            <SelectContent>{timeSlots.map((time) => (
-                                                <SelectItem key={time} value={time}
-                                                            disabled={editStartTime && time <= editStartTime}>{time}</SelectItem>))}</SelectContent>
-                                        </Select>
-                                    </div>
+
+                            {/* Warning về override */}
+                            {overrideInfo && overrideInfo.overridesRemaining === 1 && (
+                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+                                    <AlertCircle className="inline mr-2 h-4 w-4" />
+                                    Cảnh báo: Bạn chỉ còn 1 lượt override trong tháng
                                 </div>
-                                <div className="flex space-x-2">
-                                    <Button onClick={handleEditTimeSelection}
-                                            disabled={!editStartTime || !editEndTime}><Check
-                                        className="h-4 w-4 mr-2"/>Chọn</Button>
-                                    <Button variant="outline" onClick={() => {
+                            )}
+
+                            {/* Hiển thị lịch đã đăng ký */}
+                            {editVehicle && editDate && (
+                                <Card className="bg-gray-50">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">Lịch đã đăng ký cho xe này:</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2">
+                                        {(() => {
+                                            const filteredBookings = existingBookings.filter(
+                                                (b) =>
+                                                    String(b.vehicleId) === String(editVehicle) &&
+                                                    b.date === editDate &&
+                                                    b.status !== "canceled" &&
+                                                    b.status !== "overridden" &&
+                                                    b.scheduleId !== editingBooking // Loại trừ schedule đang edit
+                                            );
+
+                                            const highestOwnership =
+                                                filteredBookings.length > 0
+                                                    ? Math.max(...filteredBookings.map((b) => b.ownershipPercentage || 0))
+                                                    : 0;
+
+                                            if (filteredBookings.length === 0) {
+                                                return <p className="text-sm text-gray-500">Chưa có lịch nào</p>;
+                                            }
+
+                                            return filteredBookings.map((b) => {
+                                                const isHighestOwner = b.ownershipPercentage === highestOwnership;
+                                                const isOthersBooking = b.userId !== currentUserId;
+                                                const noOverrideLeft = overrideInfo && overrideInfo.overridesRemaining === 0;
+                                                const shouldDim = isOthersBooking && noOverrideLeft;
+
+                                                return (
+                                                    <div
+                                                        key={b.scheduleId}
+                                                        className={`p-2 rounded border ${
+                                                            shouldDim ? "bg-gray-200 opacity-60" : "bg-white"
+                                                        }`}>
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <p className="font-medium text-sm">{b.time}</p>
+                                                                <p className="text-xs text-gray-600">
+                                                                    {b.brand} {b.model}
+                                                                </p>
+                                                                <p className="text-xs text-gray-600">Người đặt: {b.bookedBy}</p>
+                                                                <Badge
+                                                                    variant={isHighestOwner ? "default" : "secondary"}
+                                                                    className="mt-1 text-xs">
+                                                                    {b.ownershipPercentage.toFixed(1)}%
+                                                                </Badge>
+                                                                <p className="text-xs text-gray-500 mt-1">Trạng thái: {b.status}</p>
+                                                                {shouldDim && (
+                                                                    <p className="text-xs text-red-600 mt-1">(Không thể override - Hết lượt)</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Giờ bắt đầu */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Giờ bắt đầu</label>
+                                <Select value={editStartTime} onValueChange={setEditStartTime}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Chọn giờ bắt đầu" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {timeSlots.map((time) => {
+                                            const filteredBookings = existingBookings.filter(
+                                                (b) =>
+                                                    String(b.vehicleId) === String(editVehicle) &&
+                                                    b.date === editDate &&
+                                                    b.status !== "canceled" &&
+                                                    b.status !== "overridden" &&
+                                                    b.scheduleId !== editingBooking
+                                            );
+
+                                            const isBookedByOthers = filteredBookings.some((b) => {
+                                                const [bookedStart] = b.time.split("-");
+                                                return bookedStart === time && b.userId !== currentUserId;
+                                            });
+
+                                            const noOverrideLeft = overrideInfo && overrideInfo.overridesRemaining === 0;
+                                            const shouldDisable = isBookedByOthers && noOverrideLeft;
+
+                                            return (
+                                                <SelectItem key={time} value={time} disabled={shouldDisable}>
+                                                    {time}
+                                                    {shouldDisable && " (Bạn đã hết lượt override)"}
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Giờ kết thúc */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Giờ kết thúc</label>
+                                <Select value={editEndTime} onValueChange={setEditEndTime}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Chọn giờ kết thúc" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {timeSlots.map((time) => {
+                                            const filteredBookings = existingBookings.filter(
+                                                (b) =>
+                                                    String(b.vehicleId) === String(editVehicle) &&
+                                                    b.date === editDate &&
+                                                    b.status !== "canceled" &&
+                                                    b.status !== "overridden" &&
+                                                    b.scheduleId !== editingBooking
+                                            );
+
+                                            const isBookedByOthers = filteredBookings.some((b) => {
+                                                const [, bookedEnd] = b.time.split("-");
+                                                return bookedEnd === time && b.userId !== currentUserId;
+                                            });
+
+                                            const noOverrideLeft = overrideInfo && overrideInfo.overridesRemaining === 0;
+                                            const shouldDisable =
+                                                (editStartTime && time <= editStartTime) || (isBookedByOthers && noOverrideLeft);
+
+                                            return (
+                                                <SelectItem key={time} value={time} disabled={shouldDisable}>
+                                                    {time}
+                                                    {isBookedByOthers && noOverrideLeft && " (Bạn đã hết lượt override)"}
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex justify-end gap-2 pt-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
                                         setShowEditTimeSelector(false);
                                         setEditStartTime("");
                                         setEditEndTime("");
-                                    }}><X className="h-4 w-4 mr-2"/>Hủy</Button>
-                                </div>
+                                    }}>
+                                    Hủy
+                                </Button>
+                                <Button onClick={handleEditTimeSelection} disabled={!editStartTime || !editEndTime}>
+                                    Chọn
+                                </Button>
                             </div>
                         </DialogContent>
                     </Dialog>
 
-                    {editingBooking && (
-                        <Card className="border-primary/50 bg-primary/5">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center space-x-2">
-                                    <Edit className="h-5 w-5"/>
-                                    <span>Chỉnh sửa lịch đặt</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">Chọn xe</label>
-                                        <Select value={editVehicle} onValueChange={setEditVehicle}>
-                                            <SelectTrigger><SelectValue placeholder="Chọn xe"/></SelectTrigger>
-                                            <SelectContent>
-                                                {vehicles.map((vehicle) => (
-                                                    <SelectItem key={vehicle.vehicleId}
-                                                                value={String(vehicle.vehicleId)}>
-                                                        <div className="flex items-center space-x-2">
-                                                            <Car className="h-4 w-4"/>
-                                                            <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">Chọn ngày</label>
-                                        <input
-                                            type="date"
-                                            className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                            value={editDate}
-                                            onChange={(e) => {
-                                                setEditDate(e.target.value);
-                                                setEditTime("");
-                                            }}
-                                            onBlur={(e) => {
-                                                const selectedValue = e.target.value;
-                                                const today = new Date().toISOString().split('T')[0];
 
-                                                //
-                                                if (selectedValue && selectedValue < today) {
-                                                    showToast(
-                                                        "Ngày không hợp lệ",
-                                                        "Không thể chọn ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.",
-                                                        "destructive"
-                                                    );
-                                                    setEditDate("");
-                                                }
-                                            }}
-                                            min={new Date().toISOString().split('T')[0]}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
-                                        <Button variant="outline"
-                                                className="w-full justify-start text-left font-normal"
-                                                onClick={() => setShowEditTimeSelector(true)}>
-                                            <Clock className="h-4 w-4 mr-2"/>
-                                            {editTime ? editTime : "Chọn khung giờ"}
-                                        </Button>
-                                    </div>
+                    {/* ==================== EDIT DIALOG - REFACTORED ==================== */}
+                    {editingBooking && (
+                        <Dialog open={!!editingBooking} onOpenChange={handleCancelEdit}>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                    <DialogTitle>Chỉnh sửa lịch đặt</DialogTitle>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Chỉnh sửa thông tin xe, ngày và khung giờ sử dụng.
+                                    </p>
+                                </DialogHeader>
+
+                                {/* Chọn xe */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Chọn xe</label>
+                                    <Select value={editVehicle} onValueChange={setEditVehicle}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Chọn xe" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {editVehicle && vehicles.find(v => String(v.vehicleId) === editVehicle) && (
+                                                <div className="p-2 mb-2 bg-blue-50 rounded-md text-sm">
+                                                    <div className="font-medium">
+                                                        {vehicles.find(v => String(v.vehicleId) === editVehicle)?.brand}{" "}
+                                                        {vehicles.find(v => String(v.vehicleId) === editVehicle)?.model}
+                                                    </div>
+                                                    <div className="text-gray-600">
+                                                        {vehicles.find(v => String(v.vehicleId) === editVehicle)?.groupName}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {vehicles.map((vehicle) => (
+                                                <SelectItem key={vehicle.vehicleId} value={String(vehicle.vehicleId)}>
+                                                    {vehicle.brand} {vehicle.model} - {vehicle.groupName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <div className="flex space-x-2">
-                                    <Button onClick={handleUpdateBooking}
-                                            disabled={!editVehicle || !editDate || !editTime}><Check
-                                        className="h-4 w-4 mr-2"/>Cập nhật</Button>
-                                    <Button onClick={handleCancelEdit} variant="outline"><X
-                                        className="h-4 w-4 mr-2"/>Hủy
-                                        chỉnh sửa</Button>
+
+                                {/* Chọn ngày */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Chọn ngày</label>
+                                    <input
+                                        type="date"
+                                        value={editDate}
+                                        className="w-full p-2 border rounded-md"
+                                        onChange={(e) => {
+                                            setEditDate(e.target.value);
+                                            setEditTime("");
+                                        }}
+                                        onBlur={(e) => {
+                                            const selectedValue = e.target.value;
+                                            const today = new Date().toISOString().split("T")[0];
+                                            if (selectedValue && selectedValue < today) {
+                                                showToast(
+                                                    "Ngày không hợp lệ",
+                                                    "Không thể chọn ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.",
+                                                    "destructive"
+                                                );
+                                                setEditDate("");
+                                            }
+                                        }}
+                                        min={new Date().toISOString().split("T")[0]}
+                                    />
                                 </div>
-                            </CardContent>
-                        </Card>
+
+                                {/* Chọn giờ */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Chọn giờ</label>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full justify-start"
+                                        onClick={() => setShowEditTimeSelector(true)}
+                                        disabled={!editVehicle || !editDate}>
+                                        <Clock className="mr-2 h-4 w-4" />
+                                        {editTime ? editTime : "Chọn khung giờ"}
+                                    </Button>
+                                </div>
+
+                                {/* Override Info */}
+
+
+                                {/* Buttons */}
+                                <div className="flex justify-end gap-2 pt-4">
+                                    <Button variant="outline" onClick={handleCancelEdit}>
+                                        Hủy chỉnh sửa
+                                    </Button>
+                                    <Button
+                                        onClick={handleUpdateBooking}
+                                        disabled={(() => {
+                                            if (!editDate || !editVehicle || !editTime) return true;
+
+                                            const currentBooking = existingBookings.find(b => b.scheduleId === editingBooking);
+                                            const originalDate = currentBooking?.date;
+
+                                            // Nếu không đổi ngày (chỉ đổi giờ hoặc xe)
+                                            if (originalDate === editDate) {
+                                                return false; // Không disable
+                                            }
+
+                                            // Nếu đổi sang ngày mới - check 14 ngày
+                                            const daysSet = getUserBookedUniqueDaysInMonth(editDate);
+                                            const alreadyCounted = daysSet.has(editDate);
+                                            const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
+
+                                            return prospectiveDaysCount > 3;
+                                        })()}
+                                    >
+                                        {(() => {
+                                            if (!editDate) return "Cập nhật";
+
+                                            const currentBooking = existingBookings.find(b => b.scheduleId === editingBooking);
+                                            const originalDate = currentBooking?.date;
+
+                                            if (originalDate === editDate) {
+                                                return "Cập nhật";
+                                            }
+
+                                            const daysSet = getUserBookedUniqueDaysInMonth(editDate);
+                                            const alreadyCounted = daysSet.has(editDate);
+                                            const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
+
+                                            return prospectiveDaysCount > 3 ? "Đã hết lượt tháng này" : "Cập nhật";
+                                        })()}
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                     )}
+
 
                     {/* 6. FILTER BOOKINGS ĐỂ ẨN CÁC BOOKING ĐÃ BỊ OVERRIDE */}
                     <div>
