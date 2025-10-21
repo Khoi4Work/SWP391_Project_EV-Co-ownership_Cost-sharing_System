@@ -8,6 +8,7 @@ import axios from "axios";
 import html2pdf from "html2pdf.js";
 
 export default function ContractPreviewPage() {
+    const [isPrivateKey, setIsPrivateKey] = useState(false);
     const [savedPrivateKey, setSavedPrivateKey] = useState("");
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
     const { toast } = useToast();
@@ -26,7 +27,8 @@ export default function ContractPreviewPage() {
     console.log("Contract ID:", id);
     console.log("Token từ query string:", token);
     const handleSavePrivateKey = (key: string) => {
-        setSavedPrivateKey(key);   // <-- Lưu lại để dùng khi gọi API
+        setSavedPrivateKey(key);
+        setIsPrivateKey(true);   // <-- Lưu lại để dùng khi gọi API
     };
 
     useEffect(() => {
@@ -254,7 +256,7 @@ export default function ContractPreviewPage() {
             </div>
 
             <div className="flex gap-4">
-                <Button onClick={handleConfirm} disabled={status === null}>
+                <Button onClick={handleConfirm} disabled={status === null || (status === 1 && !isPrivateKey)}>
                     Xác nhận hợp đồng
                 </Button>
                 <Button onClick={generatePDF} variant="secondary">
