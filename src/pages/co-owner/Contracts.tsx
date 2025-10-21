@@ -50,7 +50,7 @@ interface GroupMember {
     id: number;
     hovaTen: string;
     email?: string;
-    idNumber?: string;
+    cccd: string;
   };
 }
 async function generateStamps(contractSigners: ContractSigner[], contractHtml: string) {
@@ -80,7 +80,7 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
         <h2 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">1. Chủ sở hữu chính - Bên A</h2>
         <p><strong>Họ tên:</strong> ${ownerMember.users.hovaTen}</p>
         <p><strong>Email:</strong> ${ownerMember.users.email || ""}</p>
-        <p><strong>CCCD:</strong> ${ownerMember.users.idNumber || ""}</p>
+        <p><strong>CCCD:</strong> ${ownerMember.users.cccd || ""}</p>
         <p><strong>Tỷ lệ sở hữu:</strong> ${ownerMember.ownershipPercentage || 0}%</p>
       </section>
 
@@ -90,9 +90,9 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding-left: 0;">
           ${coOwnerMembers.map(owner => `
             <div style="border: 1px solid #ddd; border-radius: 6px; padding: 0.8rem; background-color: #fff;">
-              <p><strong>Tên đồng sở hữu:</strong> ${owner.users.name}</p>
+              <p><strong>Tên đồng sở hữu:</strong> ${owner.users.hovaTen}</p>
               <p><strong>Email:</strong> ${owner.users.email || ""}</p>
-              <p><strong>CCCD:</strong> ${owner.users.idNumber || ""}</p>
+              <p><strong>CCCD:</strong> ${owner.users.cccd || ""}</p>
               <p><strong>Tỷ lệ sở hữu:</strong> ${owner.ownershipPercentage || 0}%</p>
             </div>
           `).join("")}
@@ -193,11 +193,15 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
       <section style="margin-top: 2rem;">
   <h2 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">5. Xác nhận</h2>
   <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 1rem;">
-    ${[ownerMember, ...coOwnerMembers].map((signer: any, idx: number) => {
-    const signerData = contracts.find(s => s.user.id === signer.users.id);
-    if (!signerData || !signerData.signature) return 'Error signer data';
-    return `
-        <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px;">
+   ${[ownerMember, ...coOwnerMembers]
+      .map((signer: any) => {
+        const signerData = contracts.find(s => s.user.id === signer.users.id);
+        if (!signerData || !signerData.signature) return null; // trả về null, sẽ loại bỏ
+        return { signer, signerData };
+      })
+      .filter(Boolean) // loại bỏ các null
+      .map(({ signer, signerData }, idx) => `
+    <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px;">
       <p style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">
         ${idx === 0 ? "Bên A" : "Bên B"}
       </p>
@@ -206,11 +210,10 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
         Ngày ký: ${signerData.signedAt ? new Date(signerData.signedAt).toLocaleDateString() : "-"}
       </p>
       <p style="font-size: 0.875rem; font-weight: 500; margin-top: 0.25rem;">
-        ${signer.users.name}
+        ${signer.users.hovaTen}
       </p>
     </div>
-  `;
-  }).join('')}
+`).join('')}
   </div>
 </section>
 
