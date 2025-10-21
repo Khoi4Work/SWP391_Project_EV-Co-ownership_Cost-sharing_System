@@ -48,7 +48,7 @@ interface GroupMember {
   ownershipPercentage: number;
   users: {
     id: number;
-    name: string;
+    hovaTen: string;
     email?: string;
     idNumber?: string;
   };
@@ -78,7 +78,7 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
       <!-- Bên A -->
       <section style="margin-bottom: 1.5rem;">
         <h2 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">1. Chủ sở hữu chính - Bên A</h2>
-        <p><strong>Họ tên:</strong> ${ownerMember.users.name}</p>
+        <p><strong>Họ tên:</strong> ${ownerMember.users.hovaTen}</p>
         <p><strong>Email:</strong> ${ownerMember.users.email || ""}</p>
         <p><strong>CCCD:</strong> ${ownerMember.users.idNumber || ""}</p>
         <p><strong>Tỷ lệ sở hữu:</strong> ${ownerMember.ownershipPercentage || 0}%</p>
@@ -102,11 +102,10 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
       <!-- Thông tin xe -->
       <section style="margin-bottom: 1.5rem;">
         <h2 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">3. Thông tin xe sở hữu</h2>
-        <p><strong>Loại phương tiện:</strong> ${vehicle.vehicleType || ""}</p>
         <p><strong>Hãng sản xuất:</strong> ${vehicle.brand || ""}</p>
         <p><strong>Model:</strong> ${vehicle.model || ""}</p>
         <p><strong>Biển số đăng ký:</strong> ${vehicle.plateNo || ""}</p>
-        <p><strong>Màu sắc:</strong> ${vehicle.color || ""}</p>
+        <p><strong>Màu:</strong> ${vehicle.color || ""}</p>
         <p><strong>Dung tích pin:</strong> ${vehicle.batteryCapacity || ""} kWh</p>
       </section>
 
@@ -424,22 +423,6 @@ export default function Contracts() {
           </div>
         </div>
       </header>
-      {contractSigners.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold mb-2">Dấu mộc người ký:</h3>
-          <div className="flex flex-wrap gap-4">
-            {contractSigners.map((signer, index) => (
-              <div key={index} className="flex flex-col items-center">
-                {stamps[signer.id] && <img src={stamps[signer.id]}
-                  alt={`Dấu mộc ${index + 1}`}
-                  className="w-32 h-32"
-                />}
-                <span className="text-sm mt-1">{signer.user.name || `Signer ${index + 1}`}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       <div className="container mx-auto p-6 space-y-6">
         {/* Search and Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
