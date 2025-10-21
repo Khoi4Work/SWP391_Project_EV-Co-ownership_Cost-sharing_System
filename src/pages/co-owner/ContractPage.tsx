@@ -6,6 +6,7 @@ import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
+
 export default function ContractPreviewPage() {
     const [savedPrivateKey, setSavedPrivateKey] = useState("");
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
@@ -27,6 +28,7 @@ export default function ContractPreviewPage() {
     const handleSavePrivateKey = (key: string) => {
         setSavedPrivateKey(key);   // <-- Lưu lại để dùng khi gọi API
     };
+
     useEffect(() => {
         if (!token) {
             setError("Token không hợp lệ");
@@ -84,8 +86,9 @@ export default function ContractPreviewPage() {
                 .set(opt)
                 .from(element)
                 .toPdf()
-                .output("blob")
-                .then((blob) => {
+                .get('pdf')
+                .then((pdf) => {
+                    const blob = pdf.output('blob');
                     setStatus(oldStatus);
                     const fileUrl = URL.createObjectURL(blob); // tạm thời tạo link blob
                     resolve({ blob, fileUrl });
@@ -113,7 +116,11 @@ export default function ContractPreviewPage() {
 
     const handleConfirm = async () => {
         if (status === null) {
-            alert("Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận.");
+            toast({
+                title: "Lỗi",
+                description: "Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận.",
+                variant: "destructive",
+            })
             return;
         }
 

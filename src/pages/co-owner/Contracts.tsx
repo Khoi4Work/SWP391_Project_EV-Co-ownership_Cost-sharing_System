@@ -15,11 +15,124 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import axiosClient from "@/api/axiosClient.ts";
 import { useEffect } from "react";
+import html2pdf from "html2pdf.js";
+interface ContractSigner {
+  id: string;
+  name: string;
+  signature: string;
+}
+
+interface ContractResponse {
+  contractHtml: string;
+  contracts: ContractSigner[];
+}
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+async function renderContractWithStamps(contractHtml: string, stamps: Record<string, string>) {
+  // Tạo container tạm
+  const container = document.createElement("div");
+  container.innerHTML = contractHtml;
+  container.style.position = "relative";
+  container.style.padding = "20px";
+
+  // Thêm dấu mộc
+  Object.values(stamps).forEach((stampBase64, idx) => {
+    const img = document.createElement("img");
+    img.src = stampBase64;
+    img.style.position = "absolute";
+    img.style.bottom = `${50 + idx * 60}px`;
+    img.style.right = "50px";
+    img.style.width = "100px";
+    img.style.height = "100px";
+    container.appendChild(img);
+  });
+
+  // Xuất PDF
+  const opt = {
+    margin: 10,
+    filename: `HopDong.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  } as const;
+
+  const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+
+  // Mở tab mới để xem PDF
+  window.open(pdfUrl, '_blank');
+}
+function createStampCanvas(hash: string, size: number = 200): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Không lấy được context canvas");
+
+  // 1. Vẽ vòng tròn đỏ
+  ctx.fillStyle = "#FF0000";
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 5, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // 2. Vẽ chữ hash trắng bên trong
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = `${size / 10}px sans-serif`; // font tỉ lệ với canvas
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(hash.slice(0, 8), size / 2, size / 2); // chỉ lấy 8 ký tự đầu
+
+  // 3. Optional: vẽ các vòng tròn nhỏ làm họa tiết
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 15, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  return canvas;
+}
 export default function Contracts() {
+  const [contractHtmlBE, setContractHtmlBE] = useState<string>("");
+  const [contractSigners, setContractSigners] = useState<ContractSigner[]>([]);
+  const [stamps, setStamps] = useState<Record<string, string>>({}); // { signerId: base64 image }
+  const [loadingContract, setLoadingContract] = useState<boolean>(true);
+  const [errorContract, setErrorContract] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
+  const fetchContractFromBE = async (contractId: string) => {
+    setLoadingContract(true);
+    setErrorContract("");
+
+    try {
+      const res = await axiosClient.get<ContractResponse>(`/contract/preview`, {
+        params: { contractId },
+      });
+
+      setContractHtmlBE(res.data.contractHtml);
+      setContractSigners(res.data.contracts);
+
+      // Tạo dấu mộc cho từng signer
+      const newStamps: Record<string, string> = {};
+      await Promise.all(res.data.contracts.map(async (signer) => {
+        const hash = await sha256(signer.signature + res.data.contractHtml);
+        const canvas = createStampCanvas(hash);
+        newStamps[signer.id] = canvas.toDataURL("image/png");
+      }));
+      setStamps(newStamps);
+    } catch (err: any) {
+      console.error("Lỗi khi lấy contract từ BE:", err);
+      setErrorContract(err?.response?.data?.message || "Không lấy được contract");
+    } finally {
+      setLoadingContract(false);
+    }
+  };
   useEffect(() => {
     const fetchContracts = async () => {
       try {
@@ -41,9 +154,6 @@ export default function Contracts() {
 
     fetchContracts();
   }, []);
-
-
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active": return "default";
@@ -83,7 +193,22 @@ export default function Contracts() {
           </div>
         </div>
       </header>
-
+      {contractSigners.length > 0 && (
+        <div className="mt-4">
+          <h3 className="font-semibold mb-2">Dấu mộc người ký:</h3>
+          <div className="flex flex-wrap gap-4">
+            {contractSigners.map((signer, index) => (
+              <div key={index} className="flex flex-col items-center">
+                {stamps[signer.id] && <img src={stamps[signer.id]}
+                  alt={`Dấu mộc ${index + 1}`}
+                  className="w-32 h-32"
+                />}
+                <span className="text-sm mt-1">{signer.name || `Signer ${index + 1}`}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="container mx-auto p-6 space-y-6">
         {/* Search and Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -181,12 +306,10 @@ export default function Contracts() {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={() =>
-                            window.open(
-                              `/contract/preview.pdf/${contract.contractId}`,
-                              "_blank"
-                            )
-                          }
+                          onClick={async () => {
+                            await fetchContractFromBE(contract.contractId);
+                            await renderContractWithStamps(contractHtmlBE, stamps);
+                          }}
                         >
                           Xem hợp đồng
                         </Button>
