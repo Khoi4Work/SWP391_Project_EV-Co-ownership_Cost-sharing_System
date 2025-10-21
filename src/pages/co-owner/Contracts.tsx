@@ -213,6 +213,7 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
       .filter(Boolean) // loại bỏ null
       .map(({ signer, signerData }, idx) => `
       <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px;">
+       <img src="${stamps[signerData.id]}" alt="Dấu mộc" style="width: 80px; height: 80px; margin-bottom: 0.5rem;" />
         <p style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">
           ${idx === 0 ? "Bên A" : "Bên B"}
         </p>
@@ -277,7 +278,6 @@ async function renderContractWithStamps(contractHtml: string, stamps: Record<str
     img.style.bottom = `${bottom + pageOffset}px`;
 
     img.style.right = "50px";
-    container.appendChild(img);
   });
 
   // Xuất PDF
