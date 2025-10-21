@@ -68,7 +68,18 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
 
   return `
     <div style="font-family: 'Times New Roman', Times, serif; line-height: 1.8; color: #333; max-width: 800px; margin: 2rem auto; padding: 2rem; border: 1px solid #ccc; border-radius: 8px; background-color: #fafafa;">
-      
+    <style>
+      body {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 12pt;
+        line-height: 1.5;
+      }
+      p, h1, h2, h3 {
+          margin: 0 0 0.5em 0;
+          padding: 0;
+          word-break: break-word; /* tránh chữ tràn / cắt */
+      }
+    </style>  
       <!-- Logo + Tiêu đề -->
       <div style="position: relative; margin-bottom: 1rem;">
         <img src="/logo.png" alt="Logo" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%); height: 50px; object-fit: contain;" />
@@ -193,28 +204,27 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
       <section style="margin-top: 2rem;">
   <h2 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">5. Xác nhận</h2>
   <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 1rem;">
-   ${[ownerMember, ...coOwnerMembers]
+  ${[ownerMember, ...coOwnerMembers]
       .map((signer: any) => {
         const signerData = contracts.find(s => s.user.id === signer.users.id);
-        if (!signerData || !signerData.signature) return null; // trả về null, sẽ loại bỏ
+        if (!signerData || !signerData.signature) return null; // loại bỏ những signer chưa ký
         return { signer, signerData };
       })
-      .filter(Boolean) // loại bỏ các null
+      .filter(Boolean) // loại bỏ null
       .map(({ signer, signerData }, idx) => `
-    <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px;">
-      <p style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">
-        ${idx === 0 ? "Bên A" : "Bên B"}
-      </p>
-      <img src="${stamps[signerData.id]}" alt="Dấu mộc" style="width: 80px; height: 80px; margin-bottom: 0.5rem;" />
-      <p style="font-size: 0.75rem; color: #555;">
-        Ngày ký: ${signerData.signedAt ? new Date(signerData.signedAt).toLocaleDateString() : "-"}
-      </p>
-      <p style="font-size: 0.875rem; font-weight: 500; margin-top: 0.25rem;">
-        ${signer.users.hovaTen}
-      </p>
-    </div>
-`).join('')}
-  </div>
+      <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px;">
+        <p style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">
+          ${idx === 0 ? "Bên A" : "Bên B"}
+        </p>
+        <p style="font-size: 0.75rem; color: #555; margin-bottom: 0.25rem;">
+          Ngày ký: ${signerData.signedAt ? new Date(signerData.signedAt).toLocaleDateString() : "-"}
+        </p>
+        <p style="font-size: 0.875rem; font-weight: 500; margin-top: 0.25rem;">
+          ${signer.users.hovaTen}
+        </p>
+      </div>
+  `).join('')}
+</div>
 </section>
 
     </div>
@@ -285,7 +295,7 @@ async function renderContractWithStamps(contractHtml: string, stamps: Record<str
   // Mở tab mới để xem PDF
   window.open(pdfUrl, '_blank');
 }
-function createStampCanvas(hash: string, size: number = 200): HTMLCanvasElement {
+function createStampCanvas(hash: string, size: number = 80): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
