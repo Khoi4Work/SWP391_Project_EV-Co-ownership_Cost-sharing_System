@@ -179,6 +179,11 @@ public class APIExceptionHandler {
     public ResponseEntity handlePastDateBooking(PastDateBookingException ex) {
         return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
     }
+    @ExceptionHandler(OverrideNotAllowedException.class)
+    public ResponseEntity<String> handleOverrideNotAllowed(OverrideNotAllowedException e) {
+        return ResponseEntity.status(403).body(e.getMessage()); // 403 Forbidden
+    }
+
 
     // ==========================
     // Contract Exceptions

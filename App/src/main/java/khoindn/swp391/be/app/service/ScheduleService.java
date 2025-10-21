@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
+import khoindn.swp391.be.app.model.Request.ContentSender;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
@@ -13,9 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +24,8 @@ import java.util.stream.Collectors;
 public class ScheduleService implements IScheduleService {
     @Autowired
     private IScheduleRepository iScheduleRepository;
-
+    @Autowired
+    private IEmailService emailService;
     @Autowired
     private IGroupMemberRepository iGroupMemberRepository;
 
@@ -114,6 +116,13 @@ public class ScheduleService implements IScheduleService {
 
             // Process each conflicting schedule
             for (Schedule conflictSchedule : conflictingSchedules) {
+                LocalDateTime scheduleStartTime = conflictSchedule.getStartTime();
+                long hoursUntilStart = java.time.Duration.between(now, scheduleStartTime).toHours();
+                if (hoursUntilStart < 24) {
+                    throw new OverrideNotAllowedException(
+                            "Cannot override schedule starting within 24 hours"
+                    );
+                }
                 float existingOwnership = conflictSchedule.getGroupMember().getOwnershipPercentage();
                 float newOwnership = gm.getOwnershipPercentage();
 
@@ -129,6 +138,9 @@ public class ScheduleService implements IScheduleService {
                     tracker.setEndTime(LocalDateTime.now());
                     tracker.setCreatedAt(LocalDateTime.now());
                     iScheduleRepository.save(tracker);
+                    Users affectedUser = conflictSchedule.getGroupMember().getUsers();
+                    sendSimpleOverrideEmail(affectedUser, user, conflictSchedule);
+
 
                     System.out.println(String.format(
                             "Schedule overridden: User %s (%.1f%% ownership) overrode User %s (%.1f%% ownership)",
@@ -287,7 +299,7 @@ public class ScheduleService implements IScheduleService {
     }
 
     @Override
-    public OverrideInfoRes  getOverrideCountForUser(int userId, int groupId) {
+    public OverrideInfoRes getOverrideCountForUser(int userId, int groupId) {
         Users user = iUserRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -325,6 +337,32 @@ public class ScheduleService implements IScheduleService {
                 3,
                 startOfMonth.getMonth().toString(),
                 startOfMonth.plusMonths(1).toLocalDate());
+    }
+
+    private void sendSimpleOverrideEmail(Users affectedUser, Users overridingUser, Schedule canceledSchedule) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+            String emailContent = String.format(
+                    "<html><body>" +
+                            "<p>Lịch của bạn tại thời điểm <strong>%s - %s</strong> đã bị <strong>%s</strong> chèn.</p>" +
+                            "</body></html>",
+                    canceledSchedule.getStartTime().format(formatter),
+                    canceledSchedule.getEndTime().format(formatter),
+                    overridingUser.getUsername()
+            );
+
+            ContentSender contentSender = new ContentSender();
+            contentSender.setEmail(affectedUser.getEmail());
+            contentSender.setSubject("[EcoShare] Thông báo chèn lịch");
+            contentSender.setContent(emailContent);
+            contentSender.setAttachmentPath(null);
+
+            emailService.sendEmail(contentSender);
+
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send email: " + e.getMessage());
+        }
     }
 
 
