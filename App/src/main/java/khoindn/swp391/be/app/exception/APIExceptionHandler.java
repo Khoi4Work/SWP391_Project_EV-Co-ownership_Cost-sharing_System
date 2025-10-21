@@ -207,4 +207,10 @@ public class APIExceptionHandler {
                 "Key is not match with public key"+ex.getMessage()); // 400 Conflict
     }
 
+    @ExceptionHandler(NoSignersBelongtoTheContract.class)
+    public ResponseEntity handleNoSignersBelongtoTheContract(NoSignersBelongtoTheContract ex) {
+        return ResponseEntity.status(404).body("No signers found for the given contract ID! - "
+                +ex.getMessage()); // 404 NOT FOUND
+    }
+
 }

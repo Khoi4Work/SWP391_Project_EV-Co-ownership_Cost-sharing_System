@@ -20,6 +20,7 @@ public interface IContractService {
 
     public List<ContractHistoryRes> getHistoryContractsByUser(Users user);
 
+    public List<ContractSigner> getAllContractSignersByContractId(int id);
 
     public List<ContractSigner> getContractSignerByContractId(int id);
 }

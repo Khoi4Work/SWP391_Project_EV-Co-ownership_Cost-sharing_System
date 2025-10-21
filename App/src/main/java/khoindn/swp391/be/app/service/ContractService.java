@@ -10,6 +10,7 @@ import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.repository.*;
 import org.apache.catalina.User;
+import org.apache.coyote.ContinueResponseTiming;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -248,6 +249,15 @@ public class ContractService implements IContractService {
         }
 
         return historyRes;
+    }
+
+    @Override
+    public List<ContractSigner> getAllContractSignersByContractId(int id) {
+        List<ContractSigner> signerList = iContractSignerRepository.findAllByContract_ContractId(id);
+        if (signerList.isEmpty()) {
+            throw new IllegalArgumentException("No signers found for the given contract ID");
+        }
+        return signerList;
     }
 
     @Override
