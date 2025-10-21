@@ -40,26 +40,9 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public ScheduleRes createSchedule(ScheduleReq req) {
+        // Validate time range
+        validateTimeRange(req.getStartTime(), req.getEndTime());
 
-        LocalDateTime now = LocalDateTime.now();
-
-        if (req.getStartTime().isBefore(now)) {
-            throw new PastDateBookingException(
-                    "Cannot book schedule in the past"
-            );
-        }
-
-        if (req.getEndTime().isBefore(now)) {
-            throw new PastDateBookingException(
-                    "End time must be in the future"
-            );
-        }
-
-        if (req.getEndTime().isBefore(req.getStartTime())) {
-            throw new PastDateBookingException(
-                    "End time must be after start time"
-            );
-        }
         Users user = iUserRepository.findById(req.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -74,97 +57,8 @@ public class ScheduleService implements IScheduleService {
             throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
 
-        // Find conflicting schedules
-        List<Schedule> conflictingSchedules = iScheduleRepository
-                .findByGroupMember_Group_GroupId(req.getGroupId())
-                .stream()
-                .filter(s -> !s.getStatus().equals("canceled") &&
-                        !s.getStatus().equals("overridden") &&
-                        !s.getStatus().equals("override_tracker"))
-                .filter(s -> s.getStartTime().isBefore(req.getEndTime()) &&
-                        s.getEndTime().isAfter(req.getStartTime()))
-                .collect(Collectors.toList());
+        checkTimeConflicts(req.getGroupId(), req.getStartTime(), req.getEndTime(), gm, user, null);
 
-        // Handle conflicts with ownership priority
-        if (!conflictingSchedules.isEmpty()) {
-            LocalDateTime startOfMonth = LocalDateTime.now()
-                    .withDayOfMonth(1)
-                    .withHour(0)
-                    .withMinute(0)
-                    .withSecond(0);
-
-            LocalDateTime endOfMonth = LocalDateTime.now()
-                    .withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
-                    .withHour(23)
-                    .withMinute(59)
-                    .withSecond(59);
-
-            long overrideCount = iScheduleRepository
-                    .countByGroupMember_IdAndStatusAndCreatedAtBetween(
-                            gm.getId(),
-                            "override_tracker",
-                            startOfMonth,
-                            endOfMonth
-                    );
-
-            if (overrideCount >= 3) {
-                throw new OverrideLimitExceededException(
-                        "Override limit exceeded. You have used all 3 overrides this month. " +
-                                "Next reset: " + startOfMonth.plusMonths(1).toLocalDate()
-                );
-            }
-
-            // Process each conflicting schedule
-            for (Schedule conflictSchedule : conflictingSchedules) {
-                LocalDateTime scheduleStartTime = conflictSchedule.getStartTime();
-                long hoursUntilStart = java.time.Duration.between(now, scheduleStartTime).toHours();
-                if (hoursUntilStart < 24) {
-                    throw new OverrideNotAllowedException(
-                            "Cannot override schedule starting within 24 hours"
-                    );
-                }
-                float existingOwnership = conflictSchedule.getGroupMember().getOwnershipPercentage();
-                float newOwnership = gm.getOwnershipPercentage();
-
-                if (newOwnership > existingOwnership) {
-                    // Higher ownership -> override existing schedule
-                    conflictSchedule.setStatus("overridden");
-                    iScheduleRepository.save(conflictSchedule);
-
-                    Schedule tracker = new Schedule();
-                    tracker.setGroupMember(gm);
-                    tracker.setStatus("override_tracker");
-                    tracker.setStartTime(LocalDateTime.now());
-                    tracker.setEndTime(LocalDateTime.now());
-                    tracker.setCreatedAt(LocalDateTime.now());
-                    iScheduleRepository.save(tracker);
-                    Users affectedUser = conflictSchedule.getGroupMember().getUsers();
-                    sendSimpleOverrideEmail(affectedUser, user, conflictSchedule);
-
-
-                    System.out.println(String.format(
-                            "Schedule overridden: User %s (%.1f%% ownership) overrode User %s (%.1f%% ownership)",
-                            user.getUsername(),
-                            newOwnership,
-                            conflictSchedule.getGroupMember().getUsers().getUsername(),
-                            existingOwnership
-                    ));
-
-                } else if (newOwnership == existingOwnership) {
-                    throw new LowerOwnershipException(
-                            "Cannot override schedule. Equal ownership percentage - first come first served principle applies"
-                    );
-                } else {
-                    throw new LowerOwnershipException(
-                            String.format(
-                                    "Cannot override schedule. Your ownership (%.1f%%) is lower than existing booking (%.1f%%)",
-                                    newOwnership,
-                                    existingOwnership
-                            )
-                    );
-                }
-            }
-        }
 
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
@@ -234,7 +128,7 @@ public class ScheduleService implements IScheduleService {
         // Find existing schedule
         Schedule schedule = iScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Schedule not found"));
-
+        validateTimeRange(req.getStartTime(), req.getEndTime());
         // Validate user exists
         Users user = iUserRepository.findById(req.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -252,13 +146,11 @@ public class ScheduleService implements IScheduleService {
         if (vehicle == null || vehicle.getGroup().getGroupId() != req.getGroupId()) {
             throw new VehicleNotBelongException("Vehicle does not belong to this group");
         }
-
+        checkTimeConflicts(req.getGroupId(), req.getStartTime(), req.getEndTime(), gm, user, scheduleId);
         // Update schedule fields
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
         schedule.setGroupMember(gm);
-        schedule.getGroupMember().getGroup().setVehicles((List<Vehicle>) vehicle);
-
         // Save updated schedule
         iScheduleRepository.save(schedule);
     }
@@ -363,6 +255,143 @@ public class ScheduleService implements IScheduleService {
         } catch (Exception e) {
             System.err.println("❌ Failed to send email: " + e.getMessage());
         }
+
+    }
+
+    // --------------------------------------------------------------------------
+    // Function to use in create and update schedule
+    private void validateTimeRange(LocalDateTime startTime, LocalDateTime endTime) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (startTime.isBefore(now)) {
+            throw new PastDateBookingException("Cannot book schedule in the past");
+        }
+
+        if (endTime.isBefore(now)) {
+            throw new PastDateBookingException("End time must be in the future");
+        }
+
+        if (endTime.isBefore(startTime)) {
+            throw new PastDateBookingException("End time must be after start time");
+        }
+    }
+
+    private void checkTimeConflicts(int groupId, LocalDateTime startTime, LocalDateTime endTime,
+                                    GroupMember gm, Users user, Integer excludeScheduleId) {
+        // Find conflicting schedules
+        List<Schedule> conflictingSchedules = iScheduleRepository
+                .findByGroupMember_Group_GroupId(groupId)
+                .stream()
+                .filter(s -> !s.getStatus().equals("canceled") &&
+                        !s.getStatus().equals("overridden") &&
+                        !s.getStatus().equals("override_tracker"))
+                .filter(s -> excludeScheduleId == null || s.getScheduleId() != excludeScheduleId) // Exclude current schedule if updating
+                .filter(s -> s.getStartTime().isBefore(endTime) && s.getEndTime().isAfter(startTime))
+                .collect(Collectors.toList());
+
+        // Handle conflicts with ownership priority
+        if (!conflictingSchedules.isEmpty()) {
+            // Check override limit
+            checkOverrideLimit(gm);
+
+            LocalDateTime now = LocalDateTime.now();
+
+            // Process each conflicting schedule
+            for (Schedule conflictSchedule : conflictingSchedules) {
+                LocalDateTime scheduleStartTime = conflictSchedule.getStartTime();
+                long hoursUntilStart = java.time.Duration.between(now, scheduleStartTime).toHours();
+
+                // Cannot override within 24 hours
+                if (hoursUntilStart < 24) {
+                    throw new OverrideNotAllowedException(
+                            "Cannot override schedule starting within 24 hours"
+                    );
+                }
+
+                float existingOwnership = conflictSchedule.getGroupMember().getOwnershipPercentage();
+                float newOwnership = gm.getOwnershipPercentage();
+
+                if (newOwnership > existingOwnership) {
+                    // Higher ownership -> override existing schedule
+                    overrideSchedule(conflictSchedule, gm, user);
+                } else if (newOwnership == existingOwnership) {
+                    throw new LowerOwnershipException(
+                            "Cannot override schedule. Equal ownership percentage - first come first served principle applies"
+                    );
+                } else {
+                    throw new LowerOwnershipException(
+                            String.format(
+                                    "Cannot override schedule. Your ownership (%.1f%%) is lower than existing booking (%.1f%%)",
+                                    newOwnership,
+                                    existingOwnership
+                            )
+                    );
+                }
+            }
+        }
+    }
+
+    private void checkOverrideLimit(GroupMember gm) {
+        LocalDateTime startOfMonth = getStartOfMonth();
+        LocalDateTime endOfMonth = getEndOfMonth();
+
+        long overrideCount = iScheduleRepository
+                .countByGroupMember_IdAndStatusAndCreatedAtBetween(
+                        gm.getId(),
+                        "override_tracker",
+                        startOfMonth,
+                        endOfMonth
+                );
+
+        if (overrideCount >= 3) {
+            throw new OverrideLimitExceededException(
+                    "Override limit exceeded. You have used all 3 overrides this month. " +
+                            "Next reset: " + startOfMonth.plusMonths(1).toLocalDate()
+            );
+        }
+    }
+
+    private LocalDateTime getStartOfMonth() {
+        return LocalDateTime.now()
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0);
+    }
+
+    private LocalDateTime getEndOfMonth() {
+        return LocalDateTime.now()
+                .withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
+                .withHour(23)
+                .withMinute(59)
+                .withSecond(59);
+    }
+
+    private void overrideSchedule(Schedule conflictSchedule, GroupMember overridingGm, Users overridingUser) {
+        // Mark existing schedule as overridden
+        conflictSchedule.setStatus("overridden");
+        iScheduleRepository.save(conflictSchedule);
+
+        // Create override tracker
+        Schedule tracker = new Schedule();
+        tracker.setGroupMember(overridingGm);
+        tracker.setStatus("override_tracker");
+        tracker.setStartTime(LocalDateTime.now());
+        tracker.setEndTime(LocalDateTime.now());
+        tracker.setCreatedAt(LocalDateTime.now());
+        iScheduleRepository.save(tracker);
+
+        // Send notification email
+        Users affectedUser = conflictSchedule.getGroupMember().getUsers();
+        sendSimpleOverrideEmail(affectedUser, overridingUser, conflictSchedule);
+
+        System.out.println(String.format(
+                "Schedule overridden: User %s (%.1f%% ownership) overrode User %s (%.1f%% ownership)",
+                overridingUser.getUsername(),
+                overridingGm.getOwnershipPercentage(),
+                affectedUser.getUsername(),
+                conflictSchedule.getGroupMember().getOwnershipPercentage()
+        ));
     }
 
 
