@@ -23,7 +23,7 @@ public class GroupMember {
     @Column(name = "role_in_group")
     private String roleInGroup;
     @Column(name = "status")
-    private String status;
+    private String status = "active";
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
     @Column(name = "ownership_percentage")

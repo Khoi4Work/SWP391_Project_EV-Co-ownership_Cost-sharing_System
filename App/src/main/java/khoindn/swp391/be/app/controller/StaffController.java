@@ -2,13 +2,12 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
+import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.RequestGroup;
 import khoindn.swp391.be.app.pojo.Users;
-import khoindn.swp391.be.app.service.AuthenticationService;
-import khoindn.swp391.be.app.service.GroupService;
-import khoindn.swp391.be.app.service.IGroupService;
-import khoindn.swp391.be.app.service.IRequestGroupService;
+import khoindn.swp391.be.app.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +24,22 @@ public class StaffController {
     @Autowired
     private IRequestGroupService iRequestGroupService;
     private AuthenticationService authenticationService;
+    @Autowired
+    private IGroupMemberService iGroupMemberService;
 
-    @PostMapping("/delete-group")
-    public void deleteGroup(@RequestParam int groupId) {
+    @PostMapping("/delete-group/{groupId}")
+    public void deleteGroup(@PathVariable int groupId) {
         iGroupService.deleteGroup(groupId);
+    }
+
+    @PostMapping("leave-group")
+    public ResponseEntity leaveGroup(LeaveGroupReq  request) {
+        Users staff = authenticationService.getCurrentAccount();
+        if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+        GroupMember user_leaving = iGroupMemberService.leaveGroup(request);
+        return ResponseEntity.status(HttpStatus.OK).body(user_leaving);
     }
 
     @GetMapping("/get/all/request-group")
@@ -46,9 +57,8 @@ public class StaffController {
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
+
         iRequestGroupService.updateRequestGroup(update);
-
-
         return ResponseEntity.status(200).body("Update successfully");
     }
 

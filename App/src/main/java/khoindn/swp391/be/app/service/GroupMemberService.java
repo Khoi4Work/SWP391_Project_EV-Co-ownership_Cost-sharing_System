@@ -1,12 +1,16 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
+import khoindn.swp391.be.app.exception.exceptions.RequestGroupNotFoundException;
+import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.GroupMember;
+import khoindn.swp391.be.app.pojo.RequestGroup;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
 import khoindn.swp391.be.app.repository.IGroupRepository;
+import khoindn.swp391.be.app.repository.IRequestGroupRepository;
 import khoindn.swp391.be.app.repository.IUserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +30,13 @@ public class GroupMemberService implements IGroupMemberService {
 
     // ---------------------- NEW REPO INJECTION ----------------------
     @Autowired
-    private IGroupRepository groupRepository;
+    private IGroupRepository iGroupRepository;
 
     @Autowired
     private IUserRepository userRepository;
     @Autowired
     private ModelMapper modelMapper;
+    private IRequestGroupRepository iRequestGroupRepository;
 
     // ---------------------- EXISTING CODE ----------------------
     @Override
@@ -79,7 +84,7 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     @Transactional
     public GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage) {
-        Group group = groupRepository.findById(groupId)
+        Group group = iGroupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("GROUP_NOT_FOUND"));
 
         Users user = userRepository.findById(userId)
@@ -106,10 +111,26 @@ public class GroupMemberService implements IGroupMemberService {
         gm.setGroup(group);
         gm.setUsers(user);
         gm.setRoleInGroup((roleInGroup == null || roleInGroup.isBlank()) ? "MEMBER" : roleInGroup.trim());
-        gm.setStatus("ACTIVE");
         gm.setCreatedAt(LocalDateTime.now());
         gm.setOwnershipPercentage(ownershipPercentage == null ? 0f : ownershipPercentage);
 
         return iGroupMemberRepository.save(gm);
+    }
+
+    @Override
+    public GroupMember leaveGroup(LeaveGroupReq request) {
+        RequestGroup requestProcessing = iRequestGroupRepository.findRequestGroupById(request.getRequestId());
+        if (requestProcessing == null) {
+            throw new RequestGroupNotFoundException("REQUEST_NOT_FOUND");
+        }
+        // Update status of GroupMember
+        GroupMember user_leaving = requestProcessing.getGroupMember();
+        user_leaving.setStatus("Leaved");
+        iGroupMemberRepository.save(user_leaving);
+        // Update status of Group
+        Group group = user_leaving.getGroup();
+        group.setStatus("Inactive");
+        iGroupRepository.save(group);
+        return user_leaving;
     }
 }
