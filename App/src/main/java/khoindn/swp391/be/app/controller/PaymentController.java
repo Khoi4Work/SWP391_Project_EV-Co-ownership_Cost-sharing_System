@@ -42,7 +42,7 @@ public class PaymentController {
         String vnpResponseCode = allParams.get("vnp_TransactionStatus");
         boolean isValid = "00".equals(vnpResponseCode);
 
-        String redirectUrl = "failed";
+        String redirectUrl = "http://localhost:8081/payment-failed";
 
         if (isValid) {
             String amountStr = allParams.get("vnp_Amount");
@@ -50,6 +50,7 @@ public class PaymentController {
 
             paymentService.processSuccessfulPayment(fundId, groupId, userId, amount);
 
+//            redirectUrl = "http://localhost:8081/payment-success?fundId=" + fundId + "&amount=" + amount;
             redirectUrl = "https://www.youtube.com/@tuansinn";
         }
 
