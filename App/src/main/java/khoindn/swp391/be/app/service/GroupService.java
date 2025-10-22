@@ -14,6 +14,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,9 @@ public class GroupService implements IGroupService {
     private IContractRepository iContractRepository;
 
     @Autowired
+    private ICommonFundRepository commonFundRepository;
+
+    @Autowired
     private IContractSignerRepository iContractSignerRepository;
 
     @Autowired
@@ -60,6 +64,11 @@ public class GroupService implements IGroupService {
         group.setDescription("This group was created when registering vehicle ");
         group.setCreatedAt(LocalDateTime.now());
         iGroupRepository.save(group);
+        // tu dong tao common fund cho group
+        CommonFund commonFund = new CommonFund();
+        commonFund.setGroup(group);
+        commonFund.setBalance(BigDecimal.ZERO);
+        commonFundRepository.save(commonFund);
 
         Contract contract = iContractRepository.findContractByContractId(request.getContractId());
         contract.setGroup(group);
@@ -130,10 +139,10 @@ public class GroupService implements IGroupService {
                 } else {
                     throw new GroupMemberNotFoundException("No members found in the group");
                 }
-            }else {
+            } else {
                 throw new VehicleIsNotRegisteredException("No vehicle is registered in this group");
             }
-        }else {
+        } else {
             throw new GroupNotFoundException("Group not found");
         }
     }
@@ -171,25 +180,25 @@ public class GroupService implements IGroupService {
             throw new RequestGroupNotFoundException("RequestGroup not found");
         }
 
-        if (update.getIdChoice()==1){
+        if (update.getIdChoice() == 1) {
             req.setStatusRequestGroup("solved");
             req.getRequestGroupDetail().setUser(staff);
             req.getRequestGroupDetail().setStatus("solved");
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
-        }else if (update.getIdChoice()==0){
+        } else if (update.getIdChoice() == 0) {
             req.setStatusRequestGroup("denied");
             req.getRequestGroupDetail().setUser(staff);
             req.getRequestGroupDetail().setStatus("denied");
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
-        }else if (update.getIdChoice()==2){
+        } else if (update.getIdChoice() == 2) {
             req.setStatusRequestGroup("processing");
             req.getRequestGroupDetail().setUser(staff);
             req.getRequestGroupDetail().setStatus("processing");
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
-        }else{
+        } else {
             throw new UndefinedChoiceException("Undefined Choice");
 
         }

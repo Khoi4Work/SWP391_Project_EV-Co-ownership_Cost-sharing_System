@@ -19,6 +19,7 @@ public class GroupMember {
     // attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "group_member_id")
     private int id;
     @Column(name = "role_in_group")
     private String roleInGroup;
@@ -38,4 +39,7 @@ public class GroupMember {
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<RequestGroup> requestGroups = new ArrayList<>();
+    @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<FundDetail> fundDetails = new ArrayList<>();
 }
