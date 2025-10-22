@@ -107,6 +107,7 @@ public class ContractController {
         if (res == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+        System.out.println(res);
         return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 

@@ -241,12 +241,17 @@ public class ContractService implements IContractService {
             }
 
 
-            modelMapper.map(contract, contractHistoryRes);
-            modelMapper.map(vehicle, contractHistoryRes);
+            contractHistoryRes.setStatus(contract.getStatus());
+            contractHistoryRes.setSignedAt(contract.getStartDate());
+            contractHistoryRes.setVehicleName(vehicle.getBrand() + " " + vehicle.getModel());
+            contractHistoryRes.setContractId(contract.getContractId());
+
+
             contractHistoryRes.setOwnership(groupMember.getOwnershipPercentage());
 
             historyRes.add(contractHistoryRes);
         }
+        System.out.println(historyRes);
 
         return historyRes;
     }
