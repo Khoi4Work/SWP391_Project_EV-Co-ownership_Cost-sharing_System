@@ -30,6 +30,7 @@ public class Group {
     @Column
     private String status = "active"; // active by default
     // Relationships
+
     @OneToMany(mappedBy = "group")
     @JsonIgnore
     private List<GroupMember> groupMembers = new ArrayList<>();

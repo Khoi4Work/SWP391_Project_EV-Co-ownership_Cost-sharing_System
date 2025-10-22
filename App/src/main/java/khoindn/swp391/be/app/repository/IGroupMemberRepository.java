@@ -14,20 +14,25 @@ import java.util.Optional;
 
 public interface IGroupMemberRepository extends JpaRepository<GroupMember, Integer> {
     Optional<GroupMember> findByGroupAndUsers(Group group, Users users);
+
     List<GroupMember> findAllByUsersId(int userId);
 
+    GroupMember findByGroupGroupIdAndUsersId(int groupId, int userId);
+
+    List<GroupMember> findByGroupGroupId(int groupId);
 
     GroupMember findGroupMembersByUsers(Users users);
 
     List<GroupMember> findAllByGroup_GroupId(int groupGroupId);
 
     GroupMember findGroupMembersByUsers_IdAndGroup_GroupId(Integer usersId, int groupGroupId);
+
     // ✅ TÍNH TỔNG OWNERSHIP CỦA 1 GROUP
     @Query("""
-        select coalesce(sum(gm.ownershipPercentage), 0)
-        from GroupMember gm
-        where gm.group.groupId = :groupId
-    """)
+                select coalesce(sum(gm.ownershipPercentage), 0)
+                from GroupMember gm
+                where gm.group.groupId = :groupId
+            """)
     Float sumOwnershipByGroupId(@Param("groupId") int groupId);
 
     // KHÓA BI QUAN TẤT CẢ BẢN GHI CỦA GROUP TRƯỚC KHI CỘNG DỒN
