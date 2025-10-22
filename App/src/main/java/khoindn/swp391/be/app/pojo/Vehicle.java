@@ -1,11 +1,14 @@
 package khoindn.swp391.be.app.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -14,6 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Vehicle {
 
+    // Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "vehicle_id")
@@ -37,13 +41,21 @@ public class Vehicle {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @ManyToOne
-    @JoinColumn(name = "group_id")
-    private Group group;
-
     @Column(name="price", length = 32)
     private int price;
 
     @Column(name="image",length=32)
     private String imageUrl;
+
+    // Relationships
+
+    @ManyToOne
+    @JoinColumn(name = "group_id", referencedColumnName = "group_id")
+    private Group group;
+
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<RequestService> requestServices = new ArrayList<>();
+
+
 }

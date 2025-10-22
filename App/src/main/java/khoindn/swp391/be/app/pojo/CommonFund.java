@@ -16,12 +16,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommonFund {
+    // Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "fund_id")
     private Integer fundId;
     @Column(name = "balance", precision = 10, scale = 2, nullable = false)
     private BigDecimal balance;
+
+    // Relationships
     @OneToOne
     @JoinColumn(name = "group_id", nullable = false, unique = true)
     private Group group;

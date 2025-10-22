@@ -22,9 +22,9 @@ public class RequestGroupDetail {
     private LocalDateTime solvedAt;
 
     // relationships
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade =  CascadeType.ALL)
     @JoinColumn(name = "staff_id")
-    private Users user;
+    private Users staff;
 
     @OneToOne
     @JoinColumn(name = "request_group_id")

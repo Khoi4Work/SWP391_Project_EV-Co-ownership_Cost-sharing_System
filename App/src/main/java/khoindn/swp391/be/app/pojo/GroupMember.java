@@ -33,13 +33,20 @@ public class GroupMember {
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group group;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private Users users;
+
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<RequestGroup> requestGroups = new ArrayList<>();
+
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<FundDetail> fundDetails = new ArrayList<>();
+
+    @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<RequestService> requestServices = new ArrayList<>();
 }

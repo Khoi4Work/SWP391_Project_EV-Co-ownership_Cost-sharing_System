@@ -182,19 +182,19 @@ public class GroupService implements IGroupService {
 
         if (update.getIdChoice() == 1) {
             req.setStatusRequestGroup("solved");
-            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStaff(staff);
             req.getRequestGroupDetail().setStatus("solved");
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
         } else if (update.getIdChoice() == 0) {
             req.setStatusRequestGroup("denied");
-            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStaff(staff);
             req.getRequestGroupDetail().setStatus("denied");
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
         } else if (update.getIdChoice() == 2) {
             req.setStatusRequestGroup("processing");
-            req.getRequestGroupDetail().setUser(staff);
+            req.getRequestGroupDetail().setStaff(staff);
             req.getRequestGroupDetail().setStatus("processing");
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
