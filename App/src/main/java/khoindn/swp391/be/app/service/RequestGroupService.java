@@ -1,0 +1,45 @@
+package khoindn.swp391.be.app.service;
+
+import jakarta.persistence.Access;
+import khoindn.swp391.be.app.exception.exceptions.RequestGroupNotFoundException;
+import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
+import khoindn.swp391.be.app.pojo.RequestGroup;
+import khoindn.swp391.be.app.repository.IRequestGroupRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Transactional
+public class RequestGroupService implements IRequestGroupService {
+
+    @Autowired
+    private IRequestGroupRepository iRequestGroupRepository;
+
+    @Override
+    public List<RequestGroup> getAllRequestGroup() {
+        return iRequestGroupRepository.findAll().stream()
+                .filter(requestGroup ->
+                        requestGroup.getRequestGroupDetail().getStatus()
+                                .equalsIgnoreCase("pending"))
+                .toList();
+    }
+
+    @Override
+    public void updateRequestGroup(UpdateRequestGroup update) {
+        RequestGroup requestGroup = iRequestGroupRepository.findRequestGroupById(update.getIdRequestGroup());
+        if (requestGroup == null){
+            throw new RequestGroupNotFoundException("Request Group not found");
+        }
+        if(update.getIdChoice() == 1){
+            requestGroup.getRequestGroupDetail().setStatus("approved");
+            iRequestGroupRepository.save(requestGroup);
+        } else if (update.getIdChoice() == 0) {
+            requestGroup.getRequestGroupDetail().setStatus("rejected");
+            iRequestGroupRepository.save(requestGroup);
+        }
+
+    }
+}
