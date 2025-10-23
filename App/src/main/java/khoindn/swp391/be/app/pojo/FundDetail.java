@@ -19,6 +19,10 @@ public class FundDetail {
     private Integer fundDetailId;
     @Column(name = "amount", precision = 10, scale = 2, nullable = false)
     private BigDecimal amount;
+    @Column(name = "transaction_type", length = 20, nullable = false)
+    private String transactionType;
+    @Column(name = "status", length = 20, nullable = false)
+    private String status = "PENDING";
     @ManyToOne
     @JoinColumn(name = "fund_id", nullable = false)
     private CommonFund commonFund;

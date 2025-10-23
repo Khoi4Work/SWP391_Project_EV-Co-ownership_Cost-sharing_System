@@ -113,6 +113,8 @@ public class PaymentService {
         FundDetail fundDetail = new FundDetail();
         fundDetail.setAmount(amount);
         fundDetail.setCommonFund(commonFund);
+        fundDetail.setTransactionType("DEPOSIT");
+        fundDetail.setStatus("COMPLETED");
         fundDetail.setGroupMember(groupMember);
         fundDetailRepository.save(fundDetail);
         // update balance
