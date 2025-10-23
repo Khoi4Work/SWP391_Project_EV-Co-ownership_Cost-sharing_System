@@ -41,7 +41,7 @@ public class PaymentController {
 
         String vnpResponseCode = allParams.get("vnp_TransactionStatus");
         boolean isValid = "00".equals(vnpResponseCode);
-
+        //FE Page
         String redirectUrl = "http://localhost:8081/payment-failed";
 
         if (isValid) {

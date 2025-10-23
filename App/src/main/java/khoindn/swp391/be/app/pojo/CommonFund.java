@@ -20,7 +20,7 @@ public class CommonFund {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "fund_id")
-    private Integer fundId;
+    private Integer id;
     @Column(name = "balance", precision = 10, scale = 2, nullable = false)
     private BigDecimal balance;
 

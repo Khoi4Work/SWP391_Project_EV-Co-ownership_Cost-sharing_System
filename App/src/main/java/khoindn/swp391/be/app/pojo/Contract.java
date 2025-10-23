@@ -12,6 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Contract {
+
     // Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
