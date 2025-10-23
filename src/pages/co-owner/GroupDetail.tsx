@@ -112,7 +112,7 @@ export default function GroupDetail() {
   const myTransactions = group.transactions.filter(t => t.userId === CURRENT_USER_ID);
 
   const bankId = "970422";
-  const accountNo = "100614072002";
+  const accountNo = "0926711233";
   const accountName = "ECOSHARE";
 
   const qrValue = `00020101021238${(38 + accountNo.length).toString().padStart(2, '0')}0010A00000072701${(14 + accountNo.length).toString().padStart(2, '0')}0006${bankId}01${accountNo.length.toString().padStart(2, '0')}${accountNo}0208QRIBFTTA5303704540${String(Number(amount) || 0).length.toString().padStart(2, '0')}${Number(amount) || 0}5802VN62${(8 + String(group.name).length).toString().padStart(2, '0')}08${String(group.name).length.toString().padStart(2, '0')}${group.name}6304`;
