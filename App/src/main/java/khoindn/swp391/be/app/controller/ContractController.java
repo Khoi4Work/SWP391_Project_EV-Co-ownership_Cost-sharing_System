@@ -37,8 +37,6 @@ public class ContractController {
     @Autowired
     private IVehicleService iVehicleService;
     @Autowired
-    private SpringTemplateEngine templateEngine;
-    @Autowired
     private IEmailService iEmailService;
 
     // Lấy contract
