@@ -225,8 +225,8 @@ public class ScheduleService implements IScheduleService {
                 userId,
                 groupId,
                 overrideCount,
-                3 - overrideCount,
-                3,
+                2 - overrideCount,
+                2,
                 startOfMonth.getMonth().toString(),
                 startOfMonth.plusMonths(1).toLocalDate());
     }
@@ -236,9 +236,44 @@ public class ScheduleService implements IScheduleService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
             String emailContent = String.format(
-                    "<html><body>" +
-                            "<p>Lịch của bạn tại thời điểm <strong>%s - %s</strong> đã bị <strong>%s</strong> chèn.</p>" +
-                            "</body></html>",
+                    "<html>" +
+                            "<head>" +
+                            "<style>" +
+                            "body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }" +
+                            ".container { max-width: 600px; margin: 0 auto; padding: 20px; }" +
+                            ".header { background-color: #f44336; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }" +
+                            ".content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 5px 5px; }" +
+                            ".info-box { background-color: white; padding: 15px; margin: 15px 0; border-left: 4px solid #f44336; }" +
+                            ".label { color: #666; font-size: 14px; }" +
+                            ".value { color: #333; font-weight: bold; font-size: 16px; }" +
+                            ".footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }" +
+                            "</style>" +
+                            "</head>" +
+                            "<body>" +
+                            "<div class='container'>" +
+                            "<div class='header'>" +
+                            "<h2 style='margin: 0;'>Thông Báo Lịch Bị Chèn</h2>" +
+                            "</div>" +
+                            "<div class='content'>" +
+                            "<p>Xin chào <strong>%s</strong>,</p>" +
+                            "<p>Lịch đặt xe của bạn đã bị chèn bởi chủ xe.</p>" +
+                            "<div class='info-box'>" +
+                            "<div class='label'>Thời gian:</div>" +
+                            "<div class='value'>%s - %s</div>" +
+                            "</div>" +
+                            "<div class='info-box'>" +
+                            "<div class='label'>Email người chèn lịch:</div>" +
+                            "<div class='value'>%s</div>" +
+                            "</div>" +
+                            "<p>Vui lòng liên hệ với chủ xe để được hỗ trợ thêm.</p>" +
+                            "</div>" +
+                            "<div class='footer'>" +
+                            "<p>Email này được gửi tự động. Vui lòng không trả lời.</p>" +
+                            "</div>" +
+                            "</div>" +
+                            "</body>" +
+                            "</html>",
+                    affectedUser.getHovaTen(),
                     canceledSchedule.getStartTime().format(formatter),
                     canceledSchedule.getEndTime().format(formatter),
                     overridingUser.getUsername()
@@ -293,7 +328,6 @@ public class ScheduleService implements IScheduleService {
         if (!conflictingSchedules.isEmpty()) {
             // Check override limit
             checkOverrideLimit(gm);
-
             LocalDateTime now = LocalDateTime.now();
 
             // Process each conflicting schedule
@@ -343,9 +377,9 @@ public class ScheduleService implements IScheduleService {
                         endOfMonth
                 );
 
-        if (overrideCount >= 3) {
+        if (overrideCount >= 2) {
             throw new OverrideLimitExceededException(
-                    "Override limit exceeded. You have used all 3 overrides this month. " +
+                    "Override limit exceeded. You have used all 2 overrides this month. " +
                             "Next reset: " + startOfMonth.plusMonths(1).toLocalDate()
             );
         }
