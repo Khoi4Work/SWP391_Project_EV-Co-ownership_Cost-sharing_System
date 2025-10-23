@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import { toast } from "../../components/ui/use-toast";
 export interface OwnerInfo {
   name: string;
   email?: string;
@@ -42,7 +42,6 @@ const ContractView: React.FC<ContractViewProps> = ({
   setStatus,
   onSavePrivateKey,
 }) => {
-  // agreement: 1 = đồng ý, 0 = không
   const [privateKey, setPrivateKey] = useState<string>("");
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
@@ -55,7 +54,11 @@ const ContractView: React.FC<ContractViewProps> = ({
   const handleSave = () => {
     const trimmed = privateKey.trim();
     if (!trimmed) {
-      alert("Vui lòng nhập hoặc dán private key trước khi lưu.");
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập private key trước khi lưu.",
+        variant: "destructive",
+      })
       return;
     }
 
@@ -64,7 +67,7 @@ const ContractView: React.FC<ContractViewProps> = ({
       try {
         onSavePrivateKey(trimmed);
       } catch (err) {
-        // ignore
+        console.log("Error in onSavePrivateKey callback:", err);
       }
     }
 
@@ -90,9 +93,10 @@ const ContractView: React.FC<ContractViewProps> = ({
         backgroundColor: "#fafafa",
       }}
     >
+      {/* Logo + Tiêu đề */}
       <div style={{ position: "relative", marginBottom: "1rem" }}>
         <img
-          src="/logo.png"
+          src="/public/logo.png"
           alt="Logo"
           style={{
             position: "absolute",
@@ -103,7 +107,6 @@ const ContractView: React.FC<ContractViewProps> = ({
             objectFit: "contain",
           }}
         />
-
         <h1
           style={{
             textAlign: "center",
@@ -116,402 +119,457 @@ const ContractView: React.FC<ContractViewProps> = ({
         </h1>
       </div>
 
-      <hr style={{ marginBottom: "1.5rem", borderColor: "#999" }} />
-
-      {/* 1. Bên A */}
+      {/* Bên A */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          1. Bên A - Các đồng sở hữu
+          1. Chủ sở hữu chính - Bên A
         </h2>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <p>
-            <strong>Đồng sở hữu chính:</strong> {ownerInfo?.name || ""}
-          </p>
-          {ownerInfo?.email && (
-            <p>
-              <strong>Email:</strong> {ownerInfo.email}
-            </p>
-          )}
-          {ownerInfo?.idNumber && (
-            <p>
-              <strong>CCCD:</strong> {ownerInfo.idNumber}
-            </p>
-          )}
-          {typeof ownerInfo?.ownership !== "undefined" && (
-            <p>
-              <strong>Tỷ lệ sở hữu:</strong> {ownerInfo.ownership}%
-            </p>
-          )}
-        </div>
-
-        {coOwners && coOwners.length > 0 ? (
-          <>
-            <p>
-              <strong>CÁC ĐỒNG SỞ HỮU KHÁC:</strong>
-            </p>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1rem",
-                paddingLeft: 0,
-              }}
-            >
-              {coOwners.map((co, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    border: "1px solid #ddd",
-                    borderRadius: "6px",
-                    padding: "0.8rem",
-                    backgroundColor: "#fff",
-                  }}
-                >
-                  <p>
-                    <strong>Tên đồng sở hữu:</strong> {co.name}
-                  </p>
-                  {co.email && (
-                    <p>
-                      <strong>Email:</strong> {co.email}
-                    </p>
-                  )}
-                  {co.idNumber && (
-                    <p>
-                      <strong>CCCD:</strong> {co.idNumber}
-                    </p>
-                  )}
-                  {typeof co.ownership !== "undefined" && (
-                    <p>
-                      <strong>Tỷ lệ sở hữu:</strong> {co.ownership}%
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p>Không có đồng sở hữu khác</p>
-        )}
+        <p><strong>Họ tên:</strong> {ownerInfo.name}</p>
+        <p><strong>Email:</strong> {ownerInfo.email}</p>
+        <p><strong>CCCD:</strong> {ownerInfo.idNumber}</p>
+        <p><strong>Tỷ lệ sở hữu:</strong> {ownerInfo.ownership}%</p>
       </section>
 
-      {/* 2. Bên B */}
-      <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          2. Bên B - EcoShare Platform
-        </h2>
-        <p>
-          <strong>Tên đơn vị:</strong> EcoShare Platform
-        </p>
-        <p>
-          <strong>Email:</strong> support@ecoshare.vn
-        </p>
-        <p>
-          <strong>Người đại diện:</strong> Nguyễn Đình Nguyên Khôi (trưởng nhóm)
-        </p>
-        <p>
-          <strong>Địa chỉ trụ sở:</strong> Đại Học FPT cơ sở TPHCM
-        </p>
-      </section>
+      (
+      <div>
+        {/* ✅ Bên B */}
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+            2. Các đồng sở hữu khác - Bên B
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "1rem",
+              paddingLeft: 0,
+            }}
+          >
+            {coOwners.map((owner, index) => (
+              <div
+                key={index}
+                style={{
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  padding: "0.8rem",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <p>
+                  <strong>Tên đồng sở hữu:</strong> {owner.name}
+                </p>
+                <p>
+                  <strong>Email:</strong> {owner.email}
+                </p>
+                <p>
+                  <strong>CCCD:</strong> {owner.idNumber}
+                </p>
+                <p>
+                  <strong>Tỷ lệ sở hữu:</strong> {owner.ownership}%
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      {/* 3. Thông tin xe */}
-      <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          3. Thông tin xe sở hữu
-        </h2>
+        {/* ✅ Thông tin xe */}
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+            3. Thông tin xe sở hữu
+          </h2>
 
-        {vehicleData?.vehicleType && (
           <p>
             <strong>Loại phương tiện:</strong> {vehicleData.vehicleType}
           </p>
-        )}
-        {vehicleData?.brand && (
           <p>
             <strong>Hãng sản xuất:</strong> {vehicleData.brand}
           </p>
-        )}
-        {vehicleData?.model && (
           <p>
             <strong>Model:</strong> {vehicleData.model}
           </p>
-        )}
-        {vehicleData?.plateNo && (
           <p>
             <strong>Biển số đăng ký:</strong> {vehicleData.plateNo}
           </p>
-        )}
-        {vehicleData?.color && (
           <p>
             <strong>Màu sắc:</strong> {vehicleData.color}
           </p>
-        )}
-        {typeof vehicleData?.batteryCapacity !== "undefined" && (
           <p>
             <strong>Dung tích pin:</strong> {vehicleData.batteryCapacity} kWh
           </p>
-        )}
-      </section>
+        </section>
 
-      {/* (Các điều khoản dài...) */}
-      <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          4. Chính sách và nghĩa vụ các bên liên quan
-        </h2>
+        {/* ✅ A. Quyền và nghĩa vụ */}
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+            A. Quyền và nghĩa vụ của các đồng sở hữu (Bên A)
+          </h2>
 
-        <div style={{ marginTop: "0.8rem", padding: "0.8rem", border: "1px solid #e0e0e0", background: "#fff" }}>
-          {/* Điều 1 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 1. Quyền sử dụng phương tiện</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Mỗi đồng sở hữu có quyền sử dụng phương tiện phù hợp với tỷ lệ sở hữu và/hoặc theo thỏa thuận nội bộ giữa các đồng sở hữu.</p>
-            <p><strong>b)</strong> Việc sử dụng phương tiện phải được đăng ký/đặt lịch (qua ứng dụng hoặc công cụ quản lý do Bên B cung cấp) nếu có quy định về lịch dùng. Trường hợp xung đột lịch, ưu tiên giải quyết theo thứ tự: (i) thỏa thuận trước đó; (ii) quyền ưu tiên do các bên quy định; (iii) nếu không có thỏa thuận thì ưu tiên bên sở hữu tỷ lệ cao hơn.</p>
-            <p><strong>c)</strong> Các giới hạn sử dụng (nếu có) — ví dụ: khu vực vận hành, số km tối đa trong một khoảng thời gian, thời gian sử dụng liên tục — phải được thống nhất bằng văn bản giữa các đồng sở hữu và được lưu trữ trên nền tảng của Bên B.</p>
-          </div>
-
-          <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
-
-          {/* Điều 2 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 2. Nghĩa vụ tài chính</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Mọi chi phí liên quan đến xe (bao gồm nhưng không giới hạn: bảo hiểm, đăng kiểm, bảo dưỡng định kỳ, sửa chữa phát sinh, phí sạc/điện, thuế và các lệ phí khác) được chia theo tỷ lệ sở hữu trừ khi có thỏa thuận khác bằng văn bản.</p>
-            <p><strong>b)</strong> Thời hạn thanh toán cho các chi phí định kỳ phải tuân theo lịch thanh toán do các bên thống nhất; mỗi bên có trách nhiệm nộp phần của mình trước hạn. Trễ hạn sẽ chịu lãi/chi phí phạt theo mức đã thỏa thuận hoặc theo quy định tại Điều khoản phạt trong hợp đồng này.</p>
-            <p><strong>c)</strong> Trường hợp một đồng sở hữu không thực hiện nghĩa vụ tài chính (không thanh toán phần của mình) quá <em>30 ngày</em> kể từ ngày đến hạn, các bên sẽ áp dụng biện pháp tạm thời: yêu cầu trả góp, phong tỏa quyền sử dụng tương ứng hoặc khởi động quy trình xử lý theo Điều về xử lý vi phạm và rút khỏi hợp đồng.</p>
-          </div>
-
-          <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
-
-          {/* Điều 3 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 3. Bảo quản & trách nhiệm khi gây hư hỏng</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Mỗi đồng sở hữu có trách nhiệm sử dụng và bảo quản phương tiện một cách cẩn trọng, tuân thủ hướng dẫn sử dụng của nhà sản xuất và các quy định giao thông hiện hành.</p>
-            <p><strong>b)</strong> Khi có hư hỏng, tai nạn hoặc tổn thất phát sinh trong quá trình sử dụng, người sử dụng có trách nhiệm thông báo ngay cho các đồng sở hữu còn lại và Bên B, cung cấp thông tin, hình ảnh, biên bản (nếu có) trong vòng <em>48 giờ</em>.</p>
-            <p><strong>c)</strong> Chi phí sửa chữa do lỗi, sơ suất hoặc vi phạm của người sử dụng sẽ do người đó chịu trách nhiệm thanh toán. Trường hợp phát sinh tranh chấp về nguyên nhân gây hư hỏng, ưu tiên xử lý qua bảo hiểm (nếu có) và sau đó phân chia phần chi phí không được bảo hiểm theo tỷ lệ lỗi/thiệt hại được xác định hoặc theo thỏa thuận chung.</p>
-            <p><strong>d)</strong> Không được tự ý thay đổi kết cấu, hệ thống an toàn hoặc phần cốt lõi của phương tiện mà không có sự đồng ý bằng văn bản của tất cả các đồng sở hữu.</p>
-          </div>
-
-          <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
-
-          {/* Điều 4 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 4. Cơ chế ra quyết định</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Các quyết định thông thường (ví dụ: lịch sử dụng hàng ngày, bảo dưỡng định kỳ thông thường) được thông qua khi đạt <strong>đa số theo tỷ lệ sở hữu</strong> (tổng tỷ lệ thuộc về các bên đồng ý lớn hơn 50%).</p>
-            <p><strong>b)</strong> Các quyết định quan trọng (ví dụ: bán hoặc chuyển nhượng toàn bộ phương tiện, thay đổi tỷ lệ sở hữu, thế chấp xe, sửa đổi điều khoản quan trọng của hợp đồng) phải được <strong>đồng thuận tối thiểu X%</strong> của tổng tỷ lệ sở hữu — (gợi ý: 75% hoặc 100% — phần trăm cụ thể cần được các bên thống nhất và ghi vào hợp đồng cuối cùng).</p>
-            <p><strong>c)</strong> Người đại diện kỹ thuật để làm việc với bên thứ ba (như đơn vị bảo dưỡng, cơ quan đăng ký, nhà cung cấp bảo hiểm) mặc định là <em>Đồng sở hữu chính</em> trừ khi các bên chỉ định khác bằng văn bản.</p>
-            <p><strong>d)</strong> Mọi quyết định phải được ghi nhận bằng văn bản (qua nền tảng của Bên B hoặc văn bản có chữ ký) và có giá trị ràng buộc đối với các bên.</p>
-          </div>
-        </div>
-      </section>
-
-      <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          B. Quy định tài chính & phân chia chi phí
-        </h2>
-
-        <div style={{ marginTop: "0.8rem", padding: "0.8rem", border: "1px solid #e0e0e0", background: "#fff" }}>
-          {/* Điều 5 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 5. Chi phí mua phương tiện</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Tổng chi phí mua phương tiện sẽ được chia theo tỷ lệ sở hữu đã thỏa thuận. Các đồng sở hữu phải nộp phần góp của mình theo thời hạn đã thống nhất.</p>
-            <p><strong>b)</strong> Trường hợp có thay đổi giá mua (tăng/giảm do phí phụ, thuế, hoặc chi phí đăng ký), phần chênh lệch sẽ được phân chia theo tỷ lệ sở hữu tương ứng.</p>
-          </div>
-
-          <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
-
-          {/* Điều 6 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 6. Chi phí định kỳ và vận hành</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Chi phí định kỳ liên quan đến phương tiện (bảo dưỡng, bảo hiểm, thuế, phí sạc/điện) sẽ được phân chia theo tỷ lệ sở hữu trừ khi có thỏa thuận khác.</p>
-            <p><strong>b)</strong> Mỗi đồng sở hữu có trách nhiệm nộp phần của mình trước hạn thanh toán quy định. Việc nộp chậm sẽ chịu lãi/chi phí phạt theo thỏa thuận hoặc quy định tại Điều 2.</p>
-            <p><strong>c)</strong> Bên B có quyền thông báo định kỳ về các khoản phí và tổng hợp tình trạng thanh toán của từng đồng sở hữu.</p>
-          </div>
-
-          <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
-
-          {/* Điều 7 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 7. Cách thanh toán và xử lý vi phạm</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Thanh toán có thể thực hiện qua chuyển khoản ngân hàng, ví điện tử hoặc hệ thống thanh toán do Bên B cung cấp.</p>
-            <p><strong>b)</strong> Trường hợp một đồng sở hữu không thực hiện nghĩa vụ thanh toán đúng hạn, các đồng sở hữu còn lại và Bên B sẽ áp dụng các biện pháp sau:</p>
-            <ul>
-              <li>Yêu cầu thanh toán ngay phần chưa nộp;</li>
-              <li>Hạn chế quyền sử dụng phương tiện tương ứng;</li>
-              <li>Kích hoạt quy trình xử lý theo Điều 4 phần A (cơ chế ra quyết định) hoặc Điều về xử lý tranh chấp.</li>
-            </ul>
-            <p><strong>c)</strong> Mọi khoản thanh toán và vi phạm sẽ được ghi nhận trên nền tảng quản lý của Bên B để làm bằng chứng và tham chiếu trong hợp đồng.</p>
-          </div>
-        </div>
-      </section>
-
-      <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          C. Cơ chế xử lý tranh chấp & sửa đổi hợp đồng
-        </h2>
-
-        <div style={{ marginTop: "0.8rem", padding: "0.8rem", border: "1px solid #e0e0e0", background: "#fff" }}>
-          {/* Điều 8 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 8. Xử lý tranh chấp</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Mọi tranh chấp phát sinh giữa các đồng sở hữu liên quan đến quyền sử dụng, chi phí, bảo quản hoặc các nghĩa vụ khác sẽ được giải quyết ưu tiên thông qua thương lượng và hòa giải nội bộ.</p>
-            <p><strong>b)</strong> Trong trường hợp không đạt được thỏa thuận, Bên B (EcoShare Platform) có thể đóng vai trò trung gian hỗ trợ giải quyết tranh chấp bằng việc cung cấp tư vấn, ghi nhận bằng chứng, hoặc đề xuất phương án phân chia hợp lý dựa trên tỷ lệ sở hữu và các quy định hợp đồng.</p>
-            <p><strong>c)</strong> Nếu tranh chấp vẫn không được giải quyết sau quá trình trung gian, các bên có quyền đưa vụ việc ra tòa án hoặc trọng tài theo thỏa thuận chung đã ghi trong hợp đồng.</p>
-          </div>
-
-          <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
-
-          {/* Điều 9 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 9. Sửa đổi hợp đồng</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Mọi sửa đổi, bổ sung hợp đồng phải được lập thành văn bản, được ký bởi tất cả các đồng sở hữu hoặc thông qua nền tảng của Bên B có xác nhận đồng thuận của các bên.</p>
-            <p><strong>b)</strong> Việc thay đổi tỷ lệ sở hữu, quyền lợi, nghĩa vụ, hoặc điều kiện quan trọng khác phải được đồng thuận tối thiểu <strong>75% tỷ lệ sở hữu</strong> trừ khi hợp đồng có quy định khác.</p>
-            <p><strong>c)</strong> Bất kỳ sửa đổi nào không tuân thủ quy trình này sẽ không có giá trị pháp lý và không ràng buộc các bên.</p>
-          </div>
-        </div>
-      </section>
-
-      <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          D. Thời hạn hợp đồng & chấm dứt
-        </h2>
-
-        <div style={{ marginTop: "0.8rem", padding: "0.8rem", border: "1px solid #e0e0e0", background: "#fff" }}>
-          {/* Điều 10 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 10. Thời hạn hợp đồng</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Hợp đồng này có hiệu lực kể từ ngày ký kết và có thời hạn <em>vô thời hạn</em> trừ khi các bên thỏa thuận khác bằng văn bản.</p>
-            <p><strong>b)</strong> Các bên có thể xem xét định kỳ và cập nhật thỏa thuận về quyền sử dụng, chi phí và các điều kiện khác thông qua quá trình sửa đổi hợp đồng (Điều 9).</p>
-          </div>
-
-          <hr style={{ margin: "0.8rem 0", borderColor: "#eee" }} />
-
-          {/* Điều 11 */}
-          <p style={{ margin: "0 0 0.6rem 0" }}><strong>Điều 11. Chấm dứt hợp đồng</strong></p>
-          <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
-            <p><strong>a)</strong> Hợp đồng có thể chấm dứt trong các trường hợp sau:</p>
-            <ul>
-              <li>Tất cả các đồng sở hữu đồng thuận chấm dứt;</li>
-              <li>Một bên vi phạm nghĩa vụ nghiêm trọng và không khắc phục trong thời hạn quy định;</li>
-              <li>Chuyển nhượng toàn bộ hoặc một phần phương tiện cho bên thứ ba;</li>
-              <li>Mất năng lực pháp lý của một đồng sở hữu theo quy định pháp luật.</li>
-            </ul>
-            <p><strong>b)</strong> Quy trình chấm dứt: thông báo bằng văn bản, thanh toán đầy đủ các khoản chi phí còn tồn đọng, xác nhận quyền sở hữu và bàn giao phương tiện theo thỏa thuận.</p>
-            <p><strong>c)</strong> Sau khi chấm dứt hợp đồng, quyền sở hữu, trách nhiệm và các nghĩa vụ tài chính sẽ được kết thúc hoặc điều chỉnh theo thỏa thuận riêng giữa các bên.</p>
-          </div>
-        </div>
-      </section>
-
-
-
-      {/* Xác nhận section */}
-      <section style={{ marginTop: "2rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          5. Xác nhận
-        </h2>
-        <p>Vui lòng xác nhận đồng ý hoặc không đồng ý với các điều khoản trong hợp đồng:</p>
-
-        <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
-          <input
-            type="radio"
-            name="agreement"
-            value="1"
-            checked={status === 1}
-            onChange={() => setStatus(1)}
-            style={{ marginRight: "0.5rem" }}
-          />
-          Đồng ý
-        </label>
-
-        <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
-          <input
-            type="radio"
-            name="agreement"
-            value="0"
-            checked={status === 0}
-            onChange={() => {
-              setStatus(0);
-              // xóa phần private key khi không đồng ý
-              setPrivateKey("");
-              setSavedKey(null);
+          <div
+            style={{
+              marginTop: "0.8rem",
+              padding: "0.8rem",
+              border: "1px solid #e0e0e0",
+              background: "#fff",
             }}
-            style={{ marginRight: "0.5rem" }}
-          />
-          Không đồng ý
-        </label>
+          >
+            {/* Điều 1 */}
+            <p style={{ margin: "0 0 0.6rem 0" }}>
+              <strong>Điều 1. Quản lý quyền sở hữu & thành viên</strong>
+            </p>
+            <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
+              <p>
+                <strong>a)</strong> Mỗi thành viên phải có CCCD/CMND và Giấy phép lái xe hợp lệ trước khi được thêm vào nhóm đồng sở hữu.
+              </p>
+              <p>
+                <strong>b)</strong> Mọi thay đổi về tỷ lệ sở hữu chỉ có hiệu lực khi tất cả các thành viên ký lại e-contract.
+              </p>
+              <p>
+                <strong>c)</strong> Chỉ admin nhóm có quyền thêm, xóa hoặc điều chỉnh tỷ lệ sở hữu của các thành viên.
+              </p>
+              <p>
+                <strong>d)</strong> Nhóm tối đa 5 thành viên, trong đó tỷ lệ sở hữu tối thiểu cho mỗi thành viên là 15%.
+              </p>
+            </div>
 
-        <p style={{ marginTop: "1.5rem", fontStyle: "italic", fontSize: "0.9rem", color: "#555" }}>
-          Lưu ý: Khi tick "Đồng ý", bạn đồng ý với tất cả các điều khoản nêu trong hợp đồng này.
-        </p>
+            {/* Điều 2 */}
+            <p style={{ margin: "0 0 0.6rem 0" }}>
+              <strong>Điều 2. Đặt lịch & sử dụng xe</strong>
+            </p>
+            <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
+              <p>
+                <strong>a)</strong> Việc đặt xe tuân theo nguyên tắc “ai đặt trước, ưu tiên trước”. Hệ thống ghi nhận thời gian đăng ký để xác định thứ tự ưu tiên.
+              </p>
+              <p>
+                <strong>b)</strong> Nếu lịch trùng, hệ thống ưu tiên theo thứ tự: (i) tỷ lệ sở hữu cao hơn; (ii) lịch sử sử dụng ít hơn; (iii) thời gian đăng ký sớm hơn.
+              </p>
+              <p>
+                <strong>c)</strong> Mỗi thành viên được sử dụng xe tối đa 14 ngày liên tục (giảm còn 7 ngày trong các dịp lễ, Tết).
+              </p>
+              <p>
+                <strong>d)</strong> Đặt lịch phải được xác nhận ít nhất 2 giờ trước khi sử dụng. Hủy hoặc đến muộn quá 15 phút không báo trước sẽ bị trừ tối đa 3 giờ quyền sử dụng.
+              </p>
+              <p>
+                <strong>e)</strong> Nếu một thành viên đặt lịch trùng lặp trên 5 lần/tháng, hệ thống tự động giảm 50% quyền ưu tiên trong 30 ngày tiếp theo.
+              </p>
+            </div>
 
-        {/* Private key area: chỉ hiện khi user Đồng ý */}
-        {status === 1 && (
-          <div id="signatureSection" style={{ marginTop: "2rem" }}>
-            <h3 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-              Xác nhận bằng Private Key
-            </h3>
-            <p>Vui lòng nhập private key để hoàn tất xác nhận:</p>
+            {/* Điều 3 */}
+            <p style={{ margin: "0 0 0.6rem 0" }}>
+              <strong>Điều 3. Nghĩa vụ tài chính & thanh toán</strong>
+            </p>
+            <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
+              <p>
+                <strong>a)</strong> Tất cả chi phí chung (bảo dưỡng, sạc, bảo hiểm, thuế, phí đăng kiểm…) được chia theo tỷ lệ sở hữu mặc định, trừ khi có thỏa thuận khác.
+              </p>
+              <p>
+                <strong>b)</strong> Thanh toán thực hiện trực tuyến qua e-wallet hoặc chuyển khoản. Thành viên chậm thanh toán sẽ bị phạt 50.000 VNĐ/ngày và tạm khóa quyền đặt lịch sau 15 ngày trễ hạn.
+              </p>
+              <p>
+                <strong>c)</strong> Mọi khoản chi phí, thanh toán và vi phạm được ghi nhận tự động trên nền tảng EcoShare, làm căn cứ khi tính quyền sử dụng hoặc phân chia chi phí sau này.
+              </p>
+            </div>
 
-            <div id="privateKeyContainer" style={{ marginTop: "1rem" }}>
-              <label htmlFor="privateKeyArea" style={{ display: "block", marginBottom: "0.3rem" }}>
-                Private Key
-              </label>
-              <textarea
-                id="privateKeyArea"
-                rows={6}
-                value={privateKey}
-                onChange={(e) => setPrivateKey(e.target.value)}
+            {/* Điều 4 */}
+            <p style={{ margin: "0 0 0.6rem 0" }}>
+              <strong>Điều 4. Trách nhiệm bảo quản & xử lý hư hỏng</strong>
+            </p>
+            <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
+              <p>
+                <strong>a)</strong> Thành viên phải sử dụng xe đúng mục đích, tuân thủ quy định giao thông và hướng dẫn kỹ thuật.
+              </p>
+              <p>
+                <strong>b)</strong> Nếu gây hư hỏng xe do lỗi sử dụng, người đó phải chịu chi phí sửa chữa và bị phạt thêm 500.000 VNĐ.
+              </p>
+              <p>
+                <strong>c)</strong> Nghiêm cấm cho thuê lại xe, sử dụng sai mục đích hoặc vi phạm nghiêm trọng khác. Trường hợp vi phạm, thành viên bị loại khỏi nhóm và tịch thu toàn bộ tỷ lệ sở hữu.
+              </p>
+              <p>
+                <strong>d)</strong> Mọi hư hỏng hoặc sự cố phải được báo trong vòng 48 giờ kể từ khi phát sinh để được hỗ trợ và xác minh trách nhiệm.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ✅ B. Giám sát & tranh chấp */}
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+            B. Giám sát, tranh chấp & xử lý vi phạm
+          </h2>
+
+          <div
+            style={{
+              marginTop: "0.8rem",
+              padding: "0.8rem",
+              border: "1px solid #e0e0e0",
+              background: "#fff",
+            }}
+          >
+            {/* Điều 5 */}
+            <p style={{ margin: "0 0 0.6rem 0" }}>
+              <strong>Điều 5. Giám sát & ghi nhận hệ thống</strong>
+            </p>
+            <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
+              <p>
+                <strong>a)</strong> Mọi hoạt động đặt lịch, thanh toán, hủy chuyến hoặc vi phạm đều được hệ thống ghi log và không thể chỉnh sửa.
+              </p>
+              <p>
+                <strong>b)</strong> Lịch sử sử dụng và hành vi vi phạm là căn cứ để đánh giá quyền ưu tiên hoặc xử lý tranh chấp.
+              </p>
+            </div>
+
+            {/* Điều 6 */}
+            <p style={{ margin: "0 0 0.6rem 0" }}>
+              <strong>Điều 6. Giải quyết tranh chấp</strong>
+            </p>
+            <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
+              <p>
+                <strong>a)</strong> Tranh chấp nhỏ giữa các thành viên sẽ được hòa giải qua nền tảng EcoShare với sự hỗ trợ của Staff.
+              </p>
+              <p>
+                <strong>b)</strong> Nếu không đạt thỏa thuận, EcoShare Admin có quyền kiểm tra log, đưa ra quyết định cuối cùng có giá trị bắt buộc.
+              </p>
+              <p>
+                <strong>c)</strong> Mọi kết luận, cảnh cáo, phạt hành chính hoặc khóa quyền sử dụng đều được thông báo chính thức qua hệ thống.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ✅ C. Hiệu lực hợp đồng */}
+        <section style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+            C. Hiệu lực hợp đồng & chấm dứt
+          </h2>
+
+          <div
+            style={{
+              marginTop: "0.8rem",
+              padding: "0.8rem",
+              border: "1px solid #e0e0e0",
+              background: "#fff",
+            }}
+          >
+            <p style={{ margin: "0 0 0.6rem 0" }}>
+              <strong>Điều 7. Hiệu lực và chấm dứt</strong>
+            </p>
+            <div style={{ marginLeft: "1rem", lineHeight: 1.6 }}>
+              <p>
+                <strong>a)</strong> Hợp đồng có hiệu lực kể từ ngày các bên ký điện tử và có giá trị vô thời hạn, trừ khi được sửa đổi hoặc chấm dứt bằng văn bản.
+              </p>
+              <p>
+                <strong>b)</strong> Hợp đồng có thể chấm dứt khi: (i) các bên đồng thuận; (ii) một bên vi phạm nghiêm trọng và không khắc phục trong 30 ngày; (iii) chuyển nhượng toàn bộ quyền sở hữu.
+              </p>
+              <p>
+                <strong>c)</strong> Sau khi chấm dứt, mọi nghĩa vụ tài chính và quyền sử dụng xe phải được thanh toán, xác nhận và cập nhật trên nền tảng EcoShare.
+              </p>
+            </div>
+          </div>
+        </section>
+
+
+
+        {/* Xác nhận section */}
+        <section style={{ marginTop: "2rem" }}>
+          <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+            5. Xác nhận
+          </h2>
+          <p>Vui lòng xác nhận đồng ý hoặc không đồng ý với các điều khoản trong hợp đồng:</p>
+
+          <div
+            style={{
+              border: "1px solid #cfd8dc",
+              background: "#f9fcff",
+              padding: "1rem 1.2rem",
+              borderRadius: "8px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            }}
+          >
+            <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="agreement"
+                checked={status === 1}
+                onChange={() => setStatus(1)}
+              />{" "}
+              Tôi <strong>đồng ý</strong> với toàn bộ điều khoản
+            </label>
+
+            <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="agreement"
+                checked={status === 0}
+                onChange={() => setStatus(0)}
+              />{" "}
+              Tôi <strong>không đồng ý</strong> với các điều khoản
+            </label>
+          </div>
+
+          <p
+            style={{
+              marginTop: "1.5rem",
+              padding: "0.75rem 1rem",
+              background: "#e3f2fd",
+              borderLeft: "4px solid #2196f3",
+              borderRadius: "6px",
+              fontSize: "1rem",
+              color: "#0d47a1",
+              fontWeight: 500,
+            }}
+          >
+            ⚠️ <strong>Lưu ý:</strong> Khi tick <em>"Đồng ý"</em>, bạn xác nhận đã đọc và chấp thuận tất cả các điều
+            khoản nêu trong hợp đồng này.
+          </p>
+
+          {status === 1 && (
+            <div
+              style={{
+                marginTop: "2rem",
+                background: "#f9fafb",
+                border: "1px solid #cfd8dc",
+                borderRadius: "10px",
+                padding: "1.5rem",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                maxWidth: "800px",
+              }}
+            >
+              <h3
                 style={{
-                  width: "100%",
-                  maxWidth: "700px",
-                  border: "1px solid #aaa",
-                  padding: "0.6rem",
-                  borderRadius: "4px",
-                  boxSizing: "border-box",
-                }}
-                placeholder="Dán private key ở đây"
-              />
-
-              <div
-                style={{
-                  marginTop: "0.6rem",
+                  borderBottom: "2px solid #1976d2",
+                  paddingBottom: "0.5rem",
+                  color: "#0d47a1",
+                  fontSize: "1.25rem",
+                  fontWeight: 600,
                   display: "flex",
+                  alignItems: "center",
                   gap: "0.5rem",
-                  justifyContent: "flex-end",
                 }}
               >
-                <button
-                  id="clearKey"
-                  type="button"
-                  onClick={handleClear}
-                  style={{ padding: "0.5rem 1rem" }}
-                >
-                  Xóa
-                </button>
+                🔐 6. Xác nhận bằng Private Key
+              </h3>
 
-                <button
-                  id="saveKey"
-                  type="button"
-                  onClick={handleSave}
-                  style={{ padding: "0.5rem 1rem" }}
-                >
-                  {saving ? "Đang lưu..." : "Lưu"}
-                </button>
-              </div>
-            </div>
-
-            <div id="signatureResult" style={{ marginTop: "1.5rem", display: savedKey ? "block" : "none" }}>
-              <p>
-                <strong>Private key đã xác nhận:</strong>
+              <p style={{ marginTop: "0.8rem", fontSize: "1rem", color: "#333" }}>
+                Vui lòng nhập <strong>Private Key</strong> của bạn để hoàn tất quá trình xác nhận hợp đồng.
               </p>
-              <div style={{ border: "1px dashed #ccc", padding: "0.8rem", borderRadius: "6px", maxWidth: "700px" }}>
-                <p id="maskedKey" style={{ wordBreak: "break-all", fontFamily: "monospace", margin: "0.2rem 0" }}>
-                  {savedKey}
-                </p>
-                <p style={{ margin: "0.5rem 0 0 0" }}>
-                  <em>Người xác nhận: {ownerInfo?.name}</em>
-                </p>
+
+              <div style={{ marginTop: "1.2rem" }}>
+                <label
+                  htmlFor="privateKeyArea"
+                  style={{
+                    display: "block",
+                    marginBottom: "0.5rem",
+                    fontWeight: 500,
+                    color: "#444",
+                  }}
+                >
+                  Private Key
+                </label>
+
+                <textarea
+                  id="privateKeyArea"
+                  rows={6}
+                  value={privateKey}
+                  onChange={(e) => setPrivateKey(e.target.value)}
+                  style={{
+                    width: "100%",
+                    maxWidth: "700px",
+                    border: "1.5px solid #90a4ae",
+                    padding: "0.75rem",
+                    borderRadius: "6px",
+                    boxSizing: "border-box",
+                    fontFamily: "monospace",
+                    background: "#fff",
+                  }}
+                  placeholder="Dán private key của bạn tại đây"
+                />
+
+                <div
+                  style={{
+                    marginTop: "0.8rem",
+                    display: "flex",
+                    gap: "0.6rem",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    style={{
+                      padding: "0.55rem 1.2rem",
+                      border: "1px solid #bbb",
+                      borderRadius: "6px",
+                      background: "#fafafa",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🧹 Xóa
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    style={{
+                      padding: "0.55rem 1.2rem",
+                      border: "none",
+                      borderRadius: "6px",
+                      background: "#1976d2",
+                      color: "white",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    💾 Lưu
+                  </button>
+                </div>
               </div>
+
+              {savedKey && (
+                <div
+                  style={{
+                    marginTop: "1.8rem",
+                    background: "#e3f2fd",
+                    borderLeft: "4px solid #1976d2",
+                    padding: "1rem",
+                    borderRadius: "6px",
+                    maxWidth: "700px",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: "0 0 0.4rem 0",
+                      fontWeight: 600,
+                      color: "#0d47a1",
+                    }}
+                  >
+                    ✅ Private Key đã được xác nhận
+                  </p>
+                  <div
+                    style={{
+                      border: "1px dashed #90caf9",
+                      padding: "0.8rem",
+                      borderRadius: "6px",
+                      background: "#fff",
+                    }}
+                  >
+                    <p
+                      style={{
+                        wordBreak: "break-all",
+                        fontFamily: "monospace",
+                        margin: "0.3rem 0",
+                      }}
+                    >
+                      {savedKey}
+                    </p>
+                    <p style={{ margin: "0.5rem 0 0 0", color: "#444" }}>
+                      <em>Người xác nhận: {ownerInfo.name}</em>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
     </div>
   );
 };

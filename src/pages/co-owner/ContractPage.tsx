@@ -6,7 +6,10 @@ import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
+
 export default function ContractPreviewPage() {
+    const [isPrivateKey, setIsPrivateKey] = useState(false);
+    const [savedPrivateKey, setSavedPrivateKey] = useState("");
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
     const { toast } = useToast();
     const location = useLocation();
@@ -23,6 +26,11 @@ export default function ContractPreviewPage() {
     const BASE_URL = import.meta.env.VITE_API_URL;
     console.log("Contract ID:", id);
     console.log("Token từ query string:", token);
+    const handleSavePrivateKey = (key: string) => {
+        setSavedPrivateKey(key);
+        setIsPrivateKey(true);   // <-- Lưu lại để dùng khi gọi API
+    };
+
     useEffect(() => {
         if (!token) {
             setError("Token không hợp lệ");
@@ -80,15 +88,23 @@ export default function ContractPreviewPage() {
                 .set(opt)
                 .from(element)
                 .toPdf()
-                .output("blob")
-                .then((blob) => {
+                .get('pdf')
+                .then((pdf) => {
+                    const blob = pdf.output('blob');
                     setStatus(oldStatus);
                     const fileUrl = URL.createObjectURL(blob); // tạm thời tạo link blob
                     resolve({ blob, fileUrl });
                 });
         });
     };
-
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob); // chuyển sang base64 dạng data:application/pdf;base64,...
+        });
+    };
     useEffect(() => {
         // TODO: Lấy dữ liệu từ localStorage hoặc state chung
         const savedOwner = JSON.parse(localStorage.getItem("ownerInfo") || "{}");
@@ -102,7 +118,11 @@ export default function ContractPreviewPage() {
 
     const handleConfirm = async () => {
         if (status === null) {
-            alert("Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận.");
+            toast({
+                title: "Lỗi",
+                description: "Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận.",
+                variant: "destructive",
+            })
             return;
         }
 
@@ -113,6 +133,7 @@ export default function ContractPreviewPage() {
                 return;
             }
             const { blob, fileUrl } = pdfResult;
+            const pdfBase64 = await blobToBase64(blob);
             console.log(user.id)
             const key = 'contractId_' + user.id;
             console.log(key)
@@ -133,6 +154,8 @@ export default function ContractPreviewPage() {
                 idContract,
                 idUser: user.id,
                 idChoice: status,
+                contractContent: pdfBase64,
+                contract_signature: savedPrivateKey,
             };
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, payload, {
@@ -202,10 +225,16 @@ export default function ContractPreviewPage() {
             }
 
             alert("Gửi quyết định thành công!");
-        } catch (err) {
-            console.error("Lỗi khi gửi quyết định:", err);
-            alert("Gửi thất bại, vui lòng thử lại.");
+        } catch (err: any) {
+            console.error("Chi tiết lỗi:", err?.response || err);
+
+            toast({
+                title: "Lỗi",
+                description: err?.response?.data?.message || "Gửi quyết định thất bại!",
+                variant: "destructive",
+            });
         }
+
     };
 
     if (loading) return <div>Đang tải thông tin user...</div>;
@@ -222,11 +251,12 @@ export default function ContractPreviewPage() {
                     vehicleData={vehicleData}
                     status={status}
                     setStatus={setStatus}
+                    onSavePrivateKey={handleSavePrivateKey}
                 />
             </div>
 
             <div className="flex gap-4">
-                <Button onClick={handleConfirm} disabled={status === null}>
+                <Button onClick={handleConfirm} disabled={status === null || (status === 1 && !isPrivateKey)}>
                     Xác nhận hợp đồng
                 </Button>
                 <Button onClick={generatePDF} variant="secondary">
