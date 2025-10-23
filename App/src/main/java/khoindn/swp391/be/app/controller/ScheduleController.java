@@ -35,12 +35,12 @@ public class ScheduleController {
 
     }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<ScheduleRes>> getAllSchedules() {
-
-        List<ScheduleRes> schedules = scheduleService.getAllSchedules();
-        return ResponseEntity.ok(schedules);
-    }
+//    @GetMapping("/all")
+//    public ResponseEntity<List<ScheduleRes>> getAllSchedules() {
+//
+//        List<ScheduleRes> schedules = scheduleService.getAllSchedules();
+//        return ResponseEntity.ok(schedules);
+//    }
 
     @GetMapping("/group/{groupId}")
     public ResponseEntity<List<ScheduleRes>> getSchedulesByGroupId(@PathVariable int groupId) {
