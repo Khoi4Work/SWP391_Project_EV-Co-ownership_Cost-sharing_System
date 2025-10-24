@@ -115,7 +115,7 @@ const ContractView: React.FC<ContractViewProps> = ({
             marginLeft: "50px",
           }}
         >
-          THỎA THUẬN ĐỒNG SỞ HỮU XE
+          THỎA THUẬN ĐỒNG SỞ HỮU XE (DỰA TRÊN HỢP ĐỒNG BÊN NGOÀI)
         </h1>
       </div>
 

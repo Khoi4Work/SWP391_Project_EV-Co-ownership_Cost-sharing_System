@@ -113,7 +113,7 @@ export default function GroupDetail() {
           id: m.users.id,
           hovaTen: m.users.hovaTen,
           email: m.users.email,
-          avatar: m.users.avatar || "https://via.placeholder.com/40", // tạm avatar mặc định
+          avatar: m.users.avatar || "https://via.placeholder.com/40",
           role: m.roleInGroup === "admin" ? "admin" : "member",
           ownershipPercentage: m.ownershipPercentage
         })),
@@ -124,7 +124,7 @@ export default function GroupDetail() {
           status: v.status,
           imageUrl: v.imageUrl || ""
         })),
-        // Thêm transactions tạm thời, nếu BE chưa có
+        // Thêm transactions tạam thời, nếu BE chưa có
         transactions: beGroup.group.transactions && beGroup.group.transactions.length > 0
           ? beGroup.group.transactions
           : [

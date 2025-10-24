@@ -85,9 +85,9 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        // finally {
-        //     navigate("/staff/dashboard");
-        // }
+        finally {
+            navigate("/co-owner/dashboard");
+        }
     };
 
 
