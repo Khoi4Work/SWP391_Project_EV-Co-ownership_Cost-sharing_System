@@ -32,7 +32,7 @@ export default function StaffDashboard() {
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
-    const [leaveRequests, setLeaveRequests] = useState([]);
+    const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
 
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
@@ -43,13 +43,16 @@ export default function StaffDashboard() {
     useEffect(() => {
         axiosClient.get("/staff/get/all/request-group")
             .then(res => {
-                if (res.status === 204) {
-                    setLeaveRequests([]);
-                } else {
+                if (Array.isArray(res.data)) {
                     setLeaveRequests(res.data);
+                } else {
+                    setLeaveRequests([]); // fallback
                 }
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error("Không kết nối được BE:", err.message);
+                setLeaveRequests([]); // đảm bảo luôn là []
+            });
     }, []);
     const handleApprove = async (appId: number) => {
         const request = leaveRequests.find((r) => r.id === appId);
