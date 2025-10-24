@@ -23,6 +23,7 @@ public class StaffController {
     private IGroupService iGroupService;
     @Autowired
     private IRequestGroupService iRequestGroupService;
+    @Autowired
     private AuthenticationService authenticationService;
     @Autowired
     private IGroupMemberService iGroupMemberService;
