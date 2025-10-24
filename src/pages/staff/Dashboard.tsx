@@ -32,23 +32,7 @@ export default function StaffDashboard() {
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
-    const [leaveRequests, setLeaveRequests] = useState([
-        {
-            id: "1",
-            nameRequestGroup: "Nhóm HCM",
-            descriptionRequestGroup: "Tôi muốn rời nhóm A",
-            statusRequestGroup: "pending",
-            createdAt: "2024-01-28T14:35:22",
-            groupMember: {
-                id: "100",
-                users: {
-                    id: "5",
-                    username: "jake123"
-                }
-            },
-            requestGroupDetail: {}
-        }
-    ]);
+    const [leaveRequests, setLeaveRequests] = useState([]);
 
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
@@ -56,61 +40,59 @@ export default function StaffDashboard() {
         { label: "Nhóm quản lý", value: 8, icon: Users, color: "primary" },
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
-    // useEffect(() => {
-    //     axiosClient.get("/staff/get/all/request-group")
-    //         .then(res => {
-    //             if (res.status === 204) {
-    //                 setLeaveRequests([]);
-    //             } else {
-    //                 setLeaveRequests(res.data);
-    //             }
-    //         })
-    //         .catch(err => console.error(err));
-    // }, []);
-    const handleApprove = async (appId: string) => {
-        const request = leaveRequests.find(r => r.id === appId);
+    useEffect(() => {
+        axiosClient.get("/staff/get/all/request-group")
+            .then(res => {
+                if (res.status === 204) {
+                    setLeaveRequests([]);
+                } else {
+                    setLeaveRequests(res.data);
+                }
+            })
+            .catch(err => console.error(err));
+    }, []);
+    const handleApprove = async (appId: number) => {
+        const request = leaveRequests.find((r) => r.id === appId);
         if (!request) {
             toast({
                 title: "Lỗi",
                 description: "Không tìm thấy yêu cầu.",
-                variant: "destructive"
-            })
+                variant: "destructive",
+            });
             return;
         }
-        // ✅ 1. Cập nhật trạng thái đơn ở FE
-        setLeaveRequests(prev =>
-            prev.map(r =>
-                r.id === appId ? { ...r, status: "approved" } : r
-            )
-        );
 
         try {
-            const res = await axiosClient.post("/api/groups/leave", {
-                groupId: request.groupMember.id,
-                userId: request.groupMember.users.id
+            // Gửi request đến BE
+            const res = await axiosClient.post("/staff/leave-group", {
+                groupId: request.groupMember?.group?.id || request.groupId,
+                requestId: request.id,
             });
 
             if (res.status === 200) {
-                setLeaveRequests(prev => prev.filter(r => r.id !== appId));
+                // Cập nhật FE
+                setLeaveRequests((prev) => prev.filter((r) => r.id !== appId));
                 toast({
-                    title: "Đã duyệt",
-                    description: "Thành viên đã được rời khỏi nhóm.",
+                    title: "Đã duyệt yêu cầu",
+                    description: "Nhân viên đã được rời khỏi nhóm thành công.",
                 });
             } else {
                 toast({
                     title: "Lỗi",
                     description: "Backend trả về trạng thái không mong muốn.",
+                    variant: "destructive",
                 });
             }
-
         } catch (error) {
+            console.error(error);
             toast({
                 title: "Lỗi",
-                description: "Xử lý không thành công ở backend.",
+                description: "Không thể xử lý yêu cầu ở backend.",
+                variant: "destructive",
             });
         }
-
     };
+
 
 
 
