@@ -51,7 +51,7 @@ export default function StaffDashboard() {
                         .map((item: any) => item.groupMember?.requestServices || [])
                         .flat();
                     setServices(allServices);
-                    setServices(list);
+                    setServices(allServices);
                 } else {
                     setLeaveRequests([]); // fallback
                 }
@@ -193,20 +193,34 @@ export default function StaffDashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {leaveRequests.map((req) => (
-                                        <div key={req.id} className="p-4 border rounded-lg flex justify-between">
+                                    {services.map((req) => (
+                                        <div
+                                            key={req.id}
+                                            className="p-4 border rounded-lg flex justify-between items-center bg-white shadow-sm"
+                                        >
                                             <div>
-                                                <p><strong>Nhóm:</strong> {req.nameRequestGroup}</p>
-                                                <p><strong>Loại đơn:</strong> {req.descriptionRequestGroup}</p>
-                                                <p><strong>Người yêu cầu:</strong> {req.groupMember?.users?.username || "Không rõ"}</p>
-                                                <p><strong>Ngày gửi:</strong> {new Date(req.createdAt).toLocaleString()}</p>
+                                                <p><strong>Tên dịch vụ:</strong> {req.serviceName}</p>
+                                                <p><strong>Mô tả:</strong> {req.description}</p>
+                                                <p><strong>Giá:</strong> {req.price ? req.price.toLocaleString("vi-VN") + " ₫" : "Chưa có giá"}</p>
+                                                <p><strong>Trạng thái:</strong> {req.status}</p>
+                                                <p><strong>Ngày tạo:</strong> {req.createdAt ? new Date(req.createdAt).toLocaleString("vi-VN") : "Không rõ"}</p>
+
+                                                {req.vehicle && (
+                                                    <p><strong>Phương tiện:</strong> {req.vehicle.plateNo || "Không rõ"}</p>
+                                                )}
+
+                                                {req.groupMember && (
+                                                    <p><strong>Người yêu cầu:</strong> {req.groupMember.users?.username || "Không rõ"}</p>
+                                                )}
                                             </div>
+
                                             <div className="flex space-x-2">
                                                 <Button size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>
                                                 <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>Từ chối</Button>
                                             </div>
                                         </div>
                                     ))}
+
                                 </div>
                             </CardContent>
                         </Card>
