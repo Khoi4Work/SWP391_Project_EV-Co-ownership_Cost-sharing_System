@@ -212,16 +212,16 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
       })
       .filter(Boolean) // loại bỏ null
       .map(({ signer, signerData }, idx) => `
-      <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px;">
-       <img src="${stamps[signerData.id]}" alt="Dấu mộc" style="width: 80px; height: 80px; margin-bottom: 0.5rem;" />
-        <p style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">
+      <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px; display: flex;flex-direction: column; align-items: center;justify-content: center;">
+       <img src="${stamps[signerData.id]}" alt="Dấu mộc" style="width: 80px; height: 80px; margin: 0 auto 0.5rem auto;display: block;" />
+         <p style="font-size: 0.875rem; font-weight: 600; margin: 0 0 0.5rem 0;">
           ${idx === 0 ? "Bên A" : "Bên B"}
         </p>
-        <p style="font-size: 0.75rem; color: #555; margin-bottom: 0.25rem;">
+          <p style="font-size: 0.75rem; color: #555; margin: 0 0 0.25rem 0;">
           Ngày ký: ${signerData.signedAt ? new Date(signerData.signedAt).toLocaleDateString() : "-"}
         </p>
-        <p style="font-size: 0.875rem; font-weight: 500; margin-top: 0.25rem;">
-          ${signer.users.hovaTen}
+         <p style="font-size: 0.875rem; font-weight: 500; margin: 0.25rem 0 0 0;">
+          Người ký: ${signer.users.hovaTen}
         </p>
       </div>
   `).join('')}

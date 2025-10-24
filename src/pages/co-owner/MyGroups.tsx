@@ -51,11 +51,34 @@ export default function MyGroups() {
         console.log("⏳ Đang gọi API: /group/get/current...");
         const res = await axiosClient.get("/group/get/current");
         const data = res?.data;
-        console.log("📥 Dữ liệu nhận được từ API /group/get/current:", data);
-        // Kiểm tra dữ liệu trả về có đúng dạng mảng không
+
         if (!Array.isArray(data)) {
           console.warn("⚠️ API không trả về mảng group:", data);
-          setGroups([]);
+          console.log("⚡ Sử dụng mock data tạm thời...");
+
+          const mockData = [
+            {
+              roleInGroup: "admin",
+              status: "active",
+              ownershipPercentage: 50,
+              group: {
+                groupId: 1,
+                groupName: "Nhóm A",
+                description: "Mô tả nhóm A",
+                createdAt: "2025-10-22T00:00:00",
+                status: "active",
+                vehicles: [],
+                fund: 10000000,
+                minTransfer: 10000
+              },
+              members: [
+                { id: 1, roleInGroup: "admin", ownershipPercentage: 50, users: { id: "owner", hovaTen: "Nguyễn Văn A", avatar: "" } },
+                { id: 2, roleInGroup: "member", ownershipPercentage: 30, users: { id: "me", hovaTen: "Bạn", avatar: "" } }
+              ]
+            }
+          ];
+
+          setGroups(mockData);
           return;
         }
 
@@ -63,7 +86,30 @@ export default function MyGroups() {
         setGroups(data);
       } catch (error) {
         console.error("❌ Lỗi khi gọi API /group/get/current:", error);
-        setGroups([]);
+        console.log("⚡ Sử dụng mock data tạm thời...");
+
+        const mockData = [
+          {
+            roleInGroup: "admin",
+            status: "active",
+            ownershipPercentage: 50,
+            group: {
+              groupId: 1,
+              groupName: "Nhóm A",
+              description: "Mô tả nhóm A",
+              createdAt: "2025-10-22T00:00:00",
+              status: "active",
+              vehicles: [],
+              fund: 10000000,
+              minTransfer: 10000
+            },
+            members: [
+              { id: 1, roleInGroup: "admin", ownershipPercentage: 50, users: { id: "owner", hovaTen: "Nguyễn Văn A", avatar: "" } },
+              { id: 2, roleInGroup: "member", ownershipPercentage: 30, users: { id: "me", hovaTen: "Bạn", avatar: "" } }
+            ]
+          }
+        ];
+        setGroups(mockData);
       }
     };
 
