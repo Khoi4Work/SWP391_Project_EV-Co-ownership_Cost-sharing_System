@@ -204,5 +204,14 @@ public class GroupService implements IGroupService {
         }
     }
 
+    @Override
+    public Group getGroupById(int groupId) {
+        Group group = iGroupRepository.findGroupByGroupId(groupId);
+        if (group == null) {
+            throw new GroupNotFoundException("Group not found");
+        }
+        return group;
+    }
+
 
 }
