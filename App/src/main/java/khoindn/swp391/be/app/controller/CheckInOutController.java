@@ -1,0 +1,43 @@
+package khoindn.swp391.be.app.controller;
+
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import khoindn.swp391.be.app.model.Request.CheckInRequest;
+import khoindn.swp391.be.app.model.Request.CheckOutRequest;
+import khoindn.swp391.be.app.model.Response.CheckInResponse;
+import khoindn.swp391.be.app.model.Response.CheckOutResponse;
+import khoindn.swp391.be.app.service.ICheckInService;
+import khoindn.swp391.be.app.service.ICheckOutService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/booking")
+@SecurityRequirement(name = "api")
+@CrossOrigin(origins = "http://localhost:8081")
+public class CheckInOutController {
+    @Autowired
+    ICheckInService iCheckInService;
+    @Autowired
+    ICheckOutService iCheckOutService;
+
+    @PostMapping("/checkIn/{scheduleId}")
+    public ResponseEntity<CheckInResponse> checkIn(
+            @PathVariable int scheduleId,
+            @RequestBody CheckInRequest checkInReq) {
+
+            CheckInResponse result = iCheckInService.processCheckIn(scheduleId, checkInReq);
+            return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/checkOut/{scheduleId}")
+    public ResponseEntity<CheckOutResponse> checkOut(
+            @PathVariable int scheduleId,
+            @RequestBody CheckOutRequest CheckOutReq) {
+            CheckOutResponse result = iCheckOutService.processCheckOut(scheduleId, CheckOutReq);
+            return ResponseEntity.ok(result);
+    }
+
+
+}
