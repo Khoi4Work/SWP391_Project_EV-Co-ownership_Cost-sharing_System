@@ -23,8 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useFormik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
 import CoOwnerForm from "./AddingCoOwners";
-import ContractPreview from "./ContractPDFPreview";
-
 interface CoOwner {
   id: number;
   name: string;

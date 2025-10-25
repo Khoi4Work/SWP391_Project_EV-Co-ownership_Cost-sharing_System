@@ -82,7 +82,7 @@ export default function CoOwnerDashboard() {
                         <Link to="/co-owner/vehicle-registration">
                             <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                                 <Plus className="h-4 w-4 mr-2" />
-                                Đăng ký xe
+                                Đăng ký hợp đồng
                             </Button>
                         </Link>
                         <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
