@@ -5,30 +5,29 @@ import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
-import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
+import khoindn.swp391.be.app.model.Response.ContractPendingRes;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.StatusContract;
 import khoindn.swp391.be.app.repository.*;
-import org.apache.catalina.User;
-import org.apache.coyote.ContinueResponseTiming;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -44,15 +43,13 @@ public class ContractService implements IContractService {
     @Autowired
     private TokenService tokenService;
     @Autowired
-    private UserService userService;
-    @Autowired
-    private AuthenticationService authenticationService;
-    @Autowired
     private IGroupMemberRepository iGroupMemberRepository;
     @Autowired
     private IVehicleRepository iVehicleRepository;
     @Autowired
     private ModelMapper modelMapper;
+    @Autowired
+    private SpringTemplateEngine templateEngine;
 
 
     @Override
@@ -65,7 +62,13 @@ public class ContractService implements IContractService {
 
 
     @Override
-    public ContractSigner setContract(ContractDecisionReq req) {
+    public ContractSigner setContract(ContractDecisionReq req)
+            throws
+            InvalidKeySpecException,
+            NoSuchAlgorithmException,
+            SignatureException,
+            InvalidKeyException {
+
         System.out.println("Update contract...");
 
         Users user = iUserRepository.findUsersById(req.getIdUser());
@@ -92,43 +95,34 @@ public class ContractService implements IContractService {
                 contractSigner.setDecision("Signed");
 
                 // Kiểm tra privateKey và publicKey có khớp không
-                try {
-                    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 
-                    PrivateKey privateKey = keyFactory.generatePrivate(
-                            new PKCS8EncodedKeySpec(privateKeyReceived));
-                    PublicKey publicKey = keyFactory.generatePublic(
-                            new X509EncodedKeySpec(publicKeyUser));
+                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 
-                    // Nếu không có exception thì khóa hợp lệ
-                    byte[] contractBytes = req.getContractContent().getBytes();
-                    // ký
-                    Signature signature = Signature.getInstance("SHA256withRSA");
-                    signature.initSign(privateKey);
-                    signature.update(contractBytes);
-                    byte[] signatureBytes = signature.sign();
-                    // verify
-                    Signature verifier = Signature.getInstance("SHA256withRSA");
-                    verifier.initVerify(publicKey);
-                    verifier.update(contractBytes);
-                    boolean isVerified = verifier.verify(signatureBytes);
-                    if (!isVerified) {
-                        throw new IllegalArgumentException("Private key does not match public key");
-                    }
-                    System.out.println("✅ Private key matches public key.");
+                PrivateKey privateKey = keyFactory.generatePrivate(
+                        new PKCS8EncodedKeySpec(privateKeyReceived));
+                PublicKey publicKey = keyFactory.generatePublic(
+                        new X509EncodedKeySpec(publicKeyUser));
 
-                    // Lưu chữ ký dưới dạng Base64
-                    contractSigner.setSignature(Base64.getEncoder().encodeToString(signatureBytes));
-
-                } catch (NoSuchAlgorithmException e) {
-                    throw new RuntimeException(e);
-                } catch (InvalidKeySpecException e) {
-                    throw new RuntimeException(e);
-                } catch (SignatureException e) {
-                    throw new RuntimeException(e);
-                } catch (InvalidKeyException e) {
-                    throw new RuntimeException(e);
+                // Nếu không có exception thì khóa hợp lệ
+                byte[] contractBytes = req.getContractContent().getBytes();
+                // ký
+                Signature signature = Signature.getInstance("SHA256withRSA");
+                signature.initSign(privateKey);
+                signature.update(contractBytes);
+                byte[] signatureBytes = signature.sign();
+                // verify
+                Signature verifier = Signature.getInstance("SHA256withRSA");
+                verifier.initVerify(publicKey);
+                verifier.update(contractBytes);
+                boolean isVerified = verifier.verify(signatureBytes);
+                if (!isVerified) {
+                    throw new IllegalArgumentException("Private key does not match public key");
                 }
+                System.out.println("✅ Private key matches public key.");
+
+                // Lưu chữ ký dưới dạng Base64
+                contractSigner.setSignature(Base64.getEncoder().encodeToString(signatureBytes));
+
 
                 contractSigner.setSignedAt(LocalDateTime.now());
 
@@ -153,14 +147,14 @@ public class ContractService implements IContractService {
             Contract contract = contractSigner.getContract();
 
             if (anyDeclined) {
-                contract.setStatus("Declined");
+                contract.setStatus(StatusContract.DECLINED);
                 contract.setEndDate(LocalDate.now());
             } else if (allSigned) {
-                contract.setStatus("Activated");
+                contract.setStatus(StatusContract.CONFIRMED);
             } else if (stillPending) {
-                contract.setStatus("Pending");
+                contract.setStatus(StatusContract.WAITING_CONFIRMATION);
             }
-
+            contract.setHtmlString(req.getContractContent());
             iContractRepository.save(contract);
 
 
@@ -169,7 +163,6 @@ public class ContractService implements IContractService {
             throw new IllegalArgumentException("Invalid userId value");
         }
     }
-
 
 
     @Override
@@ -181,15 +174,18 @@ public class ContractService implements IContractService {
 
         contract.setContractType(req.getContractType());
         contract.setStartDate(LocalDate.now());
-        contract.setStatus("Pending");
+        contract.setUrlContract(req.getDocumentUrl());
+        if (contract.getContractType().contains("paper")) {
+            contract.setStatus(StatusContract.WAITING_CONFIRMATION);
+        }
         iContractRepository.save(contract);
 
+        Vehicle vehicle = modelMapper.map(req, Vehicle.class);
+        iVehicleRepository.save(vehicle);
 
         for (Integer userId : req.getUserId()) {
             Users users = iUserRepository.findUsersById(userId);
             ContractSigner contractSigner = new ContractSigner();
-            // Tao Contract
-
 
             // Tao nguoi ky contract
 
@@ -200,27 +196,12 @@ public class ContractService implements IContractService {
 
             signerList.add(contractSigner);
 
-            // ✅ TẠO TOKEN RIÊNG CHO USER
-            String token = tokenService.generateToken(users);
-            String secureUrl = req.getDocumentUrl() + contract.getContractId() + "?token=" + token;
+            // Tao request vehicle
 
-            try {
-                MimeMessage message = javaMailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-                helper.setTo(users.getEmail());
-                helper.setSubject("[EcoShare System] Send E-Contract to User");
-                helper.setText("Kính mời Quý khách truy cập vào " +
-                        "<a href='" + secureUrl + "'>liên kết này</a>" +
-                        " để xem thông tin chi tiết về hợp đồng đồng sở hữu.", true);
-                javaMailSender.send(message);
-            } catch (Exception e) {
-                e.getMessage();
-            }
         }
         return signerList;
-
     }
+
 
     @Override
     public List<ContractHistoryRes> getHistoryContractsByUser(Users user) {
@@ -241,7 +222,7 @@ public class ContractService implements IContractService {
             }
 
 
-            contractHistoryRes.setStatus(contract.getStatus());
+            contractHistoryRes.setStatus(contract.getStatus().toString());
             contractHistoryRes.setSignedAt(contract.getStartDate());
             contractHistoryRes.setVehicleName(vehicle.getBrand() + " " + vehicle.getModel());
             contractHistoryRes.setContractId(contract.getContractId());
@@ -268,6 +249,51 @@ public class ContractService implements IContractService {
     @Override
     public List<ContractSigner> getContractSignerByContractId(int id) {
         return iContractSignerRepository.findAllByContract_ContractId(id);
+    }
+
+    @Override
+    public List<ContractPendingRes> getPendingContracts() {
+        List<ContractPendingRes> contractPendingRes = new ArrayList<>();
+        List<Contract> pendingContracts = iContractRepository.getContractsByStatus(StatusContract.PENDING_REVIEW);
+        for (Contract contract : pendingContracts) {
+            List<ContractSigner> signerList = iContractSignerRepository.findAllByContract_ContractId(contract.getContractId());
+            ContractPendingRes pendingRes = new ContractPendingRes();
+            pendingRes.setContract(contract);
+            pendingRes.setContractSignerList(signerList.stream().map(ContractSigner::getUser).toList());
+            contractPendingRes.add(pendingRes);
+        }
+        return contractPendingRes;
+    }
+
+    @Override
+    public void SendWaitingConfirmedContract(int contractId) {
+        List<ContractSigner> signerList = getContractSignerByContractId(contractId);
+
+        Contract contract = getContractByContractId(contractId);
+
+        if (contract.getStatus().equals(StatusContract.WAITING_CONFIRMATION)) {
+            for (ContractSigner signer : signerList) {
+                // ✅ TẠO TOKEN RIÊNG CHO USER
+                String token = tokenService.generateToken(signer.getUser());
+                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
+                try {
+                    MimeMessage message = javaMailSender.createMimeMessage();
+                    MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+                    Context context = new Context();
+                    context.setVariable("secureUrl", secureUrl);
+
+                    String content = templateEngine.process("contract", context);
+
+                    helper.setTo(signer.getUser().getEmail());
+                    helper.setSubject("[EcoShare System] Send E-Contract to User");
+                    helper.setText(content, true);
+                    javaMailSender.send(message);
+                } catch (Exception e) {
+                    e.getMessage();
+                }
+            }
+        }
     }
 
 

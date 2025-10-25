@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
+import khoindn.swp391.be.app.model.Response.ContractPendingRes;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.RequestGroup;
 import khoindn.swp391.be.app.pojo.Users;
@@ -27,14 +28,19 @@ public class StaffController {
     private AuthenticationService authenticationService;
     @Autowired
     private IGroupMemberService iGroupMemberService;
+    @Autowired
+    private IContractService iContractService;
 
     @PostMapping("/delete-group/{groupId}")
-    public void deleteGroup(@PathVariable int groupId) {
+    public ResponseEntity deleteGroup(@PathVariable int groupId) {
         iGroupService.deleteGroup(groupId);
+        return ResponseEntity.ok().body("Delete group successfully");
     }
 
+    // LEAVE GROUP
+    
     @PostMapping("leave-group")
-    public ResponseEntity leaveGroup(LeaveGroupReq  request) {
+    public ResponseEntity leaveGroup(LeaveGroupReq request) {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
@@ -42,6 +48,8 @@ public class StaffController {
         GroupMember user_leaving = iGroupMemberService.leaveGroup(request);
         return ResponseEntity.status(HttpStatus.OK).body(user_leaving);
     }
+
+    // GET ALL REQUEST GROUP
 
     @GetMapping("/get/all/request-group")
     public ResponseEntity getAllRequestGroup() {
@@ -61,6 +69,21 @@ public class StaffController {
 
         iRequestGroupService.updateRequestGroup(update);
         return ResponseEntity.status(200).body("Update successfully");
+    }
+
+    // GET PENDING CONTRACTS
+
+    @GetMapping("/contract/pending")
+    public ResponseEntity getPendingContracts() {
+        Users staff = authenticationService.getCurrentAccount();
+        if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+        List<ContractPendingRes> res = iContractService.getPendingContracts();
+        if (res.isEmpty()) {
+            return ResponseEntity.status(204).body("No Content");
+        }
+        return ResponseEntity.status(200).body(res);
     }
 
 

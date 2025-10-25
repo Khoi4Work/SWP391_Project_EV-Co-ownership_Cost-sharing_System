@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusContract;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,12 +21,19 @@ public class Contract {
     private String contractType;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String status; // pending, active, decline
+    @Enumerated(EnumType.STRING)
+    private StatusContract status = StatusContract.PENDING_REVIEW;
     @Column(name = "content_string", length = 5000)
     private String htmlString; // link PDF do FE render
+    @Column(name = "url_contract")
+    private String urlContract;
 
     // Relationships
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group group;
+
+    @ManyToOne
+    @JoinColumn(name = "staff_id")
+    private Users staff;
 }

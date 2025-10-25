@@ -2,11 +2,10 @@ package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
-import khoindn.swp391.be.app.model.Request.ContentSender;
+import khoindn.swp391.be.app.model.Request.EmailDetailReq;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.model.Response.UsersResponse;
-import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.repository.IAuthenticationRepository;
 import khoindn.swp391.be.app.repository.IUserRepository;
@@ -17,7 +16,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -122,7 +120,7 @@ public class AuthenticationService implements UserDetailsService {
 
             String htmlContent = templateEngine.process("sendPrivateKey", context);
 
-            ContentSender contentSender = new ContentSender();
+            EmailDetailReq contentSender = new EmailDetailReq();
             contentSender.setEmail(user.getEmail());
             contentSender.setSubject("[EcoShare][Important] Your Private Key");
             contentSender.setContent(htmlContent);

@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SendEmailReq {
+public class SendBulkEmailReq {
     private String content;
     private List<String> email;
 }
