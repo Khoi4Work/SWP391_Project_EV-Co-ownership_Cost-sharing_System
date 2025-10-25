@@ -34,7 +34,6 @@ interface RenderContractRes {
   contracts: ContractSigner[];
 }
 interface Vehicle {
-  vehicleType?: string;
   brand?: string;
   model?: string;
   plateNo?: string;
