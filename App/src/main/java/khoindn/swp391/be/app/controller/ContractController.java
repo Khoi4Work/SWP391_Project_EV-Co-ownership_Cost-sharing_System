@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
-import khoindn.swp391.be.app.model.Request.SendEmailReq;
+import khoindn.swp391.be.app.model.Request.SendBulkEmailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.model.Response.RenderContractRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -13,12 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.thymeleaf.spring6.SpringTemplateEngine;
-import org.thymeleaf.context.Context;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.*;
-
-import org.springframework.http.MediaType;
 
 
 @RestController
@@ -51,7 +51,13 @@ public class ContractController {
 
     // Tạo/Set contract
     @PostMapping("/set")
-    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req) {
+    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req)
+            throws
+            InvalidKeySpecException,
+            NoSuchAlgorithmException,
+            SignatureException,
+            InvalidKeyException {
+
         ContractSigner contractResult = iContractService.setContract(req);
         if (contractResult == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -61,7 +67,7 @@ public class ContractController {
 
     // Gửi email
     @PostMapping("/send-email")
-    public ResponseEntity<String> sendEmail(@RequestBody SendEmailReq emailReq) {
+    public ResponseEntity<String> sendEmail(@RequestBody @Valid SendBulkEmailReq emailReq) {
         try {
             iEmailService.SendBulkEmail(emailReq);
             return ResponseEntity.status(HttpStatus.OK).body("Email sent successfully");

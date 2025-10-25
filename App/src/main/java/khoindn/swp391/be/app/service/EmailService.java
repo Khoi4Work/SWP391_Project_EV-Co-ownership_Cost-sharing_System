@@ -2,8 +2,8 @@ package khoindn.swp391.be.app.service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
-import khoindn.swp391.be.app.model.Request.ContentSender;
-import khoindn.swp391.be.app.model.Request.SendEmailReq;
+import khoindn.swp391.be.app.model.Request.EmailDetailReq;
+import khoindn.swp391.be.app.model.Request.SendBulkEmailReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,7 +20,7 @@ public class EmailService implements IEmailService {
     private JavaMailSender javaMailSender;
 
     @Override
-    public void sendEmail(ContentSender contentSender) {
+    public void sendEmail(EmailDetailReq contentSender) {
         try {
             // MimeMessage cho phép gửi HTML + file đính kèm
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
@@ -30,11 +30,11 @@ public class EmailService implements IEmailService {
 
             helper.setTo(contentSender.getEmail());
             helper.setSubject(contentSender.getSubject());
-            helper.setText(contentSender.getContent(), true); // true = nội dung HTML
+            helper.setText(contentSender.getTemplate(), true); // true = nội dung HTML
 
             // Nếu có file đính kèm
-            if (contentSender.getAttachmentPath() != null) {
-                FileSystemResource file = new FileSystemResource(new File(contentSender.getAttachmentPath()));
+            if (contentSender.getUrl() != null) {
+                FileSystemResource file = new FileSystemResource(new File(contentSender.getUrl()));
                 helper.addAttachment(file.getFilename(), file);
             }
 
@@ -48,7 +48,7 @@ public class EmailService implements IEmailService {
     }
 
     @Override
-    public void SendBulkEmail(SendEmailReq emailReq) {
+    public void SendBulkEmail(SendBulkEmailReq emailReq) {
         for (String eachEmail : emailReq.getEmail()) {
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();

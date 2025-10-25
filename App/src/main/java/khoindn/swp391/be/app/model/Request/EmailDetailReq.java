@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.model.Request;
 
+import jdk.jfr.Name;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,10 +8,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ContentSender {
+public class EmailDetailReq {
 
-    private String subject;
     private String email;
+    private String subject;
     private String content;
-    private String attachmentPath;
+    private String url;
+    private String template;
 }

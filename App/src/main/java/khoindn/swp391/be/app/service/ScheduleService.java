@@ -2,7 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
-import khoindn.swp391.be.app.model.Request.ContentSender;
+import khoindn.swp391.be.app.model.Request.EmailDetailReq;
 import khoindn.swp391.be.app.model.Request.ScheduleReq;
 import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
@@ -220,7 +220,6 @@ public class ScheduleService implements IScheduleService {
                         startOfMonth,
                         endOfMonth
                 );
-//test
         return new OverrideInfoRes(
                 userId,
                 groupId,
@@ -279,11 +278,11 @@ public class ScheduleService implements IScheduleService {
                     overridingUser.getUsername()
             );
 
-            ContentSender contentSender = new ContentSender();
+            EmailDetailReq contentSender = new EmailDetailReq();
             contentSender.setEmail(affectedUser.getEmail());
             contentSender.setSubject("[EcoShare] Thông báo chèn lịch");
             contentSender.setContent(emailContent);
-            contentSender.setAttachmentPath(null);
+            contentSender.setUrl(null);
 
             emailService.sendEmail(contentSender);
 
