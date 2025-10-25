@@ -179,6 +179,7 @@ public class APIExceptionHandler {
     public ResponseEntity handlePastDateBooking(PastDateBookingException ex) {
         return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
     }
+
     @ExceptionHandler(OverrideNotAllowedException.class)
     public ResponseEntity<String> handleOverrideNotAllowed(OverrideNotAllowedException e) {
         return ResponseEntity.status(403).body(e.getMessage()); // 403 Forbidden
@@ -190,27 +191,63 @@ public class APIExceptionHandler {
     // ==========================
     @ExceptionHandler(InvalidKeySpecException.class)
     public ResponseEntity handleInvalidKeySpecException(InvalidKeySpecException ex) {
-        return ResponseEntity.status(400).body("Wrong Private Key format!"+ex.getMessage()); // 400 Conflict
+        return ResponseEntity.status(400).body("Wrong Private Key format!" + ex.getMessage()); // 400 Conflict
     }
+
     @ExceptionHandler(NoSuchAlgorithmException.class)
     public ResponseEntity handleNoSuchAlgorithmException(NoSuchAlgorithmException ex) {
-        return ResponseEntity.status(500).body("Algorithm is not existed!"+ex.getMessage()); // 500 Conflict
+        return ResponseEntity.status(500).body("Algorithm is not existed!" + ex.getMessage()); // 500 Conflict
     }
+
     @ExceptionHandler(SignatureException.class)
     public ResponseEntity handleSignatureException(SignatureException ex) {
         return ResponseEntity.status(400).body("Signature is wrong! " +
-                "Private key is not match!"+ex.getMessage()); // 400 Conflict
+                "Private key is not match!" + ex.getMessage()); // 400 Conflict
     }
+
     @ExceptionHandler(InvalidKeyException.class)
     public ResponseEntity handleInvalidKeyException(InvalidKeyException ex) {
         return ResponseEntity.status(400).body("Key is not match with algorithm! or " +
-                "Key is not match with public key"+ex.getMessage()); // 400 Conflict
+                "Key is not match with public key" + ex.getMessage()); // 400 Conflict
     }
 
     @ExceptionHandler(NoSignersBelongtoTheContract.class)
     public ResponseEntity handleNoSignersBelongtoTheContract(NoSignersBelongtoTheContract ex) {
         return ResponseEntity.status(404).body("No signers found for the given contract ID! - "
-                +ex.getMessage()); // 404 NOT FOUND
+                + ex.getMessage()); // 404 NOT FOUND
+    }
+
+    // ==========================
+    // Check in/out exception
+    // ==========================
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity handleUnauthorizedAccessException(UnauthorizedAccessException ex) {
+        return ResponseEntity.status(403).body(ex.getMessage()); // 403 Forbidden
+    }
+
+    @ExceptionHandler(InvalidScheduleStatusException.class)
+    public ResponseEntity handleInvalidScheduleStatusException(InvalidScheduleStatusException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
+    }
+
+    @ExceptionHandler(CheckInNotFoundException.class)
+    public ResponseEntity handleCheckInNotFoundException(CheckInNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage()); // 404 Not Found
+    }
+
+    @ExceptionHandler(AlreadyCheckedInException.class)
+    public ResponseEntity handleAlreadyCheckedInException(AlreadyCheckedInException ex) {
+        return ResponseEntity.status(409).body(ex.getMessage()); // 409 Conflict
+    }
+
+    @ExceptionHandler(ScheduleNotFoundException.class)
+    public ResponseEntity handleScheduleNotFoundException(ScheduleNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage()); // 404 Not Found
+    }
+
+    @ExceptionHandler(AlreadyCheckedOutException.class)
+    public ResponseEntity handleAlreadyCheckedOutException(AlreadyCheckedOutException ex) {
+        return ResponseEntity.status(409).body(ex.getMessage()); // 409 Conflict
     }
 
 }
