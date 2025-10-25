@@ -112,11 +112,62 @@ export default function ContractPreview({
         </h1>
       </div>
       <hr style={{ marginBottom: "1.5rem", borderColor: "#999" }} />
-
-      {/* ✅ BÊN A */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          1. Bên A - Các đồng sở hữu
+          Bên A - EcoShare Platform
+        </h2>
+        <p><strong>Tên đơn vị:</strong> EcoShare Platform</p>
+        <p><strong>Email:</strong> support@ecoshare.vn</p>
+        <p><strong>Người đại diện:</strong> Nguyễn Đình Nguyên Khôi (trưởng nhóm) </p>
+        <p><strong>Địa chỉ trụ sở:</strong> Đại Học FPT cơ sở TPHCM </p>
+        <div style={{ marginTop: "1rem" }}>
+          <p><strong>Phạm vi trách nhiệm chính của nền tảng:</strong></p>
+
+          <div style={{ marginLeft: "1rem", lineHeight: "1.7" }}>
+            <p><strong>1. Cung cấp hệ thống quản lý đồng sở hữu:</strong><br />
+              - Xây dựng, cung cấp và đảm bảo nền tảng hoạt động ổn định để các bên đồng sở hữu quản lý thông tin phương
+              tiện, tỷ lệ sở hữu và quyền lợi, nghĩa vụ liên quan. <br />
+              - Thực hiện bảo trì kỹ thuật, cập nhật hệ thống và xử lý lỗi (nếu phát sinh) nhằm đảm bảo khả năng truy cập
+              và sử dụng liên tục.
+            </p>
+
+            <p><strong>2. Lưu trữ thông tin và xác thực thành viên:</strong><br />
+              - Thu thập, xác minh và lưu trữ thông tin của các đồng sở hữu theo đúng quy trình đã công bố. <br />
+              - Đảm bảo dữ liệu được ghi nhận chính xác, có thể truy xuất khi cần thiết, phục vụ mục đích chứng thực thỏa
+              thuận giữa các bên.
+            </p>
+
+            <p><strong>3. Trung gian hỗ trợ giải quyết tranh chấp:</strong><br />
+              - Trong trường hợp giữa các đồng sở hữu xuất hiện mâu thuẫn, Bên B có trách nhiệm cung cấp thông tin lưu
+              trữ,
+              hỗ trợ kết nối và tạo điều kiện để các bên tự thương lượng, hòa giải. <br />
+              - Bên B không đại diện pháp lý cho bất kỳ bên nào, trừ khi có thỏa thuận riêng bằng văn bản.
+            </p>
+
+            <p><strong>4. Bảo mật dữ liệu người dùng:</strong><br />
+              - Thực hiện các biện pháp quản lý, mã hóa và bảo mật theo quy định pháp luật để bảo vệ thông tin cá nhân,
+              hợp đồng và dữ liệu giao dịch của các bên. <br />
+              - Không tiết lộ, chia sẻ hoặc cung cấp dữ liệu cho bên thứ ba, trừ khi có sự đồng ý của các đồng sở hữu hoặc
+              yêu cầu từ cơ quan nhà nước có thẩm quyền.
+            </p>
+
+            <p><strong>5. Cung cấp dịch vụ hỗ trợ liên quan đến phương tiện:</strong><br />
+              - Tạo điều kiện để các đồng sở hữu tiếp cận và sử dụng các dịch vụ kèm theo phương tiện như: bảo dưỡng, sửa
+              chữa, bảo hiểm, đăng kiểm, gia hạn giấy tờ, hoặc các tiện ích vận hành khác (nếu có hợp tác với đơn vị thứ
+              ba). <br />
+
+              - Hỗ trợ kết nối với các đối tác dịch vụ phù hợp, trên nguyên tắc minh bạch về chi phí, quyền lợi và trách
+              nhiệm giữa các bên. <br />
+
+              - Việc sử dụng các dịch vụ này là tùy chọn, trừ khi có thỏa thuận riêng được tất cả đồng sở hữu thông qua.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section style={{ marginBottom: "1.5rem" }}>
+        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+          Bên B - Các đồng sở hữu
         </h2>
 
         <div
@@ -166,60 +217,6 @@ export default function ContractPreview({
         ) : (
           <p>Không có đồng sở hữu khác</p>
         )}
-      </section>
-
-      {/* ✅ BÊN B - Nền tảng EcoShare */}
-      <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-          2. Bên B - EcoShare Platform
-        </h2>
-        <p><strong>Tên đơn vị:</strong> EcoShare Platform</p>
-        <p><strong>Email:</strong> support@ecoshare.vn</p>
-        <p><strong>Người đại diện:</strong> Nguyễn Đình Nguyên Khôi (trưởng nhóm) </p>
-        <p><strong>Địa chỉ trụ sở:</strong> Đại Học FPT cơ sở TPHCM </p>
-        <div style={{ marginTop: "1rem" }}>
-          <p><strong>Phạm vi trách nhiệm chính của nền tảng:</strong></p>
-
-          <div style={{ marginLeft: "1rem", lineHeight: "1.7" }}>
-            <p><strong>1. Cung cấp hệ thống quản lý đồng sở hữu:</strong><br />
-              - Xây dựng, cung cấp và đảm bảo nền tảng hoạt động ổn định để các bên đồng sở hữu quản lý thông tin phương
-              tiện, tỷ lệ sở hữu và quyền lợi, nghĩa vụ liên quan. <br />
-              - Thực hiện bảo trì kỹ thuật, cập nhật hệ thống và xử lý lỗi (nếu phát sinh) nhằm đảm bảo khả năng truy cập
-              và sử dụng liên tục.
-            </p>
-
-            <p><strong>2. Lưu trữ thông tin và xác thực thành viên:</strong><br />
-              - Thu thập, xác minh và lưu trữ thông tin của các đồng sở hữu theo đúng quy trình đã công bố. <br />
-              - Đảm bảo dữ liệu được ghi nhận chính xác, có thể truy xuất khi cần thiết, phục vụ mục đích chứng thực thỏa
-              thuận giữa các bên.
-            </p>
-
-            <p><strong>3. Trung gian hỗ trợ giải quyết tranh chấp:</strong><br />
-              - Trong trường hợp giữa các đồng sở hữu xuất hiện mâu thuẫn, Bên B có trách nhiệm cung cấp thông tin lưu
-              trữ,
-              hỗ trợ kết nối và tạo điều kiện để các bên tự thương lượng, hòa giải. <br />
-              - Bên B không đại diện pháp lý cho bất kỳ bên nào, trừ khi có thỏa thuận riêng bằng văn bản.
-            </p>
-
-            <p><strong>4. Bảo mật dữ liệu người dùng:</strong><br />
-              - Thực hiện các biện pháp quản lý, mã hóa và bảo mật theo quy định pháp luật để bảo vệ thông tin cá nhân,
-              hợp đồng và dữ liệu giao dịch của các bên. <br />
-              - Không tiết lộ, chia sẻ hoặc cung cấp dữ liệu cho bên thứ ba, trừ khi có sự đồng ý của các đồng sở hữu hoặc
-              yêu cầu từ cơ quan nhà nước có thẩm quyền.
-            </p>
-
-            <p><strong>5. Cung cấp dịch vụ hỗ trợ liên quan đến phương tiện:</strong><br />
-              - Tạo điều kiện để các đồng sở hữu tiếp cận và sử dụng các dịch vụ kèm theo phương tiện như: bảo dưỡng, sửa
-              chữa, bảo hiểm, đăng kiểm, gia hạn giấy tờ, hoặc các tiện ích vận hành khác (nếu có hợp tác với đơn vị thứ
-              ba). <br />
-
-              - Hỗ trợ kết nối với các đối tác dịch vụ phù hợp, trên nguyên tắc minh bạch về chi phí, quyền lợi và trách
-              nhiệm giữa các bên. <br />
-
-              - Việc sử dụng các dịch vụ này là tùy chọn, trừ khi có thỏa thuận riêng được tất cả đồng sở hữu thông qua.
-            </p>
-          </div>
-        </div>
       </section>
 
       {/* Thông tin xe */}
