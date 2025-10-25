@@ -21,40 +21,89 @@ import {
     Activity
 } from "lucide-react";
 import ChatBox from "@/components/ChatBox";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { groups as initialGroups, leaveRequests as initialLeaveRequests } from "@/data/mockGroups";
+import { groups as initialGroups } from "@/data/mockGroups";
+import axiosClient from "@/api/axiosClient";
+
 export default function StaffDashboard() {
     const [showChat, setShowChat] = useState(false);
+    const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
-    const [leaveRequests, setLeaveRequests] = useState(initialLeaveRequests);
+    const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
         { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
         { label: "Nhóm quản lý", value: 8, icon: Users, color: "primary" },
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
-    const pendingLeaveRequests = leaveRequests.filter(r => r.status === "pending");
+    useEffect(() => {
+        axiosClient.get("/staff/get/all/request-group")
+            .then(res => {
+                if (Array.isArray(res.data)) {
+                    setLeaveRequests(res.data);
+                    const allServices = res.data
+                        .map((item: any) => item.groupMember?.requestServices || [])
+                        .flat();
+                    setServices(allServices);
+                    setServices(allServices);
+                } else {
+                    setLeaveRequests([]); // fallback
+                }
+            })
+            .catch(err => {
+                console.error("Không kết nối được BE:", err.message);
+                setLeaveRequests([]); // đảm bảo luôn là []
+            });
+    }, []);
+    const handleApprove = async (appId: number) => {
+        const request = leaveRequests.find((r) => r.id === appId);
+        if (!request) {
+            toast({
+                title: "Lỗi",
+                description: "Không tìm thấy yêu cầu.",
+                variant: "destructive",
+            });
+            return;
+        }
 
+        try {
+            // Gửi request đến BE
+            const res = await axiosClient.post("/staff/leave-group", {
+                groupId: request.groupMember?.group?.id || request.groupId,
+                requestId: request.id,
+            });
 
-    const handleApprove = (appId: string) => {
-        const request = leaveRequests.find(r => r.id === appId);
-        if (!request) return;
-        setLeaveRequests(prev =>
-            prev.map(r =>
-                r.id === appId ? { ...r, status: "approved" } : r));
-        setGroups(prev =>
-            prev.map(g =>
-                g.id === request.groupId ? { ...g, users: g.users.filter(u => u.id !== request.userId) } : g));
-        toast({
-            title: "Đơn đã duyệt",
-            description: `Thành viên đã được rời khỏi nhóm.`,
-        });
+            if (res.status === 200) {
+                // Cập nhật FE
+                setLeaveRequests((prev) => prev.filter((r) => r.id !== appId));
+                toast({
+                    title: "Đã duyệt yêu cầu",
+                    description: "Nhân viên đã được rời khỏi nhóm thành công.",
+                });
+            } else {
+                toast({
+                    title: "Lỗi",
+                    description: "Backend trả về trạng thái không mong muốn.",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Lỗi",
+                description: "Không thể xử lý yêu cầu ở backend.",
+                variant: "destructive",
+            });
+        }
     };
+
+
 
 
     const handleReject = (appId: string) => {
@@ -63,7 +112,7 @@ export default function StaffDashboard() {
                 r.id === appId ? { ...r, status: "rejected" } : r
             )
         );
-
+        setLeaveRequests(prev => prev.filter(r => r.id !== appId));
         toast({
             title: "Đã từ chối đơn",
             description: "Yêu cầu rời nhóm không được chấp nhận.",
@@ -144,13 +193,27 @@ export default function StaffDashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {pendingLeaveRequests.map((req) => (
-                                        <div key={req.id} className="p-4 border rounded-lg flex justify-between">
+                                    {services.map((req) => (
+                                        <div
+                                            key={req.id}
+                                            className="p-4 border rounded-lg flex justify-between items-center bg-white shadow-sm"
+                                        >
                                             <div>
-                                                <p><strong>Nhóm:</strong> {req.groupName}</p>
-                                                <p><strong>Người yêu cầu:</strong> {req.userId}</p>
-                                                <p><strong>Ngày gửi:</strong> {new Date(req.createdAt).toLocaleString()}</p>
+                                                <p><strong>Tên dịch vụ:</strong> {req.serviceName}</p>
+                                                <p><strong>Mô tả:</strong> {req.description}</p>
+                                                <p><strong>Giá:</strong> {req.price ? req.price.toLocaleString("vi-VN") + " ₫" : "Chưa có giá"}</p>
+                                                <p><strong>Trạng thái:</strong> {req.status}</p>
+                                                <p><strong>Ngày tạo:</strong> {req.createdAt ? new Date(req.createdAt).toLocaleString("vi-VN") : "Không rõ"}</p>
+
+                                                {req.vehicle && (
+                                                    <p><strong>Phương tiện:</strong> {req.vehicle.plateNo || "Không rõ"}</p>
+                                                )}
+
+                                                {req.groupMember && (
+                                                    <p><strong>Người yêu cầu:</strong> {req.groupMember.users?.username || "Không rõ"}</p>
+                                                )}
                                             </div>
+
                                             <div className="flex space-x-2">
                                                 <Button size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>
                                                 <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>Từ chối</Button>
@@ -175,129 +238,21 @@ export default function StaffDashboard() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                    <Card
-                                        className="cursor-pointer hover:shadow-md transition-shadow"
-                                        onClick={() => setSelectedGroup({
-                                            id: "g-hcm-q1",
-                                            name: "Nhóm HCM - Quận 1",
-                                            members: 12,
-                                            fund: 50000000,
-                                            requests: [
-                                                {
-                                                    id: "req-001",
-                                                    type: "delete_group",
-                                                    description: "Yêu cầu xóa nhóm từ admin Nguyễn Văn A",
-                                                    date: "2024-01-20",
-                                                    status: "pending"
-                                                },
-                                                {
-                                                    id: "req-002",
-                                                    type: "add_member",
-                                                    description: "Thêm thành viên: member@email.com",
-                                                    date: "2024-01-19",
-                                                    status: "pending"
-                                                }
-                                            ]
-                                        })}
-                                    >
-                                        <CardContent className="p-4">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <h3 className="font-semibold">Nhóm HCM - Quận 1</h3>
-                                                    <p className="text-sm text-muted-foreground">12 thành viên</p>
-                                                </div>
-                                                <div className="flex flex-col items-end">
-                                                    <MapPin className="h-6 w-6 text-primary" />
-                                                    <Badge variant="destructive" className="mt-1 text-xs">2 yêu
-                                                        cầu</Badge>
-                                                </div>
-                                            </div>
-                                            <div className="mt-2">
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Quỹ nhóm:</span>
-                                                    <span className="font-medium">50,000,000 VNĐ</span>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card
-                                        className="cursor-pointer hover:shadow-md transition-shadow"
-                                        onClick={() => setSelectedGroup({
-                                            id: "g-hn-cg",
-                                            name: "Nhóm HN - Cầu Giấy",
-                                            members: 8,
-                                            fund: 35000000,
-                                            requests: [
-                                                {
-                                                    id: "req-003",
-                                                    type: "remove_member",
-                                                    description: "Xóa thành viên: oldmember@email.com",
-                                                    date: "2024-01-18",
-                                                    status: "pending"
-                                                }
-                                            ]
-                                        })}
-                                    >
-                                        <CardContent className="p-4">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <h3 className="font-semibold">Nhóm HN - Cầu Giấy</h3>
-                                                    <p className="text-sm text-muted-foreground">8 thành viên</p>
-                                                </div>
-                                                <div className="flex flex-col items-end">
-                                                    <MapPin className="h-6 w-6 text-primary" />
-                                                    <Badge variant="destructive" className="mt-1 text-xs">1 yêu
-                                                        cầu</Badge>
-                                                </div>
-                                            </div>
-                                            <div className="mt-2">
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Quỹ nhóm:</span>
-                                                    <span className="font-medium">35,000,000 VNĐ</span>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-
                                 <div className="space-y-4">
-                                    <h4 className="font-medium">Lịch sử sử dụng xe gần đây</h4>
-                                    <div className="space-y-2">
-                                        {[
-                                            {
-                                                user: "Nguyễn Văn A",
-                                                vehicle: "VF8 - 51A-123.45",
-                                                time: "8:00 - 17:00",
-                                                date: "20/01/2024"
-                                            },
-                                            {
-                                                user: "Trần Thị B",
-                                                vehicle: "Model Y - 30A-678.90",
-                                                time: "14:00 - 20:00",
-                                                date: "19/01/2024"
-                                            },
-                                            {
-                                                user: "Lê Văn C",
-                                                vehicle: "Kona - 29A-111.22",
-                                                time: "9:00 - 12:00",
-                                                date: "19/01/2024"
-                                            }
-                                        ].map((record, index) => (
-                                            <div key={index}
-                                                className="flex justify-between items-center p-3 border rounded">
-                                                <div>
-                                                    <p className="font-medium">{record.user}</p>
-                                                    <p className="text-sm text-muted-foreground">{record.vehicle}</p>
-                                                </div>
-                                                <div className="text-right text-sm">
-                                                    <p>{record.time}</p>
-                                                    <p className="text-muted-foreground">{record.date}</p>
-                                                </div>
+                                    {leaveRequests.map((req) => (
+                                        <div key={req.id} className="p-4 border rounded-lg flex justify-between">
+                                            <div>
+                                                <p><strong>Nhóm:</strong> {req.nameRequestGroup}</p>
+                                                <p><strong>Loại đơn:</strong> {req.descriptionRequestGroup}</p>
+                                                <p><strong>Người yêu cầu:</strong> {req.groupMember?.users?.username || "Không rõ"}</p>
+                                                <p><strong>Ngày gửi:</strong> {new Date(req.createdAt).toLocaleString()}</p>
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="flex space-x-2">
+                                                <Button size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>
+                                                <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>Từ chối</Button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </CardContent>
                         </Card>
