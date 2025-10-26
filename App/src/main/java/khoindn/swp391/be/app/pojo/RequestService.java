@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusRequestService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,7 +27,7 @@ public class RequestService {
     @Column(name = "price")
     private Double price;
     @Column(name = "status")
-    private String status; // pending, in_progress, completed
+    private StatusRequestService status = StatusRequestService.PENDING ; // pending, in_progress, completed
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

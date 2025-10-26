@@ -9,6 +9,10 @@ import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.StatusGroup;
+import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
+import khoindn.swp391.be.app.pojo._enum.StatusRequestGroup;
+import khoindn.swp391.be.app.pojo._enum.StatusRequestGroupDetail;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,12 +133,12 @@ public class GroupService implements IGroupService {
                 List<GroupMember> members = iGroupMemberRepository.findAllByGroup_GroupId(groupId);
                 if (members != null) {
                     members.forEach(member -> {
-                        member.setStatus("deleted");
+                        member.setStatus(StatusGroupMember.DELETED);
                         iGroupMemberRepository.save(member);
                     });
                     vehicle.setGroup(null);
                     iVehicleRepository.save(vehicle);
-                    group.setStatus("deleted");
+                    group.setStatus(StatusGroup.DELETED);
                     iGroupRepository.save(group);
                 } else {
                     throw new GroupMemberNotFoundException("No members found in the group");
@@ -181,21 +185,21 @@ public class GroupService implements IGroupService {
         }
 
         if (update.getIdChoice() == 1) {
-            req.setStatusRequestGroup("solved");
+            req.setStatus(StatusRequestGroup.SOLVED);
             req.getRequestGroupDetail().setStaff(staff);
-            req.getRequestGroupDetail().setStatus("solved");
+            req.getRequestGroupDetail().setStatus(StatusRequestGroupDetail.APPROVED);
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
         } else if (update.getIdChoice() == 0) {
-            req.setStatusRequestGroup("denied");
+            req.setStatus(StatusRequestGroup.DENIED);
             req.getRequestGroupDetail().setStaff(staff);
-            req.getRequestGroupDetail().setStatus("denied");
+            req.getRequestGroupDetail().setStatus(StatusRequestGroupDetail.REJECTED);
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
         } else if (update.getIdChoice() == 2) {
-            req.setStatusRequestGroup("processing");
+            req.setStatus(StatusRequestGroup.PROCESSING);
             req.getRequestGroupDetail().setStaff(staff);
-            req.getRequestGroupDetail().setStatus("processing");
+            req.getRequestGroupDetail().setStatus(StatusRequestGroupDetail.PROCESSING);
             req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
             iRequestGroupRepository.save(req);
         } else {

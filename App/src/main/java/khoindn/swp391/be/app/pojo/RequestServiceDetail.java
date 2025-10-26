@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusRequestServiceDetail;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,7 +17,7 @@ public class RequestServiceDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name = "status")
-    private String status = "pending"; // pending, in_progress, completed
+    private StatusRequestServiceDetail status = StatusRequestServiceDetail.PENDING; // pending, in_progress, completed
     @Column(name = "description")
     private String description;
     // Relationships

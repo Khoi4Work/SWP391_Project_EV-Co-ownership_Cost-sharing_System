@@ -6,6 +6,8 @@ import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.StatusGroup;
+import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,11 +128,11 @@ public class GroupMemberService implements IGroupMemberService {
         }
         // Update status of GroupMember
         GroupMember user_leaving = requestProcessing.getGroupMember();
-        user_leaving.setStatus("Leaved");
+        user_leaving.setStatus(StatusGroupMember.LEAVED);
         iGroupMemberRepository.save(user_leaving);
         // Update status of Group
         Group group = user_leaving.getGroup();
-        group.setStatus("Inactive");
+        group.setStatus(StatusGroup.INACTIVE);
         iGroupRepository.save(group);
         return user_leaving;
     }

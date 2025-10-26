@@ -8,6 +8,7 @@ import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ public class ScheduleService implements IScheduleService {
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
-        schedule.setStatus("booked");
+        schedule.setStatus(StatusSchedule.BOOKED);
         schedule.setGroupMember(gm);
 
         Schedule saved = iScheduleRepository.save(schedule);
@@ -80,7 +81,7 @@ public class ScheduleService implements IScheduleService {
     @Override
     public List<ScheduleRes> getAllSchedules() {
         return iScheduleRepository.findAll().stream()
-                .filter(s -> !s.getStatus().equals("override_tracker"))
+                .filter(s -> !s.getStatus().equals(StatusSchedule.OVERRIDE_TRACKER))
                 .map(s -> {
                     ScheduleRes res = modelMapper.map(s, ScheduleRes.class);
                     res.setUserId(s.getGroupMember().getUsers().getId());
@@ -161,7 +162,7 @@ public class ScheduleService implements IScheduleService {
                 .orElseThrow(() -> new RuntimeException("Schedule not found"));
 
         // Đổi status thay vì delete
-        schedule.setStatus("canceled");
+        schedule.setStatus(StatusSchedule.CANCELED);
         iScheduleRepository.save(schedule);
     }
 
@@ -173,7 +174,7 @@ public class ScheduleService implements IScheduleService {
         List<Schedule> schedules = iScheduleRepository.findByGroupMember_Group_GroupId(groupId);
 
         return schedules.stream()
-                .filter(s -> !s.getStatus().equals("override_tracker"))
+                .filter(s -> !s.getStatus().equals(StatusSchedule.OVERRIDE_TRACKER))
                 .map(schedule -> {
                     ScheduleRes res = modelMapper.map(schedule, ScheduleRes.class);
                     res.setUserId(schedule.getGroupMember().getUsers().getId());
@@ -316,12 +317,12 @@ public class ScheduleService implements IScheduleService {
         List<Schedule> conflictingSchedules = iScheduleRepository
                 .findByGroupMember_Group_GroupId(groupId)
                 .stream()
-                .filter(s -> !s.getStatus().equals("canceled") &&
-                        !s.getStatus().equals("overridden") &&
-                        !s.getStatus().equals("override_tracker"))
+                .filter(s -> !s.getStatus().equals(StatusSchedule.CANCELED) &&
+                        !s.getStatus().equals(StatusSchedule.OVERRIDDEN) &&
+                        !s.getStatus().equals(StatusSchedule.OVERRIDE_TRACKER))
                 .filter(s -> excludeScheduleId == null || s.getScheduleId() != excludeScheduleId) // Exclude current schedule if updating
                 .filter(s -> s.getStartTime().isBefore(endTime) && s.getEndTime().isAfter(startTime))
-                .collect(Collectors.toList());
+                .toList();
 
         // Handle conflicts with ownership priority
         if (!conflictingSchedules.isEmpty()) {
@@ -402,13 +403,13 @@ public class ScheduleService implements IScheduleService {
 
     private void overrideSchedule(Schedule conflictSchedule, GroupMember overridingGm, Users overridingUser) {
         // Mark existing schedule as overridden
-        conflictSchedule.setStatus("overridden");
+        conflictSchedule.setStatus(StatusSchedule.OVERRIDDEN);
         iScheduleRepository.save(conflictSchedule);
 
         // Create override tracker
         Schedule tracker = new Schedule();
         tracker.setGroupMember(overridingGm);
-        tracker.setStatus("override_tracker");
+        tracker.setStatus(StatusSchedule.OVERRIDE_TRACKER);
         tracker.setStartTime(LocalDateTime.now());
         tracker.setEndTime(LocalDateTime.now());
         tracker.setCreatedAt(LocalDateTime.now());

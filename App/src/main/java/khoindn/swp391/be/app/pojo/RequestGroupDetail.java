@@ -2,6 +2,8 @@ package khoindn.swp391.be.app.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusRequestGroup;
+import khoindn.swp391.be.app.pojo._enum.StatusRequestGroupDetail;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,7 +20,7 @@ public class RequestGroupDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String status = "pending"; // pending, approved, rejected
+    private StatusRequestGroupDetail status = StatusRequestGroupDetail.PENDING; // pending, approved, rejected
     private LocalDateTime solvedAt;
 
     // relationships
