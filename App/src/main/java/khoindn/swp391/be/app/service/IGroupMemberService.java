@@ -1,7 +1,9 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
+import khoindn.swp391.be.app.pojo.DecisionVote;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
 
@@ -21,5 +23,7 @@ public interface IGroupMemberService {
     // ---------------------- NEW METHOD ----------------------
     GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage);
 
-    GroupMember leaveGroup(LeaveGroupReq reuquest);
+    GroupMember leaveGroup(LeaveGroupReq request);
+
+    DecisionVote createDecision(DecisionVoteReq request, GroupMember gm);
 }

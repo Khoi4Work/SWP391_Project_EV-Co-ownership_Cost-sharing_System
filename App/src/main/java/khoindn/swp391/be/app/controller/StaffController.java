@@ -31,6 +31,8 @@ public class StaffController {
     @Autowired
     private IContractService iContractService;
 
+    // DELETE GROUP
+
     @PostMapping("/delete-group/{groupId}")
     public ResponseEntity deleteGroup(@PathVariable int groupId) {
         iGroupService.deleteGroup(groupId);
@@ -60,24 +62,26 @@ public class StaffController {
         return ResponseEntity.status(200).body(res);
     }
 
+    // UPDATE REQUEST GROUP
+
     @PostMapping("/update/request-group")
     public ResponseEntity updateRequestGroup(@RequestBody @Valid UpdateRequestGroup update) {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+            return ResponseEntity.status(403).body("Unauthorized");
         }
 
         iRequestGroupService.updateRequestGroup(update);
         return ResponseEntity.status(200).body("Update successfully");
     }
 
-    // GET PENDING CONTRACTS
+    // 1. GET PENDING CONTRACTS
 
     @GetMapping("/contract/pending")
     public ResponseEntity getPendingContracts() {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+            return ResponseEntity.status(403).body("Unauthorized");
         }
         List<ContractPendingRes> res = iContractService.getPendingContracts();
         if (res.isEmpty()) {
@@ -85,6 +89,21 @@ public class StaffController {
         }
         return ResponseEntity.status(200).body(res);
     }
+
+    // 2. APPROVE or REJECT CONTRACT AND SEND EMAIL RESULT TO CUSTOMER
+
+    @PostMapping("/contract/{contractId}/{decision}")
+    public ResponseEntity verifyContract(@PathVariable int contractId, @PathVariable int decision) {
+        Users staff = authenticationService.getCurrentAccount();
+        if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+
+        iContractService.verifyContract(contractId, decision);
+
+        return ResponseEntity.status(200).body("Verify successfully");
+    }
+
 
 
 }

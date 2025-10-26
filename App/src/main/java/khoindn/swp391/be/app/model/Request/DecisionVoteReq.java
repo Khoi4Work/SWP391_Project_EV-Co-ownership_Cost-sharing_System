@@ -21,7 +21,4 @@ public class DecisionVoteReq {
     @Size(min = 1, max = 50)
     private String description;
 
-    private String status = "pending"; // pending, approved, rejected
-    private LocalDateTime createdAt = LocalDateTime.now();
-
 }
