@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ICheckOutRepository extends JpaRepository<CheckOut, Integer> {
 
     boolean existsBySchedule_ScheduleId(int scheduleScheduleId);
+
+    CheckOut findByScheduleScheduleId(int scheduleScheduleId);
 }
