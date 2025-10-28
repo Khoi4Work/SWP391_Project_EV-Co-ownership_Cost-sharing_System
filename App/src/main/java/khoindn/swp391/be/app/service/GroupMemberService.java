@@ -1,11 +1,15 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
+import khoindn.swp391.be.app.exception.exceptions.DecisionVoteDetailNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.DecisionVoteNotFoundException;
 import khoindn.swp391.be.app.exception.exceptions.RequestGroupNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.OptionDecisionVoteDetail;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
 import khoindn.swp391.be.app.repository.*;
@@ -154,6 +158,31 @@ public class GroupMemberService implements IGroupMemberService {
         }
 
         return createdDecisionVote;
+    }
+
+    @Override
+    public void setDecision(int choice, long idDecision, GroupMember gm) {
+        DecisionVote vote = iDecisionVoteRepository.getDecisionVoteById(idDecision);
+        if (vote == null) {
+            throw new DecisionVoteNotFoundException("DECISION_NOT_FOUND_OR_DECISION_NOT_EXISTS");
+        }
+
+        DecisionVoteDetail voteDetail =
+                iDecisionVoteDetailRepository.getDecisionVoteDetailByGroupMemberAndDecisionVote_Id(gm, idDecision);
+        if (voteDetail == null) {
+            throw new DecisionVoteDetailNotFoundException("VOTER_NOT_FOUND_OR_VOTER_NOT_EXISTS");
+        }
+
+        switch (choice) {
+            case 0:
+                voteDetail.setOptionDecisionVote(OptionDecisionVoteDetail.REJECTED);
+                break;
+            case 1:
+                voteDetail.setOptionDecisionVote(OptionDecisionVoteDetail.ACCEPTED);
+                break;
+            default:
+                throw new UndefinedChoiceException("Choice is invalid!");
+        }
     }
 
 

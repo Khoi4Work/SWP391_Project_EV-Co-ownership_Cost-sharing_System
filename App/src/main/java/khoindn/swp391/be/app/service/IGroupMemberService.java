@@ -26,4 +26,6 @@ public interface IGroupMemberService {
     GroupMember leaveGroup(LeaveGroupReq request);
 
     DecisionVote createDecision(DecisionVoteReq request, GroupMember gm);
+
+    void setDecision(int choice, long idDecision, GroupMember gm);
 }

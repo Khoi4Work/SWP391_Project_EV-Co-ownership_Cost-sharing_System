@@ -332,14 +332,14 @@ public class ContractService implements IContractService {
     @Override
     public void verifyContract(int contractId, int decision) {
         Contract contract = getContractByContractId(contractId);
-        if (contract == null || !contract.getStatus().equals(StatusContract.PENDING_REVIEW)){
+        if (contract == null || !contract.getStatus().equals(StatusContract.PENDING_REVIEW)) {
             throw new ContractNotExistedException("Contract cannot found or invalid status!");
         }
-        if (decision == 1){
+        if (decision == 1) {
             contract.setStatus(StatusContract.WAITING_CONFIRMATION);
             iContractRepository.save(contract);
             SendWaitingConfirmedContract(contractId);
-        } else if (decision == 0){
+        } else if (decision == 0) {
             contract.setStatus(StatusContract.DECLINED);
             contract.setEndDate(LocalDate.now());
             iContractRepository.save(contract);

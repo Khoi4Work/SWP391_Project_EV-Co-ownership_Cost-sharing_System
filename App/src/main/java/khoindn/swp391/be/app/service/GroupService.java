@@ -36,19 +36,12 @@ public class GroupService implements IGroupService {
 
     @Autowired
     private IVehicleRepository iVehicleRepository;
-
     @Autowired
     private IGroupMemberRepository iGroupMemberRepository;
-
     @Autowired
     private IContractRepository iContractRepository;
-
     @Autowired
     private ICommonFundRepository commonFundRepository;
-
-    @Autowired
-    private IContractSignerRepository iContractSignerRepository;
-
     @Autowired
     private ModelMapper modelMapper;
     @Autowired

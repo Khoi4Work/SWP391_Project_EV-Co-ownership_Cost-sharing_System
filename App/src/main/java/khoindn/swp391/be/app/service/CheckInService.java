@@ -79,7 +79,7 @@ public class CheckInService implements ICheckInService {
         // set schedule info
         response.setScheduleStartTime(schedule.getStartTime());
         response.setScheduleEndTime(schedule.getEndTime());
-        response.setScheduleStatus(schedule.getStatus());
+        response.setScheduleStatus(schedule.getStatus().name());
         // set vehicle info
         Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
         response.setVehicleName(vehicle.getBrand() + " " + vehicle.getModel());

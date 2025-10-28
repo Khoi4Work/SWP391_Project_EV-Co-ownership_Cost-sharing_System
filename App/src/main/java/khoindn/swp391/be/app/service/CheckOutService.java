@@ -90,7 +90,7 @@ public class CheckOutService implements ICheckOutService {
 
         res.setScheduleStartTime(schedule.getStartTime());
         res.setScheduleEndTime(schedule.getEndTime());
-        res.setScheduleStatus(schedule.getStatus());
+        res.setScheduleStatus(schedule.getStatus().name());
         // vehicle
         Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
         if (vehicle != null) {

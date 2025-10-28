@@ -68,22 +68,7 @@ public class GroupController {
         return ResponseEntity.status(201).body("Created Request Successfully");
     }
 
-    @PostMapping("/decision/group/{id}")
-    public ResponseEntity createDecision(@PathVariable int id, @RequestBody @Valid DecisionVoteReq request) {
-        Users user = authenticationService.getCurrentAccount();
-        if (user == null) {
-            return ResponseEntity.status(403).body("Unauthorized");
-        }
-        GroupMember gm = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(user.getId(), id);
-        if (gm == null) {
-            throw new GroupMemberNotFoundException("Member is not in Group!");
-        }
-        DecisionVote decisionVote = iGroupMemberService.createDecision(request, gm);
-        if (decisionVote == null) {
-            return ResponseEntity.status(500).body("INTERNAL SERVER ERROR");
-        }
-        return ResponseEntity.status(201).body(decisionVote);
-    }
+
 
 
 }
