@@ -222,7 +222,7 @@ public class ScheduleService implements IScheduleService {
         long overrideCount = iScheduleRepository
                 .countByGroupMember_IdAndStatusAndCreatedAtBetween(
                         gm.getId(),
-                        "override_tracker",
+                        StatusSchedule.OVERRIDE_TRACKER,
                         startOfMonth,
                         endOfMonth
                 );
@@ -343,7 +343,7 @@ public class ScheduleService implements IScheduleService {
         long overrideCount = iScheduleRepository
                 .countByGroupMember_IdAndStatusAndCreatedAtBetween(
                         gm.getId(),
-                        "override_tracker",
+                        StatusSchedule.OVERRIDE_TRACKER,
                         startOfMonth,
                         endOfMonth
                 );
