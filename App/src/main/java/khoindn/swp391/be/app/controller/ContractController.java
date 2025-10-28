@@ -41,6 +41,8 @@ public class ContractController {
     private IEmailService iEmailService;
     @Autowired
     private SupabaseService supabaseService;
+    @Autowired
+    private ISupabaseService iSupabaseService;
 
     // Lấy contract
     @GetMapping("/user/{id}")
@@ -176,15 +178,21 @@ public class ContractController {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(403).body("User is not logged in");
-        }else if (!user.getRole().getRoleName().equalsIgnoreCase("co-owner")){
-            return ResponseEntity.status(403).body("Invalid role");
         }
+//        }else if (!user.getRole().getRoleName().equalsIgnoreCase("co-owner")){
+//            return ResponseEntity.status(403).body("Invalid role");
+//        }
         try {
             return ResponseEntity.status(200).body(supabaseService.uploadFile(file));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload thất bại: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/file")
+    public ResponseEntity getFileByName(String fileName) {
+        return ResponseEntity.status(200).body(iSupabaseService.getFileUrl(fileName));
     }
 
 }
