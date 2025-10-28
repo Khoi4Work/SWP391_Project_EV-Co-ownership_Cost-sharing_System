@@ -19,20 +19,13 @@ public class RequestService {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "name", unique = true)
-    private String serviceName;
-    @Column(name = "description", unique = true)
-    private String description;
-    @Column(name = "price")
-    private Double price;
     @Column(name = "status")
     private StatusRequestService status = StatusRequestService.PENDING ; // pending, in_progress, completed
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
 
-    //relationship
+    //relationshipss
 
     @ManyToOne
     @JoinColumn(name = "vehicle_id")
@@ -41,5 +34,9 @@ public class RequestService {
     @ManyToOne
     @JoinColumn(name = "group_member_id")
     private GroupMember groupMember;
+
+    @ManyToOne
+    @JoinColumn(name = "service")
+    private MenuService menuService;
 
 }
