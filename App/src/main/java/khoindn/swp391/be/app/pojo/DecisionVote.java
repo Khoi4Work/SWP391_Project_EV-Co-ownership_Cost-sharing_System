@@ -35,6 +35,6 @@ public class DecisionVote{
     @JoinColumn(name = "created_by")
     private GroupMember createdBy;
 
-    @OneToMany(mappedBy = "decision_vote")
+    @OneToMany(mappedBy = "decisionVote")
     List<DecisionVoteDetail> decisionVoteDetails = new ArrayList<>();
 }
