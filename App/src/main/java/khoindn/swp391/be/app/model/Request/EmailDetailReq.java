@@ -12,7 +12,6 @@ public class EmailDetailReq {
 
     private String email;
     private String subject;
-    private String content;
     private String url;
     private String template;
 }

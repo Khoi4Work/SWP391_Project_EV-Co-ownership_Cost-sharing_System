@@ -123,7 +123,7 @@ public class AuthenticationService implements UserDetailsService {
             EmailDetailReq contentSender = new EmailDetailReq();
             contentSender.setEmail(user.getEmail());
             contentSender.setSubject("[EcoShare][Important] Your Private Key");
-            contentSender.setContent(htmlContent);
+            contentSender.setTemplate(htmlContent);
             emailService.sendEmail(contentSender);
 
         } catch (NoSuchAlgorithmException e) {

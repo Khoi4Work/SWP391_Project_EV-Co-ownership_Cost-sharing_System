@@ -282,7 +282,6 @@ public class ScheduleService implements IScheduleService {
             EmailDetailReq contentSender = new EmailDetailReq();
             contentSender.setEmail(affectedUser.getEmail());
             contentSender.setSubject("[EcoShare] Thông báo chèn lịch");
-            contentSender.setContent(emailContent);
             contentSender.setUrl(null);
 
             emailService.sendEmail(contentSender);
