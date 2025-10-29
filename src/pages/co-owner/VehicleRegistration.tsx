@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import ContractImport from "./ContractImport";
 import axiosClient from "@/api/axiosClient";
 import {
   Car,
@@ -34,7 +35,9 @@ interface CoOwner {
 }
 
 export default function VehicleRegistration() {
-  const [step, setStep] = useState(1);
+  const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
+  const [importedData, setImportedData] = useState<any>(null);
+  const [step, setStep] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [pdfUrl, setPdfUrl] = useState(null);
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
@@ -79,6 +82,50 @@ export default function VehicleRegistration() {
 
     setVehicles(demoVehicles);
   }, []);
+  useEffect(() => {
+    if (!importedData) return;
+
+    if (importedData.type === "pdf") {
+      // PDF hợp đồng đồng sở hữu → gửi cho staff xác nhận
+      const sendToStaff = async () => {
+        try {
+          const payload = {
+            documentUrl: importedData.fileUrl,
+            contractType: "VEHICLE_COOWNERSHIP",
+            status: "pending review",
+          };
+          await axiosClient.post(CREATE_CONTRACT, payload);
+          toast({
+            title: "Đã gửi hợp đồng cho nhân viên xác nhận",
+            description: "Vui lòng chờ phản hồi từ nhân viên.",
+          });
+          navigate("/co-owner/dashboard");
+        } catch (err) {
+          console.error("❌ Lỗi gửi hợp đồng PDF:", err);
+          toast({
+            title: "Lỗi khi gửi hợp đồng",
+            description: "Không thể gửi hợp đồng cho nhân viên.",
+            variant: "destructive",
+          });
+        }
+      };
+      sendToStaff();
+    } else if (importedData.type === "image") {
+      // Ảnh hợp đồng → trích xuất thông tin và đi tiếp bước 1
+      toast({
+        title: "Ảnh hợp đồng đã được tải lên",
+        description: "Vui lòng kiểm tra thông tin và tiếp tục quy trình.",
+      });
+      setStep(1); // bắt đầu quy trình 4 bước
+    }
+    else {
+      toast({
+        title: "Định dạng không được hỗ trợ",
+        description: "Vui lòng tải lên file PDF hoặc ảnh hợp đồng hợp lệ.",
+        variant: "destructive",
+      });
+    }
+  }, [importedData]);
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -364,7 +411,6 @@ export default function VehicleRegistration() {
     if (updated.length === 0) localStorage.removeItem("coOwners");
     else localStorage.setItem("coOwners", JSON.stringify(updated));
   };
-  const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
   const handleSubmit = async () => {
     if (totalOwnership !== 100) {
       toast({
@@ -526,7 +572,7 @@ export default function VehicleRegistration() {
   }
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* 🔹 Hiển thị thanh header và tiến trình cho tất cả các bước (0–4) */}
       <header className="bg-gradient-primary text-white p-4 shadow-glow">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -538,7 +584,9 @@ export default function VehicleRegistration() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold">Đăng ký xe điện</h1>
-              <p className="text-sm opacity-90">Quy trình đăng ký đồng sở hữu xe điện</p>
+              <p className="text-sm opacity-90">
+                Quy trình đăng ký đồng sở hữu xe điện
+              </p>
             </div>
           </div>
           <Car className="h-8 w-8" />
@@ -546,21 +594,25 @@ export default function VehicleRegistration() {
       </header>
 
       <div className="container mx-auto p-6">
-        {/* Progress */}
+        {/* 🔹 Tiến trình (có thêm Bước 0) */}
         <Card className="mb-6 shadow-elegant">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium">Bước {step} / 4</span>
-              <span
-                className="text-sm text-muted-foreground">{Math.round(getProgress())}% hoàn thành</span>
+              <span className="text-sm text-muted-foreground">
+                {Math.round(getProgress())}% hoàn thành
+              </span>
             </div>
             <Progress value={getProgress()} className="mb-4" />
             <div className="flex justify-between text-xs">
+              <span className={step === 0 ? "text-primary font-medium" : "text-muted-foreground"}>
+                Nhập hợp đồng
+              </span>
               <span className={isStepCompleted(1) ? "text-primary font-medium" : "text-muted-foreground"}>
                 Chọn xe
               </span>
               <span className={isStepCompleted(2) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Thông tin chủ sở hữu
+                Chủ sở hữu
               </span>
               <span className={isStepCompleted(3) ? "text-primary font-medium" : "text-muted-foreground"}>
                 Đồng sở hữu
@@ -572,314 +624,343 @@ export default function VehicleRegistration() {
           </CardContent>
         </Card>
 
-        {/* Step 1: Vehicle Selection */}
-        {step === 1 && (
+        {/* 🔹 Bước 0: Import hợp đồng */}
+        {step === 0 && (
           <Card className="shadow-elegant">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Car className="h-5 w-5" />
-                <span>Chọn xe điện</span>
+                <FileCheck className="h-5 w-5" />
+                <span>Nhập hợp đồng từ file</span>
               </CardTitle>
               <CardDescription>
-                Chọn mẫu xe điện bạn muốn tham gia đồng sở hữu
+                Tải lên hợp đồng đồng sở hữu xe (PDF hoặc ảnh).
+                Nếu là PDF sẽ gửi ngay cho nhân viên xác nhận, nếu là ảnh sẽ tiếp tục quy trình bên dưới.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {vehicles.map((vehicle) => (
-                  <div
-                    key={vehicle.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-elegant ${selectedVehicle === vehicle.id
-                      ? "border-primary bg-primary/5 shadow-elegant"
-                      : "border-border"
-                      }`}
-                    onClick={() => handleSelectVehicle(vehicle)}
-                  >
-                    <img
-                      src={vehicle.image}
-                      alt={vehicle.name}
-                      className="w-full h-48 object-cover rounded-md mb-4"
-                    />
-                    <h3 className="font-semibold mb-1">{vehicle.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Biển số: {vehicle.plateNo || "N/A"}
-                    </p>
-                    <p className="text-lg font-bold text-primary mb-3">{vehicle.price}</p>
-
-                    <div className="flex flex-wrap gap-2 text-sm">
-                      <Badge variant="secondary">{vehicle.brand}</Badge>
-                      <Badge variant="secondary">{vehicle.color}</Badge>
-                      <Badge variant="secondary">{vehicle.batteryCapacity} kWh</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ContractImport onFinish={setImportedData} />
 
               <div className="flex justify-end">
                 <Button
-                  onClick={() => setStep(2)}
-                  disabled={!selectedVehicle}
-                  className="bg-gradient-primary hover:shadow-glow"
+                  onClick={() => setStep(1)}
+                  variant="outline"
+                  disabled={!importedData || importedData.type !== "image"}
                 >
-                  Tiếp tục
+                  Tiếp tục quy trình
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
+      </div>
+      {/* Step 1: Vehicle Selection */}
+      {step === 1 && (
+        <Card className="shadow-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Car className="h-5 w-5" />
+              <span>Chọn xe điện</span>
+            </CardTitle>
+            <CardDescription>
+              Chọn mẫu xe điện bạn muốn tham gia đồng sở hữu
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {vehicles.map((vehicle) => (
+                <div
+                  key={vehicle.id}
+                  className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-elegant ${selectedVehicle === vehicle.id
+                    ? "border-primary bg-primary/5 shadow-elegant"
+                    : "border-border"
+                    }`}
+                  onClick={() => handleSelectVehicle(vehicle)}
+                >
+                  <img
+                    src={vehicle.image}
+                    alt={vehicle.name}
+                    className="w-full h-48 object-cover rounded-md mb-4"
+                  />
+                  <h3 className="font-semibold mb-1">{vehicle.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Biển số: {vehicle.plateNo || "N/A"}
+                  </p>
+                  <p className="text-lg font-bold text-primary mb-3">{vehicle.price}</p>
 
-        {/* Step 2: Owner Information */}
-        {step === 2 && (
-          <Card className="shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5" />
-                <span>Thông tin chủ sở hữu chính</span>
-              </CardTitle>
-              <CardDescription>
-                Người có tỷ lệ sở hữu cao nhất sẽ là chủ sở hữu chính
-              </CardDescription>
-            </CardHeader>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    <Badge variant="secondary">{vehicle.brand}</Badge>
+                    <Badge variant="secondary">{vehicle.color}</Badge>
+                    <Badge variant="secondary">{vehicle.batteryCapacity} kWh</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-            <CardContent className="space-y-6">
-              <FormikProvider value={formik}>
-                <Form onSubmit={formik.handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setStep(2)}
+                disabled={!selectedVehicle}
+                className="bg-gradient-primary hover:shadow-glow"
+              >
+                Tiếp tục
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                    {/* ✅ Chỉ giữ lại Email */}
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Field name="email">
-                        {({ field }: any) => (
-                          <Input
-                            {...field}
-                            id="email"
-                            type="email"
-                            placeholder="Nhập email"
-                            onBlur={async (e) => {
-                              field.onBlur(e);
-                              const user = await fetchUserByEmail(e.target.value);
-                              if (user) {
-                                formik.setValues(prev => ({
-                                  ...prev,
-                                  id: user.id || prev.id,
-                                  name: user.name || prev.name,
-                                  phone: user.phone || prev.phone,
-                                  idNumber: user.idNumber || prev.idNumber,
-                                  address: user.address || prev.address,
-                                  email: user.email || prev.email,
-                                }));
-                              }
-                            }}
-                          />
-                        )}
-                      </Field>
-                      <ErrorMessage name="email" component="div"
-                        className="text-red-500 text-sm" />
-                    </div>
+      {/* Step 2: Owner Information */}
+      {step === 2 && (
+        <Card className="shadow-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <User className="h-5 w-5" />
+              <span>Thông tin chủ sở hữu chính</span>
+            </CardTitle>
+            <CardDescription>
+              Người có tỷ lệ sở hữu cao nhất sẽ là chủ sở hữu chính
+            </CardDescription>
+          </CardHeader>
 
-                    {/* ✅ Chỉ giữ lại Ownership */}
-                    <div className="space-y-2">
-                      <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
-                      <div className="flex items-center space-x-2">
-                        <Field
-                          as={Input}
-                          id="ownership"
-                          name="ownership"
-                          type="number"
-                          min={15}
-                          max={90}
-                          className="flex-1"
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            let num = parseInt(e.target.value || "", 10);
-                            if (isNaN(num)) {
-                              formik.setFieldValue("ownership", "");
-                              return;
+          <CardContent className="space-y-6">
+            <FormikProvider value={formik}>
+              <Form onSubmit={formik.handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                  {/* ✅ Chỉ giữ lại Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Field name="email">
+                      {({ field }: any) => (
+                        <Input
+                          {...field}
+                          id="email"
+                          type="email"
+                          placeholder="Nhập email"
+                          onBlur={async (e) => {
+                            field.onBlur(e);
+                            const user = await fetchUserByEmail(e.target.value);
+                            if (user) {
+                              formik.setValues(prev => ({
+                                ...prev,
+                                id: user.id || prev.id,
+                                name: user.name || prev.name,
+                                phone: user.phone || prev.phone,
+                                idNumber: user.idNumber || prev.idNumber,
+                                address: user.address || prev.address,
+                                email: user.email || prev.email,
+                              }));
                             }
-                            if (num > 90) num = 90;
-                            formik.setFieldValue("ownership", num);
-                          }}
-                          onBlur={() => {
-                            let num = formik.values.ownership;
-                            if (num < 15) num = 15;
-                            formik.setFieldValue("ownership", num);
                           }}
                         />
-                        {selectedVehicle && (
-                          <div className="text-sm text-primary font-medium">
-                            {getOwnershipAmount(formik.values.ownership).toLocaleString()} VNĐ
-                          </div>
-                        )}
-                      </div>
-                      <ErrorMessage name="ownership" component="div"
-                        className="text-red-500 text-sm" />
-                    </div>
+                      )}
+                    </Field>
+                    <ErrorMessage name="email" component="div"
+                      className="text-red-500 text-sm" />
                   </div>
 
-                  {/* ✅ Chỉ giữ lại Address */}
+                  {/* ✅ Chỉ giữ lại Ownership */}
                   <div className="space-y-2">
-                    <Label htmlFor="address">Địa chỉ *</Label>
-                    <Field
-                      as={Textarea}
-                      id="address"
-                      name="address"
-                      placeholder="Nhập địa chỉ đầy đủ"
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                        const v = e.target.value;
-                        formik.setFieldValue("address", v);
-                      }}
-                    />
-                    <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
+                    <Label htmlFor="ownership">Tỷ lệ sở hữu (%) *</Label>
+                    <div className="flex items-center space-x-2">
+                      <Field
+                        as={Input}
+                        id="ownership"
+                        name="ownership"
+                        type="number"
+                        min={15}
+                        max={90}
+                        className="flex-1"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          let num = parseInt(e.target.value || "", 10);
+                          if (isNaN(num)) {
+                            formik.setFieldValue("ownership", "");
+                            return;
+                          }
+                          if (num > 90) num = 90;
+                          formik.setFieldValue("ownership", num);
+                        }}
+                        onBlur={() => {
+                          let num = formik.values.ownership;
+                          if (num < 15) num = 15;
+                          formik.setFieldValue("ownership", num);
+                        }}
+                      />
+                      {selectedVehicle && (
+                        <div className="text-sm text-primary font-medium">
+                          {getOwnershipAmount(formik.values.ownership).toLocaleString()} VNĐ
+                        </div>
+                      )}
+                    </div>
+                    <ErrorMessage name="ownership" component="div"
+                      className="text-red-500 text-sm" />
                   </div>
+                </div>
 
-                  <div className="flex justify-between mt-6">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Quay lại
-                    </Button>
-                    <Button type="submit" className="bg-gradient-primary hover:shadow-glow">
-                      Tiếp tục
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </div>
-                </Form>
-              </FormikProvider>
-            </CardContent>
-          </Card>
-        )}
+                {/* ✅ Chỉ giữ lại Address */}
+                <div className="space-y-2">
+                  <Label htmlFor="address">Địa chỉ *</Label>
+                  <Field
+                    as={Textarea}
+                    id="address"
+                    name="address"
+                    placeholder="Nhập địa chỉ đầy đủ"
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                      const v = e.target.value;
+                      formik.setFieldValue("address", v);
+                    }}
+                  />
+                  <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
+                </div>
+
+                <div className="flex justify-between mt-6">
+                  <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Quay lại
+                  </Button>
+                  <Button type="submit" className="bg-gradient-primary hover:shadow-glow">
+                    Tiếp tục
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </Form>
+            </FormikProvider>
+          </CardContent>
+        </Card>
+      )}
 
 
-        {/* Step 3: Co-owners */}
-        {step === 3 && (
-          <Card className="shadow-elegant">
+      {/* Step 3: Co-owners */}
+      {step === 3 && (
+        <Card className="shadow-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="h-5 w-5" />
+              <span>Thông tin đồng sở hữu</span>
+            </CardTitle>
+            <CardDescription>
+              Thêm thông tin các đồng sở hữu khác (tùy chọn)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-accent/50 p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-medium">Tổng tỷ lệ sở hữu:</span>
+                <span className="font-bold text-lg">{totalOwnership}%</span>
+              </div>
+              <Progress value={totalOwnership} className="h-2" />
+              <p className="text-sm text-muted-foreground mt-2">
+                Tổng tỷ lệ sở hữu phải bằng 100% để hoàn tất đăng ký
+              </p>
+            </div>
+
+            {coOwners.map((coOwner, index) => (
+              <CoOwnerForm
+                key={coOwner.id}
+                coOwner={coOwner}
+                index={index}
+                updateCoOwner={updateCoOwner}
+                removeCoOwner={removeCoOwner}
+                getOwnershipAmount={getOwnershipAmount}
+                selectedVehicle={selectedVehicle}
+                fetchUserByEmail={fetchUserByEmail}
+                mainOwnership={mainOwnership}
+              />
+            ))}
+
+            <Button
+              variant="outline"
+              onClick={addCoOwner}
+              disabled={totalOwnership >= 100}
+              className="w-full"
+            >
+              Thêm đồng sở hữu
+            </Button>
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(2)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Quay lại
+              </Button>
+              <Button
+                onClick={handleNextFromStep3}
+                className="bg-gradient-primary hover:shadow-glow"
+              >
+                Tiếp tục
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Confirmation */}
+      {step === 4 && (
+        <>
+          {console.log("Co-owners at step 4:", coOwners)}
+          < Card className="shadow-elegant">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
-                <span>Thông tin đồng sở hữu</span>
+                <FileCheck className="h-5 w-5" />
+                <span>Xác nhận thông tin đăng ký</span>
               </CardTitle>
               <CardDescription>
-                Thêm thông tin các đồng sở hữu khác (tùy chọn)
+                Vui lòng kiểm tra lại thông tin trước khi gửi đăng ký
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="bg-accent/50 p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Tổng tỷ lệ sở hữu:</span>
-                  <span className="font-bold text-lg">{totalOwnership}%</span>
-                </div>
-                <Progress value={totalOwnership} className="h-2" />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Tổng tỷ lệ sở hữu phải bằng 100% để hoàn tất đăng ký
-                </p>
+              {/* Vehicle Info */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Xe đã chọn</h3>
+                <p>{vehicles.find(v => v.id === selectedVehicle)?.name}</p>
               </div>
 
-              {coOwners.map((coOwner, index) => (
-                <CoOwnerForm
-                  key={coOwner.id}
-                  coOwner={coOwner}
-                  index={index}
-                  updateCoOwner={updateCoOwner}
-                  removeCoOwner={removeCoOwner}
-                  getOwnershipAmount={getOwnershipAmount}
-                  selectedVehicle={selectedVehicle}
-                  fetchUserByEmail={fetchUserByEmail}
-                  mainOwnership={mainOwnership}
-                />
-              ))}
+              {/* Owner Info */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Chủ sở hữu chính ({ownerInfo.ownership}%)</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>Họ tên: {ownerInfo.name}</div>
+                  <div>Email: {ownerInfo.email}</div>
+                  <div>Điện thoại: {ownerInfo.phone}</div>
+                  <div>CCCD: {ownerInfo.idNumber}</div>
+                </div>
+              </div>
 
-              <Button
-                variant="outline"
-                onClick={addCoOwner}
-                disabled={totalOwnership >= 100}
-                className="w-full"
-              >
-                Thêm đồng sở hữu
-              </Button>
+              {/* Co-owners */}
+              {coOwners.length > 0 && (
+                <div className="border rounded-lg p-4">
+                  {coOwners.map((coOwner) => (
+                    <div key={coOwner.id} className="mb-2 text-sm">
+                      <h3 className="font-semibold mb-2">Đồng sỡ hữu
+                        ({coOwner.ownership}%)</h3>
+                      <div>Họ tên:{coOwner.name}</div>
+                      <div>Email: {coOwner.email}</div>
+                      <div>Điện thoại: {coOwner.phone}</div>
+                      <div>CCCD: {coOwner.idNumber}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(2)}>
+                <Button variant="outline" onClick={() => setStep(3)}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Quay lại
                 </Button>
                 <Button
-                  onClick={handleNextFromStep3}
+                  onClick={handleSubmit}
                   className="bg-gradient-primary hover:shadow-glow"
                 >
-                  Tiếp tục
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Gửi đăng ký
                 </Button>
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Step 4: Confirmation */}
-        {step === 4 && (
-          <>
-            {console.log("Co-owners at step 4:", coOwners)}
-            < Card className="shadow-elegant">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <FileCheck className="h-5 w-5" />
-                  <span>Xác nhận thông tin đăng ký</span>
-                </CardTitle>
-                <CardDescription>
-                  Vui lòng kiểm tra lại thông tin trước khi gửi đăng ký
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Vehicle Info */}
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Xe đã chọn</h3>
-                  <p>{vehicles.find(v => v.id === selectedVehicle)?.name}</p>
-                </div>
-
-                {/* Owner Info */}
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Chủ sở hữu chính ({ownerInfo.ownership}%)</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Họ tên: {ownerInfo.name}</div>
-                    <div>Email: {ownerInfo.email}</div>
-                    <div>Điện thoại: {ownerInfo.phone}</div>
-                    <div>CCCD: {ownerInfo.idNumber}</div>
-                  </div>
-                </div>
-
-                {/* Co-owners */}
-                {coOwners.length > 0 && (
-                  <div className="border rounded-lg p-4">
-                    {coOwners.map((coOwner) => (
-                      <div key={coOwner.id} className="mb-2 text-sm">
-                        <h3 className="font-semibold mb-2">Đồng sỡ hữu
-                          ({coOwner.ownership}%)</h3>
-                        <div>Họ tên:{coOwner.name}</div>
-                        <div>Email: {coOwner.email}</div>
-                        <div>Điện thoại: {coOwner.phone}</div>
-                        <div>CCCD: {coOwner.idNumber}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setStep(3)}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Quay lại
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    className="bg-gradient-primary hover:shadow-glow"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Gửi đăng ký
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -320,7 +320,7 @@ export default function VehicleBooking() {
             await apiCall("/Schedule/register", "POST", {
                 startTime: toLocalDateTime(bookingForm.date, start),
                 endTime: toLocalDateTime(bookingForm.date, end),
-                status: "booked",
+                status: "BOOKED",
                 groupId: currentGroupId,
                 userId: currentUserId,
                 vehicleId: Number(bookingForm.vehicle),
