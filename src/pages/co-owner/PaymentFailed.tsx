@@ -20,7 +20,7 @@ const PaymentFailed = () => {
             <Card className="shadow-sm">
                 <CardContent className="pt-6 text-center space-y-4">
                     <div className="text-2xl font-bold">Thanh toán thất bại</div>
-                    <div className="text-muted-foreground">Vui lòng thử lại hoặc chọn phương thức khác.</div>
+                    <div className="text-muted-foreground">Vui lòng thử lại .</div>
                     <div className="flex gap-3 justify-center">
                         <Button onClick={() => navigate(-1)}>Thử lại</Button>
                         <Button variant="secondary" onClick={() => navigate("/")}>Về trang chủ</Button>
