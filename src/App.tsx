@@ -18,6 +18,8 @@ import NotFound from "./pages/NotFound";
 import Footer from "./components/ui/footnote";
 import ContractPreviewPage from "./pages/co-owner/ContractPage";
 import PDFContract from "./pages/co-owner/PDFContract";
+import PaymentSuccess from "./pages/co-owner/PaymentSuccess";
+import PaymentFailed from "./pages/co-owner/PaymentFailed";
 import { useEffect } from "react";
 const queryClient = new QueryClient();
 function TitleUpdater() {
@@ -59,6 +61,9 @@ const App = () => {
                         <Route path="/co-owner/groups" element={<MyGroups />} />
                         <Route path="/co-owner/groups/:groupId" element={<GroupDetail />} />
                         <Route path="/co-owner/contracts" element={<Contracts />} />
+                        {/* Payment return routes */}
+                        <Route path="/co-owner/payment-success" element={<PaymentSuccess />} />
+                        <Route path="/co-owner/payment-failed" element={<PaymentFailed />} />
                         {/* Staff routes */}
                         <Route path="/staff/dashboard" element={<StaffDashboard />} />
 
