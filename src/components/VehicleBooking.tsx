@@ -88,9 +88,10 @@ export default function VehicleBooking() {
 
     // ===== REFS & CONSTANTS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
+    const USE_MOCK = true; // bật DB ảo, không cần BE
     const beBaseUrl = "http://localhost:8080";
-    const currentUserId = Number(localStorage.getItem("userId"));
-    const token = localStorage.getItem("accessToken");
+    const currentUserId = USE_MOCK ? 2 : Number(localStorage.getItem("userId"));
+    const token = USE_MOCK ? null : localStorage.getItem("accessToken");
     const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
     // ===== HELPER FUNCTIONS =====
@@ -170,6 +171,7 @@ export default function VehicleBooking() {
 
     // ===== API FUNCTIONS =====
     const apiCall = async (endpoint: string, method: string = "GET", body?: any) => {
+        if (USE_MOCK) throw new Error("MOCK_MODE");
         const res = await fetch(`${beBaseUrl}${endpoint}`, {
             method,
             headers: getHeaders(),
@@ -182,6 +184,12 @@ export default function VehicleBooking() {
 
     const loadGroupId = async () => {
         try {
+            if (USE_MOCK) {
+                const mockGroupIds = [1];
+                localStorage.setItem("groupIds", JSON.stringify(mockGroupIds));
+                localStorage.setItem("groupId", String(mockGroupIds[0]));
+                return;
+            }
             const groupIds: number[] = await apiCall(`/groupMember/getGroupIdsByUserId?userId=${currentUserId}`);
             if (!groupIds || groupIds.length === 0) {
                 showToast("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
@@ -206,14 +214,24 @@ export default function VehicleBooking() {
             }
 
             const groupIds: number[] = JSON.parse(groupIdsStr);
-            const fetchPromises = groupIds.map(groupId =>
-                apiCall(`/Schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`).catch(() => null)
-            );
-
-            const allVehiclesData = await Promise.all(fetchPromises);
-            const vehiclesArr: Vehicle[] = allVehiclesData
-                .filter(data => data !== null)
-                .flatMap(data => Array.isArray(data) ? data : (data ? [data] : []));
+            let vehiclesArr: Vehicle[] = [];
+            if (USE_MOCK) {
+                // DB ảo: danh sách xe mẫu theo group
+                const mockAll: Vehicle[] = [
+                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8", color: "White", batteryCapacity: 82, price: 0, imageUrl: null, createdAt: new Date().toISOString(), groupId: 1, groupName: "Nhóm HCM - Q1" },
+                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric", color: "Blue", batteryCapacity: 64, price: 0, imageUrl: null, createdAt: new Date().toISOString(), groupId: 1, groupName: "Nhóm HCM - Q1" },
+                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3", color: "Black", batteryCapacity: 60, price: 0, imageUrl: null, createdAt: new Date().toISOString(), groupId: 2, groupName: "Nhóm HN - Cầu Giấy" },
+                ];
+                vehiclesArr = mockAll.filter(v => groupIds.includes(v.groupId));
+            } else {
+                const fetchPromises = groupIds.map(groupId =>
+                    apiCall(`/Schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`).catch(() => null)
+                );
+                const allVehiclesData = await Promise.all(fetchPromises);
+                vehiclesArr = allVehiclesData
+                    .filter(data => data !== null)
+                    .flatMap(data => Array.isArray(data) ? data : (data ? [data] : []));
+            }
 
             setVehicles(vehiclesArr);
             if (vehiclesArr.length === 0) setVehiclesError("Các nhóm chưa có xe nào");
@@ -233,46 +251,60 @@ export default function VehicleBooking() {
             if (!groupIdsStr) throw new Error("Không tìm thấy groupIds trong localStorage");
 
             const groupIds: number[] = JSON.parse(groupIdsStr);
-            const fetchPromises = groupIds.map(groupId => apiCall(`/Schedule/group/${groupId}`));
-            const allBookingsArrays = await Promise.all(fetchPromises);
-            const data = allBookingsArrays.flat();
-
-            if (!Array.isArray(data)) throw new Error("API trả về không phải array");
-
-            const formattedBookings: BookingSlot[] = data
-                .map((item: any) => {
-                    if (!item.startTime || !item.endTime || !item.vehicleId) return null;
-
-                    const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    });
-                    const endTime = new Date(item.endTime).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    });
-                    const date = new Date(item.startTime).toISOString().split('T')[0];
+            let formattedBookings: BookingSlot[] = [];
+            if (USE_MOCK) {
+                const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
+                const filtered = raw.filter((r: any) => groupIds.includes(r.groupId));
+                formattedBookings = filtered.map((item: any) => {
+                    const start = new Date(item.startTime);
+                    const end = new Date(item.endTime);
+                    const date = start.toISOString().split('T')[0];
+                    const startTime = start.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
+                    const endTime = end.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
                     const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
-
-                    if (!vehicle) return null;
-
                     return {
                         scheduleId: item.scheduleId,
                         time: `${startTime}-${endTime}`,
                         date,
-                        brand: vehicle.brand,
-                        model: vehicle.model,
+                        brand: vehicle?.brand || "Xe",
+                        model: vehicle?.model || "",
                         vehicleId: item.vehicleId,
-                        bookedBy: item.userName,
+                        bookedBy: item.userName || "Bạn",
                         userId: item.userId,
                         groupId: item.groupId,
                         status: item.status,
-                        ownershipPercentage: item.ownershipPercentage
+                        ownershipPercentage: item.ownershipPercentage ?? 50
                     };
-                })
-                .filter((item): item is BookingSlot => item !== null);
+                });
+            } else {
+                const fetchPromises = groupIds.map(groupId => apiCall(`/Schedule/group/${groupId}`));
+                const allBookingsArrays = await Promise.all(fetchPromises);
+                const data = allBookingsArrays.flat();
+                if (!Array.isArray(data)) throw new Error("API trả về không phải array");
+                formattedBookings = data
+                    .map((item: any) => {
+                        if (!item.startTime || !item.endTime || !item.vehicleId) return null;
+                        const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
+                        const endTime = new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
+                        const date = new Date(item.startTime).toISOString().split('T')[0];
+                        const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
+                        if (!vehicle) return null;
+                        return {
+                            scheduleId: item.scheduleId,
+                            time: `${startTime}-${endTime}`,
+                            date,
+                            brand: vehicle.brand,
+                            model: vehicle.model,
+                            vehicleId: item.vehicleId,
+                            bookedBy: item.userName,
+                            userId: item.userId,
+                            groupId: item.groupId,
+                            status: item.status,
+                            ownershipPercentage: item.ownershipPercentage
+                        };
+                    })
+                    .filter((item): item is BookingSlot => item !== null);
+            }
 
             setExistingBookings(formattedBookings);
         } catch (e: any) {
@@ -317,14 +349,32 @@ export default function VehicleBooking() {
             const currentGroupId = localStorage.getItem("groupId");
             const [start, end] = bookingForm.time.split("-");
 
-            await apiCall("/Schedule/register", "POST", {
-                startTime: toLocalDateTime(bookingForm.date, start),
-                endTime: toLocalDateTime(bookingForm.date, end),
-                status: "BOOKED",
-                groupId: currentGroupId,
-                userId: currentUserId,
-                vehicleId: Number(bookingForm.vehicle),
-            });
+            if (USE_MOCK) {
+                const storeKey = "mockSchedules";
+                const list = JSON.parse(localStorage.getItem(storeKey) || "[]");
+                const scheduleId = Date.now();
+                list.push({
+                    scheduleId,
+                    startTime: toLocalDateTime(bookingForm.date, start),
+                    endTime: toLocalDateTime(bookingForm.date, end),
+                    status: "BOOKED",
+                    groupId: Number(currentGroupId),
+                    userId: currentUserId,
+                    vehicleId: Number(bookingForm.vehicle),
+                    ownershipPercentage: 50,
+                    userName: "Bạn",
+                });
+                localStorage.setItem(storeKey, JSON.stringify(list));
+            } else {
+                await apiCall("/Schedule/register", "POST", {
+                    startTime: toLocalDateTime(bookingForm.date, start),
+                    endTime: toLocalDateTime(bookingForm.date, end),
+                    status: "BOOKED",
+                    groupId: currentGroupId,
+                    userId: currentUserId,
+                    vehicleId: Number(bookingForm.vehicle),
+                });
+            }
 
             await loadBookings();
             const groupId = Number(localStorage.getItem("groupId"));
@@ -342,7 +392,14 @@ export default function VehicleBooking() {
 
     const handleCancelBooking = async (scheduleId: number) => {
         try {
-            await apiCall(`/Schedule/delete/${scheduleId}`, "DELETE");
+            if (USE_MOCK) {
+                const storeKey = "mockSchedules";
+                const list = JSON.parse(localStorage.getItem(storeKey) || "[]");
+                const updated = list.map((b: any) => b.scheduleId === scheduleId ? {...b, status: "canceled"} : b);
+                localStorage.setItem(storeKey, JSON.stringify(updated));
+            } else {
+                await apiCall(`/Schedule/delete/${scheduleId}`, "DELETE");
+            }
             await loadBookings();
             showToast("Đã hủy lịch", "Lịch đặt xe đã được hủy thành công");
         } catch (e: any) {
@@ -392,13 +449,27 @@ export default function VehicleBooking() {
             validateTimeRange(editForm.date, start, end);
 
             const currentGroupId = localStorage.getItem("groupId");
-            await apiCall(`/Schedule/update/${editForm.bookingId}`, "PUT", {
-                startTime: toLocalDateTime(editForm.date, start),
-                endTime: toLocalDateTime(editForm.date, end),
-                groupId: currentGroupId,
-                userId: currentUserId,
-                vehicleId: Number(editForm.vehicle),
-            });
+            if (USE_MOCK) {
+                const storeKey = "mockSchedules";
+                const list = JSON.parse(localStorage.getItem(storeKey) || "[]");
+                const updated = list.map((b: any) => b.scheduleId === editForm.bookingId ? {
+                    ...b,
+                    startTime: toLocalDateTime(editForm.date, start),
+                    endTime: toLocalDateTime(editForm.date, end),
+                    groupId: Number(currentGroupId),
+                    userId: currentUserId,
+                    vehicleId: Number(editForm.vehicle)
+                } : b);
+                localStorage.setItem(storeKey, JSON.stringify(updated));
+            } else {
+                await apiCall(`/Schedule/update/${editForm.bookingId}`, "PUT", {
+                    startTime: toLocalDateTime(editForm.date, start),
+                    endTime: toLocalDateTime(editForm.date, end),
+                    groupId: currentGroupId,
+                    userId: currentUserId,
+                    vehicleId: Number(editForm.vehicle),
+                });
+            }
 
             await loadBookings();
             const groupId = Number(localStorage.getItem("groupId"));
@@ -534,8 +605,16 @@ export default function VehicleBooking() {
                                             const shouldDim = isOthersBooking && noOverrideLeft;
 
                                             return (
-                                                <div key={b.scheduleId}
-                                                     className="flex items-center gap-3 px-3 py-2 rounded border bg-gray-50 text-xs">
+                                                <div
+                                                    key={b.scheduleId}
+                                                    className="flex items-center gap-3 px-3 py-2 rounded border bg-gray-50 text-xs cursor-pointer hover:bg-gray-100"
+                                                    title="Bấm để điền nhanh giờ bắt đầu/kết thúc"
+                                                    onClick={() => {
+                                                        const [s, e] = (b.time || "").split('-');
+                                                        setForm(prev => ({...prev, startTime: s || "", endTime: e || ""}));
+                                                    }}
+                                                >
+                                                    <span className="text-gray-700">{b.date}</span>
                                                     <span className="font-semibold text-blue-700">{b.time}</span>
                                                     <span className="text-gray-700">{b.brand} {b.model}</span>
                                                     <span className="text-gray-500">Người đặt: {b.bookedBy}</span>
@@ -895,7 +974,7 @@ export default function VehicleBooking() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    {booking.userId === currentUserId && booking.status === "booked" && (
+                                                    {booking.userId === currentUserId && (booking.status === "BOOKED" || booking.status === "booked") && (
                                                         <>
                                                             <Button size="sm" variant="outline"
                                                                     onClick={() => handleEditBooking(booking.scheduleId)}

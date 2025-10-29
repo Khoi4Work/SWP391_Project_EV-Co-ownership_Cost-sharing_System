@@ -15,6 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ChatBox from "@/components/ChatBox";
 import UserDropdown from "@/components/UserDropdown";
 import VehicleBooking from "@/components/VehicleBooking";
+import ScheduleCards from "@/components/ScheduleCards";
 import { useEffect, useState } from "react";
 import axiosClient from "@/api/axiosClient";
 
@@ -130,6 +131,9 @@ export default function CoOwnerDashboard() {
 
                 {/* Vehicle Booking */}
                 <VehicleBooking />
+
+                {/* Schedule list + Check-in/out */}
+                <ScheduleCards />
 
                 {/* Registration History */}
                 <Card className="shadow-elegant">
