@@ -33,7 +33,7 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = true; // bật để test không cần BE
+const USE_MOCK = false; // tắt mock, dùng BE thật
 
 function formatDateTime(iso?: string) {
     if (!iso) return "-";

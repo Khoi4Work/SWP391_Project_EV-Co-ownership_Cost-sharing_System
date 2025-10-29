@@ -88,7 +88,7 @@ export default function VehicleBooking() {
 
     // ===== REFS & CONSTANTS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
-    const USE_MOCK = true; // bật DB ảo, không cần BE
+    const USE_MOCK = false; // tắt DB ảo, dùng BE thật
     const beBaseUrl = "http://localhost:8080";
     const currentUserId = USE_MOCK ? 2 : Number(localStorage.getItem("userId"));
     const token = USE_MOCK ? null : localStorage.getItem("accessToken");
@@ -171,7 +171,7 @@ export default function VehicleBooking() {
 
     // ===== API FUNCTIONS =====
     const apiCall = async (endpoint: string, method: string = "GET", body?: any) => {
-        if (USE_MOCK) throw new Error("MOCK_MODE");
+        // gọi BE thật
         const res = await fetch(`${beBaseUrl}${endpoint}`, {
             method,
             headers: getHeaders(),
