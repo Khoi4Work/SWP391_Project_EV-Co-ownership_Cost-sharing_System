@@ -138,6 +138,16 @@ public class APIExceptionHandler {
         return ResponseEntity.status(404).body("No members found in the group!"); // 404 Not Found
     }
 
+    @ExceptionHandler(DecisionVoteNotFoundException.class)
+    public ResponseEntity handleDecisionVoteNotFoundException(DecisionVoteNotFoundException ex) {
+        return ResponseEntity.status(404).body("No decision found in the group!"); // 404 Not Found
+    }
+
+    @ExceptionHandler(DecisionVoteDetailNotFoundException.class)
+    public ResponseEntity handleDecisionVoteDetailNotFoundException(DecisionVoteDetailNotFoundException ex) {
+        return ResponseEntity.status(404).body("No voter of decision found in the group!"); // 404 Not Found
+    }
+
 
     // ==========================
     // Duplicate Data Exceptions

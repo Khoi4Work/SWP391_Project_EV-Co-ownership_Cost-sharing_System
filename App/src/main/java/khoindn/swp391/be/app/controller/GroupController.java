@@ -2,11 +2,13 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
+import khoindn.swp391.be.app.pojo.DecisionVote;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.AuthenticationService;
@@ -57,28 +59,16 @@ public class GroupController {
         if (user == null) {
             return ResponseEntity.status(401).body("Unauthorized");
         }
-        try{
+        try {
             iGroupService.createRequestGroup(request, user);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.getMessage();
         }
 
         return ResponseEntity.status(201).body("Created Request Successfully");
     }
 
-    @PostMapping("/decision/group/{id}")
-    public ResponseEntity createDecision(@PathVariable int groupId, @RequestBody DecisionVoteReq request) {
-        Users user = authenticationService.getCurrentAccount();
-        GroupMember isInGroup = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(user.getId(), groupId);
-        if (isInGroup == null) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
 
-
-
-        return ResponseEntity.status(201).body("Created Decision Successfully");
-
-    }
 
 
 }

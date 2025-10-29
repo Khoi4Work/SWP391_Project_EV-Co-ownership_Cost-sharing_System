@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusRequestGroup;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,7 +21,7 @@ public class RequestGroup {
 
     private String nameRequestGroup;
     private String descriptionRequestGroup = "No description";
-    private String statusRequestGroup = "pending"; // pending, approved, rejected
+    private StatusRequestGroup status = StatusRequestGroup.PENDING; // pending, approved, rejected
     private LocalDateTime createdAt = LocalDateTime.now();
 
     //relationships

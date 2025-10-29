@@ -8,10 +8,14 @@ import khoindn.swp391.be.app.model.Response.OverrideInfoRes;
 import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +41,8 @@ public class ScheduleService implements IScheduleService {
     private IGroupRepository iGroupRepository;
     @Autowired
     private IVehicleRepository iVehicleRepository;
+    @Autowired
+    private TemplateEngine templateEngine;
 
     @Override
     public ScheduleRes createSchedule(ScheduleReq req) {
@@ -63,7 +69,7 @@ public class ScheduleService implements IScheduleService {
         Schedule schedule = new Schedule();
         schedule.setStartTime(req.getStartTime());
         schedule.setEndTime(req.getEndTime());
-        schedule.setStatus("booked");
+        schedule.setStatus(StatusSchedule.BOOKED);
         schedule.setGroupMember(gm);
 
         Schedule saved = iScheduleRepository.save(schedule);
@@ -80,7 +86,7 @@ public class ScheduleService implements IScheduleService {
     @Override
     public List<ScheduleRes> getAllSchedules() {
         return iScheduleRepository.findAll().stream()
-                .filter(s -> !s.getStatus().equals("override_tracker"))
+                .filter(s -> !s.getStatus().equals(StatusSchedule.OVERRIDE_TRACKER))
                 .map(s -> {
                     ScheduleRes res = modelMapper.map(s, ScheduleRes.class);
                     res.setUserId(s.getGroupMember().getUsers().getId());
@@ -161,7 +167,7 @@ public class ScheduleService implements IScheduleService {
                 .orElseThrow(() -> new RuntimeException("Schedule not found"));
 
         // Đổi status thay vì delete
-        schedule.setStatus("canceled");
+        schedule.setStatus(StatusSchedule.CANCELED);
         iScheduleRepository.save(schedule);
     }
 
@@ -173,7 +179,7 @@ public class ScheduleService implements IScheduleService {
         List<Schedule> schedules = iScheduleRepository.findByGroupMember_Group_GroupId(groupId);
 
         return schedules.stream()
-                .filter(s -> !s.getStatus().equals("override_tracker"))
+                .filter(s -> !s.getStatus().equals(StatusSchedule.OVERRIDE_TRACKER))
                 .map(schedule -> {
                     ScheduleRes res = modelMapper.map(schedule, ScheduleRes.class);
                     res.setUserId(schedule.getGroupMember().getUsers().getId());
@@ -216,7 +222,7 @@ public class ScheduleService implements IScheduleService {
         long overrideCount = iScheduleRepository
                 .countByGroupMember_IdAndStatusAndCreatedAtBetween(
                         gm.getId(),
-                        "override_tracker",
+                        StatusSchedule.OVERRIDE_TRACKER,
                         startOfMonth,
                         endOfMonth
                 );
@@ -234,63 +240,29 @@ public class ScheduleService implements IScheduleService {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-            String emailContent = String.format(
-                    "<html>" +
-                            "<head>" +
-                            "<style>" +
-                            "body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }" +
-                            ".container { max-width: 600px; margin: 0 auto; padding: 20px; }" +
-                            ".header { background-color: #f44336; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }" +
-                            ".content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 5px 5px; }" +
-                            ".info-box { background-color: white; padding: 15px; margin: 15px 0; border-left: 4px solid #f44336; }" +
-                            ".label { color: #666; font-size: 14px; }" +
-                            ".value { color: #333; font-weight: bold; font-size: 16px; }" +
-                            ".footer { text-align: center; margin-top: 20px; color: #999; font-size: 12px; }" +
-                            "</style>" +
-                            "</head>" +
-                            "<body>" +
-                            "<div class='container'>" +
-                            "<div class='header'>" +
-                            "<h2 style='margin: 0;'>Thông Báo Lịch Bị Chèn</h2>" +
-                            "</div>" +
-                            "<div class='content'>" +
-                            "<p>Xin chào <strong>%s</strong>,</p>" +
-                            "<p>Lịch đặt xe của bạn đã bị chèn bởi chủ xe.</p>" +
-                            "<div class='info-box'>" +
-                            "<div class='label'>Thời gian:</div>" +
-                            "<div class='value'>%s - %s</div>" +
-                            "</div>" +
-                            "<div class='info-box'>" +
-                            "<div class='label'>Email người chèn lịch:</div>" +
-                            "<div class='value'>%s</div>" +
-                            "</div>" +
-                            "<p>Vui lòng liên hệ với chủ xe để được hỗ trợ thêm.</p>" +
-                            "</div>" +
-                            "<div class='footer'>" +
-                            "<p>Email này được gửi tự động. Vui lòng không trả lời.</p>" +
-                            "</div>" +
-                            "</div>" +
-                            "</body>" +
-                            "</html>",
-                    affectedUser.getHovaTen(),
-                    canceledSchedule.getStartTime().format(formatter),
-                    canceledSchedule.getEndTime().format(formatter),
-                    overridingUser.getUsername()
-            );
+            // Tạo Thymeleaf Context và set variables
+            Context context = new Context();
+            context.setVariable("fullName", affectedUser.getHovaTen());
+            context.setVariable("startTime", canceledSchedule.getStartTime().format(formatter));
+            context.setVariable("endTime", canceledSchedule.getEndTime().format(formatter));
+            context.setVariable("overridingUserEmail", overridingUser.getUsername());
 
+            // Process template với Thymeleaf
+            String htmlContent = templateEngine.process("scheduleOverrideNotification", context);
+
+            // Tạo EmailDetailReq
             EmailDetailReq contentSender = new EmailDetailReq();
             contentSender.setEmail(affectedUser.getEmail());
             contentSender.setSubject("[EcoShare] Thông báo chèn lịch");
-            contentSender.setContent(emailContent);
-            contentSender.setUrl(null);
+            contentSender.setTemplate(htmlContent);
 
             emailService.sendEmail(contentSender);
 
         } catch (Exception e) {
             System.err.println("❌ Failed to send email: " + e.getMessage());
         }
-
     }
+
 
     // --------------------------------------------------------------------------
     // Function to use in create and update schedule
@@ -316,12 +288,12 @@ public class ScheduleService implements IScheduleService {
         List<Schedule> conflictingSchedules = iScheduleRepository
                 .findByGroupMember_Group_GroupId(groupId)
                 .stream()
-                .filter(s -> !s.getStatus().equals("canceled") &&
-                        !s.getStatus().equals("overridden") &&
-                        !s.getStatus().equals("override_tracker"))
+                .filter(s -> !s.getStatus().equals(StatusSchedule.CANCELED) &&
+                        !s.getStatus().equals(StatusSchedule.OVERRIDDEN) &&
+                        !s.getStatus().equals(StatusSchedule.OVERRIDE_TRACKER))
                 .filter(s -> excludeScheduleId == null || s.getScheduleId() != excludeScheduleId) // Exclude current schedule if updating
                 .filter(s -> s.getStartTime().isBefore(endTime) && s.getEndTime().isAfter(startTime))
-                .collect(Collectors.toList());
+                .toList();
 
         // Handle conflicts with ownership priority
         if (!conflictingSchedules.isEmpty()) {
@@ -371,7 +343,7 @@ public class ScheduleService implements IScheduleService {
         long overrideCount = iScheduleRepository
                 .countByGroupMember_IdAndStatusAndCreatedAtBetween(
                         gm.getId(),
-                        "override_tracker",
+                        StatusSchedule.OVERRIDE_TRACKER,
                         startOfMonth,
                         endOfMonth
                 );
@@ -402,13 +374,13 @@ public class ScheduleService implements IScheduleService {
 
     private void overrideSchedule(Schedule conflictSchedule, GroupMember overridingGm, Users overridingUser) {
         // Mark existing schedule as overridden
-        conflictSchedule.setStatus("overridden");
+        conflictSchedule.setStatus(StatusSchedule.OVERRIDDEN);
         iScheduleRepository.save(conflictSchedule);
 
         // Create override tracker
         Schedule tracker = new Schedule();
         tracker.setGroupMember(overridingGm);
-        tracker.setStatus("override_tracker");
+        tracker.setStatus(StatusSchedule.OVERRIDE_TRACKER);
         tracker.setStartTime(LocalDateTime.now());
         tracker.setEndTime(LocalDateTime.now());
         tracker.setCreatedAt(LocalDateTime.now());

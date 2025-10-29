@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -38,6 +39,10 @@ public class ContractController {
     private IVehicleService iVehicleService;
     @Autowired
     private IEmailService iEmailService;
+    @Autowired
+    private SupabaseService supabaseService;
+    @Autowired
+    private ISupabaseService iSupabaseService;
 
     // Lấy contract
     @GetMapping("/user/{id}")
@@ -168,5 +173,26 @@ public class ContractController {
         return ResponseEntity.status(200).body(renderContractRes);
     }
 
+    @PostMapping("/upload")
+    public ResponseEntity upload(@RequestParam("file") MultipartFile file) {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(403).body("User is not logged in");
+        }
+//        }else if (!user.getRole().getRoleName().equalsIgnoreCase("co-owner")){
+//            return ResponseEntity.status(403).body("Invalid role");
+//        }
+        try {
+            return ResponseEntity.status(200).body(supabaseService.uploadFile(file));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload thất bại: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/file")
+    public ResponseEntity getFileByName(String fileName) {
+        return ResponseEntity.status(200).body(iSupabaseService.getFileUrl(fileName));
+    }
 
 }

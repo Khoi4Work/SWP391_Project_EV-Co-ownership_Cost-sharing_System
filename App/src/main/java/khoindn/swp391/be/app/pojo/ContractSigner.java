@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.pojo;
 import jakarta.persistence.*;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo._enum.DecisionContractSigner;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,8 @@ public class ContractSigner {
 
 
     @Column(name = "decision")
-    private String decision = "pending"; // pending | signed | declined
+    @Enumerated(EnumType.STRING)
+    private DecisionContractSigner decision = DecisionContractSigner.PENDING; // pending | signed | declined
 
     @Column(name = "signed_at")
     private LocalDateTime signedAt;

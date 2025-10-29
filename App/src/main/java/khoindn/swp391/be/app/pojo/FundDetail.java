@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusFundDetail;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,7 +23,7 @@ public class FundDetail {
     @Column(name = "transaction_type", length = 20, nullable = false)
     private String transactionType;
     @Column(name = "status", length = 20, nullable = false)
-    private String status = "PENDING";
+    private StatusFundDetail status = StatusFundDetail.PENDING;
     @ManyToOne
     @JoinColumn(name = "fund_id", nullable = false)
     private CommonFund commonFund;

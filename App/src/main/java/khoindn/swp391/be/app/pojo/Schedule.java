@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.pojo;
 
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -18,7 +19,8 @@ public class Schedule {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     @Column(nullable = false)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private StatusSchedule status;
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

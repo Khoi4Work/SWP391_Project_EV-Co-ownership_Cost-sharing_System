@@ -9,6 +9,7 @@ import khoindn.swp391.be.app.model.Response.CheckInResponse;
 import khoindn.swp391.be.app.pojo.CheckIn;
 import khoindn.swp391.be.app.pojo.Schedule;
 import khoindn.swp391.be.app.pojo.Vehicle;
+import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 import khoindn.swp391.be.app.repository.ICheckInRepository;
 import khoindn.swp391.be.app.repository.IScheduleRepository;
 import khoindn.swp391.be.app.repository.IVehicleRepository;
@@ -58,7 +59,7 @@ public class CheckInService implements ICheckInService {
                     )
             );
         }
-        if (!schedule.getStatus().equals("booked")) {
+        if (!schedule.getStatus().equals(StatusSchedule.BOOKED)) {
             throw new InvalidScheduleStatusException(
                     "Schedule không ở trạng thái booked. "
             );
@@ -79,7 +80,7 @@ public class CheckInService implements ICheckInService {
         // set schedule info
         response.setScheduleStartTime(schedule.getStartTime());
         response.setScheduleEndTime(schedule.getEndTime());
-        response.setScheduleStatus(schedule.getStatus());
+        response.setScheduleStatus(schedule.getStatus().name());
         // set vehicle info
         Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
         response.setVehicleName(vehicle.getBrand() + " " + vehicle.getModel());

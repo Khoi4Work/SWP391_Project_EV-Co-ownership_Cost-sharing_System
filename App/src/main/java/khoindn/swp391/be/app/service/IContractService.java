@@ -37,4 +37,8 @@ public interface IContractService {
 
     public void SendWaitingConfirmedContract(int contractId);
 
+    public void sendDeclinedContractNotification(int contractId);
+
+    public void verifyContract(int contractId, int decision);
+
 }

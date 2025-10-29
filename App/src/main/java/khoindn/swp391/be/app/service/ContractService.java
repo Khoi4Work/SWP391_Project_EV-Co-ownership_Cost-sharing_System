@@ -1,13 +1,16 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
+import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.model.Response.ContractPendingRes;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.DecisionContractSigner;
 import khoindn.swp391.be.app.pojo._enum.StatusContract;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
@@ -15,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -92,7 +94,7 @@ public class ContractService implements IContractService {
             // Cập nhật decision
             if (req.getIdChoice() == 1) {
 
-                contractSigner.setDecision("Signed");
+                contractSigner.setDecision(DecisionContractSigner.SIGNED);
 
                 // Kiểm tra privateKey và publicKey có khớp không
 
@@ -127,7 +129,7 @@ public class ContractService implements IContractService {
                 contractSigner.setSignedAt(LocalDateTime.now());
 
             } else if (req.getIdChoice() == 0) {
-                contractSigner.setDecision("Declined");
+                contractSigner.setDecision(DecisionContractSigner.DECLINED);
             } else {
                 throw new IllegalArgumentException("Invalid choice value");
             }
@@ -138,11 +140,11 @@ public class ContractService implements IContractService {
                     iContractSignerRepository.findByContract_ContractId(req.getIdContract());
 
             boolean anyDeclined = allSigners.stream().anyMatch(
-                    s -> "Declined".equalsIgnoreCase(s.getDecision()));
+                    s -> DecisionContractSigner.DECLINED.equals(s.getDecision()));
             boolean allSigned = allSigners.stream().allMatch(
-                    s -> "Signed".equalsIgnoreCase(s.getDecision()));
+                    s -> DecisionContractSigner.SIGNED.equals(s.getDecision()));
             boolean stillPending = allSigners.stream().anyMatch(
-                    s -> "Pending".equalsIgnoreCase(s.getDecision()));
+                    s -> DecisionContractSigner.PENDING.equals(s.getDecision()));
 
             Contract contract = contractSigner.getContract();
 
@@ -191,7 +193,6 @@ public class ContractService implements IContractService {
 
             contractSigner.setContract(contract);
             contractSigner.setUser(users);
-            contractSigner.setDecision("Pending");
             iContractSignerRepository.save(contractSigner);
 
             signerList.add(contractSigner);
@@ -289,10 +290,62 @@ public class ContractService implements IContractService {
                     helper.setSubject("[EcoShare System] Send E-Contract to User");
                     helper.setText(content, true);
                     javaMailSender.send(message);
-                } catch (Exception e) {
-                    e.getMessage();
+                } catch (MessagingException e) {
+                    throw new RuntimeException(e.getMessage());
                 }
             }
+        }
+    }
+
+    @Override
+    public void sendDeclinedContractNotification(int contractId) {
+        List<ContractSigner> signerList = getContractSignerByContractId(contractId);
+
+        Contract contract = getContractByContractId(contractId);
+
+        if (contract.getStatus().equals(StatusContract.DECLINED)) {
+            for (ContractSigner signer : signerList) {
+                // ✅ TẠO TOKEN RIÊNG CHO USER
+                String token = tokenService.generateToken(signer.getUser());
+                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
+                // SEND MULTIPLE USERS
+                try {
+                    MimeMessage message = javaMailSender.createMimeMessage();
+                    MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+                    Context context = new Context();
+                    context.setVariable("secureUrl", secureUrl);
+
+                    String content = templateEngine.process("contract_decline", context);
+
+                    helper.setTo(signer.getUser().getEmail());
+                    helper.setSubject("[EcoShare System] Send E-Contract to User");
+                    helper.setText(content, true);
+                    javaMailSender.send(message);
+                } catch (MessagingException e) {
+                    throw new RuntimeException(e.getMessage());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void verifyContract(int contractId, int decision) {
+        Contract contract = getContractByContractId(contractId);
+        if (contract == null || !contract.getStatus().equals(StatusContract.PENDING_REVIEW)) {
+            throw new ContractNotExistedException("Contract cannot found or invalid status!");
+        }
+        if (decision == 1) {
+            contract.setStatus(StatusContract.WAITING_CONFIRMATION);
+            iContractRepository.save(contract);
+            SendWaitingConfirmedContract(contractId);
+        } else if (decision == 0) {
+            contract.setStatus(StatusContract.DECLINED);
+            contract.setEndDate(LocalDate.now());
+            iContractRepository.save(contract);
+            sendDeclinedContractNotification(contractId);
+        } else {
+            throw new UndefinedChoiceException("Invalid decision value");
         }
     }
 

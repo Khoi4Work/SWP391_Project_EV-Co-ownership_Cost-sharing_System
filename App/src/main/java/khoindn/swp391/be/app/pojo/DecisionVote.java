@@ -1,11 +1,14 @@
 package khoindn.swp391.be.app.pojo;
 
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusDecisionVote;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -22,7 +25,8 @@ public class DecisionVote{
     @Column(name = "description")
     private String description;
     @Column(name = "status")
-    private String status = "pending"; // pending, approved, rejected
+    @Enumerated(EnumType.STRING)
+    private StatusDecisionVote status = StatusDecisionVote.PENDING;
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -30,4 +34,7 @@ public class DecisionVote{
     @ManyToOne
     @JoinColumn(name = "created_by")
     private GroupMember createdBy;
+
+    @OneToMany(mappedBy = "decisionVote")
+    List<DecisionVoteDetail> decisionVoteDetails = new ArrayList<>();
 }

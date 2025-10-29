@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.pojo.CommonFund;
 import khoindn.swp391.be.app.pojo.FundDetail;
 import khoindn.swp391.be.app.pojo.GroupMember;
+import khoindn.swp391.be.app.pojo._enum.StatusFundDetail;
 import khoindn.swp391.be.app.repository.ICommonFundRepository;
 import khoindn.swp391.be.app.repository.IFundDetailRepository;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
@@ -114,7 +115,7 @@ public class PaymentService {
         fundDetail.setAmount(amount);
         fundDetail.setCommonFund(commonFund);
         fundDetail.setTransactionType("DEPOSIT");
-        fundDetail.setStatus("COMPLETED");
+        fundDetail.setStatus(StatusFundDetail.COMPLETED);
         fundDetail.setGroupMember(groupMember);
         fundDetailRepository.save(fundDetail);
         // update balance

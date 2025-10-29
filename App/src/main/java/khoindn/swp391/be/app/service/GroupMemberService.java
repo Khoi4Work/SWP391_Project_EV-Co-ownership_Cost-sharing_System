@@ -1,17 +1,18 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
+import khoindn.swp391.be.app.exception.exceptions.DecisionVoteDetailNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.DecisionVoteNotFoundException;
 import khoindn.swp391.be.app.exception.exceptions.RequestGroupNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
+import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
-import khoindn.swp391.be.app.pojo.Group;
-import khoindn.swp391.be.app.pojo.GroupMember;
-import khoindn.swp391.be.app.pojo.RequestGroup;
-import khoindn.swp391.be.app.pojo.Users;
-import khoindn.swp391.be.app.repository.IGroupMemberRepository;
-import khoindn.swp391.be.app.repository.IGroupRepository;
-import khoindn.swp391.be.app.repository.IRequestGroupRepository;
-import khoindn.swp391.be.app.repository.IUserRepository;
+import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.OptionDecisionVoteDetail;
+import khoindn.swp391.be.app.pojo._enum.StatusGroup;
+import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
+import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,12 @@ public class GroupMemberService implements IGroupMemberService {
     @Autowired
     private ModelMapper modelMapper;
     private IRequestGroupRepository iRequestGroupRepository;
+    @Autowired
+    private IDecisionVoteRepository iDecisionVoteRepository;
+    @Autowired
+    private AuthenticationService authenticationService;
+    @Autowired
+    private IDecisionVoteDetailRepository iDecisionVoteDetailRepository;
 
     // ---------------------- EXISTING CODE ----------------------
     @Override
@@ -125,12 +132,58 @@ public class GroupMemberService implements IGroupMemberService {
         }
         // Update status of GroupMember
         GroupMember user_leaving = requestProcessing.getGroupMember();
-        user_leaving.setStatus("Leaved");
+        user_leaving.setStatus(StatusGroupMember.LEAVED);
         iGroupMemberRepository.save(user_leaving);
         // Update status of Group
         Group group = user_leaving.getGroup();
-        group.setStatus("Inactive");
+        group.setStatus(StatusGroup.INACTIVE);
         iGroupRepository.save(group);
         return user_leaving;
     }
+
+    @Override
+    public DecisionVote createDecision(DecisionVoteReq request, GroupMember gm) {
+        DecisionVote createdDecisionVote = modelMapper.map(request, DecisionVote.class);
+        iDecisionVoteRepository.save(createdDecisionVote);
+        Users user = authenticationService.getCurrentAccount();
+        List<GroupMember> members = iGroupMemberRepository.findAllByGroup_GroupId(gm.getGroup().getGroupId())
+                .stream()
+                .filter(groupMember -> !groupMember.getUsers().getId().equals(user.getId()))
+                .toList();
+        for (GroupMember each : members) {
+            DecisionVoteDetail voteDetail = new DecisionVoteDetail();
+            voteDetail.setGroupMember(each);
+            voteDetail.setDecisionVote(createdDecisionVote);
+            iDecisionVoteDetailRepository.save(voteDetail);
+        }
+
+        return createdDecisionVote;
+    }
+
+    @Override
+    public void setDecision(int choice, long idDecision, GroupMember gm) {
+        DecisionVote vote = iDecisionVoteRepository.getDecisionVoteById(idDecision);
+        if (vote == null) {
+            throw new DecisionVoteNotFoundException("DECISION_NOT_FOUND_OR_DECISION_NOT_EXISTS");
+        }
+
+        DecisionVoteDetail voteDetail =
+                iDecisionVoteDetailRepository.getDecisionVoteDetailByGroupMemberAndDecisionVote_Id(gm, idDecision);
+        if (voteDetail == null) {
+            throw new DecisionVoteDetailNotFoundException("VOTER_NOT_FOUND_OR_VOTER_NOT_EXISTS");
+        }
+
+        switch (choice) {
+            case 0:
+                voteDetail.setOptionDecisionVote(OptionDecisionVoteDetail.REJECTED);
+                break;
+            case 1:
+                voteDetail.setOptionDecisionVote(OptionDecisionVoteDetail.ACCEPTED);
+                break;
+            default:
+                throw new UndefinedChoiceException("Choice is invalid!");
+        }
+    }
+
+
 }

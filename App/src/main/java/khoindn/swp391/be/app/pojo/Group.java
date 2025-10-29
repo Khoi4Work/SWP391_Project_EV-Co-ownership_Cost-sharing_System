@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,7 +29,7 @@ public class Group {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
     @Column
-    private String status = "active"; // active by default
+    private StatusGroup status = StatusGroup.ACTIVE; // active by default
     // Relationships
 
     @OneToMany(mappedBy = "group")

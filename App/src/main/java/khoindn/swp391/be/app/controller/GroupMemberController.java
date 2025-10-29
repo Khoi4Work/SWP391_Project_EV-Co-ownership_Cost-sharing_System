@@ -2,10 +2,15 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.model.Request.AddMemberRequest;
+import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Response.GroupMemberResponse;
+import khoindn.swp391.be.app.pojo.DecisionVote;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.GroupMember;
+import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.service.AuthenticationService;
 import khoindn.swp391.be.app.service.IGroupMemberService;
 import khoindn.swp391.be.app.service.IGroupService;
 import org.modelmapper.ModelMapper;
@@ -28,6 +33,8 @@ public class GroupMemberController {
     private ModelMapper modelMapper;
     @Autowired
     private IGroupService iGroupService;
+    @Autowired
+    private AuthenticationService authenticationService;
 
     // ---------------------- EXISTING CODE ----------------------
     @GetMapping("/getByUserId")
@@ -60,7 +67,7 @@ public class GroupMemberController {
                 saved.getGroup(),
                 saved.getUsers(),
                 saved.getRoleInGroup(),
-                saved.getStatus(),
+                saved.getStatus().name(),
                 saved.getCreatedAt(),
                 saved.getOwnershipPercentage()
         );
@@ -82,9 +89,27 @@ public class GroupMemberController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("No members found for groupId: " + group.getGroupName());
         }
-
         return ResponseEntity.status(HttpStatus.OK).body(allMembers);
     }
+
+    @PostMapping("/decision/group/{idGroup}")
+    public ResponseEntity createDecision(@PathVariable int idGroup, @RequestBody @Valid DecisionVoteReq request) {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(403).body("Unauthorized");
+        }
+        GroupMember gm = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(user.getId(), idGroup);
+        if (gm == null) {
+            throw new GroupMemberNotFoundException("Member is not in Group!");
+        }
+        DecisionVote decisionVote = iGroupMemberService.createDecision(request, gm);
+        if (decisionVote == null) {
+            return ResponseEntity.status(500).body("INTERNAL SERVER ERROR");
+        }
+        return ResponseEntity.status(201).body(decisionVote);
+    }
+
+
 
 
 }
