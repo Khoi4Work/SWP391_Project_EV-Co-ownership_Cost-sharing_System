@@ -158,12 +158,12 @@ export default function GroupDetail() {
     setProcessing(true);
 
     try {
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_BASE_URL}/api/fund-payment/create-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Thêm Authorization header nếu có
-          // 'Authorization': `Bearer ${token}`
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           fundId: group!.fundId,
