@@ -377,6 +377,7 @@ export default function VehicleBooking() {
             }
 
             await loadBookings();
+            window.dispatchEvent(new CustomEvent('schedules-updated'));
             const groupId = Number(localStorage.getItem("groupId"));
             await loadOverrideInfo(groupId);
 
@@ -401,6 +402,7 @@ export default function VehicleBooking() {
                 await apiCall(`/Schedule/delete/${scheduleId}`, "DELETE");
             }
             await loadBookings();
+            window.dispatchEvent(new CustomEvent('schedules-updated'));
             showToast("Đã hủy lịch", "Lịch đặt xe đã được hủy thành công");
         } catch (e: any) {
             showToast("Lỗi hủy lịch", "Không thể hủy lịch. Vui lòng thử lại.", "destructive");
@@ -472,6 +474,7 @@ export default function VehicleBooking() {
             }
 
             await loadBookings();
+            window.dispatchEvent(new CustomEvent('schedules-updated'));
             const groupId = Number(localStorage.getItem("groupId"));
             await loadOverrideInfo(groupId);
 

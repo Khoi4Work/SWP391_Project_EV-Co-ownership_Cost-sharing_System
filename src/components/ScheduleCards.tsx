@@ -30,7 +30,6 @@ type CheckOutForm = {
     condition: string;
     notes: string;
     images: string[];
-    rating: number;
 };
 
 const beBaseUrl = "http://localhost:8080";
@@ -67,7 +66,7 @@ export default function ScheduleCards() {
     const [activeId, setActiveId] = useState<number | null>(null);
 
     const [checkInForm, setCheckInForm] = useState<CheckInForm>({condition: "GOOD", notes: "", images: []});
-    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({condition: "GOOD", notes: "", images: [], rating: 5});
+    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({condition: "GOOD", notes: "", images: []});
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
 
     const fetchSchedules = async () => {
@@ -131,6 +130,13 @@ export default function ScheduleCards() {
 
     useEffect(() => {
         fetchSchedules();
+        const onUpdated = () => fetchSchedules();
+        window.addEventListener('schedules-updated', onUpdated as any);
+        window.addEventListener('storage', onUpdated);
+        return () => {
+            window.removeEventListener('schedules-updated', onUpdated as any);
+            window.removeEventListener('storage', onUpdated);
+        };
     }, []);
 
     const openCheckInDialog = (id: number) => {
@@ -141,7 +147,7 @@ export default function ScheduleCards() {
 
     const openCheckOutDialog = (id: number) => {
         setActiveId(id);
-        setCheckOutForm({condition: "GOOD", notes: "", images: [], rating: 5});
+        setCheckOutForm({condition: "GOOD", notes: "", images: []});
         setOpenCheckOut(true);
     };
 
@@ -202,7 +208,6 @@ export default function ScheduleCards() {
                 condition: checkOutForm.condition,
                 notes: checkOutForm.notes,
                 images: checkOutForm.images,
-                rating: checkOutForm.rating,
             } as any;
             const res = await fetch(`${beBaseUrl}/booking/checkOut/${activeId}`, {
                 method: "POST",
@@ -335,15 +340,7 @@ export default function ScheduleCards() {
                                     setCheckOutForm(prev => ({...prev, images: imgs}));
                                 }}/>
                             </div>
-                            <div>
-                                <div className="text-sm mb-1">Đánh giá</div>
-                                <Select value={String(checkOutForm.rating)} onValueChange={(v) => setCheckOutForm(prev => ({...prev, rating: Number(v)}))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn sao"/></SelectTrigger>
-                                    <SelectContent>
-                                        {[1,2,3,4,5].map(n => (<SelectItem key={n} value={String(n)}>{n} sao</SelectItem>))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            {/* Đã bỏ đánh giá theo yêu cầu */}
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckOut}>Xác nhận</Button>
                             </div>
