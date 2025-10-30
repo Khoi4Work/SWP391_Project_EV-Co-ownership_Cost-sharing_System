@@ -55,6 +55,7 @@ interface Group {
 const CURRENT_USER_ID = "me";
 const API_BASE_URL = "http://localhost:8080"; // giữ lại hoặc lấy baseURL chung của dự án
 const USE_MOCK_DATA = false;
+const currentUserId = USE_MOCK_DATA ? 2 : Number(localStorage.getItem("userId"));
 
 export default function GroupDetail() {
   const { groupId } = useParams();
@@ -67,20 +68,56 @@ export default function GroupDetail() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
 
+  // FUNCTION: Load group Ids nếu thiếu groupId param, lấy id đầu tiên
   useEffect(() => {
+    async function loadGroupId() {
+      try {
+        // Nếu đang mock thì lấy cứng luôn
+        if (USE_MOCK_DATA) {
+          const mockGroupIds = [1];
+          localStorage.setItem("groupIds", JSON.stringify(mockGroupIds));
+          localStorage.setItem("groupId", String(mockGroupIds[0]));
+          if (!groupId) navigate(`/group/${mockGroupIds[0]}`);
+          return;
+        }
+        // Lấy userId từ localStorage
+        const currentUserId = Number(localStorage.getItem("userId"));
+        if (!currentUserId) return;
+        // Fetch danh sách groupId user đang tham gia
+        const res = await axiosClient.get(`/groupMember/getGroupIdsByUserId?userId=${currentUserId}`);
+        const groupIds: number[] = res.data;
+        if (!groupIds || groupIds.length === 0) {
+          toast({ title: "Thông báo", description: "Bạn chưa tham gia nhóm nào", variant: "destructive" });
+          navigate("/co-owner/dashboard");
+          return;
+        }
+        localStorage.setItem("groupIds", JSON.stringify(groupIds));
+        localStorage.setItem("groupId", String(groupIds[0]));
+        if (!groupId) navigate(`/group/${groupIds[0]}`);
+      } catch {
+        toast({ title: "Lỗi", description: "Không thể lấy thông tin nhóm", variant: "destructive" });
+      }
+    }
+    // Chỉ gọi nếu không có groupId param hoặc groupId là null/undefined
+    if (!groupId) loadGroupId();
+    // else: useEffect dưới sẽ fetch detail bình thường
+  }, [groupId, navigate]);
+
+  // CŨ: useEffect fetch thông tin detail group...
+  useEffect(() => {
+    // Nếu groupId không tồn tại (vẫn chưa set từ loadGroupId), thì không làm gì
+    if (!groupId) return;
     async function fetchGroupBE() {
       setLoading(true);
       try {
         let commonFund, fundDetails, members, vehicles;
         if (USE_MOCK_DATA) {
-          // Sử dụng data mock
           commonFund = mockCommonFund;
           fundDetails = mockFundDetails;
           members = mockGroupMembers;
           vehicles = mockVehicles;
         } else {
           const gid = Number(groupId);
-          // CHỈ SỬ DỤNG axiosClient.get -- tự động gắn token
           const fundRes = await axiosClient.get(`/api/fund-payment`, { params: { fundId: gid } });
           commonFund = fundRes.data;
           const fundDetailRes = await axiosClient.get(`/api/fund-payment`, { params: { fundDetailId: commonFund.fundId } });
@@ -94,10 +131,10 @@ export default function GroupDetail() {
           id: commonFund.group.groupId.toString(),
           fundId: commonFund.fundId,
           name: commonFund.group.groupName,
-          ownerId: members.find((m: any)=>m.roleInGroup==="admin")?.userId?.id || "",
+          ownerId: members.find((m: any) => m.roleInGroup === "admin")?.userId?.id || "",
           fund: Number(commonFund.balance),
           minTransfer: 10000,
-          users: members.map((m:any) => ({
+          users: members.map((m: any) => ({
             id: m.userId.id?.toString() || '',
             hovaTen: m.userId.hovaTen || m.userId.fullName || '',
             email: m.userId.email,
@@ -105,14 +142,14 @@ export default function GroupDetail() {
             role: m.roleInGroup === "admin" ? "admin" : "member",
             ownershipPercentage: m.ownershipPercentage
           })),
-          vehicles: vehicles.map((v:any) => ({
+          vehicles: vehicles.map((v: any) => ({
             id: v.vehicleId?.toString() || '',
             name: v.plateNo + " " + v.brand + " " + v.model,
             info: v.model,
             status: "available",
             imageUrl: v.imageUrl
           })),
-          transactions: fundDetails.map((fd:any) => ({
+          transactions: fundDetails.map((fd: any) => ({
             id: fd.fundDetailId?.toString() || '',
             name: fd.transactionType,
             type: fd.transactionType && fd.transactionType.toLowerCase().includes("deposit") ? "deposit" : (fd.transactionType?.toLowerCase().includes("withdraw") ? "withdraw" : "transfer"),
@@ -120,7 +157,7 @@ export default function GroupDetail() {
             date: fd.createdAt || new Date().toISOString(),
             userId: fd.groupMember?.userId?.toString() || ''
           }))
-        })
+        });
       } catch (err) {
         setGroup(null);
       }
