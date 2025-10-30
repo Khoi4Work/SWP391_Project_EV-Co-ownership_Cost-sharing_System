@@ -50,8 +50,8 @@ public class PaymentController {
 
             paymentService.processSuccessfulPayment(fundId, groupId, userId, amount);
 
-//            redirectUrl = "http://localhost:8081/payment-success?fundId=" + fundId + "&amount=" + amount;
-            redirectUrl = "https://www.youtube.com/@tuansinn";
+            redirectUrl = "http://localhost:8081/payment-success?fundId=" + fundId + "&amount=" + amount;
+//            redirectUrl = "https://www.youtube.com/@tuansinn";
         }
 
         response.sendRedirect(redirectUrl);
