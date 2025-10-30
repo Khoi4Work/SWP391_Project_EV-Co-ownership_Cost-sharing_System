@@ -195,6 +195,11 @@ public class APIExceptionHandler {
         return ResponseEntity.status(403).body(e.getMessage()); // 403 Forbidden
     }
 
+    @ExceptionHandler(TimeConflictException.class)
+    public ResponseEntity<String> handleTimeConflictException(TimeConflictException e) {
+        return ResponseEntity.status(409).body(e.getMessage()); // 409 Conflict
+    }
+
 
     // ==========================
     // Contract Exceptions

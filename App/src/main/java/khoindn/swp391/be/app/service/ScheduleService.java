@@ -294,6 +294,18 @@ public class ScheduleService implements IScheduleService {
                 .filter(s -> excludeScheduleId == null || s.getScheduleId() != excludeScheduleId) // Exclude current schedule if updating
                 .filter(s -> s.getStartTime().isBefore(endTime) && s.getEndTime().isAfter(startTime))
                 .toList();
+        if (conflictingSchedules.size() > 1) {
+            String timeSlots = conflictingSchedules.stream()
+                    .map(s -> String.format("%s - %s (by %s)",
+                            s.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+                            s.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+                            s.getGroupMember().getUsers().getUsername()))
+                    .collect(Collectors.joining(", "));
+            throw new TimeConflictException(
+                    String.format("Cannot book schedule. Overlaps with %d existing bookings. Please select another time.",
+                            conflictingSchedules.size())
+            );
+        }
 
         // Handle conflicts with ownership priority
         if (!conflictingSchedules.isEmpty()) {

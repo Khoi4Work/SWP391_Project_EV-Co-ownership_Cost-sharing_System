@@ -18,5 +18,5 @@ public interface IScheduleRepository extends JpaRepository<Schedule, Integer> {
             LocalDateTime end
     );
 
-    List<Schedule> findByGroupMember_Group_GroupIdAndStatus(int groupId, String status);
+    List<Schedule> findByGroupMember_Group_GroupIdAndStatus(int groupId, StatusSchedule status);
 }

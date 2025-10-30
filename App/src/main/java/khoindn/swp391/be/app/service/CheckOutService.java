@@ -8,6 +8,7 @@ import khoindn.swp391.be.app.pojo.CheckIn;
 import khoindn.swp391.be.app.pojo.CheckOut;
 import khoindn.swp391.be.app.pojo.Schedule;
 import khoindn.swp391.be.app.pojo.Vehicle;
+import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 import khoindn.swp391.be.app.repository.ICheckInRepository;
 import khoindn.swp391.be.app.repository.ICheckOutRepository;
 import khoindn.swp391.be.app.repository.IScheduleRepository;
@@ -57,7 +58,7 @@ public class CheckOutService implements ICheckOutService {
                     )
             );
         }
-        if (!schedule.getStatus().equals("booked")) {
+        if (!schedule.getStatus().equals(StatusSchedule.BOOKED)) {
             throw new InvalidScheduleStatusException(
                     "Schedule không ở trạng thái booked. "
             );

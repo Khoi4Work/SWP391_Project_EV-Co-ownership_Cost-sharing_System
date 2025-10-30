@@ -5,6 +5,7 @@ import khoindn.swp391.be.app.model.Request.CheckInRequest;
 import khoindn.swp391.be.app.model.Request.CheckOutRequest;
 import khoindn.swp391.be.app.model.Response.CheckInResponse;
 import khoindn.swp391.be.app.model.Response.CheckOutResponse;
+import khoindn.swp391.be.app.model.Response.ScheduleDetailResponse;
 import khoindn.swp391.be.app.model.Response.ScheduleListItemResponse;
 import khoindn.swp391.be.app.service.ICheckInService;
 import khoindn.swp391.be.app.service.ICheckOutService;
@@ -49,6 +50,11 @@ public class CheckInOutController {
     public ResponseEntity<List<ScheduleListItemResponse>> getBookedSchedules(@PathVariable int groupId) {
         List<ScheduleListItemResponse> schedules = scheduleCheckInOutService.getSchedulesByGroup(groupId);
         return ResponseEntity.ok(schedules);
+    }
+    @GetMapping("/detail/{scheduleId}")
+    public ResponseEntity<ScheduleDetailResponse> getScheduleDetail(@PathVariable int scheduleId) {
+        ScheduleDetailResponse detail = scheduleCheckInOutService.getScheduleDetail(scheduleId);
+        return ResponseEntity.ok(detail);
     }
 
 
