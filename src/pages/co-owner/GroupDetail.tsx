@@ -6,6 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import axiosClient from "@/api/axiosClient";
+import {
+  mockCommonFund,
+  mockFundDetails,
+  mockGroupMembers,
+  mockVehicles,
+} from "@/data/mockGroupDetail";
 
 interface User {
   id: string;
@@ -46,49 +53,8 @@ interface Group {
 }
 
 const CURRENT_USER_ID = "me";
-const API_BASE_URL = "http://localhost:8080";
-
-function mockFetchGroups() {
-  return new Promise<any[]>(resolve => {
-    setTimeout(() => {
-      resolve([
-        {
-          roleInGroup: "admin",
-          status: "active",
-          ownershipPercentage: 50,
-          group: {
-            groupId: 1,
-            fundId: 1,
-            groupName: "Nhóm A",
-            description: "Mô tả nhóm A",
-            createdAt: "2025-10-22T00:00:00",
-            status: "active",
-            vehicles: [
-              { id: 1, name: "Xe 1", info: "Xe số 1", status: "available", imageUrl: "" }
-            ],
-            transactions: [],
-            fund: 10000000,
-            minTransfer: 10000
-          },
-          members: [
-            {
-              id: 1,
-              roleInGroup: "admin",
-              ownershipPercentage: 50,
-              users: { id: "owner", hovaTen: "Nguyễn Văn A", email: "a@ex.com", avatar: "" }
-            },
-            {
-              id: 2,
-              roleInGroup: "member",
-              ownershipPercentage: 30,
-              users: { id: "me", hovaTen: "Bạn", email: "me@ex.com", avatar: "" }
-            }
-          ]
-        }
-      ]);
-    }, 300);
-  });
-}
+const API_BASE_URL = "http://localhost:8080"; // giữ lại hoặc lấy baseURL chung của dự án
+const USE_MOCK_DATA = false;
 
 export default function GroupDetail() {
   const { groupId } = useParams();
@@ -102,50 +68,65 @@ export default function GroupDetail() {
   const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
 
   useEffect(() => {
-    async function fetchGroup() {
-      const data = await mockFetchGroups();
-      const beGroup = data.find(g => g.group.groupId.toString() === groupId);
-      if (!beGroup) {
+    async function fetchGroupBE() {
+      setLoading(true);
+      try {
+        let commonFund, fundDetails, members, vehicles;
+        if (USE_MOCK_DATA) {
+          // Sử dụng data mock
+          commonFund = mockCommonFund;
+          fundDetails = mockFundDetails;
+          members = mockGroupMembers;
+          vehicles = mockVehicles;
+        } else {
+          const gid = Number(groupId);
+          // CHỈ SỬ DỤNG axiosClient.get -- tự động gắn token
+          const fundRes = await axiosClient.get(`/api/fund-payment`, { params: { fundId: gid } });
+          commonFund = fundRes.data;
+          const fundDetailRes = await axiosClient.get(`/api/fund-payment`, { params: { fundDetailId: commonFund.fundId } });
+          fundDetails = fundDetailRes.data;
+          const membersRes = await axiosClient.get(`/groupMember/members/${gid}`);
+          members = membersRes.data;
+          const vehiclesRes = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
+          vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [vehiclesRes.data];
+        }
+        setGroup({
+          id: commonFund.group.groupId.toString(),
+          fundId: commonFund.fundId,
+          name: commonFund.group.groupName,
+          ownerId: members.find((m: any)=>m.roleInGroup==="admin")?.userId?.id || "",
+          fund: Number(commonFund.balance),
+          minTransfer: 10000,
+          users: members.map((m:any) => ({
+            id: m.userId.id?.toString() || '',
+            hovaTen: m.userId.hovaTen || m.userId.fullName || '',
+            email: m.userId.email,
+            avatar: m.userId.avatar,
+            role: m.roleInGroup === "admin" ? "admin" : "member",
+            ownershipPercentage: m.ownershipPercentage
+          })),
+          vehicles: vehicles.map((v:any) => ({
+            id: v.vehicleId?.toString() || '',
+            name: v.plateNo + " " + v.brand + " " + v.model,
+            info: v.model,
+            status: "available",
+            imageUrl: v.imageUrl
+          })),
+          transactions: fundDetails.map((fd:any) => ({
+            id: fd.fundDetailId?.toString() || '',
+            name: fd.transactionType,
+            type: fd.transactionType && fd.transactionType.toLowerCase().includes("deposit") ? "deposit" : (fd.transactionType?.toLowerCase().includes("withdraw") ? "withdraw" : "transfer"),
+            amount: Number(fd.amount),
+            date: fd.createdAt || new Date().toISOString(),
+            userId: fd.groupMember?.userId?.toString() || ''
+          }))
+        })
+      } catch (err) {
         setGroup(null);
-        setLoading(false);
-        return;
       }
-
-      const groupMapped: Group = {
-        id: beGroup.group.groupId.toString(),
-        fundId: beGroup.group.fundId,
-        name: beGroup.group.groupName,
-        ownerId: beGroup.members.find((m: any) => m.roleInGroup === "admin")?.users?.id || "",
-        fund: beGroup.group.fund,
-        minTransfer: beGroup.group.minTransfer,
-        users: beGroup.members.map((m: any) => ({
-          id: m.users.id,
-          hovaTen: m.users.hovaTen,
-          email: m.users.email,
-          avatar: m.users.avatar || "https://via.placeholder.com/40",
-          role: m.roleInGroup === "admin" ? "admin" : "member",
-          ownershipPercentage: m.ownershipPercentage
-        })),
-        vehicles: beGroup.group.vehicles.map((v: any) => ({
-          id: v.id.toString(),
-          name: v.name,
-          info: v.info,
-          status: v.status,
-          imageUrl: v.imageUrl || ""
-        })),
-        transactions: beGroup.group.transactions && beGroup.group.transactions.length > 0
-          ? beGroup.group.transactions
-          : [
-            { id: "1", name: "Nạp quỹ", type: "deposit", amount: 500000, date: new Date().toISOString(), userId: "me" },
-            { id: "2", name: "Rút quỹ", type: "withdraw", amount: 200000, date: new Date().toISOString(), userId: "owner" }
-          ]
-      };
-
-      setGroup(groupMapped);
       setLoading(false);
     }
-
-    fetchGroup();
+    fetchGroupBE();
   }, [groupId]);
 
   const handleDeposit = async () => {
