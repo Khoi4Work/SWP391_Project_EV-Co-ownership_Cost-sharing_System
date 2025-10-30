@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "db": "npx --yes json-server --watch mock-db/db.json --port 5001 --delay 300"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

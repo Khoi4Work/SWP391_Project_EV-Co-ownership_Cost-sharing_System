@@ -88,7 +88,7 @@ export default function VehicleBooking() {
 
     // ===== REFS & CONSTANTS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
-    const USE_MOCK = false; // tắt DB ảo, dùng BE thật
+    const USE_MOCK = true; // dùng DB ảo, tắt BE thật
     const beBaseUrl = "http://localhost:8080";
     const currentUserId = USE_MOCK ? 2 : Number(localStorage.getItem("userId"));
     const token = USE_MOCK ? null : localStorage.getItem("accessToken");
@@ -537,8 +537,7 @@ export default function VehicleBooking() {
         const filteredBookings = existingBookings.filter(
             b => String(b.vehicleId) === String(form.vehicle) &&
                 b.date === form.date &&
-                b.status !== "canceled" &&
-                b.status !== "overridden" &&
+                (b.status == null || String(b.status).toUpperCase() === "BOOKED") &&
                 (isEdit ? b.scheduleId !== editForm.bookingId : true)
         );
 
@@ -560,8 +559,7 @@ export default function VehicleBooking() {
         const filteredBookings = existingBookings.filter(
             b => String(b.vehicleId) === String(form.vehicle) &&
                 b.date === form.date &&
-                b.status !== "canceled" &&
-                b.status !== "overridden" &&
+                (b.status == null || String(b.status).toUpperCase() === "BOOKED") &&
                 (isEdit ? b.scheduleId !== editForm.bookingId : true)
         );
 

@@ -20,6 +20,35 @@ type ScheduleItem = {
     checkOutTime?: string; // ISO
 };
 
+// ===== Detail types (phù hợp BE) =====
+type CheckInDetailResponse = {
+    checkInId: number;
+    checkInTime: string;
+    condition: string;
+    notes: string;
+    images: string;
+};
+
+type CheckOutDetailResponse = {
+    checkOutId: number;
+    checkOutTime: string;
+    condition: string;
+    notes: string;
+    images: string;
+};
+
+type ScheduleDetailResponse = {
+    scheduleId: number;
+    vehicleName?: string;
+    vehiclePlate?: string;
+    userName?: string;
+    startTime: string;
+    endTime: string;
+    scheduleStatus?: string;
+    checkIn?: CheckInDetailResponse | null;
+    checkOut?: CheckOutDetailResponse | null;
+};
+
 type CheckInForm = {
     condition: string;
     notes: string;
@@ -33,7 +62,7 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = false; // tắt mock, dùng BE thật
+const USE_MOCK = true; // tắt mock, dùng BE thật
 
 function formatDateTime(iso?: string) {
     if (!iso) return "-";
@@ -63,11 +92,17 @@ export default function ScheduleCards() {
 
     const [openCheckIn, setOpenCheckIn] = useState(false);
     const [openCheckOut, setOpenCheckOut] = useState(false);
+    const [openDetail, setOpenDetail] = useState(false);
     const [activeId, setActiveId] = useState<number | null>(null);
 
     const [checkInForm, setCheckInForm] = useState<CheckInForm>({condition: "GOOD", notes: "", images: []});
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({condition: "GOOD", notes: "", images: []});
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
+
+    // Detail states
+    const [detailLoading, setDetailLoading] = useState(false);
+    const [detailError, setDetailError] = useState<string | null>(null);
+    const [detail, setDetail] = useState<ScheduleDetailResponse | null>(null);
 
     const fetchSchedules = async () => {
         setLoading(true);
@@ -138,6 +173,63 @@ export default function ScheduleCards() {
             window.removeEventListener('storage', onUpdated);
         };
     }, []);
+
+    const openDetailDialog = async (id: number) => {
+        setActiveId(id);
+        setOpenDetail(true);
+        setDetail(null);
+        setDetailError(null);
+        setDetailLoading(true);
+        try {
+            if (USE_MOCK) {
+                const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
+                const r = raw.find((x: any) => x.scheduleId === id);
+                if (!r) throw new Error("Không tìm thấy lịch trong mock");
+                const vehiclesMock = [
+                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8" },
+                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric" },
+                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3" },
+                ];
+                const v = vehiclesMock.find((x) => x.vehicleId === r.vehicleId);
+                const d: ScheduleDetailResponse = {
+                    scheduleId: r.scheduleId,
+                    startTime: r.startTime,
+                    endTime: r.endTime,
+                    vehicleName: v ? `${v.brand} ${v.model}` : `Xe ${r.vehicleId}`,
+                    vehiclePlate: v?.plateNo,
+                    userName: r.userName || "Bạn",
+                    scheduleStatus: r.status,
+                    checkIn: r.checkInTime ? {
+                        checkInId: r.scheduleId,
+                        checkInTime: r.checkInTime,
+                        condition: "GOOD",
+                        notes: r.checkInNotes || "",
+                        images: r.checkInImages || "",
+                    } : null,
+                    checkOut: r.checkOutTime ? {
+                        checkOutId: r.scheduleId,
+                        checkOutTime: r.checkOutTime,
+                        condition: "GOOD",
+                        notes: r.checkOutNotes || "",
+                        images: r.checkOutImages || "",
+                    } : null,
+                };
+                setDetail(d);
+            } else {
+                const res = await fetch(`${beBaseUrl}/booking/detail/${id}`);
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(text || `HTTP ${res.status}`);
+                }
+                const data = await res.json();
+                setDetail(data as ScheduleDetailResponse);
+            }
+        } catch (e: any) {
+            setDetailError(e.message || "Không thể tải chi tiết");
+        } finally {
+            setDetailLoading(false);
+        }
+    };
 
     const openCheckInDialog = (id: number) => {
         setActiveId(id);
@@ -262,9 +354,7 @@ export default function ScheduleCards() {
                                         {it.hasCheckIn && !it.hasCheckOut && (
                                             <Button size="sm" variant="outline" onClick={() => openCheckOutDialog(it.scheduleId)}>Check-out</Button>
                                         )}
-                                        {it.hasCheckIn && it.hasCheckOut && (
-                                            <Button size="sm" variant="ghost">Xem chi tiết</Button>
-                                        )}
+                                        <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>Xem chi tiết</Button>
                                     </div>
                                 </div>
                             );
@@ -345,6 +435,78 @@ export default function ScheduleCards() {
                                 <Button onClick={submitCheckOut}>Xác nhận</Button>
                             </div>
                         </div>
+                    </DialogContent>
+                </Dialog>
+                {/* Detail dialog */}
+                <Dialog open={openDetail} onOpenChange={setOpenDetail}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Chi tiết lịch đặt</DialogTitle>
+                        </DialogHeader>
+                        {detailLoading ? (
+                            <div className="text-muted-foreground">Đang tải...</div>
+                        ) : detailError ? (
+                            <div className="text-destructive">{detailError}</div>
+                        ) : !detail ? (
+                            <div className="text-muted-foreground">Không có dữ liệu</div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <div className="text-sm text-muted-foreground">Xe</div>
+                                        <div className="font-medium">{detail.vehicleName || '-'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-muted-foreground">Biển số</div>
+                                        <div className="font-medium">{detail.vehiclePlate || '-'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-muted-foreground">Người thuê</div>
+                                        <div className="font-medium">{detail.userName || '-'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm text-muted-foreground">Trạng thái</div>
+                                        <div className="font-medium">{detail.scheduleStatus || '-'}</div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-sm">Bắt đầu: {formatDateTime(detail.startTime)}</div>
+                                    <div className="text-sm">Kết thúc: {formatDateTime(detail.endTime)}</div>
+                                </div>
+
+                                <div className="border rounded-md p-3">
+                                    <div className="font-semibold mb-2">Check-in</div>
+                                    {detail.checkIn ? (
+                                        <div className="space-y-1 text-sm">
+                                            <div>Thời gian: {formatDateTime(detail.checkIn.checkInTime)}</div>
+                                            <div>Tình trạng: {detail.checkIn.condition}</div>
+                                            <div>Ghi chú: {detail.checkIn.notes || '-'}</div>
+                                            {detail.checkIn.images && (
+                                                <img src={detail.checkIn.images} alt="checkin" className="mt-2 max-h-48 object-contain"/>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-muted-foreground">Chưa check-in</div>
+                                    )}
+                                </div>
+
+                                <div className="border rounded-md p-3">
+                                    <div className="font-semibold mb-2">Check-out</div>
+                                    {detail.checkOut ? (
+                                        <div className="space-y-1 text-sm">
+                                            <div>Thời gian: {formatDateTime(detail.checkOut.checkOutTime)}</div>
+                                            <div>Tình trạng: {detail.checkOut.condition}</div>
+                                            <div>Ghi chú: {detail.checkOut.notes || '-'}</div>
+                                            {detail.checkOut.images && (
+                                                <img src={detail.checkOut.images} alt="checkout" className="mt-2 max-h-48 object-contain"/>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-muted-foreground">Chưa check-out</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </DialogContent>
                 </Dialog>
             </CardContent>
