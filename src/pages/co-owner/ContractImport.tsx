@@ -61,9 +61,7 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const uploadRes = await axiosClient.post("contract/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const uploadRes = await axiosClient.post("contract/upload", formData);
 
       const fileUrl = uploadRes.data?.url || "";
 
