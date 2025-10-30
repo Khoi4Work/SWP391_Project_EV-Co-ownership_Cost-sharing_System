@@ -123,7 +123,9 @@ public class PaymentService {
         commonFund.setBalance(commonFund.getBalance().add(amount));
         commonFundRepository.save(commonFund);
     }
-
+    public CommonFund getCommonFundByGroupId(int groupId) {
+        return commonFundRepository.findByGroupGroupId(groupId);
+    }
     public CommonFund getCommonFundById(int fundId) {
         return commonFundRepository.findByFundId(fundId);
     }

@@ -60,6 +60,11 @@ public class PaymentController {
         return ResponseEntity.ok("Payment processed");
     }
 
+    @GetMapping("/common-fund/group/{groupId}")
+    public ResponseEntity<CommonFund> getCommonFundByGroupId(@PathVariable Integer groupId) {
+        return ResponseEntity.ok(paymentService.getCommonFundByGroupId(groupId));
+    }
+
     @GetMapping("/common-fund/{fundId}")
     public ResponseEntity<CommonFund> getCommonFundById(@PathVariable Integer fundId) {
         return ResponseEntity.ok(paymentService.getCommonFundById(fundId));
