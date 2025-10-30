@@ -216,11 +216,15 @@ export default function ScheduleCards() {
                 };
                 setDetail(d);
             } else {
-                const res = await fetch(`${beBaseUrl}/booking/detail/${id}`);
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(text || `HTTP ${res.status}`);
-                }
+                const token = localStorage.getItem("accessToken");
+                const res = await fetch(`${beBaseUrl}/booking/detail/${id}`, {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json",
+                        ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    },
+                    credentials: "include",
+                });
                 const data = await res.json();
                 setDetail(data as ScheduleDetailResponse);
             }
