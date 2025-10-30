@@ -118,7 +118,8 @@ export default function GroupDetail() {
           vehicles = mockVehicles;
         } else {
           const gid = Number(groupId);
-          const fundRes = await axiosClient.get(`/api/fund-payment`, { params: { fundId: gid } });
+          // Đúng endpoint mới lấy quỹ chung theo groupId
+          const fundRes = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`);
           commonFund = fundRes.data;
           const fundDetailRes = await axiosClient.get(`/api/fund-payment`, { params: { fundDetailId: commonFund.fundId } });
           fundDetails = fundDetailRes.data;
