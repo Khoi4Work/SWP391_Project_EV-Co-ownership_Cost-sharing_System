@@ -4,15 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
+import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CheckOutRequest {
-    private int userId;
-    private String condition;
-    private String notes;
-    private List<String> images;
+public class WithdrawRequest {
+    private Integer fundId;
+    private Integer groupId;
+    private Integer userId;
+    private BigDecimal amount;
 }

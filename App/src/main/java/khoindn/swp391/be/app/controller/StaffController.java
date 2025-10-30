@@ -6,7 +6,7 @@ import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
 import khoindn.swp391.be.app.model.Response.ContractPendingRes;
 import khoindn.swp391.be.app.pojo.GroupMember;
-import khoindn.swp391.be.app.pojo.RequestGroup;
+import khoindn.swp391.be.app.pojo.RequestGroupService;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +55,7 @@ public class StaffController {
 
     @GetMapping("/get/all/request-group")
     public ResponseEntity getAllRequestGroup() {
-        List<RequestGroup> res = iRequestGroupService.getAllRequestGroup();
+        List<RequestGroupService> res = iRequestGroupService.getAllRequestGroup();
         if (res.isEmpty()) {
             return ResponseEntity.status(204).body("No Content");
         }
@@ -71,7 +71,7 @@ public class StaffController {
             return ResponseEntity.status(403).body("Unauthorized");
         }
 
-        iRequestGroupService.updateRequestGroup(update);
+        iRequestGroupService.updateRequestGroup(update, staff);
         return ResponseEntity.status(200).body("Update successfully");
     }
 
@@ -92,7 +92,7 @@ public class StaffController {
 
     // 2. APPROVE or REJECT CONTRACT AND SEND EMAIL RESULT TO CUSTOMER
 
-    @PostMapping("/contract/{contractId}/{decision}")
+    @PatchMapping("/contract/{contractId}/{decision}")
     public ResponseEntity verifyContract(@PathVariable int contractId, @PathVariable int decision) {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {

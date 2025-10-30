@@ -84,6 +84,7 @@ public class ScheduleController {
         return ResponseEntity.ok(result);
     }
 
+
 //    @PutMapping("/{id}")
 //    public ResponseEntity<ScheduleRes> updateSchedule(@PathVariable Integer id,
 //                                                      @RequestBody ScheduleReq req) {

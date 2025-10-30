@@ -4,15 +4,13 @@ import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
-import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo.RequestGroupService;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
-import khoindn.swp391.be.app.pojo._enum.StatusRequestGroup;
-import khoindn.swp391.be.app.pojo._enum.StatusRequestGroupDetail;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,9 +43,9 @@ public class GroupService implements IGroupService {
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
-    private IRequestGroupRepository iRequestGroupRepository;
+    private IRequestGroupServiceRepository iRequestGroupServiceRepository;
     @Autowired
-    private IRequestGroupDetailRepository iRequestGroupDetailRepository;
+    private IRequestGroupServiceDetailRepository iRequestGroupServiceDetailRepository;
 
 
     @Override
@@ -154,52 +152,22 @@ public class GroupService implements IGroupService {
         // Lay member nao trong group tao request
         GroupMember member = iGroupMemberRepository.findByGroupAndUsers(group, user).orElse(null);
         // tao request
-        RequestGroup requestGroup = new RequestGroup();
-        requestGroup.setGroupMember(member);
-        requestGroup.setNameRequestGroup(request.getNameRequestGroup());
+        RequestGroupService requestGroupService = new RequestGroupService();
+        requestGroupService.setGroupMember(member);
+        requestGroupService.setNameRequestGroup(request.getNameRequestGroup());
         if (!request.getDescriptionRequestGroup().isEmpty()) {
-            requestGroup.setDescriptionRequestGroup(request.getDescriptionRequestGroup());
+            requestGroupService.setDescriptionRequestGroup(request.getDescriptionRequestGroup());
         }
 
         // tao group detail
-        RequestGroupDetail detail = new RequestGroupDetail();
-        detail.setRequestGroup(requestGroup);
+        RequestGroupServiceDetail detail = new RequestGroupServiceDetail();
+        detail.setRequestGroupService(requestGroupService);
 
         // luu vao db
-        iRequestGroupRepository.save(requestGroup);
-        iRequestGroupDetailRepository.save(detail);
+        iRequestGroupServiceRepository.save(requestGroupService);
+        iRequestGroupServiceDetailRepository.save(detail);
     }
 
-    @Override
-    public void updateRequestGroup(UpdateRequestGroup update, Users staff) {
-        RequestGroup req = iRequestGroupRepository.findRequestGroupById(update.getIdRequestGroup());
-        if (req == null) {
-            throw new RequestGroupNotFoundException("RequestGroup not found");
-        }
-
-        if (update.getIdChoice() == 1) {
-            req.setStatus(StatusRequestGroup.SOLVED);
-            req.getRequestGroupDetail().setStaff(staff);
-            req.getRequestGroupDetail().setStatus(StatusRequestGroupDetail.APPROVED);
-            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
-            iRequestGroupRepository.save(req);
-        } else if (update.getIdChoice() == 0) {
-            req.setStatus(StatusRequestGroup.DENIED);
-            req.getRequestGroupDetail().setStaff(staff);
-            req.getRequestGroupDetail().setStatus(StatusRequestGroupDetail.REJECTED);
-            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
-            iRequestGroupRepository.save(req);
-        } else if (update.getIdChoice() == 2) {
-            req.setStatus(StatusRequestGroup.PROCESSING);
-            req.getRequestGroupDetail().setStaff(staff);
-            req.getRequestGroupDetail().setStatus(StatusRequestGroupDetail.PROCESSING);
-            req.getRequestGroupDetail().setSolvedAt(LocalDateTime.now());
-            iRequestGroupRepository.save(req);
-        } else {
-            throw new UndefinedChoiceException("Undefined Choice");
-
-        }
-    }
 
     @Override
     public Group getGroupById(int groupId) {

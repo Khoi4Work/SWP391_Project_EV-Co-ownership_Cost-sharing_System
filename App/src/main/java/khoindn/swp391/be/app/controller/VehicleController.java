@@ -7,10 +7,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,6 +24,12 @@ public class VehicleController {
     public ResponseEntity<List<Vehicle>> getAllUnregisteredVehicleAndPending() {
         List<Vehicle> vehicles = iVehicleService.getAllUnregisteredVehicle();
         return ResponseEntity.status(HttpStatus.OK).body(vehicles);
+    }
+
+    @GetMapping("/getVehicleByGroupID/{groupId}")
+    public ResponseEntity<Vehicle> getVehicleByGroupID(@PathVariable int groupId) {
+        Vehicle vehicle = iVehicleService.findVehicleByGroupId(groupId);
+        return ResponseEntity.status(HttpStatus.OK).body(vehicle);
     }
 
 }

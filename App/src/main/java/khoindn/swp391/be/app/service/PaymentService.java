@@ -1,5 +1,9 @@
 package khoindn.swp391.be.app.service;
 
+import khoindn.swp391.be.app.exception.exceptions.BalanceNotEnoughException;
+import khoindn.swp391.be.app.exception.exceptions.CommonFundNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
+import khoindn.swp391.be.app.model.Request.WithdrawRequest;
 import khoindn.swp391.be.app.pojo.CommonFund;
 import khoindn.swp391.be.app.pojo.FundDetail;
 import khoindn.swp391.be.app.pojo.GroupMember;
@@ -19,6 +23,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -104,12 +109,12 @@ public class PaymentService {
         // find group member
         GroupMember groupMember = groupMemberRepository.findByGroupGroupIdAndUsersId(groupId, userId);
         if (groupMember == null) {
-            throw new RuntimeException("Group member not found");
+            throw new GroupMemberNotFoundException("Group member not found");
         }
         // find common fund
         CommonFund commonFund = commonFundRepository.findByFundId(fundId);
         if (commonFund == null) {
-            throw new RuntimeException("Common fund not found");
+            throw new CommonFundNotFoundException("Common fund not found");
         }
         FundDetail fundDetail = new FundDetail();
         fundDetail.setAmount(amount);
@@ -122,4 +127,52 @@ public class PaymentService {
         commonFund.setBalance(commonFund.getBalance().add(amount));
         commonFundRepository.save(commonFund);
     }
+
+    public Integer withdrawMoney(WithdrawRequest request) {
+        GroupMember groupMember = groupMemberRepository.findByGroupGroupIdAndUsersId(
+                request.getGroupId(),
+                request.getUserId()
+        );
+
+        if (groupMember == null) {
+            throw new RuntimeException("Group member not found");
+        }
+
+
+        CommonFund commonFund = commonFundRepository.findByFundId(request.getFundId());
+        if (commonFund == null) {
+            throw new RuntimeException("Fund not found");
+        }
+
+        BigDecimal currentBalance = commonFund.getBalance();
+        if (currentBalance.compareTo(request.getAmount()) < 0) {
+            throw new RuntimeException("Insufficient balance. Current balance: " + currentBalance);
+        }
+
+        FundDetail fundDetail = new FundDetail();
+        fundDetail.setCommonFund(commonFund);
+        fundDetail.setGroupMember(groupMember);
+        fundDetail.setAmount(request.getAmount());
+        fundDetail.setTransactionType("WITHDRAW");
+        fundDetail.setStatus(StatusFundDetail.COMPLETED);
+        fundDetail = fundDetailRepository.save(fundDetail);
+
+        commonFund.setBalance(currentBalance.subtract(request.getAmount()));
+        commonFundRepository.save(commonFund);
+
+        return fundDetail.getFundDetailId();
+    }
+
+    public CommonFund getCommonFundByGroupId(int groupId) {
+        return commonFundRepository.findByGroupGroupId(groupId);
+    }
+
+    public CommonFund getCommonFundById(int fundId) {
+        return commonFundRepository.findByFundId(fundId);
+    }
+
+    public List<FundDetail> getFundDetailById(int fundDetailId) {
+        return fundDetailRepository.findByCommonFund_FundId(fundDetailId);
+    }
+
 }

@@ -14,7 +14,5 @@ public interface IGroupService {
 
     public void createRequestGroup(GroupRequest request, Users user);
 
-    public void updateRequestGroup(UpdateRequestGroup update, Users staff);
-
     public Group getGroupById(int groupId);
 }

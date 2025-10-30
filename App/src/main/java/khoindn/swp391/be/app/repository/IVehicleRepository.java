@@ -24,4 +24,6 @@ public interface IVehicleRepository extends JpaRepository<Vehicle, Integer> {
     Vehicle findVehicleByGroup(Group group);
 
     Vehicle findVehicleByGroup_GroupId(int groupGroupId);
+
+    Vehicle getVehiclesByGroup(Group group);
 }

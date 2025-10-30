@@ -29,7 +29,8 @@ public class DecisionVote{
     private StatusDecisionVote status = StatusDecisionVote.PENDING;
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
-
+    @Column(name = "ended_at")
+    private LocalDateTime endedAt;
     // Relationships
     @ManyToOne
     @JoinColumn(name = "created_by")

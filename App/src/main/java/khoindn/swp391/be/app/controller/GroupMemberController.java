@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.model.Request.AddMemberRequest;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
+import khoindn.swp391.be.app.model.Request.VotingRequest;
+import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberResponse;
 import khoindn.swp391.be.app.pojo.DecisionVote;
 import khoindn.swp391.be.app.pojo.Group;
@@ -16,7 +18,6 @@ import khoindn.swp391.be.app.service.IGroupService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/groupMember")
 @SecurityRequirement(name = "api")
+@CrossOrigin(origins = "http://localhost:8081")
 public class GroupMemberController {
 
     @Autowired
@@ -80,7 +82,7 @@ public class GroupMemberController {
 
 
     @GetMapping("/members/{groupId}")
-    public ResponseEntity getMembersByGroupId(@PathVariable int groupId){
+    public ResponseEntity getMembersByGroupId(@PathVariable int groupId) {
         Group group = iGroupService.getGroupById(groupId);
         List<GroupMemberResponse> allMembers = iGroupMemberService.getMembersByGroupId(groupId).stream()
                 .map(groupMember -> modelMapper.map(groupMember, GroupMemberResponse.class))
@@ -109,7 +111,20 @@ public class GroupMemberController {
         return ResponseEntity.status(201).body(decisionVote);
     }
 
+//    @GetMapping("/group/{groupId}")
+//    public ResponseEntity<List<GroupMemberDetailRes>> getGroupMembersByGroupId(@PathVariable int groupId) {
+//        List<GroupMemberDetailRes> members = iGroupMemberService.getGroupMembersByGroupId(groupId);
+//        return ResponseEntity.ok(members);
+//    }
 
-
-
+    @PatchMapping("/decision")
+    public ResponseEntity setDecision(@RequestBody VotingRequest votingRequest) {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(403).body("Unauthorized");
+        }
+        GroupMember groupMember = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(votingRequest.getGroupId(), user.getId());
+        iGroupMemberService.setDecision(votingRequest.getVote(), votingRequest.getDecisionId(), groupMember);
+        return ResponseEntity.status(200).body(votingRequest);
+    }
 }

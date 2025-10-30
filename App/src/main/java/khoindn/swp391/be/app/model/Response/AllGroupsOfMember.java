@@ -18,5 +18,5 @@ public class AllGroupsOfMember {
 
     private Group group;
     private List<GroupMember> members;
-//    private List<RequestGroup> requestGroups = new ArrayList<>();
+//    private List<RequestGroupService> requestGroups = new ArrayList<>();
 }

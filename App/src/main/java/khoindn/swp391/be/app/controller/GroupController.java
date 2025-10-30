@@ -46,7 +46,6 @@ public class GroupController {
     public ResponseEntity<List<AllGroupsOfMember>> getBelongedGroup() {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
-//             throw new RuntimeException("Current account is null");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         List<AllGroupsOfMember> groups = iGroupMemberService.getAllGroupsOfMember(user);
@@ -67,8 +66,6 @@ public class GroupController {
 
         return ResponseEntity.status(201).body("Created Request Successfully");
     }
-
-
 
 
 }

@@ -15,11 +15,11 @@ import java.util.Optional;
 public interface IGroupMemberRepository extends JpaRepository<GroupMember, Integer> {
     Optional<GroupMember> findByGroupAndUsers(Group group, Users users);
 
+    List<GroupMember> findByGroup_GroupId(int groupId);
+
     List<GroupMember> findAllByUsersId(int userId);
 
     GroupMember findByGroupGroupIdAndUsersId(int groupId, int userId);
-
-    List<GroupMember> findByGroupGroupId(int groupId);
 
     GroupMember findGroupMembersByUsers(Users users);
 

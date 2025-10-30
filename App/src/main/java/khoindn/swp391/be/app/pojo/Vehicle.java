@@ -55,7 +55,7 @@ public class Vehicle {
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<RequestService> requestServices = new ArrayList<>();
+    private List<RequestVehicleService> requestVehicleServices = new ArrayList<>();
 
 
 }

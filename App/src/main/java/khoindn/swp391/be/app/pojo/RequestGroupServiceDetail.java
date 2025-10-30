@@ -2,7 +2,6 @@ package khoindn.swp391.be.app.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import khoindn.swp391.be.app.pojo._enum.StatusRequestGroup;
 import khoindn.swp391.be.app.pojo._enum.StatusRequestGroupDetail;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +13,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RequestGroupDetail {
+public class RequestGroupServiceDetail {
 
     // attributes
     @Id
@@ -31,6 +30,6 @@ public class RequestGroupDetail {
     @OneToOne
     @JoinColumn(name = "request_group_id")
     @JsonIgnore
-    private RequestGroup requestGroup;
+    private RequestGroupService requestGroupService;
 
 }

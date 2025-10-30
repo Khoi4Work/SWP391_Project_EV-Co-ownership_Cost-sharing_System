@@ -1,15 +1,15 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
-import khoindn.swp391.be.app.exception.exceptions.DecisionVoteDetailNotFoundException;
-import khoindn.swp391.be.app.exception.exceptions.DecisionVoteNotFoundException;
-import khoindn.swp391.be.app.exception.exceptions.RequestGroupNotFoundException;
-import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
+import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo.RequestGroupService;
 import khoindn.swp391.be.app.pojo._enum.OptionDecisionVoteDetail;
+import khoindn.swp391.be.app.pojo._enum.StatusDecisionVote;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
 import khoindn.swp391.be.app.repository.*;
@@ -37,13 +37,19 @@ public class GroupMemberService implements IGroupMemberService {
     private IUserRepository userRepository;
     @Autowired
     private ModelMapper modelMapper;
-    private IRequestGroupRepository iRequestGroupRepository;
+    private IRequestGroupServiceRepository iRequestGroupServiceRepository;
     @Autowired
     private IDecisionVoteRepository iDecisionVoteRepository;
     @Autowired
     private AuthenticationService authenticationService;
     @Autowired
     private IDecisionVoteDetailRepository iDecisionVoteDetailRepository;
+    @Autowired
+    private IVehicleService iVehicleService;
+    @Autowired
+    private IVehicleRepository iVehicleRepository;
+    @Autowired
+    private IRequestVehicleServiceRepository iRequestVehicleServiceRepository;
 
     // ---------------------- EXISTING CODE ----------------------
     @Override
@@ -63,6 +69,25 @@ public class GroupMemberService implements IGroupMemberService {
     public List<GroupMember> getMembersByGroupId(int groupId) {
         return iGroupMemberRepository.findAllByGroup_GroupId(groupId);
     }
+
+    @Override
+    public List<GroupMemberDetailRes> getGroupMembersByGroupId(int groupId) {
+        List<GroupMember> groupMembers = iGroupMemberRepository.findByGroup_GroupId(groupId);
+
+        return groupMembers.stream()
+                .map(gm -> {
+                    GroupMemberDetailRes res = new GroupMemberDetailRes();
+                    res.setUserId(gm.getUsers().getId());
+                    res.setRoleInGroup(gm.getRoleInGroup());
+                    res.setOwnershipPercentage(gm.getOwnershipPercentage());
+                    res.setId(gm.getId());
+                    res.setGroupId(gm.getGroup().getGroupId());
+                    res.setHovaten(gm.getUsers().getHovaTen());
+                    return res;
+                })
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public List<AllGroupsOfMember> getAllGroupsOfMember(Users user) {
@@ -126,7 +151,7 @@ public class GroupMemberService implements IGroupMemberService {
 
     @Override
     public GroupMember leaveGroup(LeaveGroupReq request) {
-        RequestGroup requestProcessing = iRequestGroupRepository.findRequestGroupById(request.getRequestId());
+        RequestGroupService requestProcessing = iRequestGroupServiceRepository.findRequestGroupById(request.getRequestId());
         if (requestProcessing == null) {
             throw new RequestGroupNotFoundException("REQUEST_NOT_FOUND");
         }
@@ -144,6 +169,7 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public DecisionVote createDecision(DecisionVoteReq request, GroupMember gm) {
         DecisionVote createdDecisionVote = modelMapper.map(request, DecisionVote.class);
+        createdDecisionVote.setEndedAt(LocalDateTime.now().plusDays(1));
         iDecisionVoteRepository.save(createdDecisionVote);
         Users user = authenticationService.getCurrentAccount();
         List<GroupMember> members = iGroupMemberRepository.findAllByGroup_GroupId(gm.getGroup().getGroupId())
@@ -183,6 +209,67 @@ public class GroupMemberService implements IGroupMemberService {
             default:
                 throw new UndefinedChoiceException("Choice is invalid!");
         }
+
+        //Mô hình này được áp dụng phổ biến trong các hợp tác xã, công ty cổ phần,
+        // tổ hợp tác, và DAO (Decentralized Autonomous Organization) trong blockchain.
+        //
+        //Ở Việt Nam: Luật Doanh nghiệp 2020 – Điều 148 quy định
+        // “Nghị quyết được thông qua nếu số cổ phần tán thành chiếm ít nhất 65% tổng số phiếu biểu quyết”
+        // (có thể điều chỉnh tỷ lệ theo điều lệ).
+        //
+        //→ Tức là 65%–75% là mức hợp lý, tùy bạn chọn.
+
+        // Lưu lại chi tiết vote
+        iDecisionVoteDetailRepository.save(voteDetail);
+
+        // Lấy toàn bộ danh sách phiếu cho quyết định này
+        List<DecisionVoteDetail> voteDetails = iDecisionVoteDetailRepository.getAllByDecisionVote(vote);
+
+        // Tính tổng tỉ lệ đồng ý và từ chối
+        double totalAccepted = voteDetails.stream()
+                .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ACCEPTED)
+                .mapToDouble(v -> v.getGroupMember().getOwnershipPercentage())
+                .sum();
+
+        double totalRejected = voteDetails.stream()
+                .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.REJECTED)
+                .mapToDouble(v -> v.getGroupMember().getOwnershipPercentage())
+                .sum();
+
+        // Logic quyết định
+        if (voteDetails.stream()
+                .filter(decisionVoteDetail ->  decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
+                .anyMatch(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
+            totalRejected += voteDetails
+                    .stream()
+                    .filter(decisionVoteDetail ->  decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
+                    .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)
+                    .mapToDouble(v -> v.getGroupMember().getOwnershipPercentage()).sum();
+        } else if (totalRejected > 0 && totalAccepted < 0.75) {
+            vote.setStatus(StatusDecisionVote.REJECTED);
+        }else if (totalAccepted > 0.75) {
+            vote.setStatus(StatusDecisionVote.APPROVED);
+        }
+        iDecisionVoteRepository.save(vote);
+
+
+        
+    }
+
+    @Override
+    public RequestVehicleService requestVehicleService(int groupId, int serviceId) {
+        Users user = authenticationService.getCurrentAccount();
+        GroupMember gm = iGroupMemberRepository.findGroupMembersByUsers_IdAndGroup_GroupId(user.getId(), groupId);
+        if (gm == null) {
+            throw new GroupMemberNotFoundException("GROUP_NOT_FOUND");
+        }
+        RequestVehicleService vehicleService = new RequestVehicleService();
+        vehicleService.setGroupMember(gm);
+        vehicleService.setVehicle(iVehicleRepository.getVehiclesByGroup(gm.getGroup()));
+        vehicleService.setRequestVehicleServiceDetail(new RequestVehicleServiceDetail());
+        iRequestVehicleServiceRepository.save(vehicleService);
+
+        return vehicleService;
     }
 
 

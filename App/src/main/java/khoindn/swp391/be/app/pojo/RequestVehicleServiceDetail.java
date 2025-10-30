@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class RequestServiceDetail {
+public class RequestVehicleServiceDetail {
 
     // Attributes
     @Id
@@ -21,9 +21,9 @@ public class RequestServiceDetail {
     @Column(name = "description")
     private String description;
     // Relationships
-    @OneToOne
+    @OneToOne(mappedBy = "requestVehicleServiceDetail")
     @JoinColumn(name = "request_service_id")
-    private RequestService request;
+    private RequestVehicleService requestVehicleService;
 
     @ManyToOne
     @JoinColumn(name = "staff_id")

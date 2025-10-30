@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MenuService {
+public class MenuVehicleService {
     // Attributes
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,7 +24,7 @@ public class MenuService {
     @Column(name = "price")
     private Double price;
     // Relationships
-    @OneToMany(mappedBy = "menuService", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "menuVehicleService", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<RequestService> requestServices;
+    private List<RequestVehicleService> requestVehicleServices;
 }
