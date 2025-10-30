@@ -52,6 +52,16 @@ interface Group {
   transactions: Transaction[];
 }
 
+// Interface FE cho GroupMember trả về từ BE mới
+interface GroupMemberDetailRes {
+  id: number;
+  roleInGroup: string;
+  ownershipPercentage: number;
+  hovaten: string;
+  userId: number;
+  groupId: number;
+}
+
 const CURRENT_USER_ID = "me";
 const API_BASE_URL = "http://localhost:8080"; // giữ lại hoặc lấy baseURL chung của dự án
 const USE_MOCK_DATA = true;
@@ -123,7 +133,9 @@ export default function GroupDetail() {
           const fundDetailRes = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`);
           fundDetails = fundDetailRes.data;
           // CHỈ DÙNG MOCK CHO MEMBERS
-          members = mockGroupMembers;
+          // Chỉ nhận đúng fields mới từ API trả về
+          const membersRes = await axiosClient.get<GroupMemberDetailRes[]>(`/groupMember/members/${gid}`);
+          members = membersRes.data;
           const vehiclesRes = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
           vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [vehiclesRes.data];
         }
@@ -134,12 +146,12 @@ export default function GroupDetail() {
           ownerId: members.find((m: any) => m.roleInGroup === "admin")?.userId?.id || "",
           fund: Number(commonFund.balance),
           minTransfer: 10000,
-          users: members.map((m: any) => ({
-            id: m.userId.id?.toString() || '',
-            hovaTen: m.userId.hovaTen || m.userId.fullName || '',
-            email: m.userId.email,
-            avatar: m.userId.avatar,
-            role: m.roleInGroup === "admin" ? "admin" : "member",
+          users: members.map((m: GroupMemberDetailRes) => ({
+            id: m.userId.toString(),
+            hovaTen: m.hovaten || '', // hoặc đầy đủ tên
+            email: '',
+            avatar: '',
+            role: m.roleInGroup,
             ownershipPercentage: m.ownershipPercentage
           })),
           vehicles: vehicles.map((v: any) => ({
