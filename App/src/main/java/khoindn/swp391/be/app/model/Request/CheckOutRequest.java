@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -11,6 +14,5 @@ public class CheckOutRequest {
     private int userId;
     private String condition;
     private String notes;
-    private String images;
-    
+    private List<String> images;
 }

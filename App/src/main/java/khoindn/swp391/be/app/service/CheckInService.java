@@ -61,7 +61,7 @@ public class CheckInService implements ICheckInService {
         }
         if (!schedule.getStatus().equals(StatusSchedule.BOOKED)) {
             throw new InvalidScheduleStatusException(
-                    "Schedule không ở trạng thái booked. "
+                    "Schedule không ở trạng thái booked . "
             );
         }
         CheckIn checkIn = new CheckIn();
