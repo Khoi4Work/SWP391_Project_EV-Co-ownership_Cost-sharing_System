@@ -265,4 +265,13 @@ public class APIExceptionHandler {
         return ResponseEntity.status(409).body(ex.getMessage()); // 409 Conflict
     }
 
+    @ExceptionHandler(BalanceNotEnoughException.class)
+    public ResponseEntity handleBalanceNotEnoughException(BalanceNotEnoughException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage()); // 400 Bad Request
+    }
+
+    @ExceptionHandler(CommonFundNotFoundException.class)
+    public ResponseEntity handleCommonFundNotFoundException(CommonFundNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage()); // 404 Not Found
+    }
 }

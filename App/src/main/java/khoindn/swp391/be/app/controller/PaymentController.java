@@ -3,7 +3,9 @@ package khoindn.swp391.be.app.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import khoindn.swp391.be.app.model.Request.PaymentRequest;
+import khoindn.swp391.be.app.model.Request.WithdrawRequest;
 import khoindn.swp391.be.app.model.Response.PaymentResponse;
+import khoindn.swp391.be.app.model.Response.WithdrawResponse;
 import khoindn.swp391.be.app.pojo.CommonFund;
 import khoindn.swp391.be.app.pojo.FundDetail;
 import khoindn.swp391.be.app.service.PaymentService;
@@ -73,5 +75,16 @@ public class PaymentController {
     @GetMapping("/fund-details/{fundId}")
     public ResponseEntity<List<FundDetail>> getFundDetailsByFundId(@PathVariable Integer fundId) {
         return ResponseEntity.ok(paymentService.getFundDetailById(fundId));
+    }
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<WithdrawResponse> withdrawMoney(@RequestBody WithdrawRequest request) {
+        Integer transactionId = paymentService.withdrawMoney(request);
+
+        return ResponseEntity.ok(new WithdrawResponse(
+                "SUCCESS",
+                "Withdraw successful",
+                transactionId
+        ));
     }
 }
