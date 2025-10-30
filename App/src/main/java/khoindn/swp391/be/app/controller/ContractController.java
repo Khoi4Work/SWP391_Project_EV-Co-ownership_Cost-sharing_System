@@ -190,7 +190,7 @@ public class ContractController {
         }
     }
 
-    @PostMapping("/file")
+    @GetMapping("/file")
     public ResponseEntity getFileByName(String fileName) {
         return ResponseEntity.status(200).body(iSupabaseService.getFileUrl(fileName));
     }

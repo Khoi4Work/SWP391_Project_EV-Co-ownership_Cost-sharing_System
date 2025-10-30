@@ -1,4 +1,5 @@
 package khoindn.swp391.be.app.service;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -8,9 +9,15 @@ import java.net.URL;
 
 @Service
 public class SupabaseService implements ISupabaseService{
-    private static final String SUPABASE_URL = "https://cwizvisvfifuqgbnesyu.supabase.co/storage/v1/object/uploadsPDF/";
-    private static final String SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3aXp2aXN2ZmlmdXFnYm5lc3l1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTYzMjE1NiwiZXhwIjoyMDc3MjA4MTU2fQ.ZRHHFfSwqw-CTx6rwhQgY8rdvl6x5ERPcpRP_kr95V4";
-    private static final String SUPABASE_LINK_URL = "https://cwizvisvfifuqgbnesyu.supabase.co/storage/v1/object/public/uploadsPDF/";
+
+
+    @Value("${SUPABASE_URL}")
+    private  String SUPABASE_URL;
+    @Value("${SUPABASE_KEY}")
+    private  String SUPABASE_KEY;
+    @Value("${SUPABASE_LINK_URL}")
+    private  String SUPABASE_LINK_URL;
+
 
     @Override
     public String uploadFile(MultipartFile file) throws Exception {
