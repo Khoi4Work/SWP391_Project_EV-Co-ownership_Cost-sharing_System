@@ -7,442 +7,643 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
-import {
-  mockCommonFund,
-  mockFundDetails,
-  mockGroupMembers,
-  mockVehicles,
-} from "@/data/mockGroupDetail";
+
+// Interface cho GroupMember response từ BE
+interface GroupMemberDetailRes {
+    id: number;
+    roleInGroup: string;
+    ownershipPercentage: number;
+    hovaten: string;
+    userId: number;
+    groupId: number;
+}
 
 interface User {
-  id: string;
-  hovaTen: string;
-  avatar?: string;
-  email?: string;
-  role: "admin" | "member";
-  ownershipPercentage?: number;
+    id: string;
+    hovaTen: string;
+    avatar?: string;
+    email?: string;
+    role: "admin" | "member";
+    ownershipPercentage?: number;
 }
 
 interface Vehicle {
-  id: string;
-  name: string;
-  info?: string;
-  status: "available" | "in-use" | "maintenance";
-  imageUrl?: string;
+    id: string;
+    name: string;
+    info?: string;
+    status: "available" | "in-use" | "maintenance";
+    imageUrl?: string;
 }
 
 interface Transaction {
-  id: string;
-  name: string;
-  type: "deposit" | "withdraw" | "transfer";
-  amount: number;
-  date: string;
-  userId?: string;
+    id: string;
+    name: string;
+    type: "deposit" | "withdraw" | "transfer";
+    amount: number;
+    date: string;
+    userId?: string;
 }
 
 interface Group {
-  id: string;
-  fundId: number;
-  name: string;
-  ownerId: string;
-  fund: number;
-  minTransfer: number;
-  users: User[];
-  vehicles: Vehicle[];
-  transactions: Transaction[];
+    id: string;
+    fundId: number;
+    name: string;
+    ownerId: string;
+    fund: number;
+    minTransfer: number;
+    users: User[];
+    vehicles: Vehicle[];
+    transactions: Transaction[];
 }
 
-// Interface FE cho GroupMember trả về từ BE mới
-interface GroupMemberDetailRes {
-  id: number;
-  roleInGroup: string;
-  ownershipPercentage: number;
-  hovaten: string;
-  userId: number;
-  groupId: number;
+interface VehicleUsage {
+    id: number;
+    date: string;
+    vehicle: string;
+    user: string;
+    start: string;
+    end: string;
+    status: "Hoàn thành" | "Đang sử dụng";
+    note: string;
+    checkIn: string;
+    checkOut: string | null;
+    distance: number | null;
 }
 
-const CURRENT_USER_ID = "me";
-const API_BASE_URL = "http://localhost:8080"; // giữ lại hoặc lấy baseURL chung của dự án
-const USE_MOCK_DATA = true;
-const currentUserId = USE_MOCK_DATA ? 2 : Number(localStorage.getItem("userId"));
+const API_BASE_URL = "http://localhost:8080";
+const USE_MOCK_DATA = false;
 
 export default function GroupDetail() {
-  const { groupId } = useParams();
-  const navigate = useNavigate();
-  const [group, setGroup] = useState<Group | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [amount, setAmount] = useState("");
-  const [processing, setProcessing] = useState(false);
-  // Thêm state cho dialog xem chi tiết
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
+    const { groupId } = useParams<{ groupId: string }>();
+    const navigate = useNavigate();
 
-  // FUNCTION: Load group Ids nếu thiếu groupId param, lấy id đầu tiên
-  useEffect(() => {
-    async function loadGroupId() {
-      try {
-        // Nếu đang mock thì lấy cứng luôn
-        if (USE_MOCK_DATA) {
-          const mockGroupIds = [1];
-          localStorage.setItem("groupIds", JSON.stringify(mockGroupIds));
-          localStorage.setItem("groupId", String(mockGroupIds[0]));
-          if (!groupId) navigate(`/group/${mockGroupIds[0]}`);
-          return;
-        }
-        // Lấy userId từ localStorage
-        const currentUserId = Number(localStorage.getItem("userId"));
-        if (!currentUserId) return;
-        // Fetch danh sách groupId user đang tham gia
-        const res = await axiosClient.get(`/groupMember/getGroupIdsByUserId?userId=${currentUserId}`);
-        const groupIds: number[] = res.data;
-        if (!groupIds || groupIds.length === 0) {
-          toast({ title: "Thông báo", description: "Bạn chưa tham gia nhóm nào", variant: "destructive" });
-          navigate("/co-owner/dashboard");
-          return;
-        }
-        localStorage.setItem("groupIds", JSON.stringify(groupIds));
-        localStorage.setItem("groupId", String(groupIds[0]));
-        if (!groupId) navigate(`/group/${groupIds[0]}`);
-      } catch {
-        toast({ title: "Lỗi", description: "Không thể lấy thông tin nhóm", variant: "destructive" });
-      }
-    }
-    // Chỉ gọi nếu không có groupId param hoặc groupId là null/undefined
-    if (!groupId) loadGroupId();
-    // else: useEffect dưới sẽ fetch detail bình thường
-  }, [groupId, navigate]);
+    // States
+    const [group, setGroup] = useState<Group | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string>("");
+    const [amount, setAmount] = useState("");
+    const [processing, setProcessing] = useState(false);
+    const [detailOpen, setDetailOpen] = useState(false);
+    const [selectedHistory, setSelectedHistory] = useState<VehicleUsage | null>(null);
 
-  // CŨ: useEffect fetch thông tin detail group...
-  useEffect(() => {
-    // Nếu groupId không tồn tại (vẫn chưa set từ loadGroupId), thì không làm gì
-    if (!groupId) return;
-    async function fetchGroupBE() {
-      setLoading(true);
-      try {
-        let commonFund, fundDetails, members, vehicles;
-        if (USE_MOCK_DATA) {
-          commonFund = mockCommonFund;
-          fundDetails = mockFundDetails;
-          members = mockGroupMembers;
-          vehicles = mockVehicles;
-        } else {
-          const gid = Number(groupId);
-          // Sửa endpoint: lấy CommonFund qua query fundId
-          const fundRes = await axiosClient.get(`/api/fund-payment`, { params: { fundId: gid } });
-          commonFund = fundRes.data;
-          // Sửa endpoint: lấy FundDetail qua query fundDetailId
-          const fundDetailRes = await axiosClient.get(`/api/fund-payment`, { params: { fundDetailId: commonFund.fundId } });
-          fundDetails = fundDetailRes.data;
-          // Giữ nguyên Member (đã mapping đúng response DTO)
-          const membersRes = await axiosClient.get(`/groupMember/members/${gid}`);
-          members = membersRes.data;
-          // Giữ nguyên Vehicle
-          const vehiclesRes = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
-          vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [vehiclesRes.data];
-        }
-        setGroup({
-          id: commonFund.group.groupId.toString(),
-          fundId: commonFund.fundId,
-          name: commonFund.group.groupName,
-          ownerId: members.find((m: any) => m.roleInGroup === "admin")?.userId?.id || "",
-          fund: Number(commonFund.balance),
-          minTransfer: 10000,
-          users: members.map((m: GroupMemberDetailRes) => ({
-            id: m.userId.toString(),
-            hovaTen: m.hovaten || '', // hoặc đầy đủ tên
-            email: '',
-            avatar: '',
-            role: m.roleInGroup,
-            ownershipPercentage: m.ownershipPercentage
-          })),
-          vehicles: vehicles.map((v: any) => ({
-            id: v.vehicleId?.toString() || '',
-            name: v.plateNo + " " + v.brand + " " + v.model,
-            info: v.model,
-            status: "available",
-            imageUrl: v.imageUrl
-          })),
-          transactions: fundDetails.map((fd: any) => ({
-            id: fd.fundDetailId?.toString() || '',
-            name: fd.transactionType,
-            type: fd.transactionType && fd.transactionType.toLowerCase().includes("deposit") ? "deposit" : (fd.transactionType?.toLowerCase().includes("withdraw") ? "withdraw" : "transfer"),
-            amount: Number(fd.amount),
-            date: fd.createdAt || new Date().toISOString(),
-            userId: fd.groupMember?.userId?.toString() || ''
-          }))
-        });
-      } catch (err) {
-        setGroup(null);
-      }
-      setLoading(false);
-    }
-    fetchGroupBE();
-  }, [groupId]);
-
-  const handleDeposit = async () => {
-    const amt = Number(amount);
-    if (!amt || isNaN(amt) || amt < group!.minTransfer) {
-      toast({
-        title: "Số tiền không hợp lệ",
-        description: `Tối thiểu ${group!.minTransfer.toLocaleString("vi-VN")} VNĐ`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setProcessing(true);
-
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/api/fund-payment/create-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    // Mock data cho lịch sử sử dụng xe
+    const mockVehicleUsages: VehicleUsage[] = [
+        {
+            id: 1,
+            date: "2025-10-22",
+            vehicle: "Xe 1",
+            user: "Bạn",
+            start: "08:00",
+            end: "10:30",
+            status: "Hoàn thành",
+            note: "Không lỗi gì",
+            checkIn: "08:00",
+            checkOut: "10:30",
+            distance: 30
         },
-        body: JSON.stringify({
-          fundId: group!.fundId,
-          groupId: Number(groupId),
-          userId: Number(CURRENT_USER_ID === "me" ? 2 : 1), // Convert user ID sang số
-          amount: amt
-        })
-      });
+        {
+            id: 2,
+            date: "2025-10-20",
+            vehicle: "Xe 1",
+            user: "Nguyễn Văn A",
+            start: "15:00",
+            end: "17:00",
+            status: "Đang sử dụng",
+            note: "Đang sử dụng - chưa check-out",
+            checkIn: "15:00",
+            checkOut: null,
+            distance: null
+        }
+    ];
 
-      if (!response.ok) {
-        throw new Error('Failed to create payment');
-      }
+    // EFFECT 1: Load group ID nếu chưa có
+    useEffect(() => {
+        if (groupId) return; // Nếu đã có groupId param thì skip
 
-      const data = await response.json();
-      
-      if (data.paymentUrl) {
-        toast({
-          title: "Đang chuyển đến VNPay",
-          description: `Số tiền: ${amt.toLocaleString("vi-VN")} VNĐ`
-        });
-        
-        // Redirect đến VNPay payment gateway
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error(data.message || 'No payment URL received');
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Lỗi tạo thanh toán",
-        description: "Không thể kết nối đến cổng thanh toán. Vui lòng thử lại.",
-        variant: "destructive"
-      });
-      setProcessing(false);
+        async function loadGroupId() {
+            try {
+                const userId = Number(localStorage.getItem("userId"));
+                if (!userId) {
+                    setError("Không tìm thấy userId");
+                    return;
+                }
+
+                // Lấy danh sách group của user
+                const res = await axiosClient.get(`/groupMember/getGroupIdsByUserId`, {
+                    params: { userId }
+                });
+
+                const groupIds: number[] = res.data;
+                if (!groupIds || groupIds.length === 0) {
+                    toast({
+                        title: "Thông báo",
+                        description: "Bạn chưa tham gia nhóm nào",
+                        variant: "destructive"
+                    });
+                    navigate("/co-owner/dashboard");
+                    return;
+                }
+
+                // Điều hướng sang group đầu tiên
+                navigate(`/group/${groupIds[0]}`);
+            } catch (err) {
+                console.error("Error loading group ID:", err);
+                setError("Không thể lấy danh sách nhóm");
+            }
+        }
+
+        loadGroupId();
+    }, [groupId, navigate]);
+
+    // EFFECT 2: Fetch thông tin group chi tiết
+    useEffect(() => {
+        if (!groupId) return;
+
+        async function fetchGroupDetail() {
+            setLoading(true);
+            setError("");
+
+            try {
+                const gid = Number(groupId);
+                console.log("=== FETCHING GROUP DETAIL ===");
+                console.log("GroupId:", gid);
+
+                // 1. Fetch Members
+                console.log("Step 1: Fetching members...");
+                let members: GroupMemberDetailRes[] = [];
+                try {
+                    const res = await axiosClient.get<GroupMemberDetailRes[]>(
+                        `/groupMember/group/${gid}` // ✅ Sửa đây
+                    );
+                    members = res.data || [];
+                    console.log("✅ Members loaded:", members);
+
+                    if (!members || members.length === 0) {
+                        setError("Nhóm không có thành viên");
+                        setLoading(false);
+                        return;
+                    }
+                } catch (err: any) {
+                    console.error("❌ Error fetching members:", {
+                        status: err.response?.status,
+                        message: err.message,
+                        endpoint: `/api/group-members/group/${gid}`
+                    });
+                    setError(`Không thể lấy danh sách thành viên (${err.response?.status || "Network Error"})`);
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Fetch CommonFund
+                console.log("Step 2: Fetching fund...");
+                let commonFund: any = null;
+                try {
+                    const res = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`);
+                    commonFund = res.data;
+                    console.log("✅ Fund loaded:", commonFund);
+                } catch (err: any) {
+                    console.warn("⚠️ Fund not found, using defaults:", err.message);
+                    commonFund = {
+                        fundId: 0,
+                        balance: 0,
+                        group: { groupId: gid, groupName: "Nhóm" }
+                    };
+                }
+
+                // 3. Fetch FundDetails
+                console.log("Step 3: Fetching fund details...");
+                let fundDetails: any[] = [];
+                if (commonFund?.fundId) {
+                    try {
+                        const res = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`);
+                        fundDetails = res.data || [];
+                        console.log("✅ Fund details loaded:", fundDetails);
+                    } catch (err: any) {
+                        console.warn("⚠️ Fund details not found:", err.message);
+                    }
+                }
+
+                // 4. Fetch Vehicles
+                console.log("Step 4: Fetching vehicles...");
+                let vehicles: any[] = [];
+                try {
+                    const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
+                    vehicles = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
+                    console.log("✅ Vehicles loaded:", vehicles);
+                } catch (err: any) {
+                    console.warn("⚠️ Vehicles not found:", err.message);
+                }
+
+                // Map dữ liệu vào Group object
+                console.log("Step 5: Mapping data...");
+                const mappedGroup: Group = {
+                    id: gid.toString(),
+                    fundId: commonFund?.fundId || 0,
+                    name: commonFund?.group?.groupName || "Nhóm",
+                    ownerId: members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId?.toString() || "",
+                    fund: Number(commonFund?.balance || 0),
+                    minTransfer: 10000,
+                    users: members.map(m => ({
+                        id: m.userId.toString(),
+                        hovaTen: m.hovaten || "N/A",
+                        email: "",
+                        avatar: "",
+                        role: m.roleInGroup?.toLowerCase() === "admin" ? "admin" : "member",
+                        ownershipPercentage: m.ownershipPercentage || 0
+                    })),
+                    vehicles: vehicles.map(v => ({
+                        id: v.vehicleId?.toString() || v.id?.toString() || "",
+                        name: `${v.plateNo || ""} ${v.brand || ""} ${v.model || ""}`.trim() || "Không có tên",
+                        info: v.model || "",
+                        status: "available",
+                        imageUrl: v.imageUrl
+                    })),
+                    transactions: fundDetails.map(fd => ({
+                        id: fd.fundDetailId?.toString() || fd.id?.toString() || "",
+                        name: fd.transactionType || "Giao dịch",
+                        type: fd.transactionType?.toLowerCase().includes("deposit")
+                            ? "deposit"
+                            : fd.transactionType?.toLowerCase().includes("withdraw")
+                                ? "withdraw"
+                                : "transfer",
+                        amount: Number(fd.amount || 0),
+                        date: fd.createdAt || new Date().toISOString(),
+                        userId: fd.groupMember?.userId?.toString() || ""
+                    }))
+                };
+
+                console.log("✅ Final group data:", mappedGroup);
+                setGroup(mappedGroup);
+            } catch (err: any) {
+                console.error("❌ Unexpected error:", err);
+                setError("Không thể tải thông tin nhóm: " + (err.message || "Unknown error"));
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchGroupDetail();
+    }, [groupId]);
+
+    // Handle deposit
+    const handleDeposit = async () => {
+        const amt = Number(amount);
+        if (!amt || isNaN(amt) || amt < group!.minTransfer) {
+            toast({
+                title: "Số tiền không hợp lệ",
+                description: `Tối thiểu ${group!.minTransfer.toLocaleString("vi-VN")} VNĐ`,
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setProcessing(true);
+
+        try {
+            const userId = Number(localStorage.getItem("userId"));
+            const token = localStorage.getItem("accessToken");
+
+            const response = await fetch(`${API_BASE_URL}/api/fund-payment/create-payment`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    fundId: group!.fundId,
+                    groupId: Number(groupId),
+                    userId: userId || 1,
+                    amount: amt
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.paymentUrl) {
+                toast({
+                    title: "Đang chuyển đến VNPay",
+                    description: `Số tiền: ${amt.toLocaleString("vi-VN")} VNĐ`
+                });
+                window.location.href = data.paymentUrl;
+            } else {
+                throw new Error(data.message || "Không nhận được link thanh toán");
+            }
+        } catch (error: any) {
+            console.error("Payment error:", error);
+            toast({
+                title: "Lỗi tạo thanh toán",
+                description: error.message || "Không thể kết nối đến cổng thanh toán",
+                variant: "destructive"
+            });
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    // Render
+    if (loading) {
+        return <div className="container mx-auto p-6 text-center">Đang tải...</div>;
     }
-  };
 
-  if (loading) return <div className="container mx-auto p-6">Đang tải...</div>;
-  if (!group) return <div className="container mx-auto p-6">Không tìm thấy nhóm</div>;
-
-  const me = group.users.find(u => u.id === CURRENT_USER_ID);
-  const myRole = me?.role ?? "member";
-  const min = group.minTransfer;
-
-  return (
-    <div className="container mx-auto p-6">
-      <header className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={() => navigate(-1)}>← Quay lại</Button>
-          <h1 className="text-2xl font-bold">{group.name}</h1>
-          <Badge variant="secondary">Vai trò: {myRole === "admin" ? "Admin" : "Member"}</Badge>
-        </div>
-      </header>
-
-      <section className="mb-6">
-        <Card className="shadow-sm">
-          <CardContent className="pt-6">
-            <div className="grid gap-4 md:grid-cols-3 items-end">
-              {/* Quỹ chung */}
-              <div>
-                <div className="text-sm text-muted-foreground">Quỹ chung</div>
-                <div className="text-2xl font-bold">{group.fund.toLocaleString("vi-VN")} VNĐ</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Tối thiểu: {min.toLocaleString("vi-VN")} VNĐ
-                </div>
-              </div>
-
-              {/* Nhập số tiền */}
-              <div>
-                <label htmlFor="amount" className="text-sm font-medium mb-2 block">
-                  Số tiền nạp
-                </label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min={min}
-                  placeholder={`Tối thiểu ${min.toLocaleString("vi-VN")} VNĐ`}
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  disabled={processing}
-                />
-              </div>
-
-              {/* Button nạp tiền */}
-              <div>
-                <Button 
-                  onClick={handleDeposit} 
-                  className="w-full"
-                  disabled={processing || !amount}
-                >
-                  {processing ? "Đang xử lý..." : "Nạp tiền qua VNPay"}
-                </Button>
-              </div>
+    if (error) {
+        return (
+            <div className="container mx-auto p-6">
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="pt-6">
+                        <p className="text-red-600 font-medium">❌ {error}</p>
+                        <Button onClick={() => window.location.reload()} className="mt-4">
+                            Tải lại trang
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
+        );
+    }
 
-            {/* Danh sách thành viên */}
-            <div className="mt-6">
-              <h3 className="font-semibold mb-3 text-lg">Thành viên nhóm</h3>
-              <div className="flex gap-3 flex-wrap">
-                {group.users.map(u => (
-                  <div key={u.id} className="flex items-center gap-2 p-3 border rounded-lg bg-background hover:bg-accent transition-colors">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
-                      {u.hovaTen.charAt(0)}
-                    </div>
+    if (!group) {
+        return (
+            <div className="container mx-auto p-6">
+                <Card>
+                    <CardContent className="pt-6 text-center text-muted-foreground">
+                        Không tìm thấy nhóm
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    const userId = localStorage.getItem("userId");
+    const currentUser = group.users.find(u => u.id === userId);
+    const myRole = currentUser?.role || "member";
+    const min = group.minTransfer;
+
+    return (
+        <div className="container mx-auto p-6">
+            <header className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+                        ← Quay lại
+                    </Button>
                     <div>
-                      <div className="font-medium">{u.hovaTen}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {u.role === "admin" ? "Quản trị viên" : "Thành viên"} • {u.ownershipPercentage}%
-                      </div>
+                        <h1 className="text-3xl font-bold">{group.name}</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Vai trò: {myRole === "admin" ? "👑 Quản trị viên" : "👤 Thành viên"}
+                        </p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Danh sách xe */}
-            <div className="mt-6">
-              <h3 className="font-semibold mb-3 text-lg">Xe trong nhóm</h3>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {group.vehicles.map(v => (
-                  <div key={v.id} className="p-4 border rounded-lg bg-background">
-                    <div className="font-medium text-lg">{v.name}</div>
-                    <div className="text-sm text-muted-foreground mt-1">{v.info}</div>
-                    <Badge 
-                      variant={v.status === "available" ? "default" : v.status === "in-use" ? "secondary" : "destructive"}
-                      className="mt-2"
-                    >
-                      {v.status === "available" ? "Sẵn sàng" : v.status === "in-use" ? "Đang sử dụng" : "Bảo trì"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Lịch sử sử dụng xe */}
-            <div className="mt-6">
-              <h3 className="font-semibold mb-3 text-lg">Lịch sử sử dụng xe</h3>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="p-3 text-left font-medium">Ngày</th>
-                      <th className="p-3 text-left font-medium">Xe</th>
-                      <th className="p-3 text-left font-medium">Người dùng</th>
-                      <th className="p-3 text-left font-medium">Giờ sử dụng</th>
-                      <th className="p-3 text-left font-medium">Trạng thái</th>
-                      <th className="p-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {
-                    // MOCK DATA. Số lượng nhiều cũng được
-                    [{
-                      id: 1, date: "2025-10-22", vehicle: "Xe 1", user: "Bạn", start:"08:00", end:"10:30", status: "Hoàn thành", note: 'Không lỗi gì', checkIn: '08:00', checkOut: '10:30', distance: 30
-                    },
-                    {
-                      id: 2, date: "2025-10-20", vehicle: "Xe 1", user: "Nguyễn Văn A", start:"15:00", end:"17:00", status: "Đang sử dụng", note: 'Đang sử dụng - chưa check-out', checkIn: '15:00', checkOut: null, distance: null
-                    }].map(x => (
-                      <tr key={x.id} className="border-t hover:bg-muted/50 transition-colors">
-                        <td className="p-3">{x.date}</td>
-                        <td className="p-3">{x.vehicle}</td>
-                        <td className="p-3">{x.user}</td>
-                        <td className="p-3">{x.start} - {x.end}</td>
-                        <td className="p-3">
-                          <Badge variant={x.status === "Hoàn thành" ? "default" : x.status === "Đang sử dụng" ? "secondary" : "outline"}>{x.status}</Badge>
-                        </td>
-                        <td className="p-3 text-right">
-                          <Button size="sm" variant="outline" onClick={() => { setSelectedHistory(x); setDetailOpen(true); }}>Xem chi tiết</Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {/* Dialog chi tiết lịch sử sử dụng xe */}
-              <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>Chi tiết sử dụng xe</DialogTitle>
-                  </DialogHeader>
-                  {selectedHistory && (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div><span className="font-semibold">Ngày:</span> {selectedHistory.date}</div>
-                        <div><span className="font-semibold">Xe:</span> {selectedHistory.vehicle}</div>
-                        <div><span className="font-semibold">Người dùng:</span> {selectedHistory.user}</div>
-                        <div><span className="font-semibold">Trạng thái:</span> {selectedHistory.status}</div>
-                        <div><span className="font-semibold">Check-in:</span> {selectedHistory.checkIn}</div>
-                        <div><span className="font-semibold">Check-out:</span> {selectedHistory.checkOut ?? '-'}</div>
-                        <div><span className="font-semibold">Quãng đường:</span> {selectedHistory.distance != null ? `${selectedHistory.distance} km` : '-'}</div>
-                        <div className="col-span-2"><span className="font-semibold">Ghi chú:</span> {selectedHistory.note || '-'}</div>
-                      </div>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* Lịch sử giao dịch */}
-            <div className="mt-6">
-              <h3 className="font-semibold mb-3 text-lg">Lịch sử giao dịch</h3>
-              {group.transactions.length === 0 ? (
-                <p className="text-sm text-muted-foreground p-4 border rounded-lg text-center">
-                  Chưa có giao dịch nào
-                </p>
-              ) : (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="p-3 text-left font-medium">Tên giao dịch</th>
-                        <th className="p-3 text-left font-medium">Loại</th>
-                        <th className="p-3 text-right font-medium">Số tiền</th>
-                        <th className="p-3 text-left font-medium">Ngày</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.transactions.map(t => (
-                        <tr key={t.id} className="border-t hover:bg-muted/50 transition-colors">
-                          <td className="p-3">{t.name}</td>
-                          <td className="p-3">
-                            <Badge variant={t.type === "deposit" ? "default" : t.type === "withdraw" ? "destructive" : "secondary"}>
-                              {t.type === "deposit" ? "Nạp tiền" : t.type === "withdraw" ? "Rút tiền" : "Chuyển khoản"}
-                            </Badge>
-                          </td>
-                          <td className="p-3 text-right font-medium">
-                            <span className={t.type === "deposit" ? "text-green-600" : "text-red-600"}>
-                              {t.type === "deposit" ? "+" : "-"}{t.amount.toLocaleString("vi-VN")} VNĐ
-                            </span>
-                          </td>
-                          <td className="p-3 text-muted-foreground">
-                            {new Date(t.date).toLocaleDateString("vi-VN")}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
-  );
+            </header>
+
+            <section className="space-y-6">
+                {/* Card Quỹ & Nạp tiền */}
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="grid gap-6 md:grid-cols-3 items-end">
+                            <div>
+                                <label className="text-sm font-medium text-muted-foreground">Quỹ chung</label>
+                                <p className="text-3xl font-bold mt-2">{group.fund.toLocaleString("vi-VN")} VNĐ</p>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Tối thiểu nạp: {min.toLocaleString("vi-VN")} VNĐ
+                                </p>
+                            </div>
+
+                            <div>
+                                <label htmlFor="amount" className="text-sm font-medium mb-2 block">
+                                    Số tiền nạp (VNĐ)
+                                </label>
+                                <Input
+                                    id="amount"
+                                    type="number"
+                                    min={min}
+                                    step={10000}
+                                    placeholder={`Tối thiểu ${min.toLocaleString("vi-VN")}`}
+                                    value={amount}
+                                    onChange={e => setAmount(e.target.value)}
+                                    disabled={processing}
+                                />
+                            </div>
+
+                            <Button
+                                onClick={handleDeposit}
+                                size="lg"
+                                disabled={processing || !amount}
+                                className="w-full"
+                            >
+                                {processing ? "⏳ Đang xử lý..." : "💳 Nạp tiền VNPay"}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Danh sách thành viên */}
+                <Card>
+                    <CardContent className="pt-6">
+                        <h2 className="text-xl font-semibold mb-4">Thành viên nhóm ({group.users.length})</h2>
+                        <div className="grid gap-3 md:grid-cols-2">
+                            {group.users.map(user => (
+                                <div
+                                    key={user.id}
+                                    className="flex items-center gap-3 p-4 border rounded-lg bg-muted/50 hover:bg-muted transition"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-lg text-primary">
+                                        {user.hovaTen.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-medium">{user.hovaTen}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {user.role === "admin" ? "👑 Admin" : "👤 Member"} • {user.ownershipPercentage}%
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Danh sách xe */}
+                <Card>
+                    <CardContent className="pt-6">
+                        <h2 className="text-xl font-semibold mb-4">Xe trong nhóm ({group.vehicles.length})</h2>
+                        {group.vehicles.length > 0 ? (
+                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                {group.vehicles.map(vehicle => (
+                                    <div key={vehicle.id} className="p-4 border rounded-lg">
+                                        <p className="font-medium text-lg">{vehicle.name}</p>
+                                        <p className="text-sm text-muted-foreground mt-1">{vehicle.info}</p>
+                                        <Badge className="mt-3">🚗 Sẵn sàng</Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">Chưa có xe nào</p>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Lịch sử sử dụng xe */}
+                <Card>
+                    <CardContent className="pt-6">
+                        <h2 className="text-xl font-semibold mb-4">Lịch sử sử dụng xe</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-muted border-b">
+                                <tr>
+                                    <th className="px-4 py-3 text-left font-medium">Ngày</th>
+                                    <th className="px-4 py-3 text-left font-medium">Xe</th>
+                                    <th className="px-4 py-3 text-left font-medium">Người dùng</th>
+                                    <th className="px-4 py-3 text-left font-medium">Giờ</th>
+                                    <th className="px-4 py-3 text-left font-medium">Trạng thái</th>
+                                    <th className="px-4 py-3 text-center font-medium">Chi tiết</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                {mockVehicleUsages.map(usage => (
+                                    <tr key={usage.id} className="hover:bg-muted/50">
+                                        <td className="px-4 py-3">{usage.date}</td>
+                                        <td className="px-4 py-3">{usage.vehicle}</td>
+                                        <td className="px-4 py-3">{usage.user}</td>
+                                        <td className="px-4 py-3">
+                                            {usage.start} - {usage.end || "..."}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <Badge
+                                                variant={usage.status === "Hoàn thành" ? "default" : "secondary"}
+                                            >
+                                                {usage.status === "Hoàn thành" ? "✅" : "⏳"} {usage.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setSelectedHistory(usage);
+                                                    setDetailOpen(true);
+                                                }}
+                                            >
+                                                Xem
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Lịch sử giao dịch */}
+                <Card>
+                    <CardContent className="pt-6">
+                        <h2 className="text-xl font-semibold mb-4">Lịch sử giao dịch</h2>
+                        {group.transactions.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-muted border-b">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left font-medium">Tên</th>
+                                        <th className="px-4 py-3 text-left font-medium">Loại</th>
+                                        <th className="px-4 py-3 text-right font-medium">Số tiền</th>
+                                        <th className="px-4 py-3 text-left font-medium">Ngày</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                    {group.transactions.map(transaction => (
+                                        <tr key={transaction.id} className="hover:bg-muted/50">
+                                            <td className="px-4 py-3">{transaction.name}</td>
+                                            <td className="px-4 py-3">
+                                                <Badge
+                                                    variant={
+                                                        transaction.type === "deposit"
+                                                            ? "default"
+                                                            : transaction.type === "withdraw"
+                                                                ? "destructive"
+                                                                : "secondary"
+                                                    }
+                                                >
+                                                    {transaction.type === "deposit"
+                                                        ? "➕ Nạp"
+                                                        : transaction.type === "withdraw"
+                                                            ? "➖ Rút"
+                                                            : "↔️ Chuyển"}
+                                                </Badge>
+                                            </td>
+                                            <td
+                                                className={`px-4 py-3 text-right font-medium ${
+                                                    transaction.type === "deposit" ? "text-green-600" : "text-red-600"
+                                                }`}
+                                            >
+                                                {transaction.type === "deposit" ? "+" : "-"}
+                                                {transaction.amount.toLocaleString("vi-VN")} VNĐ
+                                            </td>
+                                            <td className="px-4 py-3 text-muted-foreground">
+                                                {new Date(transaction.date).toLocaleDateString("vi-VN")}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">Chưa có giao dịch nào</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </section>
+
+            {/* Dialog chi tiết lịch sử xe */}
+            <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Chi tiết sử dụng xe</DialogTitle>
+                    </DialogHeader>
+                    {selectedHistory && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Ngày</p>
+                                    <p className="font-medium">{selectedHistory.date}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Xe</p>
+                                    <p className="font-medium">{selectedHistory.vehicle}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Người dùng</p>
+                                    <p className="font-medium">{selectedHistory.user}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Trạng thái</p>
+                                    <Badge variant={selectedHistory.status === "Hoàn thành" ? "default" : "secondary"}>
+                                        {selectedHistory.status}
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Check-in</p>
+                                    <p className="font-medium">{selectedHistory.checkIn}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Check-out</p>
+                                    <p className="font-medium">{selectedHistory.checkOut || "—"}</p>
+                                </div>
+                                <div className="col-span-2">
+                                    <p className="text-xs text-muted-foreground">Quãng đường</p>
+                                    <p className="font-medium">
+                                        {selectedHistory.distance ? `${selectedHistory.distance} km` : "—"}
+                                    </p>
+                                </div>
+                                <div className="col-span-2">
+                                    <p className="text-xs text-muted-foreground">Ghi chú</p>
+                                    <p className="font-medium">{selectedHistory.note || "—"}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
 }
