@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface User {
   id: string;
@@ -96,6 +97,9 @@ export default function GroupDetail() {
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
+  // Thêm state cho dialog xem chi tiết
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchGroup() {
@@ -296,6 +300,70 @@ export default function GroupDetail() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Lịch sử sử dụng xe */}
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3 text-lg">Lịch sử sử dụng xe</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="p-3 text-left font-medium">Ngày</th>
+                      <th className="p-3 text-left font-medium">Xe</th>
+                      <th className="p-3 text-left font-medium">Người dùng</th>
+                      <th className="p-3 text-left font-medium">Giờ sử dụng</th>
+                      <th className="p-3 text-left font-medium">Trạng thái</th>
+                      <th className="p-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {
+                    // MOCK DATA. Số lượng nhiều cũng được
+                    [{
+                      id: 1, date: "2025-10-22", vehicle: "Xe 1", user: "Bạn", start:"08:00", end:"10:30", status: "Hoàn thành", note: 'Không lỗi gì', checkIn: '08:00', checkOut: '10:30', distance: 30
+                    },
+                    {
+                      id: 2, date: "2025-10-20", vehicle: "Xe 1", user: "Nguyễn Văn A", start:"15:00", end:"17:00", status: "Đang sử dụng", note: 'Đang sử dụng - chưa check-out', checkIn: '15:00', checkOut: null, distance: null
+                    }].map(x => (
+                      <tr key={x.id} className="border-t hover:bg-muted/50 transition-colors">
+                        <td className="p-3">{x.date}</td>
+                        <td className="p-3">{x.vehicle}</td>
+                        <td className="p-3">{x.user}</td>
+                        <td className="p-3">{x.start} - {x.end}</td>
+                        <td className="p-3">
+                          <Badge variant={x.status === "Hoàn thành" ? "default" : x.status === "Đang sử dụng" ? "secondary" : "outline"}>{x.status}</Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          <Button size="sm" variant="outline" onClick={() => { setSelectedHistory(x); setDetailOpen(true); }}>Xem chi tiết</Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Dialog chi tiết lịch sử sử dụng xe */}
+              <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Chi tiết sử dụng xe</DialogTitle>
+                  </DialogHeader>
+                  {selectedHistory && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div><span className="font-semibold">Ngày:</span> {selectedHistory.date}</div>
+                        <div><span className="font-semibold">Xe:</span> {selectedHistory.vehicle}</div>
+                        <div><span className="font-semibold">Người dùng:</span> {selectedHistory.user}</div>
+                        <div><span className="font-semibold">Trạng thái:</span> {selectedHistory.status}</div>
+                        <div><span className="font-semibold">Check-in:</span> {selectedHistory.checkIn}</div>
+                        <div><span className="font-semibold">Check-out:</span> {selectedHistory.checkOut ?? '-'}</div>
+                        <div><span className="font-semibold">Quãng đường:</span> {selectedHistory.distance != null ? `${selectedHistory.distance} km` : '-'}</div>
+                        <div className="col-span-2"><span className="font-semibold">Ghi chú:</span> {selectedHistory.note || '-'}</div>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Lịch sử giao dịch */}

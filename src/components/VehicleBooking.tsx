@@ -88,7 +88,7 @@ export default function VehicleBooking() {
 
     // ===== REFS & CONSTANTS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
-    const USE_MOCK = true; // dùng DB ảo, tắt BE thật
+    const USE_MOCK = false; // dùng DB ảo, tắt BE thật
     const beBaseUrl = "http://localhost:8080";
     const currentUserId = USE_MOCK ? 2 : Number(localStorage.getItem("userId"));
     const token = USE_MOCK ? null : localStorage.getItem("accessToken");
