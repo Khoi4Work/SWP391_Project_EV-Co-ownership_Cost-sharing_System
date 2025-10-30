@@ -146,7 +146,8 @@ export default function VehicleBooking() {
             "Equal ownership": ["Không thể override", "Ownership bằng nhau - người đặt trước được ưu tiên."],
             "Cannot override schedule starting within 24 hours": ["Không thể override", "Chỉ có thể chèn lịch trước 24 tiếng."],
             "Cannot book schedule in the past": ["Lỗi thời gian", "Không thể đặt lịch trong quá khứ."],
-            "End time must be after start time": ["Lỗi thời gian", "Thời gian kết thúc phải sau thời gian bắt đầu."]
+            "End time must be after start time": ["Lỗi thời gian", "Thời gian kết thúc phải sau thời gian bắt đầu."],
+            "Please select another time": ["Không thể đặt lịch", "Khung giờ này trùng với nhiều lịch khác. Vui lòng chọn thời gian khác."]
         };
 
         for (const [key, [title, msg]] of Object.entries(errorMap)) {
@@ -218,9 +219,45 @@ export default function VehicleBooking() {
             if (USE_MOCK) {
                 // DB ảo: danh sách xe mẫu theo group
                 const mockAll: Vehicle[] = [
-                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8", color: "White", batteryCapacity: 82, price: 0, imageUrl: null, createdAt: new Date().toISOString(), groupId: 1, groupName: "Nhóm HCM - Q1" },
-                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric", color: "Blue", batteryCapacity: 64, price: 0, imageUrl: null, createdAt: new Date().toISOString(), groupId: 1, groupName: "Nhóm HCM - Q1" },
-                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3", color: "Black", batteryCapacity: 60, price: 0, imageUrl: null, createdAt: new Date().toISOString(), groupId: 2, groupName: "Nhóm HN - Cầu Giấy" },
+                    {
+                        vehicleId: 101,
+                        plateNo: "51A-123.45",
+                        brand: "VinFast",
+                        model: "VF8",
+                        color: "White",
+                        batteryCapacity: 82,
+                        price: 0,
+                        imageUrl: null,
+                        createdAt: new Date().toISOString(),
+                        groupId: 1,
+                        groupName: "Nhóm HCM - Q1"
+                    },
+                    {
+                        vehicleId: 102,
+                        plateNo: "51A-678.90",
+                        brand: "Hyundai",
+                        model: "Kona Electric",
+                        color: "Blue",
+                        batteryCapacity: 64,
+                        price: 0,
+                        imageUrl: null,
+                        createdAt: new Date().toISOString(),
+                        groupId: 1,
+                        groupName: "Nhóm HCM - Q1"
+                    },
+                    {
+                        vehicleId: 201,
+                        plateNo: "30H-000.11",
+                        brand: "Tesla",
+                        model: "Model 3",
+                        color: "Black",
+                        batteryCapacity: 60,
+                        price: 0,
+                        imageUrl: null,
+                        createdAt: new Date().toISOString(),
+                        groupId: 2,
+                        groupName: "Nhóm HN - Cầu Giấy"
+                    },
                 ];
                 vehiclesArr = mockAll.filter(v => groupIds.includes(v.groupId));
             } else {
@@ -259,8 +296,16 @@ export default function VehicleBooking() {
                     const start = new Date(item.startTime);
                     const end = new Date(item.endTime);
                     const date = start.toISOString().split('T')[0];
-                    const startTime = start.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
-                    const endTime = end.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
+                    const startTime = start.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    const endTime = end.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
                     const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
                     return {
                         scheduleId: item.scheduleId,
@@ -284,8 +329,16 @@ export default function VehicleBooking() {
                 formattedBookings = data
                     .map((item: any) => {
                         if (!item.startTime || !item.endTime || !item.vehicleId) return null;
-                        const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
-                        const endTime = new Date(item.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', hour12: false});
+                        const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                        const endTime = new Date(item.endTime).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
                         const date = new Date(item.startTime).toISOString().split('T')[0];
                         const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
                         if (!vehicle) return null;
@@ -612,7 +665,11 @@ export default function VehicleBooking() {
                                                     title="Bấm để điền nhanh giờ bắt đầu/kết thúc"
                                                     onClick={() => {
                                                         const [s, e] = (b.time || "").split('-');
-                                                        setForm(prev => ({...prev, startTime: s || "", endTime: e || ""}));
+                                                        setForm(prev => ({
+                                                            ...prev,
+                                                            startTime: s || "",
+                                                            endTime: e || ""
+                                                        }));
                                                     }}
                                                 >
                                                     <span className="text-gray-700">{b.date}</span>
