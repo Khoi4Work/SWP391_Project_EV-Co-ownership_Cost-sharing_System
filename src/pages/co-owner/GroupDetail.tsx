@@ -128,14 +128,16 @@ export default function GroupDetail() {
           vehicles = mockVehicles;
         } else {
           const gid = Number(groupId);
-          const fundRes = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`);
+          // Sửa endpoint: lấy CommonFund qua query fundId
+          const fundRes = await axiosClient.get(`/api/fund-payment`, { params: { fundId: gid } });
           commonFund = fundRes.data;
-          const fundDetailRes = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`);
+          // Sửa endpoint: lấy FundDetail qua query fundDetailId
+          const fundDetailRes = await axiosClient.get(`/api/fund-payment`, { params: { fundDetailId: commonFund.fundId } });
           fundDetails = fundDetailRes.data;
-          // CHỈ DÙNG MOCK CHO MEMBERS
-          // Chỉ nhận đúng fields mới từ API trả về
-          const membersRes = await axiosClient.get<GroupMemberDetailRes[]>(`/groupMember/members/${gid}`);
+          // Giữ nguyên Member (đã mapping đúng response DTO)
+          const membersRes = await axiosClient.get(`/groupMember/members/${gid}`);
           members = membersRes.data;
+          // Giữ nguyên Vehicle
           const vehiclesRes = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
           vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [vehiclesRes.data];
         }
