@@ -264,9 +264,14 @@ export default function ScheduleCards() {
                 notes: checkInForm.notes,
                 images: checkInForm.images,
             };
+            const token = localStorage.getItem("accessToken");
             const res = await fetch(`${beBaseUrl}/booking/checkIn/${activeId}`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                },
+                credentials: "include",
                 body: JSON.stringify(payload)
             });
             if (!res.ok) {
@@ -301,9 +306,14 @@ export default function ScheduleCards() {
                 notes: checkOutForm.notes,
                 images: checkOutForm.images,
             } as any;
+            const token = localStorage.getItem("accessToken");
             const res = await fetch(`${beBaseUrl}/booking/checkOut/${activeId}`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                },
+                credentials: "include",
                 body: JSON.stringify(payload)
             });
             if (!res.ok) {
