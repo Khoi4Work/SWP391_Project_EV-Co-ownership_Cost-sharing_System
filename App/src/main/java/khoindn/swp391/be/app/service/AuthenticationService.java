@@ -95,10 +95,9 @@ public class AuthenticationService implements UserDetailsService {
 
         //create key pairs for user
 
-        KeyPairGenerator generator = null;
         try {
 
-            generator = KeyPairGenerator.getInstance("RSA");
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
             generator.initialize(2048);
             KeyPair keyPair = generator.generateKeyPair();
             System.out.println("✅ Private & Public Key đã được tạo.");

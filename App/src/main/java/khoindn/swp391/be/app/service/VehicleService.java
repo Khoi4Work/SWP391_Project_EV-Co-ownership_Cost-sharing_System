@@ -2,7 +2,9 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.NoVehicleInGroupException;
 import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
+import khoindn.swp391.be.app.pojo.MenuVehicleService;
 import khoindn.swp391.be.app.pojo.Vehicle;
+import khoindn.swp391.be.app.repository.IMenuVehicleServiceRepository;
 import khoindn.swp391.be.app.repository.IVehicleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ public class VehicleService implements IVehicleService{
 
     @Autowired
     private IVehicleRepository iVehicleRepository;
+    @Autowired
+    private IMenuVehicleServiceRepository iMenuVehicleServiceRepository;
 
     @Override
     public Vehicle addVehicle(Vehicle vehicle) {
@@ -57,5 +61,15 @@ public class VehicleService implements IVehicleService{
     @Override
     public Vehicle findVehicleByGroupId(int groupId) {
         return iVehicleRepository.findVehicleByGroup_GroupId(groupId);
+    }
+
+    @Override
+    public MenuVehicleService addVehicleService(MenuVehicleService vehicleService) {
+        return iMenuVehicleServiceRepository.save(vehicleService);
+    }
+
+    @Override
+    public List<MenuVehicleService> getAllVehicleServices() {
+        return iMenuVehicleServiceRepository.findAll();
     }
 }

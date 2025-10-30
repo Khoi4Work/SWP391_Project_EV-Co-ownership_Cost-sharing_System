@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.model.Request.AddMemberRequest;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
+import khoindn.swp391.be.app.model.Request.VotingRequest;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberResponse;
 import khoindn.swp391.be.app.pojo.DecisionVote;
@@ -17,7 +18,6 @@ import khoindn.swp391.be.app.service.IGroupService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -111,10 +111,20 @@ public class GroupMemberController {
         return ResponseEntity.status(201).body(decisionVote);
     }
 
-    @GetMapping("/group/{groupId}")
-    public ResponseEntity<List<GroupMemberDetailRes>> getGroupMembers(@PathVariable int groupId) {
-        List<GroupMemberDetailRes> members = iGroupMemberService.getGroupMembersByGroupId(groupId);
-        return ResponseEntity.ok(members);
-    }
+//    @GetMapping("/group/{groupId}")
+//    public ResponseEntity<List<GroupMemberDetailRes>> getGroupMembersByGroupId(@PathVariable int groupId) {
+//        List<GroupMemberDetailRes> members = iGroupMemberService.getGroupMembersByGroupId(groupId);
+//        return ResponseEntity.ok(members);
+//    }
 
+    @PatchMapping("/decision")
+    public ResponseEntity setDecision(@RequestBody VotingRequest votingRequest) {
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(403).body("Unauthorized");
+        }
+        GroupMember groupMember = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(votingRequest.getGroupId(), user.getId());
+        iGroupMemberService.setDecision(votingRequest.getVote(), votingRequest.getDecisionId(), groupMember);
+        return ResponseEntity.status(200).body(votingRequest);
+    }
 }

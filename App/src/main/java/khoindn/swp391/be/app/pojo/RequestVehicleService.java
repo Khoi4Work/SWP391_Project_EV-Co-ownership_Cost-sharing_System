@@ -5,7 +5,7 @@ import khoindn.swp391.be.app.pojo._enum.StatusRequestService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class RequestService {
+public class RequestVehicleService {
 
     //attributes
     @Id
@@ -22,7 +22,7 @@ public class RequestService {
     @Column(name = "status")
     private StatusRequestService status = StatusRequestService.PENDING ; // pending, in_progress, completed
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
 
     //relationshipss
@@ -37,6 +37,10 @@ public class RequestService {
 
     @ManyToOne
     @JoinColumn(name = "service")
-    private MenuService menuService;
+    private MenuVehicleService menuVehicleService;
+
+    @OneToOne(mappedBy = "requestVehicleService", cascade = CascadeType.ALL)
+    @JoinColumn(name = "vehicle_service_detail")
+    private RequestVehicleServiceDetail requestVehicleServiceDetail;
 
 }

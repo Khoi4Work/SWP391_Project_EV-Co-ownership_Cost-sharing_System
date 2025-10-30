@@ -41,7 +41,7 @@ public class GroupMember {
 
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<RequestGroup> requestGroups = new ArrayList<>();
+    private List<RequestGroupService> requestGroupServices = new ArrayList<>();
 
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
@@ -49,5 +49,5 @@ public class GroupMember {
 
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<RequestService> requestServices = new ArrayList<>();
+    private List<RequestVehicleService> requestVehicleServices = new ArrayList<>();
 }

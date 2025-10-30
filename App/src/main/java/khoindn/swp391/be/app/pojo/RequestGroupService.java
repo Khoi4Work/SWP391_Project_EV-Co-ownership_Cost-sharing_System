@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RequestGroup {
+public class RequestGroupService {
 
     //attributes
     @Id
@@ -29,8 +29,8 @@ public class RequestGroup {
     @JoinColumn(name = "groupMember_id")
     private GroupMember groupMember;
 
-    @OneToOne(mappedBy = "requestGroup", cascade = CascadeType.ALL)
-    private RequestGroupDetail requestGroupDetail;
+    @OneToOne(mappedBy = "requestGroupService", cascade = CascadeType.ALL)
+    private RequestGroupServiceDetail requestGroupServiceDetail;
 
 
 }
