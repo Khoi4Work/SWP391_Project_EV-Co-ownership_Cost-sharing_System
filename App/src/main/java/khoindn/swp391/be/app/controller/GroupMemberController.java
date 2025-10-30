@@ -26,6 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/groupMember")
 @SecurityRequirement(name = "api")
+@CrossOrigin(origins = "http://localhost:8081")
 public class GroupMemberController {
 
     @Autowired
