@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ICommonFundRepository extends JpaRepository<CommonFund, Integer> {
     CommonFund findByFundId(int fundId);
+
 }

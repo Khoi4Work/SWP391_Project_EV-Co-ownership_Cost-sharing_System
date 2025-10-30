@@ -19,6 +19,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -122,4 +123,13 @@ public class PaymentService {
         commonFund.setBalance(commonFund.getBalance().add(amount));
         commonFundRepository.save(commonFund);
     }
+
+    public CommonFund getCommonFundById(int fundId) {
+        return commonFundRepository.findByFundId(fundId);
+    }
+
+    public List<FundDetail> getFundDetailById(int fundDetailId) {
+        return fundDetailRepository.findByCommonFund_FundId(fundDetailId);
+    }
+
 }

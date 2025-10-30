@@ -4,12 +4,15 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import khoindn.swp391.be.app.model.Request.PaymentRequest;
 import khoindn.swp391.be.app.model.Response.PaymentResponse;
+import khoindn.swp391.be.app.pojo.CommonFund;
+import khoindn.swp391.be.app.pojo.FundDetail;
 import khoindn.swp391.be.app.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -51,10 +54,19 @@ public class PaymentController {
             paymentService.processSuccessfulPayment(fundId, groupId, userId, amount);
 
             redirectUrl = "http://localhost:8081/co-owner/payment-success?amount=&gidzl=5rEy2PGLgqCNJxiBbGgYH1HFiGsE2gGN0n_aMOSAeKS6JxC9WGYW45H5v5xILQ1501UnMJEqT25_a1UiGG";
-//            redirectUrl = "https://www.youtube.com/@tuansinn";
         }
 
         response.sendRedirect(redirectUrl);
         return ResponseEntity.ok("Payment processed");
+    }
+
+    @GetMapping("/common-fund/{fundId}")
+    public ResponseEntity<CommonFund> getCommonFundById(@PathVariable Integer fundId) {
+        return ResponseEntity.ok(paymentService.getCommonFundById(fundId));
+    }
+
+    @GetMapping("/fund-details/{fundId}")
+    public ResponseEntity<List<FundDetail>> getFundDetailsByFundId(@PathVariable Integer fundId) {
+        return ResponseEntity.ok(paymentService.getFundDetailById(fundId));
     }
 }
