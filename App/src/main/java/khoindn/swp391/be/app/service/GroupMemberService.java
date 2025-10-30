@@ -8,6 +8,7 @@ import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
+import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo._enum.OptionDecisionVoteDetail;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
@@ -63,6 +64,25 @@ public class GroupMemberService implements IGroupMemberService {
     public List<GroupMember> getMembersByGroupId(int groupId) {
         return iGroupMemberRepository.findAllByGroup_GroupId(groupId);
     }
+
+    @Override
+    public List<GroupMemberDetailRes> getGroupMembersByGroupId(int groupId) {
+        List<GroupMember> groupMembers = iGroupMemberRepository.findByGroup_GroupId(groupId);
+
+        return groupMembers.stream()
+                .map(gm -> {
+                    GroupMemberDetailRes res = new GroupMemberDetailRes();
+                    res.setUserId(gm.getUsers().getId());
+                    res.setRoleInGroup(gm.getRoleInGroup());
+                    res.setOwnershipPercentage(gm.getOwnershipPercentage());
+                    res.setId(gm.getId());
+                    res.setGroupId(gm.getGroup().getGroupId());
+                    res.setHovaten(gm.getUsers().getHovaTen());
+                    return res;
+                })
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public List<AllGroupsOfMember> getAllGroupsOfMember(Users user) {

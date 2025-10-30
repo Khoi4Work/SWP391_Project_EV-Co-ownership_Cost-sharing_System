@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.model.Request.AddMemberRequest;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
+import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberResponse;
 import khoindn.swp391.be.app.pojo.DecisionVote;
 import khoindn.swp391.be.app.pojo.Group;
@@ -80,7 +81,7 @@ public class GroupMemberController {
 
 
     @GetMapping("/members/{groupId}")
-    public ResponseEntity getMembersByGroupId(@PathVariable int groupId){
+    public ResponseEntity getMembersByGroupId(@PathVariable int groupId) {
         Group group = iGroupService.getGroupById(groupId);
         List<GroupMemberResponse> allMembers = iGroupMemberService.getMembersByGroupId(groupId).stream()
                 .map(groupMember -> modelMapper.map(groupMember, GroupMemberResponse.class))
@@ -109,7 +110,10 @@ public class GroupMemberController {
         return ResponseEntity.status(201).body(decisionVote);
     }
 
-
-
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<List<GroupMemberDetailRes>> getGroupMembers(@PathVariable int groupId) {
+        List<GroupMemberDetailRes> members = iGroupMemberService.getGroupMembersByGroupId(groupId);
+        return ResponseEntity.ok(members);
+    }
 
 }
