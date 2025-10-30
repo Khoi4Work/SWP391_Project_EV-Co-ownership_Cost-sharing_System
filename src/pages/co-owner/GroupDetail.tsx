@@ -54,7 +54,7 @@ interface Group {
 
 const CURRENT_USER_ID = "me";
 const API_BASE_URL = "http://localhost:8080"; // giữ lại hoặc lấy baseURL chung của dự án
-const USE_MOCK_DATA = false;
+const USE_MOCK_DATA = true;
 const currentUserId = USE_MOCK_DATA ? 2 : Number(localStorage.getItem("userId"));
 
 export default function GroupDetail() {
@@ -118,15 +118,12 @@ export default function GroupDetail() {
           vehicles = mockVehicles;
         } else {
           const gid = Number(groupId);
-          // Đúng endpoint mới lấy quỹ chung theo groupId
-          // Đúng:
           const fundRes = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`);
           commonFund = fundRes.data;
-          // Lấy lịch sử quỹ
           const fundDetailRes = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`);
           fundDetails = fundDetailRes.data;
-          const membersRes = await axiosClient.get(`/groupMember/members/${gid}`);
-          members = membersRes.data;
+          // CHỈ DÙNG MOCK CHO MEMBERS
+          members = mockGroupMembers;
           const vehiclesRes = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
           vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [vehiclesRes.data];
         }
