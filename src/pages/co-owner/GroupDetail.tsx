@@ -119,9 +119,11 @@ export default function GroupDetail() {
         } else {
           const gid = Number(groupId);
           // Đúng endpoint mới lấy quỹ chung theo groupId
+          // Đúng:
           const fundRes = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`);
           commonFund = fundRes.data;
-          const fundDetailRes = await axiosClient.get(`/api/fund-payment`, { params: { fundDetailId: commonFund.fundId } });
+          // Lấy lịch sử quỹ
+          const fundDetailRes = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`);
           fundDetails = fundDetailRes.data;
           const membersRes = await axiosClient.get(`/groupMember/members/${gid}`);
           members = membersRes.data;
