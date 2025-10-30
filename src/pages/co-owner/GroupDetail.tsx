@@ -4,8 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import QRCode from "react-qr-code";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface User {
   id: string;
@@ -24,8 +24,18 @@ interface Vehicle {
   imageUrl?: string;
 }
 
+interface Transaction {
+  id: string;
+  name: string;
+  type: "deposit" | "withdraw" | "transfer";
+  amount: number;
+  date: string;
+  userId?: string;
+}
+
 interface Group {
   id: string;
+  fundId: number;
   name: string;
   ownerId: string;
   fund: number;
@@ -34,14 +44,9 @@ interface Group {
   vehicles: Vehicle[];
   transactions: Transaction[];
 }
-interface Transaction {
-  id: string;
-  name: string;
-  type: "deposit" | "withdraw" | "transfer";
-  amount: number;
-  date: string;
-}
+
 const CURRENT_USER_ID = "me";
+const API_BASE_URL = "http://localhost:8080";
 
 function mockFetchGroups() {
   return new Promise<any[]>(resolve => {
@@ -53,6 +58,7 @@ function mockFetchGroups() {
           ownershipPercentage: 50,
           group: {
             groupId: 1,
+            fundId: 1,
             groupName: "Nhóm A",
             description: "Mô tả nhóm A",
             createdAt: "2025-10-22T00:00:00",
@@ -90,8 +96,10 @@ export default function GroupDetail() {
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState("");
-  const [showQR, setShowQR] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"ecoshare" | "momo" | "bank">("ecoshare");
+  const [processing, setProcessing] = useState(false);
+  // Thêm state cho dialog xem chi tiết
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchGroup() {
@@ -105,6 +113,7 @@ export default function GroupDetail() {
 
       const groupMapped: Group = {
         id: beGroup.group.groupId.toString(),
+        fundId: beGroup.group.fundId,
         name: beGroup.group.groupName,
         ownerId: beGroup.members.find((m: any) => m.roleInGroup === "admin")?.users?.id || "",
         fund: beGroup.group.fund,
@@ -124,12 +133,11 @@ export default function GroupDetail() {
           status: v.status,
           imageUrl: v.imageUrl || ""
         })),
-        // Thêm transactions tạam thời, nếu BE chưa có
         transactions: beGroup.group.transactions && beGroup.group.transactions.length > 0
           ? beGroup.group.transactions
           : [
-            { id: "1", name: "Nạp quỹ", type: "deposit", amount: 500000, date: new Date().toISOString() },
-            { id: "2", name: "Rút quỹ", type: "withdraw", amount: 200000, date: new Date().toISOString() }
+            { id: "1", name: "Nạp quỹ", type: "deposit", amount: 500000, date: new Date().toISOString(), userId: "me" },
+            { id: "2", name: "Rút quỹ", type: "withdraw", amount: 200000, date: new Date().toISOString(), userId: "owner" }
           ]
       };
 
@@ -139,40 +147,70 @@ export default function GroupDetail() {
 
     fetchGroup();
   }, [groupId]);
+
+  const handleDeposit = async () => {
+    const amt = Number(amount);
+    if (!amt || isNaN(amt) || amt < group!.minTransfer) {
+      toast({
+        title: "Số tiền không hợp lệ",
+        description: `Tối thiểu ${group!.minTransfer.toLocaleString("vi-VN")} VNĐ`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_BASE_URL}/api/fund-payment/create-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          fundId: group!.fundId,
+          groupId: Number(groupId),
+          userId: Number(CURRENT_USER_ID === "me" ? 2 : 1), // Convert user ID sang số
+          amount: amt
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment');
+      }
+
+      const data = await response.json();
+      
+      if (data.paymentUrl) {
+        toast({
+          title: "Đang chuyển đến VNPay",
+          description: `Số tiền: ${amt.toLocaleString("vi-VN")} VNĐ`
+        });
+        
+        // Redirect đến VNPay payment gateway
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error(data.message || 'No payment URL received');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Lỗi tạo thanh toán",
+        description: "Không thể kết nối đến cổng thanh toán. Vui lòng thử lại.",
+        variant: "destructive"
+      });
+      setProcessing(false);
+    }
+  };
+
   if (loading) return <div className="container mx-auto p-6">Đang tải...</div>;
   if (!group) return <div className="container mx-auto p-6">Không tìm thấy nhóm</div>;
 
-  const owner = group.users.find(u => u.id === group.ownerId)!;
-  const members = group.users.filter(u => u.id !== group.ownerId);
   const me = group.users.find(u => u.id === CURRENT_USER_ID);
   const myRole = me?.role ?? "member";
   const min = group.minTransfer;
-  const handleGenerateQR = () => {
-    const amt = Number(amount);
-    if (!amt || isNaN(amt) || amt < min) {
-      toast({
-        title: "Số tiền không hợp lệ",
-        description: `Tối thiểu ${min.toLocaleString("vi-VN")} VNĐ`
-      });
-      setShowQR(false);
-      return;
-    }
-    setShowQR(true);
-    toast({ title: "Đã tạo QR chuyển tiền", description: `${amt.toLocaleString("vi-VN")} VNĐ` });
-  };
-
-  const myTransactions = group.transactions.filter(t => t.userId === CURRENT_USER_ID);
-
-  const bankId = "970422";
-  const accountNo = "0926711233";
-  const accountName = "ECOSHARE";
-
-  const qrValue = `00020101021238${(38 + accountNo.length).toString().padStart(2, '0')}0010A00000072701${(14 + accountNo.length).toString().padStart(2, '0')}0006${bankId}01${accountNo.length.toString().padStart(2, '0')}${accountNo}0208QRIBFTTA5303704540${String(Number(amount) || 0).length.toString().padStart(2, '0')}${Number(amount) || 0}5802VN62${(8 + String(group.name).length).toString().padStart(2, '0')}08${String(group.name).length.toString().padStart(2, '0')}${group.name}6304`;
-
-  const momoPhone = "0901234567";
-  const qrMomoValue = `2|99|${momoPhone}|||0|0|${Number(amount) || 0}|Chuyen tien cho ${group.name}`;
-
-  const qrBankValue = qrValue;
 
   return (
     <div className="container mx-auto p-6">
@@ -180,7 +218,7 @@ export default function GroupDetail() {
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={() => navigate(-1)}>← Quay lại</Button>
           <h1 className="text-2xl font-bold">{group.name}</h1>
-          <Badge variant="secondary">Vai trò của bạn: {myRole === "admin" ? "Admin" : "Member"}</Badge>
+          <Badge variant="secondary">Vai trò: {myRole === "admin" ? "Admin" : "Member"}</Badge>
         </div>
       </header>
 
@@ -192,68 +230,54 @@ export default function GroupDetail() {
               <div>
                 <div className="text-sm text-muted-foreground">Quỹ chung</div>
                 <div className="text-2xl font-bold">{group.fund.toLocaleString("vi-VN")} VNĐ</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Tối thiểu: {min.toLocaleString("vi-VN")} VNĐ
+                </div>
               </div>
 
               {/* Nhập số tiền */}
               <div>
+                <label htmlFor="amount" className="text-sm font-medium mb-2 block">
+                  Số tiền nạp
+                </label>
                 <Input
                   id="amount"
                   type="number"
                   min={min}
-                  placeholder={`${min}`}
+                  placeholder={`Tối thiểu ${min.toLocaleString("vi-VN")} VNĐ`}
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
+                  disabled={processing}
                 />
-                <div className="mt-2 flex gap-2">
-                  <Button
-                    variant={paymentMethod === "ecoshare" ? "default" : "outline"}
-                    onClick={() => setPaymentMethod("ecoshare")}
-                    className="flex-1"
-                  >
-                    EcoShare
-                  </Button>
-                  <Button
-                    variant={paymentMethod === "momo" ? "default" : "outline"}
-                    onClick={() => setPaymentMethod("momo")}
-                    className="flex-1"
-                  >
-                    MoMo
-                  </Button>
-                  <Button
-                    variant={paymentMethod === "bank" ? "default" : "outline"}
-                    onClick={() => setPaymentMethod("bank")}
-                    className="flex-1"
-                  >
-                    Ngân hàng
-                  </Button>
-                </div>
               </div>
 
-              {/* Tạo QR */}
-              <div className="flex gap-2">
-                <Button onClick={handleGenerateQR} className="flex-1">Tạo QR chuyển tiền</Button>
+              {/* Button nạp tiền */}
+              <div>
+                <Button 
+                  onClick={handleDeposit} 
+                  className="w-full"
+                  disabled={processing || !amount}
+                >
+                  {processing ? "Đang xử lý..." : "Nạp tiền qua VNPay"}
+                </Button>
               </div>
             </div>
 
-            {showQR && (
-              <div className="mt-6 flex items-center gap-6">
-                <div className="rounded-md border p-4 bg-background">
-                  <QRCode value="tạm" size={144} />
-                </div>
-              </div>
-            )}
-
-            {/* Thêm danh sách thành viên */}
+            {/* Danh sách thành viên */}
             <div className="mt-6">
-              <h3 className="font-semibold mb-2">Thành viên nhóm</h3>
+              <h3 className="font-semibold mb-3 text-lg">Thành viên nhóm</h3>
               <div className="flex gap-3 flex-wrap">
                 {group.users.map(u => (
-                  <div key={u.id} className="flex items-center gap-2 p-2 border rounded">
-                    {/* <Avatar>
-                      <AvatarImage src={u.avatar} alt={u.hovaTen} />
-                      <AvatarFallback>{u.hovaTen.charAt(0)}</AvatarFallback>
-                    </Avatar> */}
-                    <span>{u.hovaTen} ({u.role})</span>
+                  <div key={u.id} className="flex items-center gap-2 p-3 border rounded-lg bg-background hover:bg-accent transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                      {u.hovaTen.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="font-medium">{u.hovaTen}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {u.role === "admin" ? "Quản trị viên" : "Thành viên"} • {u.ownershipPercentage}%
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -261,49 +285,129 @@ export default function GroupDetail() {
 
             {/* Danh sách xe */}
             <div className="mt-6">
-              <h3 className="font-semibold mb-2">Xe trong nhóm</h3>
-              <div className="flex gap-3 flex-wrap">
+              <h3 className="font-semibold mb-3 text-lg">Xe trong nhóm</h3>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {group.vehicles.map(v => (
-                  <div key={v.id} className="p-2 border rounded w-48">
-                    <div className="font-medium">{v.name}</div>
-                    <div className="text-sm text-muted-foreground">{v.info}</div>
-                    <Badge variant={v.status === "available" ? "default" : v.status === "in-use" ? "secondary" : "destructive"}>
-                      {v.status}
+                  <div key={v.id} className="p-4 border rounded-lg bg-background">
+                    <div className="font-medium text-lg">{v.name}</div>
+                    <div className="text-sm text-muted-foreground mt-1">{v.info}</div>
+                    <Badge 
+                      variant={v.status === "available" ? "default" : v.status === "in-use" ? "secondary" : "destructive"}
+                      className="mt-2"
+                    >
+                      {v.status === "available" ? "Sẵn sàng" : v.status === "in-use" ? "Đang sử dụng" : "Bảo trì"}
                     </Badge>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Lịch sử giao dịch */}
+            {/* Lịch sử sử dụng xe */}
             <div className="mt-6">
-              <h3 className="font-semibold mb-2">Giao dịch</h3>
-              {group.transactions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Chưa có giao dịch</p>
-              ) : (
-                <table className="w-full table-auto border">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="p-2 text-left">Tên</th>
-                      <th className="p-2 text-left">Loại</th>
-                      <th className="p-2 text-left">Số tiền</th>
-                      <th className="p-2 text-left">Ngày</th>
+              <h3 className="font-semibold mb-3 text-lg">Lịch sử sử dụng xe</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="p-3 text-left font-medium">Ngày</th>
+                      <th className="p-3 text-left font-medium">Xe</th>
+                      <th className="p-3 text-left font-medium">Người dùng</th>
+                      <th className="p-3 text-left font-medium">Giờ sử dụng</th>
+                      <th className="p-3 text-left font-medium">Trạng thái</th>
+                      <th className="p-3"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {group.transactions.map(t => (
-                      <tr key={t.id} className="border-b">
-                        <td className="p-2">{t.name}</td>
-                        <td className="p-2">{t.type}</td>
-                        <td className="p-2">{t.amount.toLocaleString("vi-VN")} VNĐ</td>
-                        <td className="p-2">{new Date(t.date).toLocaleDateString("vi-VN")}</td>
+                    {
+                    // MOCK DATA. Số lượng nhiều cũng được
+                    [{
+                      id: 1, date: "2025-10-22", vehicle: "Xe 1", user: "Bạn", start:"08:00", end:"10:30", status: "Hoàn thành", note: 'Không lỗi gì', checkIn: '08:00', checkOut: '10:30', distance: 30
+                    },
+                    {
+                      id: 2, date: "2025-10-20", vehicle: "Xe 1", user: "Nguyễn Văn A", start:"15:00", end:"17:00", status: "Đang sử dụng", note: 'Đang sử dụng - chưa check-out', checkIn: '15:00', checkOut: null, distance: null
+                    }].map(x => (
+                      <tr key={x.id} className="border-t hover:bg-muted/50 transition-colors">
+                        <td className="p-3">{x.date}</td>
+                        <td className="p-3">{x.vehicle}</td>
+                        <td className="p-3">{x.user}</td>
+                        <td className="p-3">{x.start} - {x.end}</td>
+                        <td className="p-3">
+                          <Badge variant={x.status === "Hoàn thành" ? "default" : x.status === "Đang sử dụng" ? "secondary" : "outline"}>{x.status}</Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          <Button size="sm" variant="outline" onClick={() => { setSelectedHistory(x); setDetailOpen(true); }}>Xem chi tiết</Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              )}
+              </div>
+              {/* Dialog chi tiết lịch sử sử dụng xe */}
+              <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Chi tiết sử dụng xe</DialogTitle>
+                  </DialogHeader>
+                  {selectedHistory && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div><span className="font-semibold">Ngày:</span> {selectedHistory.date}</div>
+                        <div><span className="font-semibold">Xe:</span> {selectedHistory.vehicle}</div>
+                        <div><span className="font-semibold">Người dùng:</span> {selectedHistory.user}</div>
+                        <div><span className="font-semibold">Trạng thái:</span> {selectedHistory.status}</div>
+                        <div><span className="font-semibold">Check-in:</span> {selectedHistory.checkIn}</div>
+                        <div><span className="font-semibold">Check-out:</span> {selectedHistory.checkOut ?? '-'}</div>
+                        <div><span className="font-semibold">Quãng đường:</span> {selectedHistory.distance != null ? `${selectedHistory.distance} km` : '-'}</div>
+                        <div className="col-span-2"><span className="font-semibold">Ghi chú:</span> {selectedHistory.note || '-'}</div>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
 
+            {/* Lịch sử giao dịch */}
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3 text-lg">Lịch sử giao dịch</h3>
+              {group.transactions.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4 border rounded-lg text-center">
+                  Chưa có giao dịch nào
+                </p>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="p-3 text-left font-medium">Tên giao dịch</th>
+                        <th className="p-3 text-left font-medium">Loại</th>
+                        <th className="p-3 text-right font-medium">Số tiền</th>
+                        <th className="p-3 text-left font-medium">Ngày</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.transactions.map(t => (
+                        <tr key={t.id} className="border-t hover:bg-muted/50 transition-colors">
+                          <td className="p-3">{t.name}</td>
+                          <td className="p-3">
+                            <Badge variant={t.type === "deposit" ? "default" : t.type === "withdraw" ? "destructive" : "secondary"}>
+                              {t.type === "deposit" ? "Nạp tiền" : t.type === "withdraw" ? "Rút tiền" : "Chuyển khoản"}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-right font-medium">
+                            <span className={t.type === "deposit" ? "text-green-600" : "text-red-600"}>
+                              {t.type === "deposit" ? "+" : "-"}{t.amount.toLocaleString("vi-VN")} VNĐ
+                            </span>
+                          </td>
+                          <td className="p-3 text-muted-foreground">
+                            {new Date(t.date).toLocaleDateString("vi-VN")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </section>
