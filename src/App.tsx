@@ -15,9 +15,13 @@ import MyGroups from "./pages/co-owner/MyGroups";
 import GroupDetail from "./pages/co-owner/GroupDetail";
 import Contracts from "./pages/co-owner/Contracts";
 import NotFound from "./pages/NotFound";
+import UsageHistory from "./pages/co-owner/UsageHistory";
+import UsageHistoryDetail from "./pages/co-owner/UsageHistoryDetail";
 import Footer from "./components/ui/footnote";
 import ContractPreviewPage from "./pages/co-owner/ContractPage";
 import PDFContract from "./pages/co-owner/PDFContract";
+import PaymentSuccess from "./pages/co-owner/PaymentSuccess";
+import PaymentFailed from "./pages/co-owner/PaymentFailed";
 import { useEffect } from "react";
 const queryClient = new QueryClient();
 function TitleUpdater() {
@@ -58,7 +62,12 @@ const App = () => {
                         <Route path="/co-owner/vehicle-registration" element={<VehicleRegistration />} />
                         <Route path="/co-owner/groups" element={<MyGroups />} />
                         <Route path="/co-owner/groups/:groupId" element={<GroupDetail />} />
+                        <Route path="/co-owner/groups/:groupId/usage-history" element={<UsageHistory />} />
+                        <Route path="/co-owner/usage-history/:scheduleId" element={<UsageHistoryDetail />} />
                         <Route path="/co-owner/contracts" element={<Contracts />} />
+                        {/* Payment return routes */}
+                        <Route path="/co-owner/payment-success" element={<PaymentSuccess />} />
+                        <Route path="/co-owner/payment-failed" element={<PaymentFailed />} />
                         {/* Staff routes */}
                         <Route path="/staff/dashboard" element={<StaffDashboard />} />
 
