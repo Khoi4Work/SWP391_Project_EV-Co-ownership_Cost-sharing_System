@@ -52,9 +52,7 @@ public class GroupMemberController {
     }
 
     // ---------------------- NEW CODE: Add member to group ----------------------
-    @PostMapping(
-            path = "/add"
-    )
+    @PostMapping("/add")
     public ResponseEntity<GroupMemberResponse> addMember(
             @RequestParam("groupId") int groupId,
             @Valid @RequestBody AddMemberRequest req) {

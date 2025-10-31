@@ -45,7 +45,7 @@ public class ContractController {
     private ISupabaseService iSupabaseService;
 
     // Lấy contract
-    @GetMapping("/user/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Contract> getContractByContractId(@PathVariable int id) {
         Contract contract = iContractService.getContractByContractId(id);
         if (contract == null) {
@@ -70,16 +70,7 @@ public class ContractController {
         return ResponseEntity.status(HttpStatus.OK).body(contractResult);
     }
 
-    // Gửi email
-    @PostMapping("/send-email")
-    public ResponseEntity<String> sendEmail(@RequestBody @Valid SendBulkEmailReq emailReq) {
-        try {
-            iEmailService.SendBulkEmail(emailReq);
-            return ResponseEntity.status(HttpStatus.OK).body("Email sent successfully");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send email");
-        }
-    }
+
 
     @PostMapping("/create")
     public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req)

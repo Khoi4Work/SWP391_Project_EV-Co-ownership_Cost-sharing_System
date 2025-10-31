@@ -49,14 +49,6 @@ public class VehicleService implements IVehicleService{
         return vehicle;
     }
 
-    @Override
-    public List<Vehicle> getAllUnregisteredVehicle() {
-        List<Vehicle> vehicles = iVehicleRepository.findByGroupIsNull();
-        if (vehicles.isEmpty()) {
-            throw new NoVehicleInGroupException("No unregistered vehicles available");
-        }
-        return vehicles;
-    }
 
     @Override
     public Vehicle findVehicleByGroupId(int groupId) {
