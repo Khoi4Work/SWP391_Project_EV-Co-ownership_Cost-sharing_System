@@ -96,8 +96,11 @@ export default function GroupDetail() {
         const gId = Number(groupId);
         fetchUsageHistoryList(userIdNum, gId)
             .then(list => {
-                const mapped: VehicleUsage[] = list.map(it => {
+                const mapped: VehicleUsage[] = list.map((it: any) => {
                     const [start, end] = (it.timeRange || " - ").split(" - ");
+                    const hasIn = Boolean(it.hasCheckIn);
+                    const hasOut = Boolean(it.hasCheckOut);
+                    const statusText = !hasIn ? "Chưa sử dụng" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
                     return {
                         id: it.scheduleId,
                         date: it.date,
@@ -105,10 +108,10 @@ export default function GroupDetail() {
                         user: it.userName,
                         start: start || "",
                         end: end || "",
-                        status: it.hasCheckOut ? "Hoàn thành" : "Đang sử dụng",
+                        status: statusText as any,
                         note: "",
                         checkIn: start || "",
-                        checkOut: it.hasCheckOut ? (end || null) : null,
+                        checkOut: hasOut ? (end || null) : null,
                         distance: null,
                     };
                 });
