@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
+import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHistory";
 
 // Interface cho GroupMember response từ BE
 interface GroupMemberDetailRes {
@@ -85,36 +86,38 @@ export default function GroupDetail() {
     const [processing, setProcessing] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false);
     const [selectedHistory, setSelectedHistory] = useState<VehicleUsage | null>(null);
+    const [vehicleUsages, setVehicleUsages] = useState<VehicleUsage[]>([]);
 
-    // Mock data cho lịch sử sử dụng xe
-    const mockVehicleUsages: VehicleUsage[] = [
-        {
-            id: 1,
-            date: "2025-10-22",
-            vehicle: "Xe 1",
-            user: "Bạn",
-            start: "08:00",
-            end: "10:30",
-            status: "Hoàn thành",
-            note: "Không lỗi gì",
-            checkIn: "08:00",
-            checkOut: "10:30",
-            distance: 30
-        },
-        {
-            id: 2,
-            date: "2025-10-20",
-            vehicle: "Xe 1",
-            user: "Nguyễn Văn A",
-            start: "15:00",
-            end: "17:00",
-            status: "Đang sử dụng",
-            note: "Đang sử dụng - chưa check-out",
-            checkIn: "15:00",
-            checkOut: null,
-            distance: null
-        }
-    ];
+    // Load lịch sử sử dụng xe từ BE
+    useEffect(() => {
+        const userIdStr = localStorage.getItem("userId");
+        if (!groupId || !userIdStr) return;
+        const userIdNum = Number(userIdStr);
+        const gId = Number(groupId);
+        fetchUsageHistoryList(userIdNum, gId)
+            .then(list => {
+                const mapped: VehicleUsage[] = list.map(it => {
+                    const [start, end] = (it.timeRange || " - ").split(" - ");
+                    return {
+                        id: it.scheduleId,
+                        date: it.date,
+                        vehicle: it.vehicleName,
+                        user: it.userName,
+                        start: start || "",
+                        end: end || "",
+                        status: it.hasCheckOut ? "Hoàn thành" : "Đang sử dụng",
+                        note: "",
+                        checkIn: start || "",
+                        checkOut: it.hasCheckOut ? (end || null) : null,
+                        distance: null,
+                    };
+                });
+                setVehicleUsages(mapped);
+            })
+            .catch(err => {
+                console.warn("⚠️ Cannot load usage history:", err?.message || err);
+            });
+    }, [groupId]);
 
     // EFFECT 1: Load group ID nếu chưa có
     useEffect(() => {
@@ -532,7 +535,7 @@ export default function GroupDetail() {
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                {mockVehicleUsages.map(usage => (
+                                {vehicleUsages.map(usage => (
                                     <tr key={usage.id} className="hover:bg-muted/50">
                                         <td className="px-4 py-3">{usage.date}</td>
                                         <td className="px-4 py-3">{usage.vehicle}</td>
@@ -551,9 +554,20 @@ export default function GroupDetail() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => {
-                                                    setSelectedHistory(usage);
-                                                    setDetailOpen(true);
+                                                onClick={async () => {
+                                                    try {
+                                                        const detail = await fetchUsageHistoryDetail(usage.id);
+                                                        setSelectedHistory({
+                                                            ...usage,
+                                                            note: detail.checkOutNotes || detail.checkInNotes || "",
+                                                            checkIn: detail.checkInTime ? new Date(detail.checkInTime).toLocaleTimeString() : usage.checkIn,
+                                                            checkOut: detail.checkOutTime ? new Date(detail.checkOutTime).toLocaleTimeString() : usage.checkOut,
+                                                            distance: null,
+                                                        });
+                                                        setDetailOpen(true);
+                                                    } catch (e: any) {
+                                                        toast({ title: "Lỗi", description: "Không tải được chi tiết lịch sử", variant: "destructive" });
+                                                    }
                                                 }}
                                             >
                                                 Xem
