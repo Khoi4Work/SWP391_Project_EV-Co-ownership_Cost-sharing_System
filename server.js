@@ -26,63 +26,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- Mock DB for usage history ---
-const mockUsageSchedules = [
-    {
-        scheduleId: 101,
-        groupId: 1,
-        userId: 1,
-        date: "2025-10-21",
-        vehicleName: "VinFast VF8",
-        userName: "Nguyễn Văn A",
-        timeRange: "08:00 - 10:00",
-        hasCheckIn: true,
-        hasCheckOut: true,
-        detail: {
-            checkInTime: "2025-10-21T08:02:00",
-            checkInCondition: "Tốt",
-            checkInNotes: "Không trầy xước",
-            checkInImages: [
-                "https://images.unsplash.com/photo-1549923746-c502d488b3ea?q=80&w=600&auto=format&fit=crop",
-            ],
-            checkOutTime: "2025-10-21T09:55:00",
-            checkOutCondition: "Bình thường",
-            checkOutNotes: "Đã sạc thêm 10%",
-            checkOutImages: [
-                "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?q=80&w=600&auto=format&fit=crop",
-            ],
-            vehicleName: "VinFast VF8",
-            userName: "Nguyễn Văn A",
-            date: "2025-10-21",
-        },
-    },
-    {
-        scheduleId: 102,
-        groupId: 1,
-        userId: 1,
-        date: "2025-10-20",
-        vehicleName: "VinFast VF9",
-        userName: "Nguyễn Văn A",
-        timeRange: "15:00 - 17:00",
-        hasCheckIn: true,
-        hasCheckOut: false,
-        detail: {
-            checkInTime: "2025-10-20T15:01:00",
-            checkInCondition: "Tốt",
-            checkInNotes: "Đang sử dụng",
-            checkInImages: [],
-            checkOutTime: null,
-            checkOutCondition: null,
-            checkOutNotes: null,
-            checkOutImages: [],
-            vehicleName: "VinFast VF9",
-            userName: "Nguyễn Văn A",
-            date: "2025-10-20",
-        },
-    },
-];
-
-// --- Mock data for GroupDetail page ---
 const mockGroups = {
     1: {
         members: [
