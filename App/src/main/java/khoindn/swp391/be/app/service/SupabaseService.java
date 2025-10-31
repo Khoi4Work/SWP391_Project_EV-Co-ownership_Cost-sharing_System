@@ -70,4 +70,18 @@ public class SupabaseService implements ISupabaseService{
         return SUPABASE_LINK_URL + fileName;
     }
 
+    @Override
+    public void deleteFile(String linkImage) throws Exception {
+        URL url = new URL(linkImage);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("DELETE");
+        conn.setRequestProperty("Authorization", "Bearer " + SUPABASE_KEY);
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode != 200 && responseCode != 204) {
+            throw new RuntimeException("Xóa file thất bại, code: " + responseCode);
+        }
+    }
+
+
 }

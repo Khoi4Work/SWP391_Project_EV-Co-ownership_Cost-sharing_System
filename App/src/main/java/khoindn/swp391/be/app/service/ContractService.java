@@ -54,6 +54,8 @@ public class ContractService implements IContractService {
     private SpringTemplateEngine templateEngine;
     @Autowired
     private SupabaseService supabaseService;
+    @Autowired
+    private ISupabaseService iSupabaseService;
 
 
     @Override
@@ -180,9 +182,7 @@ public class ContractService implements IContractService {
         contract.setStartDate(LocalDate.now());
         contract.setUrlConfirmedContract(req.getDocumentUrl());
         contract.setImageContract(supabaseService.uploadFile(req.getImageContract()));
-        if (contract.getContractType().contains("paper")) {
-            contract.setStatus(StatusContract.WAITING_CONFIRMATION);
-        }
+
         iContractRepository.save(contract);
 
         //TAO VEHICLE
@@ -260,7 +260,12 @@ public class ContractService implements IContractService {
             List<ContractSigner> signerList = iContractSignerRepository.findAllByContract_ContractId(contract.getContractId());
             ContractPendingRes pendingRes = new ContractPendingRes();
             pendingRes.setContract(contract);
-            pendingRes.setContractSignerList(signerList.stream().map(ContractSigner::getUser).toList());
+            pendingRes.setContractSignerList(
+                    signerList
+                    .stream()
+                    .map(ContractSigner::getUser)
+                    .toList()
+            );
             contractPendingRes.add(pendingRes);
         }
         return contractPendingRes;
@@ -298,10 +303,11 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void sendDeclinedContractNotification(int contractId) {
+    public void sendDeclinedContractNotification(int contractId) throws Exception {
         List<ContractSigner> signerList = getContractSignerByContractId(contractId);
 
         Contract contract = getContractByContractId(contractId);
+        iSupabaseService.deleteFile(contract.getImageContract());
 
         if (contract.getStatus().equals(StatusContract.DECLINED)) {
             for (ContractSigner signer : signerList) {
@@ -330,7 +336,7 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void verifyContract(int contractId, int decision) {
+    public void verifyContract(int contractId, int decision) throws Exception {
         Contract contract = getContractByContractId(contractId);
         if (contract == null || !contract.getStatus().equals(StatusContract.PENDING_REVIEW)) {
             throw new ContractNotExistedException("Contract cannot found or invalid status!");
