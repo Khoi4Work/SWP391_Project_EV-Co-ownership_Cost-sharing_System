@@ -34,7 +34,7 @@ public interface IGroupMemberService {
 
     DecisionVote createDecision(DecisionVoteReq request, GroupMember gm);
 
-    void setDecision(int choice, long idDecision, GroupMember gm);
+    DecisionVote setDecision(int choice, long idDecision, GroupMember gm);
 
     RequestVehicleService requestVehicleService(int groupId, int serviceId);
 
