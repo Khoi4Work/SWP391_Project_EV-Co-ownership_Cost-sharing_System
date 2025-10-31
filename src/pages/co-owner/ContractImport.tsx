@@ -86,50 +86,48 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
 
       let text = "";
 
+      // OCR/Extract text
       if (isPDF) text = await extractTextFromPDF(file);
       else if (isImage) text = await extractTextFromImage(file);
 
+      // Validate contract content
       if (!validateVehicleContract(text)) {
         toast({
           title: "Không phải hợp đồng đồng sở hữu xe 🚫",
-          description: "Hãy upload đúng hợp đồng đồng sở hữu xe.",
+          description: "Hãy chọn đúng file hợp đồng.",
           variant: "destructive",
         });
         return;
       }
 
-      toast({
-        title: "Xác nhận hợp đồng ✅",
-        description: "Đang upload file...",
-      });
-
+      // ✅ Nếu OCR OK → gửi file lên BE
       const formData = new FormData();
-      formData.append("file", file);
-
-      const uploadRes = await axiosClient.post("contract/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      formData.append("file", file); // <-- Ảnh/PDF đều gửi file thật
+      formData.append("contractType", "VEHICLE_OWNERSHIP");
+      formData.append("ocrText", text);
+      toast({
+        title: "Thành công ✅",
+        description: "Hợp đồng đã được tải lên!",
       });
-
-      const fileUrl = uploadRes.data?.url || "";
 
       onFinish({
         uploadType: isPDF ? "PDF" : "IMAGE",
-        contractLink: fileUrl,
-        contractType: "VEHICLE_REGISTRATION",
+        contractType: "VEHICLE_OWNERSHIP",
         recognizedText: text,
+        file
       });
-
     } catch (err) {
+      console.error(err);
       toast({
         title: "Lỗi",
-        description: "Có lỗi xảy ra. Vui lòng thử lại.",
+        description: "Không thể xử lý file, thử lại nhé!",
         variant: "destructive",
       });
-      console.error(err);
     } finally {
       setIsUploading(false);
     }
   };
+
 
   return (
     <Card className="p-4 border rounded-lg shadow-sm">
