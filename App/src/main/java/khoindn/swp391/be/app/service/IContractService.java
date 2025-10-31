@@ -25,7 +25,7 @@ public interface IContractService {
             InvalidKeyException;
 
 
-    public List<ContractSigner> createContract(ContractCreateReq req);
+    public List<ContractSigner> createContract(ContractCreateReq req) throws Exception;
 
     public List<ContractHistoryRes> getHistoryContractsByUser(Users user);
 

@@ -26,7 +26,9 @@ public class Contract {
     @Column(name = "content_string", length = 5000)
     private String htmlString; // link PDF do FE render
     @Column(name = "url_contract")
-    private String urlContract;
+    private String urlConfirmedContract;
+    @Column(name = "image_contract")
+    private String imageContract;
 
     // Relationships
     @ManyToOne

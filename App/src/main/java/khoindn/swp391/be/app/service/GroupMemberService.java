@@ -253,17 +253,17 @@ public class GroupMemberService implements IGroupMemberService {
             vote.setStatus(StatusDecisionVote.APPROVED);
         }
         iDecisionVoteRepository.save(vote);
-
-        if (iMenuVehicleServiceRepository.findAll().stream().anyMatch(
-                menuVehicleService ->
-                        menuVehicleService.getServiceName().contains(vote.getDecisionName()))) {
-            MenuVehicleService vehicleService = iMenuVehicleServiceRepository
-                    .getMenuVehicleServiceByServiceNameContains(vote.getDecisionName());
-
-            requestVehicleService(vote.getCreatedBy().getGroup().getGroupId(),vehicleService.getId());
-            return vote;
-        }
-        return null;
+        return vote;
+//        if (iMenuVehicleServiceRepository.findAll().stream().anyMatch(
+//                menuVehicleService ->
+//                        menuVehicleService.getServiceName().contains(vote.getDecisionName()))) {
+//            MenuVehicleService vehicleService = iMenuVehicleServiceRepository
+//                    .getMenuVehicleServiceByServiceNameContains(vote.getDecisionName());
+//
+//            requestVehicleService(vote.getCreatedBy().getGroup().getGroupId(),vehicleService.getId());
+//            return vote;
+//        }
+//        return null;
     }
 
     @Override

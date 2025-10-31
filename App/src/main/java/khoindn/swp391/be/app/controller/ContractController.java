@@ -82,7 +82,8 @@ public class ContractController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req) {
+    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req)
+            throws Exception {
         System.out.println(req);
         List<ContractSigner> contractResult = iContractService.createContract(req);
         if (contractResult == null) {
@@ -173,7 +174,7 @@ public class ContractController {
         return ResponseEntity.status(200).body(renderContractRes);
     }
 
-    @PostMapping("/upload")
+    @PostMapping("/upload/{groupId}")
     public ResponseEntity upload(@RequestParam("file") MultipartFile file) {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
@@ -194,5 +195,8 @@ public class ContractController {
     public ResponseEntity getFileByName(String fileName) {
         return ResponseEntity.status(200).body(iSupabaseService.getFileUrl(fileName));
     }
+
+
+
 
 }

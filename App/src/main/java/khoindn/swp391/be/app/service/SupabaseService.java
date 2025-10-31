@@ -44,6 +44,7 @@ public class SupabaseService implements ISupabaseService{
         int responseCode = conn.getResponseCode();
         if (responseCode == 200) {
             // trả public link nếu bucket public
+
             return SUPABASE_LINK_URL + fileName;
         } else {
             throw new RuntimeException("Upload thất bại, code: " + responseCode);
