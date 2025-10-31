@@ -40,21 +40,16 @@ async function getWithFallback<T>(paths: string[]) {
 }
 
 export async function fetchUsageHistoryList(userId: number, groupId: number) {
-    // BE mới: /booking/schedules/group/{groupId}/booked (không cần userId)
-    // Giữ lại các route cũ để tương thích môi trường trước đó
+    // Gọi đúng route BE cung cấp
     return await getWithFallback<UsageHistoryListItem[]>([
-        `/booking/schedules/group/${groupId}/booked`,
         `/api/usage-history/booking/${userId}/${groupId}`,
-        `/usage-history/booking/${userId}/${groupId}`,
     ]);
 }
 
 export async function fetchUsageHistoryDetail(scheduleId: number) {
-    // BE mới: /booking/detail/{scheduleId}
+    // Gọi đúng route BE cung cấp
     return await getWithFallback<UsageHistoryDetail>([
-        `/booking/detail/${scheduleId}`,
         `/api/usage-history/booking/detail/${scheduleId}`,
-        `/usage-history/booking/detail/${scheduleId}`,
     ]);
 }
 
