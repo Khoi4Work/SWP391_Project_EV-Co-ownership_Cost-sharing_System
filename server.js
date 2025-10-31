@@ -26,6 +26,149 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// --- Mock DB for usage history ---
+const mockUsageSchedules = [
+    {
+        scheduleId: 101,
+        groupId: 1,
+        userId: 1,
+        date: "2025-10-21",
+        vehicleName: "VinFast VF8",
+        userName: "Nguyễn Văn A",
+        timeRange: "08:00 - 10:00",
+        hasCheckIn: true,
+        hasCheckOut: true,
+        detail: {
+            checkInTime: "2025-10-21T08:02:00",
+            checkInCondition: "Tốt",
+            checkInNotes: "Không trầy xước",
+            checkInImages: [
+                "https://images.unsplash.com/photo-1549923746-c502d488b3ea?q=80&w=600&auto=format&fit=crop",
+            ],
+            checkOutTime: "2025-10-21T09:55:00",
+            checkOutCondition: "Bình thường",
+            checkOutNotes: "Đã sạc thêm 10%",
+            checkOutImages: [
+                "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?q=80&w=600&auto=format&fit=crop",
+            ],
+            vehicleName: "VinFast VF8",
+            userName: "Nguyễn Văn A",
+            date: "2025-10-21",
+        },
+    },
+    {
+        scheduleId: 102,
+        groupId: 1,
+        userId: 1,
+        date: "2025-10-20",
+        vehicleName: "VinFast VF9",
+        userName: "Nguyễn Văn A",
+        timeRange: "15:00 - 17:00",
+        hasCheckIn: true,
+        hasCheckOut: false,
+        detail: {
+            checkInTime: "2025-10-20T15:01:00",
+            checkInCondition: "Tốt",
+            checkInNotes: "Đang sử dụng",
+            checkInImages: [],
+            checkOutTime: null,
+            checkOutCondition: null,
+            checkOutNotes: null,
+            checkOutImages: [],
+            vehicleName: "VinFast VF9",
+            userName: "Nguyễn Văn A",
+            date: "2025-10-20",
+        },
+    },
+];
+
+// --- Mock data for GroupDetail page ---
+const mockGroups = {
+    1: {
+        members: [
+            { id: 1, roleInGroup: "ADMIN", ownershipPercentage: 60, hovaten: "Nguyễn Văn A", userId: 1, groupId: 1 },
+            { id: 2, roleInGroup: "MEMBER", ownershipPercentage: 40, hovaten: "Trần Thị B", userId: 2, groupId: 1 },
+        ],
+        fund: { fundId: 10, balance: 1500000, group: { groupId: 1, groupName: "Nhóm Demo" } },
+        fundDetails: [
+            { fundDetailId: 1001, transactionType: "deposit", amount: 500000, createdAt: "2025-10-18T10:00:00Z", groupMember: { userId: 1 } },
+            { fundDetailId: 1002, transactionType: "deposit", amount: 1000000, createdAt: "2025-10-20T12:00:00Z", groupMember: { userId: 2 } },
+        ],
+        vehicles: [
+            { vehicleId: 501, plateNo: "30G-123.45", brand: "VinFast", model: "VF8", imageUrl: "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=600&q=80&auto=format&fit=crop" },
+        ],
+    },
+};
+
+// --- Mock endpoints for GroupDetail dependencies ---
+app.get("/groupMember/group/:groupId", (req, res) => {
+    const groupId = Number(req.params.groupId);
+    const g = mockGroups[groupId];
+    if (!g) return res.json([]);
+    return res.json(g.members);
+});
+
+app.get("/api/fund-payment/common-fund/group/:groupId", (req, res) => {
+    const groupId = Number(req.params.groupId);
+    const g = mockGroups[groupId];
+    if (!g) return res.status(404).json({ message: "Fund not found" });
+    return res.json(g.fund);
+});
+
+app.get("/api/fund-payment/fund-details/:fundId", (req, res) => {
+    const fundId = Number(req.params.fundId);
+    const g = Object.values(mockGroups).find((x) => x.fund.fundId === fundId);
+    if (!g) return res.json([]);
+    return res.json(g.fundDetails);
+});
+
+app.get("/vehicle/getVehicleByGroupID/:groupId", (req, res) => {
+    const groupId = Number(req.params.groupId);
+    const g = mockGroups[groupId];
+    if (!g) return res.json([]);
+    return res.json(g.vehicles);
+});
+
+// --- Mock endpoints for usage history ---
+app.get("/api/usage-history/booking/:userId/:groupId", (req, res) => {
+    const userId = Number(req.params.userId);
+    const groupId = Number(req.params.groupId);
+    const list = mockUsageSchedules
+        .filter((s) => s.userId === userId && s.groupId === groupId)
+        .sort((a, b) => (a.date < b.date ? 1 : -1))
+        .map((s) => ({
+            scheduleId: s.scheduleId,
+            date: s.date,
+            vehicleName: s.vehicleName,
+            userName: s.userName,
+            timeRange: s.timeRange,
+            hasCheckIn: s.hasCheckIn,
+            hasCheckOut: s.hasCheckOut,
+        }));
+    return res.json(list);
+});
+
+app.get("/api/usage-history/booking/detail/:scheduleId", (req, res) => {
+    const scheduleId = Number(req.params.scheduleId);
+    const found = mockUsageSchedules.find((s) => s.scheduleId === scheduleId);
+    if (!found) return res.status(404).json({ message: "Schedule not found" });
+    const d = found.detail;
+    return res.json({
+        scheduleId: found.scheduleId,
+        date: d.date,
+        vehicleName: d.vehicleName,
+        userName: d.userName,
+        checkInTime: d.checkInTime,
+        checkInCondition: d.checkInCondition,
+        checkInNotes: d.checkInNotes,
+        checkInImages: d.checkInImages,
+        checkOutTime: d.checkOutTime,
+        checkOutCondition: d.checkOutCondition,
+        checkOutNotes: d.checkOutNotes,
+        checkOutImages: d.checkOutImages,
+    });
+});
+
 // --- Mailer setup ---
 const transporter = nodemailer.createTransport({
     host: "sandbox.smtp.mailtrap.io",
