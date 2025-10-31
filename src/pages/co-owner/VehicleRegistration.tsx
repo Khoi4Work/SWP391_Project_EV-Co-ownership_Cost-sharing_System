@@ -46,48 +46,34 @@ export default function VehicleRegistration() {
   const [status, setStatus] = useState<number | null>(null);
   const navigate = useNavigate();
   const [contractFile, setContractFile] = useState<File | null>(null);
-  const [ocrText, setOcrText] = useState("");
-  <ContractImport
-    onFinish={(data) => {
-      setContractFile(data.file);
-      setOcrText(data.recognizedText);
-      setStep(4);
-    }}
-  />
   const { toast } = useToast();
-  useEffect(() => {
+  const handleFileImport = (file) => {
+    const fileType = file.type.includes("pdf") ? "pdf" : "image";
+
+    setImportedData({
+      file,
+      type: fileType,
+    });
+
+    toast({
+      title: "Đã tải file hợp đồng",
+      description: `Định dạng: ${fileType.toUpperCase()}`,
+    });
+  };
+  const handleConfirmFile = () => {
     if (!importedData) return;
 
-    if (importedData.type === "pdf") {
+    if (importedData.type !== "pdf" && importedData.type !== "image") {
       toast({
-        title: "PDF hợp đồng đã được tải lên",
-        description: "Vui lòng kiểm tra và xác nhận hợp đồng.",
-      });
-
-      // ✅ Bỏ qua bước chọn xe & nhập thông tin → nhảy đến bước review/xác nhận
-      setStep(4);
-
-      // Nếu muốn disable chọn xe và co-owner khi PDF, bạn có thể set state:
-      setSelectedVehicle(null);
-      setCoOwners([]);
-    }
-    else if (importedData.type === "image") {
-      toast({
-        title: "Ảnh hợp đồng đã được tải lên",
-        description: "Hệ thống sẽ nhận dạng thông tin, hãy tiếp tục bước 1.",
-      });
-
-      // ✅ Ảnh → chạy OCR flow, bắt đầu Step 1
-      setStep(1);
-    }
-    else {
-      toast({
-        title: "Định dạng không được hỗ trợ",
-        description: "Vui lòng tải lên file PDF hoặc ảnh hợp đồng hợp lệ.",
+        title: "File không hợp lệ",
+        description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
         variant: "destructive",
       });
+      return;
     }
-  }, [importedData]);
+
+    setStep(1); // qua bước nhập thông tin xe
+  };
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -443,40 +429,27 @@ export default function VehicleRegistration() {
   //   }
   // };
   const handleSubmit = async () => {
-    if (!contractFile) {
-      toast({
-        title: "Thiếu hợp đồng",
-        description: "Vui lòng upload hợp đồng PDF hoặc hình ảnh",
-        variant: "destructive"
-      });
-      return;
-    }
+    const formData = new FormData();
 
+    formData.append("contractFile", contractFile);
+    formData.append("vehicleInfo", JSON.stringify(selectedVehicle));
+    formData.append("owners", JSON.stringify(ownerInfo));
+    formData.append("coOwners", JSON.stringify(coOwners));
     try {
-      const formData = new FormData();
-      formData.append("imageContract", contractFile);            // ✅ file hợp đồng
-      formData.append("contractType", "VEHICLE_COOWNERSHIP");    // hoặc type bạn dùng
-      formData.append("vehicleId", selectedVehicle);
-      formData.append("ownerInfo", JSON.stringify(ownerInfo));
-      formData.append("coOwners", JSON.stringify(coOwners));
-
-      const res = await axiosClient.post(CREATE_CONTRACT, formData, {
+      await axiosClient.post(CREATE_CONTRACT, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
       toast({
-        title: "Đăng ký thành công ✅",
-        description: "Hợp đồng của bạn đã được gửi và đang chờ xác nhận."
+        title: "Gửi hợp đồng thành công",
+        description: "Vui lòng đợi nhân viên xác nhận"
       });
 
       navigate("/co-owner/dashboard");
-
     } catch (err) {
-      console.error("❌ Lỗi khi tạo contract:", err);
-
       toast({
-        title: "Lỗi đăng ký",
-        description: "Không thể gửi hợp đồng. Vui lòng thử lại.",
+        title: "Gửi thất bại",
+        description: "Vui lòng thử lại sau",
         variant: "destructive"
       });
     }
@@ -637,8 +610,16 @@ export default function VehicleRegistration() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <ContractImport onFinish={setImportedData} />
-
+              <ContractImport
+                onFinish={(data) => {
+                  setImportedData(data);
+                  setContractFile(data.file);
+                  toast({
+                    title: "File hợp đồng đã được tải",
+                    description: `Loại file: ${data.uploadType}`,
+                  });
+                }}
+              />
               <div className="flex justify-end">
                 <Button
                   onClick={() => setStep(1)}
