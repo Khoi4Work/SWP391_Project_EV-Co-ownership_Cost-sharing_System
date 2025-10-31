@@ -25,18 +25,32 @@ export interface UsageHistoryDetail {
     checkOutImages?: string[] | null;
 }
 
+async function getWithFallback<T>(paths: string[]) {
+    let lastError: any = null;
+    for (const path of paths) {
+        try {
+            const res = await axiosClient.get<T>(path);
+            return res.data as T;
+        } catch (err: any) {
+            lastError = err;
+            if (err?.response?.status && err.response.status !== 404) break;
+        }
+    }
+    throw lastError || new Error("All endpoints failed");
+}
+
 export async function fetchUsageHistoryList(userId: number, groupId: number) {
-    const res = await axiosClient.get<UsageHistoryListItem[]>(
-        `/api/usage-history/booking/${userId}/${groupId}`
-    );
-    return res.data;
+    return await getWithFallback<UsageHistoryListItem[]>([
+        `/api/usage-history/booking/${userId}/${groupId}`,
+        `/usage-history/booking/${userId}/${groupId}`,
+    ]);
 }
 
 export async function fetchUsageHistoryDetail(scheduleId: number) {
-    const res = await axiosClient.get<UsageHistoryDetail>(
-        `/api/usage-history/booking/detail/${scheduleId}`
-    );
-    return res.data;
+    return await getWithFallback<UsageHistoryDetail>([
+        `/api/usage-history/booking/detail/${scheduleId}`,
+        `/usage-history/booking/detail/${scheduleId}`,
+    ]);
 }
 
 
