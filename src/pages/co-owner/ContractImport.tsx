@@ -3,7 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import axiosClient from "@/api/axiosClient";
+import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker?url";
+// set worker src
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
 interface ContractImportProps {
   onFinish: (data: any) => void;
 }
@@ -30,20 +35,39 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
 
     setFile(selected);
   };
+
   const extractTextFromPDF = async (file: File) => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let text = "";
+    const pdfData = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+    let fullText = "";
 
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      const pageText = content.items.map((item: any) => item.str).join(" ");
-      text += pageText + " ";
+      const strings = content.items.map((item: any) => item.str);
+      fullText += strings.join(" ") + "\n";
     }
 
-    return text;
+    return fullText;
   };
+
+  const extractTextFromImage = async (file: File) => {
+    const worker = await createWorker("vie");  // nếu bạn muốn tiếng Việt
+    const { data } = await worker.recognize(URL.createObjectURL(file));
+    await worker.terminate();
+    return data.text;
+  };
+
+  const validateVehicleContract = (text: string) => {
+    const normalized = text.toLowerCase();
+    return (
+      normalized.includes("đồng sở hữu") &&
+      normalized.includes("xe") &&
+      normalized.includes("ô tô") &&
+      normalized.includes("hợp đồng")
+    );
+  };
+
   const handleUpload = async () => {
     if (!file) {
       toast({
@@ -57,91 +81,46 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
     setIsUploading(true);
 
     try {
-      // 🟡 Upload file để lấy link
-      const formData = new FormData();
-      formData.append("file", file);
+      const isPDF = file.type === "application/pdf";
+      const isImage = file.type.startsWith("image/");
 
-      const uploadRes = await axiosClient.post("contract/upload", formData);
+      let text = "";
 
-      const fileUrl = uploadRes.data?.url || "";
+      // OCR/Extract text
+      if (isPDF) text = await extractTextFromPDF(file);
+      else if (isImage) text = await extractTextFromImage(file);
 
-      // 🧩 Kiểm tra loại file
-      const fileName = file.name.toLowerCase();
-      const isPDF =
-        file.type === "application/pdf" || fileName.endsWith(".pdf");
-      const isImage =
-        file.type.startsWith("image/") ||
-        /\.(jpg|jpeg|png|gif)$/i.test(fileName);
-
-      if (isPDF) {
-        // 🟢 Đọc nội dung PDF bằng pdfjs-dist
-        const text = await extractTextFromPDF(file);
-        const normalizedText = text.toLowerCase();
-
-        const isVehicleContract =
-          normalizedText.includes("đồng sở hữu") &&
-          normalizedText.includes("xe");
-
-        if (isVehicleContract) {
-          toast({
-            title: "Xác định: Hợp đồng đồng sở hữu xe",
-            description: "Hệ thống sẽ gửi hợp đồng cho staff để xác nhận.",
-          });
-
-          onFinish({
-            uploadType: "PDF",
-            contractLink: fileUrl,
-            contractType: "VEHICLE_REGISTRATION",
-          });
-        } else {
-          toast({
-            title: "File PDF không phải hợp đồng xe",
-            description: "Vui lòng chọn đúng file hợp đồng đồng sở hữu xe.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else if (isImage) {
-        // 🟠 OCR giả lập nếu là ảnh
+      // Validate contract content
+      if (!validateVehicleContract(text)) {
         toast({
-          title: "Đang đọc thông tin từ hình ảnh...",
-        });
-
-        setTimeout(() => {
-          const mockExtract = {
-            contractType: "VEHICLE_REGISTRATION",
-            recognizedText: "Giấy tờ hợp đồng đồng sở hữu xe điện",
-            vehicleInfo: {
-              name: "VinFast VF5",
-              plate: "29A-12345",
-              model: "2024",
-              batteryCapacity: "42 kWh",
-            },
-          };
-
-          toast({
-            title: "Đọc ảnh thành công",
-            description: "Bạn có thể kiểm tra và nhập thêm thông tin chi tiết.",
-          });
-
-          onFinish({
-            uploadType: "IMAGE",
-            contractLink: fileUrl,
-            ...mockExtract,
-          });
-        }, 2000);
-      } else {
-        toast({
-          title: "Định dạng không hợp lệ",
-          description: "Vui lòng chọn file PDF hoặc hình ảnh (JPG, PNG).",
+          title: "Không phải hợp đồng đồng sở hữu xe 🚫",
+          description: "Hãy chọn đúng file hợp đồng.",
           variant: "destructive",
         });
+        return;
       }
-    } catch (err) {
-      console.error("❌ Upload error:", err);
+
+      // ✅ Nếu OCR OK → gửi file lên BE
+      const formData = new FormData();
+      formData.append("file", file); // <-- Ảnh/PDF đều gửi file thật
+      formData.append("contractType", "VEHICLE_OWNERSHIP");
+      formData.append("ocrText", text);
       toast({
-        title: "Lỗi upload",
-        description: "Không thể tải file lên. Vui lòng thử lại.",
+        title: "Thành công ✅",
+        description: "Hợp đồng đã được tải lên!",
+      });
+
+      onFinish({
+        uploadType: isPDF ? "PDF" : "IMAGE",
+        contractType: "VEHICLE_OWNERSHIP",
+        recognizedText: text,
+        file
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Lỗi",
+        description: "Không thể xử lý file, thử lại nhé!",
         variant: "destructive",
       });
     } finally {
@@ -149,17 +128,16 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
     }
   };
 
+
   return (
     <Card className="p-4 border rounded-lg shadow-sm">
       <CardContent className="flex flex-col gap-4">
-        <div>
-          <input
-            type="file"
-            accept=".pdf,image/*"
-            onChange={handleFileChange}
-            className="block w-full border rounded p-2"
-          />
-        </div>
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          onChange={handleFileChange}
+          className="block w-full border rounded p-2"
+        />
 
         {file && (
           <p className="text-sm text-gray-600">
@@ -167,11 +145,7 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
           </p>
         )}
 
-        <Button
-          disabled={isUploading}
-          onClick={handleUpload}
-          className="w-fit"
-        >
+        <Button disabled={isUploading} onClick={handleUpload} className="w-fit">
           {isUploading ? "Đang xử lý..." : "Tải lên & Tiếp tục"}
         </Button>
       </CardContent>

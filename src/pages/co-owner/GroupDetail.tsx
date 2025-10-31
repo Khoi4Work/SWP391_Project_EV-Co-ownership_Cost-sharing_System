@@ -128,9 +128,11 @@ export default function GroupDetail() {
                     return;
                 }
 
+                const token = localStorage.getItem("accessToken");
                 // Lấy danh sách group của user
                 const res = await axiosClient.get(`/groupMember/getGroupIdsByUserId`, {
-                    params: { userId }
+                    params: { userId },
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
 
                 const groupIds: number[] = res.data;
@@ -167,15 +169,39 @@ export default function GroupDetail() {
                 const gid = Number(groupId);
                 console.log("=== FETCHING GROUP DETAIL ===");
                 console.log("GroupId:", gid);
+                const token = localStorage.getItem("accessToken");
+
+                // Helper: try multiple endpoints in case BE route differs between envs
+                const getWithFallback = async <T,>(paths: string[]): Promise<T> => {
+                    let lastError: any = null;
+                    for (const path of paths) {
+                        try {
+                            const res = await axiosClient.get<T>(path, {
+                                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                            });
+                            return res.data as T;
+                        } catch (err: any) {
+                            lastError = err;
+                            if (err?.response?.status && err.response.status !== 404) {
+                                // If not 404, break early (e.g., 401/500)
+                                break;
+                            }
+                        }
+                    }
+                    throw lastError || new Error("All endpoints failed");
+                };
 
                 // 1. Fetch Members
                 console.log("Step 1: Fetching members...");
                 let members: GroupMemberDetailRes[] = [];
                 try {
-                    const res = await axiosClient.get<GroupMemberDetailRes[]>(
-                        `/groupMember/group/${gid}` // ✅ Sửa đây
-                    );
-                    members = res.data || [];
+                    members = await getWithFallback<GroupMemberDetailRes[]>([
+                        `/groupMember/group/${gid}`,
+                        `/api/groupMember/group/${gid}`,
+                        `/api/group-members/group/${gid}`,
+                        `/group-members/group/${gid}`,
+                    ]);
+                    members = members || [];
                     console.log("✅ Members loaded:", members);
 
                     if (!members || members.length === 0) {
@@ -187,7 +213,7 @@ export default function GroupDetail() {
                     console.error("❌ Error fetching members:", {
                         status: err.response?.status,
                         message: err.message,
-                        endpoint: `/api/group-members/group/${gid}`
+                        endpoint: `members endpoints tried for group ${gid}`
                     });
                     setError(`Không thể lấy danh sách thành viên (${err.response?.status || "Network Error"})`);
                     setLoading(false);
@@ -198,7 +224,9 @@ export default function GroupDetail() {
                 console.log("Step 2: Fetching fund...");
                 let commonFund: any = null;
                 try {
-                    const res = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`);
+                    const res = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`, {
+                        headers: token ? { Authorization: `Bearer ${token}` } : {}
+                    });
                     commonFund = res.data;
                     console.log("✅ Fund loaded:", commonFund);
                 } catch (err: any) {
@@ -215,7 +243,9 @@ export default function GroupDetail() {
                 let fundDetails: any[] = [];
                 if (commonFund?.fundId) {
                     try {
-                        const res = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`);
+                        const res = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`, {
+                            headers: token ? { Authorization: `Bearer ${token}` } : {}
+                        });
                         fundDetails = res.data || [];
                         console.log("✅ Fund details loaded:", fundDetails);
                     } catch (err: any) {
@@ -227,7 +257,9 @@ export default function GroupDetail() {
                 console.log("Step 4: Fetching vehicles...");
                 let vehicles: any[] = [];
                 try {
-                    const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
+                    const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`, {
+                        headers: token ? { Authorization: `Bearer ${token}` } : {}
+                    });
                     vehicles = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
                     console.log("✅ Vehicles loaded:", vehicles);
                 } catch (err: any) {

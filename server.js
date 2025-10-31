@@ -26,6 +26,92 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const mockGroups = {
+    1: {
+        members: [
+            { id: 1, roleInGroup: "ADMIN", ownershipPercentage: 60, hovaten: "Nguyễn Văn A", userId: 1, groupId: 1 },
+            { id: 2, roleInGroup: "MEMBER", ownershipPercentage: 40, hovaten: "Trần Thị B", userId: 2, groupId: 1 },
+        ],
+        fund: { fundId: 10, balance: 1500000, group: { groupId: 1, groupName: "Nhóm Demo" } },
+        fundDetails: [
+            { fundDetailId: 1001, transactionType: "deposit", amount: 500000, createdAt: "2025-10-18T10:00:00Z", groupMember: { userId: 1 } },
+            { fundDetailId: 1002, transactionType: "deposit", amount: 1000000, createdAt: "2025-10-20T12:00:00Z", groupMember: { userId: 2 } },
+        ],
+        vehicles: [
+            { vehicleId: 501, plateNo: "30G-123.45", brand: "VinFast", model: "VF8", imageUrl: "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=600&q=80&auto=format&fit=crop" },
+        ],
+    },
+};
+
+// --- Mock endpoints for GroupDetail dependencies ---
+app.get("/groupMember/group/:groupId", (req, res) => {
+    const groupId = Number(req.params.groupId);
+    const g = mockGroups[groupId];
+    if (!g) return res.json([]);
+    return res.json(g.members);
+});
+
+app.get("/api/fund-payment/common-fund/group/:groupId", (req, res) => {
+    const groupId = Number(req.params.groupId);
+    const g = mockGroups[groupId];
+    if (!g) return res.status(404).json({ message: "Fund not found" });
+    return res.json(g.fund);
+});
+
+app.get("/api/fund-payment/fund-details/:fundId", (req, res) => {
+    const fundId = Number(req.params.fundId);
+    const g = Object.values(mockGroups).find((x) => x.fund.fundId === fundId);
+    if (!g) return res.json([]);
+    return res.json(g.fundDetails);
+});
+
+app.get("/vehicle/getVehicleByGroupID/:groupId", (req, res) => {
+    const groupId = Number(req.params.groupId);
+    const g = mockGroups[groupId];
+    if (!g) return res.json([]);
+    return res.json(g.vehicles);
+});
+
+// --- Mock endpoints for usage history ---
+app.get("/api/usage-history/booking/:userId/:groupId", (req, res) => {
+    const userId = Number(req.params.userId);
+    const groupId = Number(req.params.groupId);
+    const list = mockUsageSchedules
+        .filter((s) => s.userId === userId && s.groupId === groupId)
+        .sort((a, b) => (a.date < b.date ? 1 : -1))
+        .map((s) => ({
+            scheduleId: s.scheduleId,
+            date: s.date,
+            vehicleName: s.vehicleName,
+            userName: s.userName,
+            timeRange: s.timeRange,
+            hasCheckIn: s.hasCheckIn,
+            hasCheckOut: s.hasCheckOut,
+        }));
+    return res.json(list);
+});
+
+app.get("/api/usage-history/booking/detail/:scheduleId", (req, res) => {
+    const scheduleId = Number(req.params.scheduleId);
+    const found = mockUsageSchedules.find((s) => s.scheduleId === scheduleId);
+    if (!found) return res.status(404).json({ message: "Schedule not found" });
+    const d = found.detail;
+    return res.json({
+        scheduleId: found.scheduleId,
+        date: d.date,
+        vehicleName: d.vehicleName,
+        userName: d.userName,
+        checkInTime: d.checkInTime,
+        checkInCondition: d.checkInCondition,
+        checkInNotes: d.checkInNotes,
+        checkInImages: d.checkInImages,
+        checkOutTime: d.checkOutTime,
+        checkOutCondition: d.checkOutCondition,
+        checkOutNotes: d.checkOutNotes,
+        checkOutImages: d.checkOutImages,
+    });
+});
+
 // --- Mailer setup ---
 const transporter = nodemailer.createTransport({
     host: "sandbox.smtp.mailtrap.io",
