@@ -64,7 +64,7 @@ interface VehicleUsage {
     user: string;
     start: string;
     end: string;
-    status: "Hoàn thành" | "Đang sử dụng";
+    status: "Hoàn thành" | "Đang sử dụng" | "Chờ nhận xe";
     note: string;
     checkIn: string;
     checkOut: string | null;
@@ -100,7 +100,7 @@ export default function GroupDetail() {
                     const [start, end] = (it.timeRange || " - ").split(" - ");
                     const hasIn = Boolean(it.hasCheckIn);
                     const hasOut = Boolean(it.hasCheckOut);
-                    const statusText = !hasIn ? "Chưa sử dụng" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
+                    const statusText = !hasIn ? "Chờ nhận xe" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
                     return {
                         id: it.scheduleId,
                         date: it.date,
@@ -548,9 +548,15 @@ export default function GroupDetail() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <Badge
-                                                variant={usage.status === "Hoàn thành" ? "default" : "secondary"}
+                                                className={
+                                                    usage.status === "Chờ nhận xe"
+                                                        ? "bg-green-100 text-green-700 border-green-200"
+                                                        : usage.status === "Đang sử dụng"
+                                                            ? "bg-orange-100 text-orange-700 border-orange-200"
+                                                            : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                                }
                                             >
-                                                {usage.status === "Hoàn thành" ? "✅" : "⏳"} {usage.status}
+                                                {usage.status}
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3 text-center">
@@ -666,7 +672,15 @@ export default function GroupDetail() {
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">Trạng thái</p>
-                                    <Badge variant={selectedHistory.status === "Hoàn thành" ? "default" : "secondary"}>
+                                    <Badge
+                                        className={
+                                            selectedHistory.status === "Chờ nhận xe"
+                                                ? "bg-green-100 text-green-700 border-green-200"
+                                                : selectedHistory.status === "Đang sử dụng"
+                                                    ? "bg-orange-100 text-orange-700 border-orange-200"
+                                                    : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                        }
+                                    >
                                         {selectedHistory.status}
                                     </Badge>
                                 </div>
