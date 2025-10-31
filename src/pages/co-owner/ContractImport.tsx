@@ -80,10 +80,10 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
     console.log("✅ Validating contract content...");
     const normalized = text.toLowerCase();
     const result =
-      normalized.includes("đồng sở hữu") &&
-      normalized.includes("xe") &&
-      normalized.includes("hợp đồng");
-
+      normalized.includes("đồng sở hữu") ||
+      normalized.includes("xe") ||
+      normalized.includes("hợp đồng") ||
+      normalized.includes("email");
     console.log("📌 Validate result:", result);
     return result;
   };
@@ -142,7 +142,6 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
         recognizedText: text,
         file,
       });
-
       toast({
         title: "Thành công ✅",
         description: "Hợp đồng đã được tải lên!",

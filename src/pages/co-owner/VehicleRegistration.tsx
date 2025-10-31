@@ -643,7 +643,7 @@ export default function VehicleRegistration() {
                 <Button
                   onClick={() => setStep(1)}
                   variant="outline"
-                  disabled={!importedData || importedData.type !== "image"}
+                  disabled={!importedData || importedData.type !== "PDF"}
                 >
                   Tiếp tục quy trình
                   <ArrowRight className="h-4 w-4 ml-2" />
