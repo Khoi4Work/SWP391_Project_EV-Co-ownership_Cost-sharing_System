@@ -36,7 +36,6 @@ interface CoOwner {
 
 export default function VehicleRegistration() {
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
-  const [importedData, setImportedData] = useState<any>(null);
   const [step, setStep] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -44,26 +43,24 @@ export default function VehicleRegistration() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
   const [status, setStatus] = useState<number | null>(null);
+  const [fileType, setFileType] = useState("");
   const navigate = useNavigate();
   const [contractFile, setContractFile] = useState<File | null>(null);
   const { toast } = useToast();
-  const handleFileImport = (file) => {
-    const fileType = file.type.includes("pdf") ? "pdf" : "image";
-
-    setImportedData({
-      file,
-      type: fileType,
-    });
-
+  const handleFileImport = (data) => {
+    const { file, uploadType } = data;
+    setContractFile(file);
+    setFileType(uploadType); // PDF / IMAGE
     toast({
       title: "Đã tải file hợp đồng",
-      description: `Định dạng: ${fileType.toUpperCase()}`,
+      description: `Loại file: ${uploadType}`,
     });
   };
   const handleConfirmFile = () => {
-    if (!importedData) return;
+    if (!contractFile) return;
 
-    if (importedData.type !== "pdf" && importedData.type !== "image") {
+    // fileType là "pdf" hoặc "image" đã được set trong handleFileImport
+    if (fileType !== "PDF" && fileType !== "IMAGE") {
       toast({
         title: "File không hợp lệ",
         description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
@@ -71,7 +68,6 @@ export default function VehicleRegistration() {
       });
       return;
     }
-
     setStep(1); // qua bước nhập thông tin xe
   };
   const handleNextFromStep3 = () => {
@@ -435,6 +431,7 @@ export default function VehicleRegistration() {
     formData.append("vehicleInfo", JSON.stringify(selectedVehicle));
     formData.append("owners", JSON.stringify(ownerInfo));
     formData.append("coOwners", JSON.stringify(coOwners));
+    formData.append("imageUrl", "");
     try {
       await axiosClient.post(CREATE_CONTRACT, formData, {
         headers: { "Content-Type": "multipart/form-data" }
@@ -606,25 +603,24 @@ export default function VehicleRegistration() {
               </CardTitle>
               <CardDescription>
                 Tải lên hợp đồng đồng sở hữu xe (PDF hoặc ảnh).
-                Nếu là PDF sẽ gửi ngay cho nhân viên xác nhận, nếu là ảnh sẽ tiếp tục quy trình bên dưới.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <ContractImport
-                onFinish={(data) => {
-                  setImportedData(data);
-                  setContractFile(data.file);
-                  toast({
-                    title: "File hợp đồng đã được tải",
-                    description: `Loại file: ${data.uploadType}`,
-                  });
-                }}
+                // onFinish={(data) => {
+                //   setContractFile(data.file);
+                //   toast({
+                //     title: "File hợp đồng đã được tải",
+                //     description: `Loại file: ${data.uploadType}`,
+                //   });
+                // }}
+                onFinish={handleFileImport}
               />
               <div className="flex justify-end">
                 <Button
-                  onClick={() => setStep(1)}
+                  onClick={handleConfirmFile}
                   variant="outline"
-                  disabled={!importedData || importedData.type !== "PDF"}
+                  disabled={!contractFile}
                 >
                   Tiếp tục quy trình
                   <ArrowRight className="h-4 w-4 ml-2" />

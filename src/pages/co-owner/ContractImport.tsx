@@ -29,53 +29,26 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
       return;
     }
 
+    // ✅ Set state nếu bạn cần preview hoặc lưu lại file
     setFile(selected);
+
+    console.log("🚀 Auto-submit for:", selected.name);
+
+    // ✅ Gửi tiếp thông tin cho BE xử lý hoặc sang bước kế tiếp
+    onFinish({
+      uploadType: isPDF ? "PDF" : "IMAGE",
+      contractType: "VEHICLE_OWNERSHIP",
+      file: selected,
+    });
+
+    toast({
+      title: "Tải lên thành công ✅",
+      description: isPDF
+        ? "Đã nhận file PDF"
+        : "Đã nhận ảnh hợp đồng",
+    });
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      toast({
-        title: "Thiếu file",
-        description: "Vui lòng chọn file trước khi tiếp tục.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    console.log("🚀 Upload started for:", file.name);
-
-    try {
-      const isPDF = file.type === "application/pdf";
-      const isImage = file.type.startsWith("image/");
-
-      console.log("📎 File type:", isPDF ? "PDF" : isImage ? "IMAGE" : "UNKNOWN");
-
-      // ✅ Chỉ gửi cấu trúc, staff xét duyệt nội dung
-      onFinish({
-        uploadType: isPDF ? "PDF" : "IMAGE",
-        contractType: "VEHICLE_OWNERSHIP",
-        file,
-      });
-
-      toast({
-        title: "Tải lên thành công ✅",
-        description: isPDF
-          ? "Đã nhận file PDF, chuyển tới bước xác nhận"
-          : "Đã nhận ảnh hợp đồng",
-      });
-    } catch (err) {
-      console.error("❌ Upload error:", err);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xử lý file, thử lại nhé!",
-        variant: "destructive",
-      });
-    } finally {
-      console.log("✅ Upload process finished.");
-      setIsUploading(false);
-    }
-  };
 
   return (
     <Card className="p-4 border rounded-lg shadow-sm">
@@ -92,10 +65,6 @@ const ContractImport: React.FC<ContractImportProps> = ({ onFinish }) => {
             Đã chọn: <strong>{file.name}</strong>
           </p>
         )}
-
-        <Button disabled={isUploading} onClick={handleUpload} className="w-fit">
-          {isUploading ? "Đang xử lý..." : "Tải lên & Tiếp tục"}
-        </Button>
       </CardContent>
     </Card>
   );
