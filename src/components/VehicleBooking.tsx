@@ -262,7 +262,7 @@ export default function VehicleBooking() {
                 vehiclesArr = mockAll.filter(v => groupIds.includes(v.groupId));
             } else {
                 const fetchPromises = groupIds.map(groupId =>
-                    apiCall(`/Schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`).catch(() => null)
+                    apiCall(`/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`).catch(() => null)
                 );
                 const allVehiclesData = await Promise.all(fetchPromises);
                 vehiclesArr = allVehiclesData
@@ -322,7 +322,7 @@ export default function VehicleBooking() {
                     };
                 });
             } else {
-                const fetchPromises = groupIds.map(groupId => apiCall(`/Schedule/group/${groupId}`));
+                const fetchPromises = groupIds.map(groupId => apiCall(`/schedule/group/${groupId}`));
                 const allBookingsArrays = await Promise.all(fetchPromises);
                 const data = allBookingsArrays.flat();
                 if (!Array.isArray(data)) throw new Error("API trả về không phải array");
@@ -370,7 +370,7 @@ export default function VehicleBooking() {
     const loadOverrideInfo = async (groupId: number) => {
         setLoadingOverrideInfo(true);
         try {
-            const data: OverrideInfo = await apiCall(`/Schedule/override-count?userId=${currentUserId}&groupId=${groupId}`);
+            const data: OverrideInfo = await apiCall(`/schedule/override-count?userId=${currentUserId}&groupId=${groupId}`);
             setOverrideInfo(data);
         } catch (error: any) {
             console.error("Error loading override info:", error);
@@ -419,7 +419,7 @@ export default function VehicleBooking() {
                 });
                 localStorage.setItem(storeKey, JSON.stringify(list));
             } else {
-                await apiCall("/Schedule/register", "POST", {
+                await apiCall("/schedule/register", "POST", {
                     startTime: toLocalDateTime(bookingForm.date, start),
                     endTime: toLocalDateTime(bookingForm.date, end),
                     status: "BOOKED",
@@ -452,7 +452,7 @@ export default function VehicleBooking() {
                 const updated = list.map((b: any) => b.scheduleId === scheduleId ? {...b, status: "canceled"} : b);
                 localStorage.setItem(storeKey, JSON.stringify(updated));
             } else {
-                await apiCall(`/Schedule/delete/${scheduleId}`, "DELETE");
+                await apiCall(`/schedule/delete/${scheduleId}`, "DELETE");
             }
             await loadBookings();
             window.dispatchEvent(new CustomEvent('schedules-updated'));
@@ -517,7 +517,7 @@ export default function VehicleBooking() {
                 } : b);
                 localStorage.setItem(storeKey, JSON.stringify(updated));
             } else {
-                await apiCall(`/Schedule/update/${editForm.bookingId}`, "PUT", {
+                await apiCall(`/schedule/update/${editForm.bookingId}`, "PUT", {
                     startTime: toLocalDateTime(editForm.date, start),
                     endTime: toLocalDateTime(editForm.date, end),
                     groupId: currentGroupId,
