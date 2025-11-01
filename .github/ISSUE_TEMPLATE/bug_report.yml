@@ -1,0 +1,57 @@
+name: 🐞 Bug Report
+description: Ghi nhận lỗi hệ thống hoặc lỗi giao diện trong hệ thống Đồng Sở Hữu Xe Điện
+title: "[BUG] Mô tả ngắn lỗi"
+labels: [bug]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã báo lỗi 🙏  
+        Vui lòng điền thông tin chi tiết bên dưới để team dễ xử lý.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Tóm tắt lỗi
+      description: Viết ngắn gọn lỗi bạn gặp phải.
+      placeholder: "Ví dụ: Không thể lưu thông tin thanh toán"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện lỗi
+      description: Mô tả lại thao tác để xuất hiện lỗi.
+      placeholder: |
+        1. Đăng nhập bằng tài khoản A
+        2. Chọn xe X
+        3. Bấm 'Đặt lịch' → lỗi xảy ra
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong đợi
+      placeholder: "Hệ thống phải hiển thị thông báo xác nhận đặt lịch thành công"
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Kết quả thực tế
+      placeholder: "Hệ thống hiển thị lỗi 500 hoặc không phản hồi"
+
+  - type: input
+    id: environment
+    attributes:
+      label: Môi trường thử nghiệm
+      placeholder: "VD: Localhost, DEV server, Chrome 120, Windows 11"
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Ảnh hoặc video minh họa
+      description: Dán link hoặc đính kèm ảnh nếu có.
