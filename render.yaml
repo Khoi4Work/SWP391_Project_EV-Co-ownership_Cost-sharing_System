@@ -1,11 +1,12 @@
 services:
   - type: web
     name: swp391-be
-    env: docker
+    env: static
     rootDir: App
-    plan: free
-    region: singapore
-    buildCommand: chmod +x mvnw && ./mvnw -B clean package -DskipTests
+    buildCommand: |
+      apt-get update && apt-get install -y openjdk-17-jdk maven
+      mvn -B clean package -DskipTests
     startCommand: java -jar target/*.jar
+    plan: free
       - key: JAVA_HOME
         value: /usr/lib/jvm/java-17-openjdk-amd64
