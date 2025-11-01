@@ -93,7 +93,7 @@ public class StaffController {
     // 2. APPROVE or REJECT CONTRACT AND SEND EMAIL RESULT TO CUSTOMER
 
     @PatchMapping("/contract/{contractId}/{decision}")
-    public ResponseEntity verifyContract(@PathVariable int contractId, @PathVariable int decision) {
+    public ResponseEntity verifyContract(@PathVariable int contractId, @PathVariable int decision) throws Exception {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");

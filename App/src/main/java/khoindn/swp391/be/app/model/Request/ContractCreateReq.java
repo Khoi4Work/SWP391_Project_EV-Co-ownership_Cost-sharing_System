@@ -53,6 +53,4 @@ public class ContractCreateReq {
 
     private MultipartFile vehicleImage;
 
-
-
 }

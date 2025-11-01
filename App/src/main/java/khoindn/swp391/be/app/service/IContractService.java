@@ -15,9 +15,9 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 
 public interface IContractService {
-    public Contract getContractByContractId(int id);
+    Contract getContractByContractId(int id);
 
-    public ContractSigner setContract(ContractDecisionReq req)
+    ContractSigner setContract(ContractDecisionReq req)
             throws
             InvalidKeySpecException,
             NoSuchAlgorithmException,
@@ -25,20 +25,20 @@ public interface IContractService {
             InvalidKeyException;
 
 
-    public List<ContractSigner> createContract(ContractCreateReq req) throws Exception;
+    List<ContractSigner> createContract(ContractCreateReq req) throws Exception;
 
-    public List<ContractHistoryRes> getHistoryContractsByUser(Users user);
+    List<ContractHistoryRes> getHistoryContractsByUser(Users user);
 
-    public List<ContractSigner> getAllContractSignersByContractId(int id);
+    List<ContractSigner> getAllContractSignersByContractId(int id);
 
-    public List<ContractSigner> getContractSignerByContractId(int id);
+    List<ContractSigner> getContractSignerByContractId(int id);
 
-    public List<ContractPendingRes> getPendingContracts();
+    List<ContractPendingRes> getPendingContracts();
 
-    public void SendWaitingConfirmedContract(int contractId);
+    void SendWaitingConfirmedContract(int contractId);
 
-    public void sendDeclinedContractNotification(int contractId) throws Exception;
+    void sendDeclinedContractNotification(int contractId) throws Exception;
 
-    public void verifyContract(int contractId, int decision) throws Exception;
+    void verifyContract(int contractId, int decision) throws Exception;
 
 }
