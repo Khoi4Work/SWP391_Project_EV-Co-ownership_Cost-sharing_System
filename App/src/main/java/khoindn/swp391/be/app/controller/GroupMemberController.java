@@ -52,9 +52,7 @@ public class GroupMemberController {
     }
 
     // ---------------------- NEW CODE: Add member to group ----------------------
-    @PostMapping(
-            path = "/add"
-    )
+    @PostMapping("/add")
     public ResponseEntity<GroupMemberResponse> addMember(
             @RequestParam("groupId") int groupId,
             @Valid @RequestBody AddMemberRequest req) {
@@ -111,11 +109,11 @@ public class GroupMemberController {
         return ResponseEntity.status(201).body(decisionVote);
     }
 
-//    @GetMapping("/group/{groupId}")
-//    public ResponseEntity<List<GroupMemberDetailRes>> getGroupMembersByGroupId(@PathVariable int groupId) {
-//        List<GroupMemberDetailRes> members = iGroupMemberService.getGroupMembersByGroupId(groupId);
-//        return ResponseEntity.ok(members);
-//    }
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<List<GroupMemberDetailRes>> getGroupMembersByGroupId(@PathVariable int groupId) {
+        List<GroupMemberDetailRes> members = iGroupMemberService.getGroupMembersByGroupId(groupId);
+        return ResponseEntity.ok(members);
+    }
 
     @PatchMapping("/decision")
     public ResponseEntity setDecision(@RequestBody VotingRequest votingRequest) {

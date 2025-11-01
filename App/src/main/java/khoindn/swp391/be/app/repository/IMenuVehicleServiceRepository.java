@@ -6,4 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.awt.*;
 
 public interface IMenuVehicleServiceRepository extends JpaRepository<MenuVehicleService, Integer> {
+    MenuVehicleService getMenuVehicleServiceByServiceName(String serviceName);
+
+    MenuVehicleService getMenuVehicleServiceByServiceNameContains(String serviceName);
 }

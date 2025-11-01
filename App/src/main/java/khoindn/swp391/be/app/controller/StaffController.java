@@ -33,7 +33,7 @@ public class StaffController {
 
     // DELETE GROUP
 
-    @PostMapping("/delete-group/{groupId}")
+    @DeleteMapping("/delete/group/{groupId}")
     public ResponseEntity deleteGroup(@PathVariable int groupId) {
         iGroupService.deleteGroup(groupId);
         return ResponseEntity.ok().body("Delete group successfully");
@@ -41,7 +41,7 @@ public class StaffController {
 
     // LEAVE GROUP
     
-    @PostMapping("leave-group")
+    @PatchMapping("/leave/group")
     public ResponseEntity leaveGroup(LeaveGroupReq request) {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
@@ -53,7 +53,7 @@ public class StaffController {
 
     // GET ALL REQUEST GROUP
 
-    @GetMapping("/get/all/request-group")
+    @GetMapping("/all/group/request")
     public ResponseEntity getAllRequestGroup() {
         List<RequestGroupService> res = iRequestGroupService.getAllRequestGroup();
         if (res.isEmpty()) {
@@ -64,7 +64,7 @@ public class StaffController {
 
     // UPDATE REQUEST GROUP
 
-    @PostMapping("/update/request-group")
+    @PatchMapping("/group/request")
     public ResponseEntity updateRequestGroup(@RequestBody @Valid UpdateRequestGroup update) {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {

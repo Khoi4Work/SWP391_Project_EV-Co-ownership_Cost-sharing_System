@@ -21,15 +21,6 @@ public class ContractSigner {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne
-    @JoinColumn(name = "contract_id")
-    private Contract contract;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private Users user;
-
-
     @Column(name = "decision")
     @Enumerated(EnumType.STRING)
     private DecisionContractSigner decision = DecisionContractSigner.PENDING; // pending | signed | declined
@@ -39,4 +30,13 @@ public class ContractSigner {
 
     @Column(name = "signature", length = 3000)
     private String signature;
+
+    // Relationship
+    @ManyToOne
+    @JoinColumn(name = "contract_id")
+    private Contract contract;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private Users user;
 }

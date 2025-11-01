@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/Schedule")
+@RequestMapping("/schedule")
 @SecurityRequirement(name = "api")
 @CrossOrigin(origins = "http://localhost:8081")
 

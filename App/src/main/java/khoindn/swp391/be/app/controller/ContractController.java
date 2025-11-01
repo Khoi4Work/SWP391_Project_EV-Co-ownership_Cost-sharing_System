@@ -11,6 +11,7 @@ import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,7 +46,7 @@ public class ContractController {
     private ISupabaseService iSupabaseService;
 
     // Lấy contract
-    @GetMapping("/user/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Contract> getContractByContractId(@PathVariable int id) {
         Contract contract = iContractService.getContractByContractId(id);
         if (contract == null) {
@@ -70,19 +71,11 @@ public class ContractController {
         return ResponseEntity.status(HttpStatus.OK).body(contractResult);
     }
 
-    // Gửi email
-    @PostMapping("/send-email")
-    public ResponseEntity<String> sendEmail(@RequestBody @Valid SendBulkEmailReq emailReq) {
-        try {
-            iEmailService.SendBulkEmail(emailReq);
-            return ResponseEntity.status(HttpStatus.OK).body("Email sent successfully");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send email");
-        }
-    }
 
-    @PostMapping("/create")
-    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req) {
+
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req)
+            throws Exception {
         System.out.println(req);
         List<ContractSigner> contractResult = iContractService.createContract(req);
         if (contractResult == null) {
@@ -173,26 +166,12 @@ public class ContractController {
         return ResponseEntity.status(200).body(renderContractRes);
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity upload(@RequestParam("file") MultipartFile file) {
-        Users user = authenticationService.getCurrentAccount();
-        if (user == null) {
-            return ResponseEntity.status(403).body("User is not logged in");
-        }
-//        }else if (!user.getRole().getRoleName().equalsIgnoreCase("co-owner")){
-//            return ResponseEntity.status(403).body("Invalid role");
-//        }
-        try {
-            return ResponseEntity.status(200).body(supabaseService.uploadFile(file));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload thất bại: " + e.getMessage());
-        }
-    }
-
     @GetMapping("/file")
     public ResponseEntity getFileByName(String fileName) {
         return ResponseEntity.status(200).body(iSupabaseService.getFileUrl(fileName));
     }
+
+
+
 
 }

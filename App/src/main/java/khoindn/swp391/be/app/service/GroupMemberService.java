@@ -50,6 +50,8 @@ public class GroupMemberService implements IGroupMemberService {
     private IVehicleRepository iVehicleRepository;
     @Autowired
     private IRequestVehicleServiceRepository iRequestVehicleServiceRepository;
+    @Autowired
+    private IMenuVehicleServiceRepository iMenuVehicleServiceRepository;
 
     // ---------------------- EXISTING CODE ----------------------
     @Override
@@ -117,10 +119,10 @@ public class GroupMemberService implements IGroupMemberService {
     @Transactional
     public GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage) {
         Group group = iGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException("GROUP_NOT_FOUND"));
+                .orElseThrow(() -> new GroupNotFoundException("GROUP_NOT_FOUND"));
 
         Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("USER_NOT_FOUND"));
+                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
 
         // Check duplicate
         iGroupMemberRepository.findByGroupAndUsers(group, user).ifPresent(gm -> {
@@ -187,7 +189,7 @@ public class GroupMemberService implements IGroupMemberService {
     }
 
     @Override
-    public void setDecision(int choice, long idDecision, GroupMember gm) {
+    public DecisionVote setDecision(int choice, long idDecision, GroupMember gm) {
         DecisionVote vote = iDecisionVoteRepository.getDecisionVoteById(idDecision);
         if (vote == null) {
             throw new DecisionVoteNotFoundException("DECISION_NOT_FOUND_OR_DECISION_NOT_EXISTS");
@@ -238,22 +240,30 @@ public class GroupMemberService implements IGroupMemberService {
 
         // Logic quyết định
         if (voteDetails.stream()
-                .filter(decisionVoteDetail ->  decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
+                .filter(decisionVoteDetail -> decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
                 .anyMatch(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
             totalRejected += voteDetails
                     .stream()
-                    .filter(decisionVoteDetail ->  decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
+                    .filter(decisionVoteDetail -> decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
                     .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)
                     .mapToDouble(v -> v.getGroupMember().getOwnershipPercentage()).sum();
         } else if (totalRejected > 0 && totalAccepted < 0.75) {
             vote.setStatus(StatusDecisionVote.REJECTED);
-        }else if (totalAccepted > 0.75) {
+        } else if (totalAccepted > 0.75) {
             vote.setStatus(StatusDecisionVote.APPROVED);
         }
         iDecisionVoteRepository.save(vote);
-
-
-        
+        return vote;
+//        if (iMenuVehicleServiceRepository.findAll().stream().anyMatch(
+//                menuVehicleService ->
+//                        menuVehicleService.getServiceName().contains(vote.getDecisionName()))) {
+//            MenuVehicleService vehicleService = iMenuVehicleServiceRepository
+//                    .getMenuVehicleServiceByServiceNameContains(vote.getDecisionName());
+//
+//            requestVehicleService(vote.getCreatedBy().getGroup().getGroupId(),vehicleService.getId());
+//            return vote;
+//        }
+//        return null;
     }
 
     @Override

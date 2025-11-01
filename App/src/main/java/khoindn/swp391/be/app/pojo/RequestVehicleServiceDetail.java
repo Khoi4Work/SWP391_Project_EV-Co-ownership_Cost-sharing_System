@@ -22,7 +22,6 @@ public class RequestVehicleServiceDetail {
     private String description;
     // Relationships
     @OneToOne(mappedBy = "requestVehicleServiceDetail")
-    @JoinColumn(name = "request_service_id")
     private RequestVehicleService requestVehicleService;
 
     @ManyToOne

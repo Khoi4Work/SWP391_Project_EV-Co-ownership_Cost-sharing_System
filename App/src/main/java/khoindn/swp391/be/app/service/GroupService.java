@@ -46,6 +46,10 @@ public class GroupService implements IGroupService {
     private IRequestGroupServiceRepository iRequestGroupServiceRepository;
     @Autowired
     private IRequestGroupServiceDetailRepository iRequestGroupServiceDetailRepository;
+    @Autowired
+    private IRequestVehicleServiceRepository iRequestVehicleServiceRepository;
+    @Autowired
+    private IGroupService iGroupService;
 
 
     @Override
@@ -176,6 +180,11 @@ public class GroupService implements IGroupService {
             throw new GroupNotFoundException("Group not found");
         }
         return group;
+    }
+
+    @Override
+    public RequestVehicleService getAllVehicleServiceByGroupId(int groupId) {
+        return iRequestVehicleServiceRepository.getAllByGroupMember_Group(iGroupService.getGroupById(groupId));
     }
 
 

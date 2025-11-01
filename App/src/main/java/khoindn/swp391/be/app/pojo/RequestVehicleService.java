@@ -39,8 +39,9 @@ public class RequestVehicleService {
     @JoinColumn(name = "service")
     private MenuVehicleService menuVehicleService;
 
-    @OneToOne(mappedBy = "requestVehicleService", cascade = CascadeType.ALL)
-    @JoinColumn(name = "vehicle_service_detail")
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "vehicle_service_detail_id")
     private RequestVehicleServiceDetail requestVehicleServiceDetail;
+
 
 }

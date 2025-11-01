@@ -52,6 +52,10 @@ public class ContractService implements IContractService {
     private ModelMapper modelMapper;
     @Autowired
     private SpringTemplateEngine templateEngine;
+    @Autowired
+    private SupabaseService supabaseService;
+    @Autowired
+    private ISupabaseService iSupabaseService;
 
 
     @Override
@@ -168,37 +172,33 @@ public class ContractService implements IContractService {
 
 
     @Override
-    public List<ContractSigner> createContract(ContractCreateReq req) {
+    public List<ContractSigner> createContract(ContractCreateReq req) throws Exception {
 
         List<ContractSigner> signerList = new ArrayList<>();
 
+        //TAO CONTRACT
         Contract contract = new Contract();
-
         contract.setContractType(req.getContractType());
         contract.setStartDate(LocalDate.now());
-        contract.setUrlContract(req.getDocumentUrl());
-        if (contract.getContractType().contains("paper")) {
-            contract.setStatus(StatusContract.WAITING_CONFIRMATION);
-        }
+        contract.setUrlConfirmedContract(req.getDocumentUrl());
+        contract.setImageContract(supabaseService.uploadFile(req.getImageContract()));
+
         iContractRepository.save(contract);
 
+        //TAO VEHICLE
         Vehicle vehicle = modelMapper.map(req, Vehicle.class);
         iVehicleRepository.save(vehicle);
 
+        //TAO CONTRACT SIGNER
         for (Integer userId : req.getUserId()) {
             Users users = iUserRepository.findUsersById(userId);
             ContractSigner contractSigner = new ContractSigner();
 
             // Tao nguoi ky contract
-
             contractSigner.setContract(contract);
             contractSigner.setUser(users);
             iContractSignerRepository.save(contractSigner);
-
             signerList.add(contractSigner);
-
-            // Tao request vehicle
-
         }
         return signerList;
     }
@@ -260,7 +260,12 @@ public class ContractService implements IContractService {
             List<ContractSigner> signerList = iContractSignerRepository.findAllByContract_ContractId(contract.getContractId());
             ContractPendingRes pendingRes = new ContractPendingRes();
             pendingRes.setContract(contract);
-            pendingRes.setContractSignerList(signerList.stream().map(ContractSigner::getUser).toList());
+            pendingRes.setContractSignerList(
+                    signerList
+                    .stream()
+                    .map(ContractSigner::getUser)
+                    .toList()
+            );
             contractPendingRes.add(pendingRes);
         }
         return contractPendingRes;
@@ -276,7 +281,7 @@ public class ContractService implements IContractService {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
+                String secureUrl = contract.getUrlConfirmedContract() + contract.getContractId() + "?token=" + token;
                 try {
                     MimeMessage message = javaMailSender.createMimeMessage();
                     MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -298,16 +303,17 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void sendDeclinedContractNotification(int contractId) {
+    public void sendDeclinedContractNotification(int contractId) throws Exception {
         List<ContractSigner> signerList = getContractSignerByContractId(contractId);
 
         Contract contract = getContractByContractId(contractId);
+        iSupabaseService.deleteFile(contract.getImageContract());
 
         if (contract.getStatus().equals(StatusContract.DECLINED)) {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
+                String secureUrl = contract.getUrlConfirmedContract() + contract.getContractId() + "?token=" + token;
                 // SEND MULTIPLE USERS
                 try {
                     MimeMessage message = javaMailSender.createMimeMessage();
@@ -330,7 +336,7 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void verifyContract(int contractId, int decision) {
+    public void verifyContract(int contractId, int decision) throws Exception {
         Contract contract = getContractByContractId(contractId);
         if (contract == null || !contract.getStatus().equals(StatusContract.PENDING_REVIEW)) {
             throw new ContractNotExistedException("Contract cannot found or invalid status!");
