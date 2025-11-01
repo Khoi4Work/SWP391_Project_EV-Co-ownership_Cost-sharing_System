@@ -36,7 +36,6 @@ interface CoOwner {
 
 export default function VehicleRegistration() {
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
-  const [importedData, setImportedData] = useState<any>(null);
   const [step, setStep] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -44,88 +43,33 @@ export default function VehicleRegistration() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
   const [status, setStatus] = useState<number | null>(null);
+  const [fileType, setFileType] = useState("");
   const navigate = useNavigate();
+  const [contractFile, setContractFile] = useState<File | null>(null);
   const { toast } = useToast();
-  useEffect(() => {
-    const demoVehicles = [
-      {
-        id: 1,
-        name: "VinFast VF e34",
-        image: "https://vinfastauto.com/themes/porto/img/vfe34/overview/vfe34-1.png",
-        price: "690,000,000₫",
-        brand: "Vinfast",
-        color: "red",
-        batteryCapacity: 3.6,
-        plateNo: "56789"
-      },
-      {
-        id: 2,
-        name: "Tesla Model 3",
-        image: "https://tesla-cdn.thron.com/delivery/public/image/tesla/9b9a6f50-92b8-4f44-bba9-0a6f0c9099c8/bvlatuR/std/2880x1800/Desktop-Model3",
-        price: "1,500,000,000₫",
-        brand: "Tesla",
-        color: "yellow",
-        batteryCapacity: 3.7,
-        plateNo: "12345"
-      },
-      {
-        id: 3,
-        name: "Hyundai Ioniq 5",
-        image: "https://hyundai.com.vn/wp-content/uploads/2022/04/ioniq5.jpg",
-        price: "1,200,000,000₫",
-        brand: "Hyundai",
-        color: "white",
-        batteryCapacity: 3.8,
-        plateNo: "1231313"
-      }
-    ];
+  const handleFileImport = (data) => {
+    const { file, uploadType } = data;
+    setContractFile(file);
+    setFileType(uploadType); // PDF / IMAGE
+    toast({
+      title: "Đã tải file hợp đồng",
+      description: `Loại file: ${uploadType}`,
+    });
+  };
+  const handleConfirmFile = () => {
+    if (!contractFile) return;
 
-    setVehicles(demoVehicles);
-  }, []);
-  useEffect(() => {
-    if (!importedData) return;
-
-    if (importedData.type === "pdf") {
-      // PDF hợp đồng đồng sở hữu → gửi cho staff xác nhận
-      const sendToStaff = async () => {
-        try {
-          const payload = {
-            documentUrl: importedData.fileUrl,
-            contractType: "VEHICLE_COOWNERSHIP",
-            status: "pending review",
-          };
-          await axiosClient.post(CREATE_CONTRACT, payload);
-          toast({
-            title: "Đã gửi hợp đồng cho nhân viên xác nhận",
-            description: "Vui lòng chờ phản hồi từ nhân viên.",
-          });
-          navigate("/co-owner/dashboard");
-        } catch (err) {
-          console.error("❌ Lỗi gửi hợp đồng PDF:", err);
-          toast({
-            title: "Lỗi khi gửi hợp đồng",
-            description: "Không thể gửi hợp đồng cho nhân viên.",
-            variant: "destructive",
-          });
-        }
-      };
-      sendToStaff();
-    } else if (importedData.type === "image") {
-      // Ảnh hợp đồng → trích xuất thông tin và đi tiếp bước 1
+    // fileType là "pdf" hoặc "image" đã được set trong handleFileImport
+    if (fileType !== "PDF" && fileType !== "IMAGE") {
       toast({
-        title: "Ảnh hợp đồng đã được tải lên",
-        description: "Vui lòng kiểm tra thông tin và tiếp tục quy trình.",
-      });
-      setStep(1); // bắt đầu quy trình 4 bước
-    }
-    else {
-      toast({
-        title: "Định dạng không được hỗ trợ",
-        description: "Vui lòng tải lên file PDF hoặc ảnh hợp đồng hợp lệ.",
+        title: "File không hợp lệ",
+        description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
         variant: "destructive",
       });
+      return;
     }
-  }, [importedData]);
+    setStep(1); // qua bước nhập thông tin xe
+  };
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
     const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
@@ -411,77 +355,102 @@ export default function VehicleRegistration() {
     if (updated.length === 0) localStorage.removeItem("coOwners");
     else localStorage.setItem("coOwners", JSON.stringify(updated));
   };
+  // const handleSubmit = async () => {
+  //   if (totalOwnership !== 100) {
+  //     toast({
+  //       title: "Lỗi",
+  //       description: "Tổng tỷ lệ sở hữu phải bằng 100%",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   setPdfUrl(pdfUrl);
+
+  //   const invalid = coOwners.find((co) => Number(co.ownership) > mainOwnership);
+  //   if (invalid) {
+  //     toast({
+  //       title: "Lỗi",
+  //       description: `Đồng sở hữu ${invalid.name || invalid.email} có tỷ lệ lớn hơn chủ sở hữu chính`,
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   setIsSubmitted(true);
+
+  //   // ✅ Payload group
+  //   const payload = {
+  //     vehicleId: selectedVehicle,
+  //     member: [
+  //       {
+  //         email: ownerInfo.email,
+  //         ownershipPercentage: mainOwnership,
+  //       },
+  //       ...coOwners.map((co) => ({
+  //         email: co.email,
+  //         ownershipPercentage: co.ownership,
+  //       })),
+  //     ],
+  //     documentUrl: pdfUrl,
+  //     contractType: "Vehicle Registration",
+  //   };
+  //   var documentUrl = `${window.location.origin}/contract/preview/`;
+  //   // ✅ Payload contract
+  //   const contract = {
+  //     documentUrl,
+  //     contractType: "VEHICLE REGISTRATION",
+  //     userId: [
+  //       Number(ownerInfo.id),
+  //       ...coOwners.filter(co => co.id).map(co => Number(co.id))
+  //     ]
+  //   };
+
+  //   console.log("📦 Payload gửi backend:", payload);
+  //   console.log("📨 Payload gửi createContract:", contract);
+  //   try {
+
+  //     const resData = await axiosClient.post(CREATE_CONTRACT, contract);
+  //     localStorage.removeItem("address");
+  //     resData.data.forEach((user) => {
+  //       const key = `contractId_${user.user.id}`;
+  //       localStorage.setItem(key, user.contract.contractId);
+  //       const get = localStorage.getItem(key)
+  //       console.log("Contract Id duoc luu: " + get);
+  //       console.log("key duoc set: " + key);
+  //       console.log("✅ Gửi contract thành công");
+  //     });
+  //   } catch (err) {
+  //     console.error("❌ Lỗi khi gọi createContract:", err);
+  //   }
+  // };
   const handleSubmit = async () => {
-    if (totalOwnership !== 100) {
-      toast({
-        title: "Lỗi",
-        description: "Tổng tỷ lệ sở hữu phải bằng 100%",
-        variant: "destructive",
-      });
-      return;
-    }
+    const formData = new FormData();
 
-    setPdfUrl(pdfUrl);
-
-    const invalid = coOwners.find((co) => Number(co.ownership) > mainOwnership);
-    if (invalid) {
-      toast({
-        title: "Lỗi",
-        description: `Đồng sở hữu ${invalid.name || invalid.email} có tỷ lệ lớn hơn chủ sở hữu chính`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitted(true);
-
-    // ✅ Payload group
-    const payload = {
-      vehicleId: selectedVehicle,
-      member: [
-        {
-          email: ownerInfo.email,
-          ownershipPercentage: mainOwnership,
-        },
-        ...coOwners.map((co) => ({
-          email: co.email,
-          ownershipPercentage: co.ownership,
-        })),
-      ],
-      documentUrl: pdfUrl,
-      contractType: "Vehicle Registration",
-    };
-    var documentUrl = `${window.location.origin}/contract/preview/`;
-    // ✅ Payload contract
-    const contract = {
-      documentUrl,
-      contractType: "VEHICLE REGISTRATION",
-      userId: [
-        Number(ownerInfo.id),
-        ...coOwners.filter(co => co.id).map(co => Number(co.id))
-      ]
-    };
-
-    console.log("📦 Payload gửi backend:", payload);
-    console.log("📨 Payload gửi createContract:", contract);
+    formData.append("contractFile", contractFile);
+    formData.append("vehicleInfo", JSON.stringify(selectedVehicle));
+    formData.append("owners", JSON.stringify(ownerInfo));
+    formData.append("coOwners", JSON.stringify(coOwners));
+    formData.append("imageUrl", "");
     try {
-
-      const resData = await axiosClient.post(CREATE_CONTRACT, contract);
-      localStorage.removeItem("address");
-      resData.data.forEach((user) => {
-        const key = `contractId_${user.user.id}`;
-        localStorage.setItem(key, user.contract.contractId);
-        const get = localStorage.getItem(key)
-        console.log("Contract Id duoc luu: " + get);
-        console.log("key duoc set: " + key);
-        console.log("✅ Gửi contract thành công");
+      await axiosClient.post(CREATE_CONTRACT, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
+
+      toast({
+        title: "Gửi hợp đồng thành công",
+        description: "Vui lòng đợi nhân viên xác nhận"
+      });
+
+      navigate("/co-owner/dashboard");
     } catch (err) {
-      console.error("❌ Lỗi khi gọi createContract:", err);
+      toast({
+        title: "Gửi thất bại",
+        description: "Vui lòng thử lại sau",
+        variant: "destructive"
+      });
     }
   };
-
-
   if (isSubmitted) {
     localStorage.setItem("ownerInfo", JSON.stringify(ownerInfo));
     localStorage.setItem("coOwners", JSON.stringify(coOwners));
@@ -634,17 +603,24 @@ export default function VehicleRegistration() {
               </CardTitle>
               <CardDescription>
                 Tải lên hợp đồng đồng sở hữu xe (PDF hoặc ảnh).
-                Nếu là PDF sẽ gửi ngay cho nhân viên xác nhận, nếu là ảnh sẽ tiếp tục quy trình bên dưới.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <ContractImport onFinish={setImportedData} />
-
+              <ContractImport
+                // onFinish={(data) => {
+                //   setContractFile(data.file);
+                //   toast({
+                //     title: "File hợp đồng đã được tải",
+                //     description: `Loại file: ${data.uploadType}`,
+                //   });
+                // }}
+                onFinish={handleFileImport}
+              />
               <div className="flex justify-end">
                 <Button
-                  onClick={() => setStep(1)}
+                  onClick={handleConfirmFile}
                   variant="outline"
-                  disabled={!importedData || importedData.type !== "image"}
+                  disabled={!contractFile}
                 >
                   Tiếp tục quy trình
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -949,10 +925,7 @@ export default function VehicleRegistration() {
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Quay lại
                 </Button>
-                <Button
-                  onClick={handleSubmit}
-                  className="bg-gradient-primary hover:shadow-glow"
-                >
+                <Button onClick={handleSubmit} className="bg-gradient-primary hover:shadow-glow">
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Gửi đăng ký
                 </Button>

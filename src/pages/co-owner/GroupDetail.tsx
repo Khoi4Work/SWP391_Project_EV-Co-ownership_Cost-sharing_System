@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
+import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHistory";
 
 // Interface cho GroupMember response từ BE
 interface GroupMemberDetailRes {
@@ -63,7 +64,7 @@ interface VehicleUsage {
     user: string;
     start: string;
     end: string;
-    status: "Hoàn thành" | "Đang sử dụng";
+    status: "Hoàn thành" | "Đang sử dụng" | "Chờ nhận xe";
     note: string;
     checkIn: string;
     checkOut: string | null;
@@ -85,36 +86,41 @@ export default function GroupDetail() {
     const [processing, setProcessing] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false);
     const [selectedHistory, setSelectedHistory] = useState<VehicleUsage | null>(null);
+    const [vehicleUsages, setVehicleUsages] = useState<VehicleUsage[]>([]);
 
-    // Mock data cho lịch sử sử dụng xe
-    const mockVehicleUsages: VehicleUsage[] = [
-        {
-            id: 1,
-            date: "2025-10-22",
-            vehicle: "Xe 1",
-            user: "Bạn",
-            start: "08:00",
-            end: "10:30",
-            status: "Hoàn thành",
-            note: "Không lỗi gì",
-            checkIn: "08:00",
-            checkOut: "10:30",
-            distance: 30
-        },
-        {
-            id: 2,
-            date: "2025-10-20",
-            vehicle: "Xe 1",
-            user: "Nguyễn Văn A",
-            start: "15:00",
-            end: "17:00",
-            status: "Đang sử dụng",
-            note: "Đang sử dụng - chưa check-out",
-            checkIn: "15:00",
-            checkOut: null,
-            distance: null
-        }
-    ];
+    // Load lịch sử sử dụng xe từ BE
+    useEffect(() => {
+        const userIdStr = localStorage.getItem("userId");
+        if (!groupId || !userIdStr) return;
+        const userIdNum = Number(userIdStr);
+        const gId = Number(groupId);
+        fetchUsageHistoryList(userIdNum, gId)
+            .then(list => {
+                const mapped: VehicleUsage[] = list.map((it: any) => {
+                    const [start, end] = (it.timeRange || " - ").split(" - ");
+                    const hasIn = Boolean(it.hasCheckIn);
+                    const hasOut = Boolean(it.hasCheckOut);
+                    const statusText = !hasIn ? "Chờ nhận xe" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
+                    return {
+                        id: it.scheduleId,
+                        date: it.date,
+                        vehicle: it.vehicleName,
+                        user: it.userName,
+                        start: start || "",
+                        end: end || "",
+                        status: statusText as any,
+                        note: "",
+                        checkIn: start || "",
+                        checkOut: hasOut ? (end || null) : null,
+                        distance: null,
+                    };
+                });
+                setVehicleUsages(mapped);
+            })
+            .catch(err => {
+                console.warn("⚠️ Cannot load usage history:", err?.message || err);
+            });
+    }, [groupId]);
 
     // EFFECT 1: Load group ID nếu chưa có
     useEffect(() => {
@@ -128,9 +134,11 @@ export default function GroupDetail() {
                     return;
                 }
 
+                const token = localStorage.getItem("accessToken");
                 // Lấy danh sách group của user
                 const res = await axiosClient.get(`/groupMember/getGroupIdsByUserId`, {
-                    params: { userId }
+                    params: { userId },
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
 
                 const groupIds: number[] = res.data;
@@ -167,15 +175,39 @@ export default function GroupDetail() {
                 const gid = Number(groupId);
                 console.log("=== FETCHING GROUP DETAIL ===");
                 console.log("GroupId:", gid);
+                const token = localStorage.getItem("accessToken");
+
+                // Helper: try multiple endpoints in case BE route differs between envs
+                const getWithFallback = async <T,>(paths: string[]): Promise<T> => {
+                    let lastError: any = null;
+                    for (const path of paths) {
+                        try {
+                            const res = await axiosClient.get<T>(path, {
+                                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                            });
+                            return res.data as T;
+                        } catch (err: any) {
+                            lastError = err;
+                            if (err?.response?.status && err.response.status !== 404) {
+                                // If not 404, break early (e.g., 401/500)
+                                break;
+                            }
+                        }
+                    }
+                    throw lastError || new Error("All endpoints failed");
+                };
 
                 // 1. Fetch Members
                 console.log("Step 1: Fetching members...");
                 let members: GroupMemberDetailRes[] = [];
                 try {
-                    const res = await axiosClient.get<GroupMemberDetailRes[]>(
-                        `/groupMember/group/${gid}` // ✅ Sửa đây
-                    );
-                    members = res.data || [];
+                    members = await getWithFallback<GroupMemberDetailRes[]>([
+                        `/groupMember/group/${gid}`,
+                        `/api/groupMember/group/${gid}`,
+                        `/api/group-members/group/${gid}`,
+                        `/group-members/group/${gid}`,
+                    ]);
+                    members = members || [];
                     console.log("✅ Members loaded:", members);
 
                     if (!members || members.length === 0) {
@@ -187,7 +219,7 @@ export default function GroupDetail() {
                     console.error("❌ Error fetching members:", {
                         status: err.response?.status,
                         message: err.message,
-                        endpoint: `/api/group-members/group/${gid}`
+                        endpoint: `members endpoints tried for group ${gid}`
                     });
                     setError(`Không thể lấy danh sách thành viên (${err.response?.status || "Network Error"})`);
                     setLoading(false);
@@ -198,7 +230,9 @@ export default function GroupDetail() {
                 console.log("Step 2: Fetching fund...");
                 let commonFund: any = null;
                 try {
-                    const res = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`);
+                    const res = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`, {
+                        headers: token ? { Authorization: `Bearer ${token}` } : {}
+                    });
                     commonFund = res.data;
                     console.log("✅ Fund loaded:", commonFund);
                 } catch (err: any) {
@@ -215,7 +249,9 @@ export default function GroupDetail() {
                 let fundDetails: any[] = [];
                 if (commonFund?.fundId) {
                     try {
-                        const res = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`);
+                        const res = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`, {
+                            headers: token ? { Authorization: `Bearer ${token}` } : {}
+                        });
                         fundDetails = res.data || [];
                         console.log("✅ Fund details loaded:", fundDetails);
                     } catch (err: any) {
@@ -227,7 +263,9 @@ export default function GroupDetail() {
                 console.log("Step 4: Fetching vehicles...");
                 let vehicles: any[] = [];
                 try {
-                    const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`);
+                    const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`, {
+                        headers: token ? { Authorization: `Bearer ${token}` } : {}
+                    });
                     vehicles = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
                     console.log("✅ Vehicles loaded:", vehicles);
                 } catch (err: any) {
@@ -500,7 +538,7 @@ export default function GroupDetail() {
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                {mockVehicleUsages.map(usage => (
+                                {vehicleUsages.map(usage => (
                                     <tr key={usage.id} className="hover:bg-muted/50">
                                         <td className="px-4 py-3">{usage.date}</td>
                                         <td className="px-4 py-3">{usage.vehicle}</td>
@@ -510,18 +548,35 @@ export default function GroupDetail() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <Badge
-                                                variant={usage.status === "Hoàn thành" ? "default" : "secondary"}
+                                                className={
+                                                    usage.status === "Chờ nhận xe"
+                                                        ? "bg-blue-100 text-blue-700 border-blue-200"
+                                                        : usage.status === "Đang sử dụng"
+                                                            ? "bg-orange-100 text-orange-700 border-orange-200"
+                                                            : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                                }
                                             >
-                                                {usage.status === "Hoàn thành" ? "✅" : "⏳"} {usage.status}
+                                                {usage.status}
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => {
-                                                    setSelectedHistory(usage);
-                                                    setDetailOpen(true);
+                                                onClick={async () => {
+                                                    try {
+                                                        const detail = await fetchUsageHistoryDetail(usage.id);
+                                                        setSelectedHistory({
+                                                            ...usage,
+                                                            note: detail.checkOutNotes || detail.checkInNotes || "",
+                                                            checkIn: detail.checkInTime ? new Date(detail.checkInTime).toLocaleTimeString() : usage.checkIn,
+                                                            checkOut: detail.checkOutTime ? new Date(detail.checkOutTime).toLocaleTimeString() : usage.checkOut,
+                                                            distance: null,
+                                                        });
+                                                        setDetailOpen(true);
+                                                    } catch (e: any) {
+                                                        toast({ title: "Lỗi", description: "Không tải được chi tiết lịch sử", variant: "destructive" });
+                                                    }
                                                 }}
                                             >
                                                 Xem
@@ -617,7 +672,15 @@ export default function GroupDetail() {
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">Trạng thái</p>
-                                    <Badge variant={selectedHistory.status === "Hoàn thành" ? "default" : "secondary"}>
+                                    <Badge
+                                        className={
+                                            selectedHistory.status === "Chờ nhận xe"
+                                                ? "bg-blue-100 text-blue-700 border-blue-200"
+                                                : selectedHistory.status === "Đang sử dụng"
+                                                    ? "bg-orange-100 text-orange-700 border-orange-200"
+                                                    : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                        }
+                                    >
                                         {selectedHistory.status}
                                     </Badge>
                                 </div>
