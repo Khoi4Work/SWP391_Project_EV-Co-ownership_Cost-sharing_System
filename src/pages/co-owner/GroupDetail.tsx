@@ -702,7 +702,7 @@ export default function GroupDetail() {
                                                             size="sm"
                                                             onClick={() => handlePayFee(fee.fundDetailId)}
                                                             disabled={processingPayment === fee.fundDetailId || !isCurrentUser}
-                                                            className="flex-1"
+                                                            className="w-full"
                                                             variant={isCurrentUser ? "default" : "secondary"}
                                                         >
                                                             {processingPayment === fee.fundDetailId
@@ -710,54 +710,6 @@ export default function GroupDetail() {
                                                                 : "Thanh toán VNPay"}
                                                         </Button>
                                                     )}
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={async () => {
-                                                            setSelectedFee(fee);
-                                                            setFeeDetailOpen(true);
-                                                            setPaymentQRUrl(null); // Reset QR URL
-                                                            
-                                                            // Fetch payment URL để hiển thị QR code
-                                                            if (fee.status === "PENDING" && fee.userId.toString() === userId) {
-                                                                setLoadingQR(true);
-                                                                try {
-                                                                    if (USE_MOCK_DATA) {
-                                                                        // Mock payment URL cho testing
-                                                                        setTimeout(() => {
-                                                                            setPaymentQRUrl(`https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?fundDetailId=${fee.fundDetailId}&amount=${fee.amount}&groupName=${encodeURIComponent(groupFee?.groupName || "")}&monthYear=${fee.monthYear}&vnp_Amount=${(fee.amount * 100).toString()}`);
-                                                                            setLoadingQR(false);
-                                                                        }, 300);
-                                                                    } else {
-                                                                        // Real API: Fetch payment URL từ backend
-                                                                        const token = localStorage.getItem("accessToken");
-                                                                        const response = await axiosClient.post<{ status: string; message: string; paymentUrl: string }>(
-                                                                            `/api/fund-fee/${fee.fundDetailId}/create-payment`,
-                                                                            {},
-                                                                            {
-                                                                                headers: token ? { Authorization: `Bearer ${token}` } : {}
-                                                                            }
-                                                                        );
-                                                                        if (response.data.paymentUrl) {
-                                                                            setPaymentQRUrl(response.data.paymentUrl);
-                                                                        }
-                                                                        setLoadingQR(false);
-                                                                    }
-                                                                } catch (error) {
-                                                                    console.error("Could not fetch payment URL for QR code:", error);
-                                                                    toast({
-                                                                        title: "Lỗi",
-                                                                        description: "Không thể tạo mã QR thanh toán",
-                                                                        variant: "destructive"
-                                                                    });
-                                                                    setLoadingQR(false);
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="flex-1"
-                                                    >
-                                                        Xem chi tiết
-                                                    </Button>
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -903,63 +855,6 @@ export default function GroupDetail() {
                     </CardContent>
                 </Card>
 
-                {/* Lịch sử giao dịch */}
-                <Card>
-                    <CardContent className="pt-6">
-                        <h2 className="text-xl font-semibold mb-4">Lịch sử giao dịch</h2>
-                        {group.transactions.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-muted border-b">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left font-medium">Tên</th>
-                                        <th className="px-4 py-3 text-left font-medium">Loại</th>
-                                        <th className="px-4 py-3 text-right font-medium">Số tiền</th>
-                                        <th className="px-4 py-3 text-left font-medium">Ngày</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                    {group.transactions.map(transaction => (
-                                        <tr key={transaction.id} className="hover:bg-muted/50">
-                                            <td className="px-4 py-3">{transaction.name}</td>
-                                            <td className="px-4 py-3">
-                                                <Badge
-                                                    variant={
-                                                        transaction.type === "deposit"
-                                                            ? "default"
-                                                            : transaction.type === "withdraw"
-                                                                ? "destructive"
-                                                                : "secondary"
-                                                    }
-                                                >
-                                                    {transaction.type === "deposit"
-                                                        ? "➕ Nạp"
-                                                        : transaction.type === "withdraw"
-                                                            ? "➖ Rút"
-                                                            : "↔️ Chuyển"}
-                                                </Badge>
-                                            </td>
-                                            <td
-                                                className={`px-4 py-3 text-right font-medium ${
-                                                    transaction.type === "deposit" ? "text-green-600" : "text-red-600"
-                                                }`}
-                                            >
-                                                {transaction.type === "deposit" ? "+" : "-"}
-                                                {transaction.amount.toLocaleString("vi-VN")} VNĐ
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground">
-                                                {new Date(transaction.date).toLocaleDateString("vi-VN")}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <p className="text-center text-muted-foreground py-8">Chưa có giao dịch nào</p>
-                        )}
-                    </CardContent>
-                </Card>
             </section>
 
             {/* Dialog chi tiết lịch sử xe */}
