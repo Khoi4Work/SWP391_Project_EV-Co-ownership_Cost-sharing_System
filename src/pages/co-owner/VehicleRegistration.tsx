@@ -185,14 +185,32 @@ export default function VehicleRegistration() {
   const [vehicles, setVehicles] = useState([]);
   const mainOwnership = Number(formik.values.ownership) || 0;
   const totalOwnership = mainOwnership + coOwners.reduce((sum, co) => sum + (Number(co.ownership) || 0), 0);
+  useEffect(() => {
+    let completed = 0;
+    for (let i = 0; i <= 4; i++) {
+      if (isStepCompleted(i)) completed++;
+      else break;
+    }
+    setCompletedSteps(completed);
+  }, [selectedVehicle, coOwners, ownerInfo]); // Theo dõi khi có thay đổi trong selectedVehicle, coOwners, ownerInfo
 
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
+      case 0:
+        // Step 0 có thể là bước khởi tạo. Ví dụ, kiểm tra xem form có được mở chưa
+        return true; // Nếu bước này không cần điều kiện đặc biệt
       case 1:
-        return selectedVehicle !== null;
+        return selectedVehicle !== null; // Xe đã được chọn chưa
       case 2:
-        return ownerInfo.name && ownerInfo.email && ownerInfo.phone && ownerInfo.idNumber && ownerInfo.address;
+        return (
+          ownerInfo.name &&
+          ownerInfo.email &&
+          ownerInfo.phone &&
+          ownerInfo.idNumber &&
+          ownerInfo.address &&
+          selectedVehicle !== null // Kiểm tra xem xe đã được chọn
+        );
       case 3:
         return (
           coOwners.length > 0 &&
@@ -200,7 +218,7 @@ export default function VehicleRegistration() {
           coOwners.every(co => co.name && co.email && co.idNumber)
         );
       case 4:
-        return isStepCompleted(1) && isStepCompleted(2) && isStepCompleted(3);
+        return isStepCompleted(1) && isStepCompleted(2) && isStepCompleted(3); // Tất cả các bước trước đó phải hoàn thành
       default:
         return false;
     }
@@ -208,12 +226,8 @@ export default function VehicleRegistration() {
 
   // Calculate progress based on completed steps
   const getProgress = () => {
-    let completed = 0;
-    for (let i = 1; i <= 4; i++) {
-      if (isStepCompleted(i)) completed++;
-      else break;
-    }
-    return (completed / 4) * 100;
+    console.log("Progress:", (completedSteps / 5) * 100);
+    return (completedSteps / 5) * 100;
   };
 
   const getVehiclePrice = () => {
