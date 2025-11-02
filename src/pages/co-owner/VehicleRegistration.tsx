@@ -33,11 +33,20 @@ interface CoOwner {
   idNumber: string;
   address: string;
 }
+interface VehicleInfo {
+  plateNo: string;
+  brand: string;
+  model: string;
+  color: string;
+  batteryCapacity: string;
+  price: string;
+}
 
 export default function VehicleRegistration() {
+  const [showErrors, setShowErrors] = useState(false);
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
   const [step, setStep] = useState(0);
-  const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -181,7 +190,7 @@ export default function VehicleRegistration() {
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
       case 1:
-        return selectedVehicle !== "";
+        return selectedVehicle !== null;
       case 2:
         return ownerInfo.name && ownerInfo.email && ownerInfo.phone && ownerInfo.idNumber && ownerInfo.address;
       case 3:
@@ -221,9 +230,9 @@ export default function VehicleRegistration() {
     const price = getVehiclePrice();
     return Math.round(price * (percentage / 100));
   };
-  const handleSelectVehicle = (vehicle: any) => {
-    setSelectedVehicle(vehicle); // lưu cả object
-    localStorage.setItem("selectedVehicle", JSON.stringify(vehicle)); // lưu trực tiếp
+  const handleSelectVehicle = (vehicle: VehicleInfo) => {
+    setSelectedVehicle(vehicle);
+    localStorage.setItem("selectedVehicle", JSON.stringify(vehicle));
   };
   const addCoOwner = () => {
     // Maximum 5 people total (including primary owner)
@@ -328,8 +337,35 @@ export default function VehicleRegistration() {
       );
     }
   };
-
-
+  const VehicleSchema = Yup.object().shape({
+    plateNo: Yup.string().required("Vui lòng nhập biển số xe"),
+    brand: Yup.string().required("Vui lòng nhập hãng xe"),
+    model: Yup.string().required("Vui lòng nhập mẫu xe"),
+    color: Yup.string().required("Vui lòng nhập màu xe"),
+    batteryCapacity: Yup.number()
+      .typeError("Dung lượng pin phải là số")
+      .positive("Dung lượng pin phải lớn hơn 0")
+      .required("Vui lòng nhập dung lượng pin"),
+    price: Yup.string()
+      .required("Vui lòng nhập giá xe")
+      .matches(/^\d{1,3}(,\d{3})*(\.\d+)?$|^\d+$/, "Giá phải là số hợp lệ")
+  });
+  const vehicleFormik = useFormik({
+    initialValues: {
+      plateNo: "",
+      brand: "",
+      model: "",
+      color: "",
+      batteryCapacity: "",
+      price: "",
+    },
+    validationSchema: VehicleSchema,
+    onSubmit: (values) => {
+      console.log("Dữ liệu: ", values);
+      setSelectedVehicle(values); // lưu xe đã nhập
+      setStep(2); // sang bước kế tiếp
+    },
+  });
   useEffect(() => {
     const saved = localStorage.getItem("coOwners");
     if (saved) {
@@ -516,7 +552,7 @@ export default function VehicleRegistration() {
                 onClick={() => {
                   setIsSubmitted(false);
                   setStep(1);
-                  setSelectedVehicle("");
+                  setSelectedVehicle(null);
                   formik.resetForm({
                     values: {
                       id: 0,
@@ -632,57 +668,70 @@ export default function VehicleRegistration() {
       </div>
       {/* Step 1: Vehicle Selection */}
       {step === 1 && (
-        <Card className="shadow-elegant">
+        <Card className="shadow-lg border border-gray-100 rounded-xl bg-white/80 backdrop-blur-md transition-all duration-300 hover:shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Car className="h-5 w-5" />
-              <span>Chọn xe điện</span>
+            <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
+              <Car className="h-5 w-5 text-primary" />
+              <span>Nhập thông tin xe</span>
             </CardTitle>
-            <CardDescription>
-              Chọn mẫu xe điện bạn muốn tham gia đồng sở hữu
+            <CardDescription className="text-gray-500">
+              Điền đầy đủ thông tin về xe bạn muốn tham gia đồng sở hữu
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {vehicles.map((vehicle) => (
-                <div
-                  key={vehicle.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-elegant ${selectedVehicle === vehicle.id
-                    ? "border-primary bg-primary/5 shadow-elegant"
-                    : "border-border"
-                    }`}
-                  onClick={() => handleSelectVehicle(vehicle)}
-                >
-                  <img
-                    src={vehicle.image}
-                    alt={vehicle.name}
-                    className="w-full h-48 object-cover rounded-md mb-4"
-                  />
-                  <h3 className="font-semibold mb-1">{vehicle.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Biển số: {vehicle.plateNo || "N/A"}
-                  </p>
-                  <p className="text-lg font-bold text-primary mb-3">{vehicle.price}</p>
 
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <Badge variant="secondary">{vehicle.brand}</Badge>
-                    <Badge variant="secondary">{vehicle.color}</Badge>
-                    <Badge variant="secondary">{vehicle.batteryCapacity} kWh</Badge>
+          <CardContent>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setShowErrors(true);
+                vehicleFormik.handleSubmit(e);
+              }}
+              className="space-y-6"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Trường nhập chung */}
+                {[
+                  { id: "plateNo", label: "Biển số", placeholder: "Nhập biển số xe" },
+                  { id: "brand", label: "Hãng xe", placeholder: "Nhập hãng xe" },
+                  { id: "model", label: "Mẫu xe", placeholder: "Nhập mẫu xe" },
+                  { id: "color", label: "Màu xe", placeholder: "Nhập màu xe" },
+                  { id: "batteryCapacity", label: "Dung lượng pin (kWh)", placeholder: "Nhập dung lượng pin" },
+                  { id: "price", label: "Giá xe", placeholder: "Nhập giá xe" },
+                ].map((field) => (
+                  <div key={field.id} className="flex flex-col">
+                    <Label
+                      htmlFor={field.id}
+                      className="font-medium text-gray-700 mb-1"
+                    >
+                      {field.label}
+                    </Label>
+                    <Input
+                      id={field.id}
+                      name={field.id}
+                      value={vehicleFormik.values[field.id]}
+                      onChange={vehicleFormik.handleChange}
+                      placeholder={field.placeholder}
+                      className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
+                    />
+                    {showErrors && vehicleFormik.errors[field.id] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {vehicleFormik.errors[field.id]}
+                      </p>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div className="flex justify-end">
-              <Button
-                onClick={() => setStep(2)}
-                disabled={!selectedVehicle}
-                className="bg-gradient-primary hover:shadow-glow"
-              >
-                Tiếp tục
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2 rounded-md hover:shadow-md transition-all duration-300"
+                >
+                  Tiếp tục
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       )}

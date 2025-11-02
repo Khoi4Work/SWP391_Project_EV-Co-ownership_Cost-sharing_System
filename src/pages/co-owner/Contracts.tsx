@@ -373,8 +373,6 @@ export default function Contracts() {
       setLoadingContract(false);
     }
   };
-
-
   useEffect(() => {
     const fetchContracts = async () => {
       try {
