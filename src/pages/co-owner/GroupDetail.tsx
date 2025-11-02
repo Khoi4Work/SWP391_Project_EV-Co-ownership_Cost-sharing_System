@@ -3,11 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
 import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHistory";
+import { getMonthlyFeesByGroupId, payMonthlyFee as payFeeMock } from "@/data/mockMonthlyFees";
+import { getGroupById, groups } from "@/data/mockGroups";
+import QRCode from "react-qr-code";
 
 // Interface cho GroupMember response từ BE
 interface GroupMemberDetailRes {
@@ -71,8 +73,38 @@ interface VehicleUsage {
     distance: number | null;
 }
 
+interface FundFeeResponse {
+    fundDetailId: number;
+    groupMemberId: number;
+    userId: number;
+    userName: string;
+    amount: number;
+    monthYear: string;
+    status: "PENDING" | "COMPLETED";
+    createdAt: string;
+    isOverdue: boolean;
+    dueDate: string;
+}
+
+interface GroupFeeResponse {
+    groupId: number;
+    groupName: string;
+    monthYear: string;
+    totalPending: number;
+    pendingCount: number;
+    paidCount: number;
+    fees: FundFeeResponse[];
+}
+
 const API_BASE_URL = "http://localhost:8080";
-const USE_MOCK_DATA = false;
+
+// 🔧 CONFIG: Chuyển đổi giữa mock data và backend thật
+// - true: Sử dụng mock data (không cần backend) - dùng để test UI
+// - false: Sử dụng backend thật (cần BE chạy ở http://localhost:8080) - dùng khi có BE
+// 
+// 📝 LƯU Ý: Khi USE_MOCK_DATA = false, nếu backend không available, code sẽ tự động
+// fallback về mock data để tránh lỗi. Để test hoàn toàn với BE, đảm bảo BE đang chạy.
+const USE_MOCK_DATA = false; // ⚠️ ĐỔI THÀNH false KHI CÓ BACKEND ĐỂ TEST
 
 export default function GroupDetail() {
     const { groupId } = useParams<{ groupId: string }>();
@@ -82,11 +114,15 @@ export default function GroupDetail() {
     const [group, setGroup] = useState<Group | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>("");
-    const [amount, setAmount] = useState("");
-    const [processing, setProcessing] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false);
     const [selectedHistory, setSelectedHistory] = useState<VehicleUsage | null>(null);
     const [vehicleUsages, setVehicleUsages] = useState<VehicleUsage[]>([]);
+    const [groupFee, setGroupFee] = useState<GroupFeeResponse | null>(null);
+    const [feeDetailOpen, setFeeDetailOpen] = useState(false);
+    const [selectedFee, setSelectedFee] = useState<FundFeeResponse | null>(null);
+    const [processingPayment, setProcessingPayment] = useState<number | null>(null);
+    const [paymentQRUrl, setPaymentQRUrl] = useState<string | null>(null);
+    const [loadingQR, setLoadingQR] = useState(false);
 
     // Load lịch sử sử dụng xe từ BE
     useEffect(() => {
@@ -120,6 +156,65 @@ export default function GroupDetail() {
             .catch(err => {
                 console.warn("⚠️ Cannot load usage history:", err?.message || err);
             });
+    }, [groupId]);
+
+    // Load thanh toán quỹ tháng từ BE hoặc mock data
+    useEffect(() => {
+        if (!groupId) return;
+
+        async function fetchMonthlyFees() {
+            if (USE_MOCK_DATA) {
+                // Use mock data
+                console.log("📦 Using MOCK DATA for monthly fees");
+                const gid = Number(groupId);
+                const mockFee = getMonthlyFeesByGroupId(gid);
+                if (mockFee) {
+                    setGroupFee(mockFee);
+                }
+                return;
+            }
+
+            // Use real API
+            console.log("🔗 Connecting to BACKEND API for monthly fees");
+            try {
+                const token = localStorage.getItem("accessToken");
+                const res = await axiosClient.get<GroupFeeResponse>(
+                    `/api/fund-fee/group/${groupId}/current-month`,
+                    {
+                        headers: token ? { Authorization: `Bearer ${token}` } : {}
+                    }
+                );
+                setGroupFee(res.data);
+                console.log("✅ Loaded monthly fees from backend");
+            } catch (err: any) {
+                const errorStatus = err?.response?.status;
+                const errorMessage = err?.message || "Unknown error";
+                
+                console.warn("⚠️ Backend API failed, falling back to mock data:", {
+                    status: errorStatus,
+                    message: errorMessage
+                });
+                
+                // Fallback to mock data if API fails
+                const gid = Number(groupId);
+                const mockFee = getMonthlyFeesByGroupId(gid);
+                if (mockFee) {
+                    setGroupFee(mockFee);
+                    // Only show warning if it's a network/connection error (not 404 which might be expected)
+                    if (!errorStatus || errorStatus >= 500) {
+                        toast({
+                            title: "⚠️ Backend không khả dụng",
+                            description: "Đang sử dụng mock data để hiển thị. Kiểm tra xem backend có đang chạy không.",
+                            variant: "destructive"
+                        });
+                    }
+                } else {
+                    console.error("❌ No mock data available for fallback");
+                }
+            }
+        }
+
+        fetchMonthlyFees();
     }, [groupId]);
 
     // EFFECT 1: Load group ID nếu chưa có
@@ -175,6 +270,69 @@ export default function GroupDetail() {
                 const gid = Number(groupId);
                 console.log("=== FETCHING GROUP DETAIL ===");
                 console.log("GroupId:", gid);
+
+                // Nếu dùng mock data, load từ mockGroups
+                if (USE_MOCK_DATA) {
+                    console.log("📦 Using MOCK DATA for group detail");
+                    // Try to find by string ID first, then by index (groupId as number - 1)
+                    let mockGroup = getGroupById(groupId);
+                    if (!mockGroup && !isNaN(gid) && gid > 0) {
+                        // If groupId is a number, use it as index (groupId 1 = groups[0])
+                        const index = gid - 1;
+                        if (index >= 0 && index < groups.length) {
+                            mockGroup = groups[index];
+                        }
+                    }
+                    // Fallback to first group
+                    if (!mockGroup) {
+                        mockGroup = groups[0];
+                    }
+                    if (!mockGroup) {
+                        setError("Không tìm thấy nhóm");
+                        setLoading(false);
+                        return;
+                    }
+
+                    // Convert mock group to Group format
+                    const mappedGroup: Group = {
+                        id: mockGroup.id,
+                        fundId: 0,
+                        name: mockGroup.name,
+                        ownerId: mockGroup.ownerId,
+                        fund: mockGroup.fund,
+                        minTransfer: mockGroup.minTransfer,
+                        users: mockGroup.users.map(u => ({
+                            id: u.id,
+                            hovaTen: u.name,
+                            email: u.email || "",
+                            avatar: u.avatar || "",
+                            role: u.role,
+                            ownershipPercentage: u.role === "admin" ? 50 : 25
+                        })),
+                        vehicles: mockGroup.vehicles.map(v => ({
+                            id: v.id,
+                            name: v.name,
+                            info: v.info || "",
+                            status: v.status,
+                            imageUrl: v.imageUrl
+                        })),
+                        transactions: mockGroup.transactions.map(t => ({
+                            id: t.id,
+                            name: t.name,
+                            type: t.type === "in" ? "deposit" : "withdraw" as any,
+                            amount: t.amount,
+                            date: t.date,
+                            userId: t.userId
+                        }))
+                    };
+
+                    console.log("✅ Mock group data loaded:", mappedGroup);
+                    setGroup(mappedGroup);
+                    setLoading(false);
+                    return;
+                }
+
+                // Use real API
                 const token = localStorage.getItem("accessToken");
 
                 // Helper: try multiple endpoints in case BE route differs between envs
@@ -201,16 +359,35 @@ export default function GroupDetail() {
                 console.log("Step 1: Fetching members...");
                 let members: GroupMemberDetailRes[] = [];
                 try {
-                    members = await getWithFallback<GroupMemberDetailRes[]>([
+                    const membersResponse = await getWithFallback<any>([
                         `/groupMember/group/${gid}`,
                         `/api/groupMember/group/${gid}`,
                         `/api/group-members/group/${gid}`,
                         `/group-members/group/${gid}`,
                     ]);
-                    members = members || [];
+                    
+                    // Đảm bảo members là array
+                    if (Array.isArray(membersResponse)) {
+                        members = membersResponse;
+                    } else if (membersResponse && Array.isArray(membersResponse.data)) {
+                        // Nếu response có dạng { data: [...] }
+                        members = membersResponse.data;
+                    } else if (membersResponse && typeof membersResponse === 'object') {
+                        // Nếu response là object, thử lấy array đầu tiên
+                        const firstArrayKey = Object.keys(membersResponse).find(key => Array.isArray(membersResponse[key]));
+                        if (firstArrayKey) {
+                            members = membersResponse[firstArrayKey];
+                        } else {
+                            members = [];
+                        }
+                    } else {
+                        members = [];
+                    }
+                    
                     console.log("✅ Members loaded:", members);
+                    console.log("✅ Members type check:", Array.isArray(members), "Length:", members?.length);
 
-                    if (!members || members.length === 0) {
+                    if (!Array.isArray(members) || members.length === 0) {
                         setError("Nhóm không có thành viên");
                         setLoading(false);
                         return;
@@ -278,7 +455,7 @@ export default function GroupDetail() {
                     id: gid.toString(),
                     fundId: commonFund?.fundId || 0,
                     name: commonFund?.group?.groupName || "Nhóm",
-                    ownerId: members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId?.toString() || "",
+                    ownerId: (Array.isArray(members) ? members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId?.toString() : "") || "",
                     fund: Number(commonFund?.balance || 0),
                     minTransfer: 10000,
                     users: members.map(m => ({
@@ -323,62 +500,58 @@ export default function GroupDetail() {
         fetchGroupDetail();
     }, [groupId]);
 
-    // Handle deposit
-    const handleDeposit = async () => {
-        const amt = Number(amount);
-        if (!amt || isNaN(amt) || amt < group!.minTransfer) {
-            toast({
-                title: "Số tiền không hợp lệ",
-                description: `Tối thiểu ${group!.minTransfer.toLocaleString("vi-VN")} VNĐ`,
-                variant: "destructive"
-            });
-            return;
-        }
-
-        setProcessing(true);
+    // Handle pay quỹ tháng
+    const handlePayFee = async (fundDetailId: number) => {
+        setProcessingPayment(fundDetailId);
 
         try {
-            const userId = Number(localStorage.getItem("userId"));
-            const token = localStorage.getItem("accessToken");
-
-            const response = await fetch(`${API_BASE_URL}/api/fund-payment/create-payment`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(token ? { Authorization: `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify({
-                    fundId: group!.fundId,
-                    groupId: Number(groupId),
-                    userId: userId || 1,
-                    amount: amt
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+            if (USE_MOCK_DATA) {
+                // Simulate payment with mock data
+                console.log("📦 Simulating payment with MOCK DATA for fundDetailId:", fundDetailId);
+                const result = payFeeMock(fundDetailId);
+                if (result.success && result.updatedFee) {
+                    toast({
+                        title: "✅ Thanh toán thành công",
+                        description: "Thanh toán quỹ tháng đã được thanh toán (mock data)"
+                    });
+                    // Update fees state with the updated data
+                    setGroupFee(result.updatedFee);
+                } else {
+                    throw new Error("Không tìm thấy quỹ tháng cần thanh toán");
+                }
+                return;
             }
 
-            const data = await response.json();
+            // Use real API
+            console.log("🔗 Creating payment via BACKEND API for fundDetailId:", fundDetailId);
+            const token = localStorage.getItem("accessToken");
 
-            if (data.paymentUrl) {
+            const response = await axiosClient.post<{ status: string; message: string; paymentUrl: string }>(
+                `/api/fund-fee/${fundDetailId}/create-payment`,
+                {},
+                {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                }
+            );
+
+            if (response.data.paymentUrl) {
                 toast({
                     title: "Đang chuyển đến VNPay",
-                    description: `Số tiền: ${amt.toLocaleString("vi-VN")} VNĐ`
+                        description: "Vui lòng thanh toán quỹ tháng"
                 });
-                window.location.href = data.paymentUrl;
+                window.location.href = response.data.paymentUrl;
             } else {
-                throw new Error(data.message || "Không nhận được link thanh toán");
+                throw new Error(response.data.message || "Không nhận được link thanh toán");
             }
         } catch (error: any) {
             console.error("Payment error:", error);
             toast({
                 title: "Lỗi tạo thanh toán",
-                description: error.message || "Không thể kết nối đến cổng thanh toán",
+                description: error.response?.data?.message || error.message || "Không thể kết nối đến cổng thanh toán",
                 variant: "destructive"
             });
         } finally {
-            setProcessing(false);
+            setProcessingPayment(null);
         }
     };
 
@@ -417,7 +590,18 @@ export default function GroupDetail() {
     const userId = localStorage.getItem("userId");
     const currentUser = group.users.find(u => u.id === userId);
     const myRole = currentUser?.role || "member";
-    const min = group.minTransfer;
+
+    // Helper để format monthYear (yyyy-MM) thành MM/yyyy
+    const formatMonthYear = (monthYear: string) => {
+        const [year, month] = monthYear.split("-");
+        return `${month}/${year}`;
+    };
+
+    // Helper để format dueDate
+    const formatDueDate = (dueDate: string) => {
+        const date = new Date(dueDate);
+        return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    };
 
     return (
         <div className="container mx-auto p-6">
@@ -436,45 +620,174 @@ export default function GroupDetail() {
             </header>
 
             <section className="space-y-6">
-                {/* Card Quỹ & Nạp tiền */}
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="grid gap-6 md:grid-cols-3 items-end">
-                            <div>
-                                <label className="text-sm font-medium text-muted-foreground">Quỹ chung</label>
-                                <p className="text-3xl font-bold mt-2">{group.fund.toLocaleString("vi-VN")} VNĐ</p>
-                                <p className="text-xs text-muted-foreground mt-2">
-                                    Tối thiểu nạp: {min.toLocaleString("vi-VN")} VNĐ
-                                </p>
+                {/* Card Thanh toán quỹ tháng */}
+                {groupFee && groupFee.fees && groupFee.fees.length > 0 && (
+                    <Card>
+                        <CardContent className="pt-6">
+                            <h2 className="text-xl font-semibold mb-4">
+                                Thanh toán quỹ tháng ({groupFee.monthYear && formatMonthYear(groupFee.monthYear)})
+                            </h2>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {groupFee.fees.map((fee) => {
+                                    const isPending = fee.status === "PENDING";
+                                    const isCurrentUser = fee.userId.toString() === userId;
+                                    // Debug: log để kiểm tra
+                                    if (isPending) {
+                                        console.log("Fee debug:", {
+                                            feeUserId: fee.userId,
+                                            feeUserIdStr: fee.userId.toString(),
+                                            currentUserId: userId,
+                                            isCurrentUser,
+                                            status: fee.status
+                                        });
+                                    }
+                                    
+                                    return (
+                                        <Card key={fee.fundDetailId} className="border-2">
+                                            <CardContent className="pt-6">
+                                                <div className="flex items-start gap-2 mb-4">
+                                                    <span className="text-2xl">💰</span>
+                                                    <div className="flex-1">
+                                                        <h3 className="font-semibold text-lg">Thanh toán quỹ tháng</h3>
+                                                        <p className="text-sm text-muted-foreground">Nhóm: {groupFee.groupName}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2 mb-4">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-muted-foreground">Tháng:</span>
+                                                        <span className="text-sm font-medium">
+                                                            {fee.monthYear && formatMonthYear(fee.monthYear)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-muted-foreground">Số tiền:</span>
+                                                        <span className="text-sm font-medium">
+                                                            {fee.amount.toLocaleString("vi-VN")} VND
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-muted-foreground">Trạng thái:</span>
+                                                        <Badge
+                                                            className={
+                                                                isPending
+                                                                    ? fee.isOverdue
+                                                                        ? "bg-red-100 text-red-700 border-red-200"
+                                                                        : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                                                    : "bg-green-100 text-green-700 border-green-200"
+                                                            }
+                                                        >
+                                                            {isPending ? (
+                                                                fee.isOverdue ? "⚠️ Quá hạn" : "⌛ Chưa thanh toán"
+                                                            ) : (
+                                                                "✅ Đã thanh toán"
+                                                            )}
+                                                        </Badge>
+                                                    </div>
+                                                    {fee.dueDate && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-sm text-muted-foreground">Hạn:</span>
+                                                            <span className="text-sm font-medium">{formatDueDate(fee.dueDate)}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-muted-foreground">Thành viên:</span>
+                                                        <span className="text-sm font-medium">{fee.userName}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-2 mt-4">
+                                                    {isPending && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handlePayFee(fee.fundDetailId)}
+                                                            disabled={processingPayment === fee.fundDetailId || !isCurrentUser}
+                                                            className="flex-1"
+                                                            variant={isCurrentUser ? "default" : "secondary"}
+                                                        >
+                                                            {processingPayment === fee.fundDetailId
+                                                                ? "⏳ Đang xử lý..."
+                                                                : "Thanh toán VNPay"}
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={async () => {
+                                                            setSelectedFee(fee);
+                                                            setFeeDetailOpen(true);
+                                                            setPaymentQRUrl(null); // Reset QR URL
+                                                            
+                                                            // Fetch payment URL để hiển thị QR code
+                                                            if (fee.status === "PENDING" && fee.userId.toString() === userId) {
+                                                                setLoadingQR(true);
+                                                                try {
+                                                                    if (USE_MOCK_DATA) {
+                                                                        // Mock payment URL cho testing
+                                                                        setTimeout(() => {
+                                                                            setPaymentQRUrl(`https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?fundDetailId=${fee.fundDetailId}&amount=${fee.amount}&groupName=${encodeURIComponent(groupFee?.groupName || "")}&monthYear=${fee.monthYear}&vnp_Amount=${(fee.amount * 100).toString()}`);
+                                                                            setLoadingQR(false);
+                                                                        }, 300);
+                                                                    } else {
+                                                                        // Real API: Fetch payment URL từ backend
+                                                                        const token = localStorage.getItem("accessToken");
+                                                                        const response = await axiosClient.post<{ status: string; message: string; paymentUrl: string }>(
+                                                                            `/api/fund-fee/${fee.fundDetailId}/create-payment`,
+                                                                            {},
+                                                                            {
+                                                                                headers: token ? { Authorization: `Bearer ${token}` } : {}
+                                                                            }
+                                                                        );
+                                                                        if (response.data.paymentUrl) {
+                                                                            setPaymentQRUrl(response.data.paymentUrl);
+                                                                        }
+                                                                        setLoadingQR(false);
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error("Could not fetch payment URL for QR code:", error);
+                                                                    toast({
+                                                                        title: "Lỗi",
+                                                                        description: "Không thể tạo mã QR thanh toán",
+                                                                        variant: "destructive"
+                                                                    });
+                                                                    setLoadingQR(false);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="flex-1"
+                                                    >
+                                                        Xem chi tiết
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
 
-                            <div>
-                                <label htmlFor="amount" className="text-sm font-medium mb-2 block">
-                                    Số tiền nạp (VNĐ)
-                                </label>
-                                <Input
-                                    id="amount"
-                                    type="number"
-                                    min={min}
-                                    step={10000}
-                                    placeholder={`Tối thiểu ${min.toLocaleString("vi-VN")}`}
-                                    value={amount}
-                                    onChange={e => setAmount(e.target.value)}
-                                    disabled={processing}
-                                />
-                            </div>
-
-                            <Button
-                                onClick={handleDeposit}
-                                size="lg"
-                                disabled={processing || !amount}
-                                className="w-full"
-                            >
-                                {processing ? "⏳ Đang xử lý..." : "💳 Nạp tiền VNPay"}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                            {groupFee && (
+                                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                                    <div className="grid grid-cols-3 gap-4 text-center">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Tổng chưa thanh toán</p>
+                                            <p className="text-lg font-bold text-yellow-600">
+                                                {groupFee.totalPending.toLocaleString("vi-VN")} VND
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Chưa thanh toán</p>
+                                            <p className="text-lg font-bold">{groupFee.pendingCount} thành viên</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Đã thanh toán</p>
+                                            <p className="text-lg font-bold text-green-600">{groupFee.paidCount} thành viên</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Danh sách thành viên */}
                 <Card>
@@ -703,6 +1016,132 @@ export default function GroupDetail() {
                                     <p className="font-medium">{selectedHistory.note || "—"}</p>
                                 </div>
                             </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog chi tiết thanh toán quỹ tháng */}
+            <Dialog 
+                open={feeDetailOpen} 
+                onOpenChange={(open) => {
+                    setFeeDetailOpen(open);
+                    if (!open) {
+                        setPaymentQRUrl(null); // Reset QR URL khi đóng dialog
+                        setLoadingQR(false); // Reset loading state
+                    }
+                }}
+            >
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Chi tiết thanh toán quỹ tháng</DialogTitle>
+                    </DialogHeader>
+                    {selectedFee && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Nhóm</p>
+                                    <p className="font-medium">{groupFee?.groupName || "—"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Tháng</p>
+                                    <p className="font-medium">
+                                        {selectedFee.monthYear && formatMonthYear(selectedFee.monthYear)}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Số tiền</p>
+                                    <p className="font-medium text-lg text-primary">
+                                        {selectedFee.amount.toLocaleString("vi-VN")} VND
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Trạng thái</p>
+                                    <Badge
+                                        className={
+                                            selectedFee.status === "PENDING"
+                                                ? selectedFee.isOverdue
+                                                    ? "bg-red-100 text-red-700 border-red-200"
+                                                    : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                                : "bg-green-100 text-green-700 border-green-200"
+                                        }
+                                    >
+                                        {selectedFee.status === "PENDING" ? (
+                                            selectedFee.isOverdue ? "⚠️ Quá hạn" : "⌛ Chưa thanh toán"
+                                        ) : (
+                                            "✅ Đã thanh toán"
+                                        )}
+                                    </Badge>
+                                </div>
+                                {selectedFee.dueDate && (
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Hạn thanh toán</p>
+                                        <p className="font-medium">{formatDueDate(selectedFee.dueDate)}</p>
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Thành viên</p>
+                                    <p className="font-medium">{selectedFee.userName}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Ngày tạo</p>
+                                    <p className="font-medium">
+                                        {new Date(selectedFee.createdAt).toLocaleDateString("vi-VN")}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* QR Code Thanh toán */}
+                            {selectedFee.status === "PENDING" && selectedFee.userId.toString() === userId && (
+                                <div className="border-t pt-4">
+                                    <p className="text-sm font-medium mb-3 text-center">Quét mã QR để thanh toán</p>
+                                    {loadingQR ? (
+                                        <div className="flex flex-col items-center justify-center py-8">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-2"></div>
+                                            <p className="text-sm text-muted-foreground">Đang tạo mã QR thanh toán...</p>
+                                        </div>
+                                    ) : paymentQRUrl ? (
+                                        <>
+                                            <div className="flex justify-center mb-3">
+                                                <div className="p-4 bg-white border-2 border-gray-200 rounded-lg">
+                                                    <QRCode
+                                                        value={paymentQRUrl}
+                                                        size={200}
+                                                        level="H"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-center text-muted-foreground mb-4">
+                                                Số tiền: <span className="font-semibold">{selectedFee.amount.toLocaleString("vi-VN")} VND</span>
+                                            </p>
+                                            <p className="text-xs text-center text-muted-foreground">
+                                                Quét mã QR bằng ứng dụng ngân hàng để thanh toán
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <div className="text-center py-4 text-sm text-muted-foreground">
+                                            Không thể tạo mã QR. Vui lòng thử lại sau.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {selectedFee.status === "PENDING" && selectedFee.userId.toString() === userId && (
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            handlePayFee(selectedFee.fundDetailId);
+                                            setFeeDetailOpen(false);
+                                        }}
+                                        disabled={processingPayment === selectedFee.fundDetailId}
+                                        className="flex-1"
+                                    >
+                                        {processingPayment === selectedFee.fundDetailId
+                                            ? "⏳ Đang xử lý..."
+                                            : "Thanh toán VNPay"}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </DialogContent>
