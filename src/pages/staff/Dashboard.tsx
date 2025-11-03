@@ -28,7 +28,7 @@ import { groups as initialGroups } from "@/data/mockGroups";
 import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
-    const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
+    const GET_REQUESTS = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
