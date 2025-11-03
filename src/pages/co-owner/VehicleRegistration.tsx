@@ -70,7 +70,7 @@ export default function VehicleRegistration() {
     setContractFile(file);
     setFileType(uploadType); // PDF / IMAGE
     toast({
-      title: "Đã tải file hợp đồng",
+      title: "Đã nhận file hợp đồng",
       description: `Loại file: ${uploadType}`,
     });
   };
@@ -128,6 +128,11 @@ export default function VehicleRegistration() {
           variant: "destructive"
         })
       };
+      toast({
+        title: "Thành công",
+        description: `Tự động điền thông tin thành công`,
+        variant: "success", // hoặc bỏ variant nếu bạn dùng toast mặc định là success
+      });
       return {
         id: user.id,
         name: user.hovaTen,       // map hovaTen -> name
@@ -706,12 +711,12 @@ export default function VehicleRegistration() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Trường nhập chung */}
                 {[
-                  { id: "plateNo", label: "Biển số", placeholder: "Nhập biển số xe" },
+                  { id: "plateNo", label: "Biển số xe", placeholder: "Nhập biển số xe" },
                   { id: "brand", label: "Hãng xe", placeholder: "Nhập hãng xe" },
                   { id: "model", label: "Mẫu xe", placeholder: "Nhập mẫu xe" },
-                  { id: "color", label: "Màu xe", placeholder: "Nhập màu xe" },
-                  { id: "batteryCapacity", label: "Dung lượng pin (kWh)", placeholder: "Nhập dung lượng pin" },
-                  { id: "price", label: "Giá xe", placeholder: "Nhập giá xe" },
+                  { id: "color", label: "Màu xe", placeholder: "Chọn hoặc nhập mã màu" },
+                  { id: "batteryCapacity", label: "Dung tích pin (kWh)", placeholder: "Nhập dung tích pin" },
+                  { id: "price", label: "Giá xe (VNĐ)", placeholder: "Nhập giá xe" },
                 ].map((field) => (
                   <div key={field.id} className="flex flex-col">
                     <Label
@@ -720,14 +725,60 @@ export default function VehicleRegistration() {
                     >
                       {field.label}
                     </Label>
-                    <Input
-                      id={field.id}
-                      name={field.id}
-                      value={vehicleFormik.values[field.id]}
-                      onChange={vehicleFormik.handleChange}
-                      placeholder={field.placeholder}
-                      className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
-                    />
+
+                    {/* 🔹 Nếu là trường "color", hiển thị color picker */}
+                    {field.id === "color" ? (
+                      <div className="flex items-center space-x-3">
+                        {/* Color picker (hiển thị ô chọn màu) */}
+                        <input
+                          type="color"
+                          id={field.id}
+                          name={field.id}
+                          value={vehicleFormik.values.color || "#000000"}
+                          onChange={vehicleFormik.handleChange}
+                          className="w-12 h-10 border rounded cursor-pointer"
+                        />
+
+                        {/* Text input (cho phép gõ mã màu thủ công) */}
+                        <Input
+                          id={`${field.id}-text`}
+                          name={field.id}
+                          value={vehicleFormik.values.color}
+                          onChange={vehicleFormik.handleChange}
+                          placeholder={field.placeholder}
+                          className="flex-1 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 rounded-md"
+                        />
+                      </div>
+                    ) : field.id === "price" ? (
+                      // 🔹 Nếu là trường "price", định dạng có dấu phẩy
+                      <Input
+                        id={field.id}
+                        name={field.id}
+                        value={vehicleFormik.values.price
+                          .toString()
+                          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/,/g, ""); // bỏ dấu phẩy để lấy số thật
+                          if (!isNaN(Number(value))) {
+                            vehicleFormik.setFieldValue("price", value);
+                          }
+                        }}
+                        placeholder={field.placeholder}
+                        className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
+                      />
+                    ) : (
+                      // 🔹 Các trường còn lại
+                      <Input
+                        id={field.id}
+                        name={field.id}
+                        value={vehicleFormik.values[field.id]}
+                        onChange={vehicleFormik.handleChange}
+                        placeholder={field.placeholder}
+                        className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
+                      />
+                    )}
+
+                    {/* Hiển thị lỗi nếu có */}
                     {showErrors && vehicleFormik.errors[field.id] && (
                       <p className="text-red-500 text-sm mt-1">
                         {vehicleFormik.errors[field.id]}
@@ -750,6 +801,7 @@ export default function VehicleRegistration() {
           </CardContent>
         </Card>
       )}
+
 
       {/* Step 2: Owner Information */}
       {step === 2 && (
@@ -954,7 +1006,29 @@ export default function VehicleRegistration() {
               {/* Vehicle Info */}
               <div className="border rounded-lg p-4">
                 <h3 className="font-semibold mb-2">Xe đã chọn</h3>
-                <p>{vehicles.find(v => v.id === selectedVehicle)?.name}</p>
+
+                {selectedVehicle ? (
+                  <div className="space-y-1 text-gray-700">
+                    <p><span className="font-medium">Biển số xe:</span> {selectedVehicle.plateNo}</p>
+                    <p><span className="font-medium">Hãng xe:</span> {selectedVehicle.brand}</p>
+                    <p><span className="font-medium">Mẫu xe:</span> {selectedVehicle.model}</p>
+                    <p className="flex items-center space-x-2">
+                      <span className="font-medium">Màu xe:</span>
+                      <span
+                        className="inline-block w-5 h-5 rounded-full border"
+                        style={{ backgroundColor: selectedVehicle.color }}
+                      ></span>
+                      <span>{selectedVehicle.color}</span>
+                    </p>
+                    <p><span className="font-medium">Dung tích pin:</span> {selectedVehicle.batteryCapacity} kWh</p>
+                    <p>
+                      <span className="font-medium">Giá xe:</span>{" "}
+                      {Number(selectedVehicle.price).toLocaleString("vi-VN")} VNĐ
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">Chưa có xe nào được chọn</p>
+                )}
               </div>
 
               {/* Owner Info */}
