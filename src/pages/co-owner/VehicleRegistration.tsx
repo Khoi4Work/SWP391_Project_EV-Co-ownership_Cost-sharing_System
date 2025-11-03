@@ -44,6 +44,15 @@ interface VehicleInfo {
 
 export default function VehicleRegistration() {
   const [showErrors, setShowErrors] = useState(false);
+  const [ownerInfo, setOwnerInfo] = useState({
+    id: 0,
+    name: "",
+    email: "",
+    phone: "",
+    idNumber: "",
+    address: "",
+    ownership: 0,
+  });
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
   const [step, setStep] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
@@ -65,6 +74,7 @@ export default function VehicleRegistration() {
       description: `Loại file: ${uploadType}`,
     });
   };
+  const [vehicles, setVehicles] = useState([]);
   const handleConfirmFile = () => {
     if (!contractFile) return;
 
@@ -159,15 +169,7 @@ export default function VehicleRegistration() {
     fetchVehicles();
   }, []);
   const formik = useFormik<CoOwner>({
-    initialValues: {
-      id: 0,
-      name: "",
-      email: "",
-      phone: "",
-      idNumber: "",
-      address: localStorage.getItem("address") || "",
-      ownership: 0,
-    },
+    initialValues: ownerInfo,
     enableReinitialize: true,
     validationSchema: Yup.object({
       email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
@@ -178,11 +180,10 @@ export default function VehicleRegistration() {
         .max(90, "Tỷ lệ sỡ hữu chính <= 90%"),
     }),
     onSubmit: (values) => {
+      setOwnerInfo(values);
       setStep(3);
     },
   });
-  const ownerInfo = formik.values;
-  const [vehicles, setVehicles] = useState([]);
   const mainOwnership = Number(formik.values.ownership) || 0;
   const totalOwnership = mainOwnership + coOwners.reduce((sum, co) => sum + (Number(co.ownership) || 0), 0);
   useEffect(() => {
@@ -191,8 +192,9 @@ export default function VehicleRegistration() {
       if (isStepCompleted(i)) completed++;
       else break;
     }
+    console.log("✅ completedSteps:", completed, ownerInfo);
     setCompletedSteps(completed);
-  }, [selectedVehicle, coOwners, ownerInfo]); // Theo dõi khi có thay đổi trong selectedVehicle, coOwners, ownerInfo
+  }, [selectedVehicle, coOwners, ownerInfo]);
 
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
@@ -204,18 +206,16 @@ export default function VehicleRegistration() {
         return selectedVehicle !== null; // Xe đã được chọn chưa
       case 2:
         return (
-          ownerInfo.name &&
           ownerInfo.email &&
-          ownerInfo.phone &&
-          ownerInfo.idNumber &&
           ownerInfo.address &&
-          selectedVehicle !== null // Kiểm tra xem xe đã được chọn
+          ownerInfo.ownership > 0 &&
+          selectedVehicle !== null
         );
       case 3:
         return (
           coOwners.length > 0 &&
           totalOwnership === 100 &&
-          coOwners.every(co => co.name && co.email && co.idNumber)
+          coOwners.every(co => co.email)
         );
       case 4:
         return isStepCompleted(1) && isStepCompleted(2) && isStepCompleted(3); // Tất cả các bước trước đó phải hoàn thành
@@ -617,28 +617,29 @@ export default function VehicleRegistration() {
         <Card className="mb-6 shadow-elegant">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">Bước {step} / 4</span>
+              <span className="text-sm font-medium">Bước {step + 1} / 5</span>
               <span className="text-sm text-muted-foreground">
                 {Math.round(getProgress())}% hoàn thành
               </span>
             </div>
+
             <Progress value={getProgress()} className="mb-4" />
-            <div className="flex justify-between text-xs">
-              <span className={step === 0 ? "text-primary font-medium" : "text-muted-foreground"}>
-                Nhập hợp đồng
-              </span>
-              <span className={isStepCompleted(1) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Chọn xe
-              </span>
-              <span className={isStepCompleted(2) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Chủ sở hữu
-              </span>
-              <span className={isStepCompleted(3) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Đồng sở hữu
-              </span>
-              <span className={isStepCompleted(4) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Xác nhận
-              </span>
+
+            <div className="grid grid-cols-5 text-center text-xs">
+              {["Nhập hợp đồng", "Chọn xe", "Chủ sở hữu", "Đồng sở hữu", "Xác nhận"].map(
+                (label, index) => (
+                  <span
+                    key={index}
+                    className={
+                      isStepCompleted(index)
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {label}
+                  </span>
+                )
+              )}
             </div>
           </CardContent>
         </Card>
