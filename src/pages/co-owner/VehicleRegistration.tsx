@@ -450,7 +450,7 @@ export default function VehicleRegistration() {
   //     documentUrl: pdfUrl,
   //     contractType: "Vehicle Registration",
   //   };
-  //   var documentUrl = `${window.location.origin}/contract/preview/`;
+    var documentUrl = `${window.location.origin}/contract/preview/`;
   //   // ✅ Payload contract
   //   const contract = {
   //     documentUrl,
@@ -479,33 +479,51 @@ export default function VehicleRegistration() {
   //     console.error("❌ Lỗi khi gọi createContract:", err);
   //   }
   // };
-  const handleSubmit = async () => {
-    const formData = new FormData();
+    const handleSubmit = async () => {
+        const formData = new FormData();
 
-    formData.append("contractFile", contractFile);
-    formData.append("vehicleInfo", JSON.stringify(selectedVehicle));
-    formData.append("owners", JSON.stringify(ownerInfo));
-    formData.append("coOwners", JSON.stringify(coOwners));
-    formData.append("imageUrl", "");
-    try {
-      await axiosClient.post(CREATE_CONTRACT, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
 
-      toast({
-        title: "Gửi hợp đồng thành công",
-        description: "Vui lòng đợi nhân viên xác nhận"
-      });
+        // ⚙️ Gửi đúng tên field giống backend
+        formData.append("documentUrl", documentUrl); // nếu có link hợp đồng thì truyền vào
+        formData.append("contractType", "CO_OWNER"); // ví dụ: "CO_OWNER" hoặc "LEASE"
+        formData.append("plateNo", selectedVehicle.plateNo);
+        formData.append("brand", selectedVehicle.brand);
+        formData.append("model", selectedVehicle.model);
+        formData.append("color", selectedVehicle.color);
+        formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
+        formData.append("price", selectedVehicle.price);
 
-      navigate("/co-owner/dashboard");
-    } catch (err) {
-      toast({
-        title: "Gửi thất bại",
-        description: "Vui lòng thử lại sau",
-        variant: "destructive"
-      });
-    }
-  };
+        // ⚙️ userId là danh sách => cần append từng phần tử
+        coOwners.forEach(owner => {
+            formData.append("userId", owner.id.toString());
+        });
+
+        formData.append("userId", ownerInfo.id.toString());
+
+
+        // ⚙️ File upload
+        if (contractFile) formData.append("imageContract", contractFile);
+        // if (selectedVehicle.imageFile) formData.append("vehicleImage", selectedVehicle.imageFile);
+
+        try {
+            await axiosClient.post(CREATE_CONTRACT, formData, {
+                headers: {"Content-Type": "multipart/form-data"},
+            });
+
+            toast({
+                title: "Gửi hợp đồng thành công",
+                description: "Vui lòng đợi nhân viên xác nhận"
+            });
+
+            navigate("/co-owner/dashboard");
+        } catch (err) {
+            toast({
+                title: "Gửi thất bại",
+                description: "Vui lòng thử lại sau",
+                variant: "destructive"
+            });
+        }
+    };
   if (isSubmitted) {
     localStorage.setItem("ownerInfo", JSON.stringify(ownerInfo));
     localStorage.setItem("coOwners", JSON.stringify(coOwners));
