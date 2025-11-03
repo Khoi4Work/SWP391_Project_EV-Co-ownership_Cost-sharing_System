@@ -98,63 +98,107 @@ export default function StaffDashboard() {
 
         fetchLeaveRequests();
     }, [LEAVE_GROUP]);
-    const handleApprove = async (appId: number) => {
-        const request = leaveRequests.find((r) => r.id === appId);
-        if (!request) {
-            toast({
-                title: "Lỗi",
-                description: "Không tìm thấy yêu cầu.",
-                variant: "destructive",
-            });
-            return;
-        }
+    // const handleApprove = async (appId: number) => {
+    //     const request = leaveRequests.find((r) => r.id === appId);
+    //     if (!request) {
+    //         toast({
+    //             title: "Lỗi",
+    //             description: "Không tìm thấy yêu cầu.",
+    //             variant: "destructive",
+    //         });
+    //         return;
+    //     }
 
+    //     try {
+    //         // Gửi request đến BE
+    //         const res = await axiosClient.post(LEAVE_GROUP, {
+    //             groupId: request.groupMember?.group?.id || request.groupId,
+    //             requestId: request.id,
+    //         });
+
+    //         if (res.status === 200) {
+    //             // Cập nhật FE
+    //             setLeaveRequests((prev) => prev.filter((r) => r.id !== appId));
+    //             toast({
+    //                 title: "Đã duyệt yêu cầu",
+    //                 description: "Nhân viên đã được rời khỏi nhóm thành công.",
+    //             });
+    //         } else {
+    //             toast({
+    //                 title: "Lỗi",
+    //                 description: "Backend trả về trạng thái không mong muốn.",
+    //                 variant: "destructive",
+    //             });
+    //         }
+    //     } catch (error) {
+    //         console.error(error);
+    //         toast({
+    //             title: "Lỗi",
+    //             description: "Không thể xử lý yêu cầu ở backend.",
+    //             variant: "destructive",
+    //         });
+    //     }
+    // };
+
+
+
+
+    // const handleReject = (appId: string) => {
+    //     setLeaveRequests(prev =>
+    //         prev.map(r =>
+    //             r.id === appId ? { ...r, status: "rejected" } : r
+    //         )
+    //     );
+    //     setLeaveRequests(prev => prev.filter(r => r.id !== appId));
+    //     toast({
+    //         title: "Đã từ chối đơn",
+    //         description: "Yêu cầu rời nhóm không được chấp nhận.",
+    //     });
+    // };
+    const PATCH_CONTRACT = import.meta.env.VITE_PATCH_VERIFY_CONTRACT_PATH;
+    // ví dụ: /contract
+
+    const handleApprove = async (contractId: number) => {
         try {
-            // Gửi request đến BE
-            const res = await axiosClient.post(LEAVE_GROUP, {
-                groupId: request.groupMember?.group?.id || request.groupId,
-                requestId: request.id,
-            });
-
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}/${contractId}/1`);
             if (res.status === 200) {
-                // Cập nhật FE
-                setLeaveRequests((prev) => prev.filter((r) => r.id !== appId));
                 toast({
-                    title: "Đã duyệt yêu cầu",
-                    description: "Nhân viên đã được rời khỏi nhóm thành công.",
+                    title: "Thành công",
+                    description: "Hợp đồng đã được duyệt.",
+                    variant: "success",
                 });
-            } else {
-                toast({
-                    title: "Lỗi",
-                    description: "Backend trả về trạng thái không mong muốn.",
-                    variant: "destructive",
-                });
+                // Cập nhật lại UI
+                setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
             }
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
             toast({
                 title: "Lỗi",
-                description: "Không thể xử lý yêu cầu ở backend.",
+                description: "Không thể duyệt hợp đồng. Vui lòng thử lại.",
                 variant: "destructive",
             });
         }
     };
 
-
-
-
-    const handleReject = (appId: string) => {
-        setLeaveRequests(prev =>
-            prev.map(r =>
-                r.id === appId ? { ...r, status: "rejected" } : r
-            )
-        );
-        setLeaveRequests(prev => prev.filter(r => r.id !== appId));
-        toast({
-            title: "Đã từ chối đơn",
-            description: "Yêu cầu rời nhóm không được chấp nhận.",
-        });
+    const handleReject = async (contractId: number) => {
+        try {
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}/${contractId}/0`);
+            if (res.status === 200) {
+                toast({
+                    title: "Đã từ chối hợp đồng",
+                    description: "Hợp đồng đã bị từ chối thành công.",
+                    variant: "success",
+                });
+                setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
+            }
+        } catch (err) {
+            toast({
+                title: "Lỗi",
+                description: "Không thể từ chối hợp đồng. Vui lòng thử lại.",
+                variant: "destructive",
+            });
+        }
     };
+
 
 
     return (
