@@ -28,7 +28,7 @@ import { groups as initialGroups } from "@/data/mockGroups";
 import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
-    const GET_REQUESTS = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
+    const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -36,7 +36,7 @@ export default function StaffDashboard() {
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
     const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
-    const LEAVE_GROUP = import.meta.env.VITE_PATCH_GROUP_REQUEST_PATH;
+    const LEAVE_GROUP = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
         { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
