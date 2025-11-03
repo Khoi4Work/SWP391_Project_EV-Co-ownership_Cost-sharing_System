@@ -333,7 +333,6 @@ export default function StaffDashboard() {
                         </Card>
                     </TabsContent>
 
-
                     {/* Groups Management */}
                     <TabsContent value="groups">
                         <Card className="shadow-elegant">
