@@ -28,7 +28,7 @@ import { groups as initialGroups } from "@/data/mockGroups";
 import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
-    const GET_REQUESTS = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
+    const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -36,7 +36,7 @@ export default function StaffDashboard() {
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
     const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
-    const LEAVE_GROUP = import.meta.env.VITE_PATCH_LEAVE_GROUP_PATH;
+    const LEAVE_GROUP = import.meta.env.VITE_PATCH_GROUP_REQUEST_PATH;
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
         { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
@@ -47,14 +47,10 @@ export default function StaffDashboard() {
         axiosClient.get(GET_REQUESTS)
             .then(res => {
                 if (Array.isArray(res.data)) {
-                    setLeaveRequests(res.data);
                     const allServices = res.data
                         .map((item: any) => item.groupMember?.requestServices || [])
                         .flat();
                     setServices(allServices);
-                    setServices(allServices);
-                } else {
-                    setLeaveRequests([]); // fallback
                 }
             })
             .catch(err => {
@@ -62,6 +58,34 @@ export default function StaffDashboard() {
                 setLeaveRequests([]); // đảm bảo luôn là []
             });
     }, []);
+    useEffect(() => {
+        const fetchLeaveRequests = async () => {
+            try {
+                const res = await axiosClient.get(LEAVE_GROUP);
+
+                if (Array.isArray(res.data)) {
+                    setLeaveRequests(res.data);
+                    console.log("📦 Leave Requests fetched:", res.data);
+                } else if (res.status === 204 || res.data === null) {
+                    setLeaveRequests([]);
+                    console.warn("⚠️ Không có yêu cầu rời nhóm nào (204 No Content).");
+                } else {
+                    console.error("⚠️ Dữ liệu trả về không hợp lệ:", res.data);
+                    setLeaveRequests([]);
+                }
+            } catch (error: any) {
+                console.error("❌ Lỗi khi gọi API LEAVE_GROUP:", error.message);
+                toast({
+                    title: "Lỗi tải yêu cầu rời nhóm",
+                    description: "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.",
+                    variant: "destructive",
+                });
+                setLeaveRequests([]);
+            }
+        };
+
+        fetchLeaveRequests();
+    }, [LEAVE_GROUP]);
     const handleApprove = async (appId: number) => {
         const request = leaveRequests.find((r) => r.id === appId);
         if (!request) {
