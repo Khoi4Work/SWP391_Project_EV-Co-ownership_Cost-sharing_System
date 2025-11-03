@@ -228,41 +228,50 @@ export default function StaffDashboard() {
                                     Xem xét và phê duyệt các đơn đăng ký xe điện
                                 </CardDescription>
                             </CardHeader>
+
                             <CardContent>
                                 <div className="space-y-4">
                                     {services.length > 0 ? (
                                         services.map((item: any, index: number) => {
                                             const contract = item.contract;
                                             return (
-                                                <Card key={index} className="bg-white/10 text-white border-white/20 mb-4">
+                                                <Card
+                                                    key={index}
+                                                    className="bg-white text-black border-gray-300 mb-4 shadow-md"
+                                                >
                                                     <CardHeader>
                                                         <CardTitle>Hợp đồng #{contract.contractId}</CardTitle>
-                                                        <CardDescription>
+                                                        <CardDescription className="text-gray-600">
                                                             <strong>Loại hợp đồng:</strong> {contract.contractType}
                                                         </CardDescription>
                                                     </CardHeader>
+
                                                     <CardContent className="space-y-2">
-                                                        <p><Calendar className="inline w-4 h-4 mr-1" />
+                                                        <p>
+                                                            <Calendar className="inline w-4 h-4 mr-1 text-gray-600" />
                                                             <strong>Ngày bắt đầu:</strong> {contract.startDate}
                                                         </p>
-                                                        <p><Calendar className="inline w-4 h-4 mr-1" />
+                                                        <p>
+                                                            <Calendar className="inline w-4 h-4 mr-1 text-gray-600" />
                                                             <strong>Ngày kết thúc:</strong> {contract.endDate}
                                                         </p>
-                                                        <p><Activity className="inline w-4 h-4 mr-1" />
+                                                        <p>
+                                                            <Activity className="inline w-4 h-4 mr-1 text-gray-600" />
                                                             <strong>Trạng thái:</strong> {contract.status}
                                                         </p>
 
                                                         {/* Thông tin nhóm và nhân viên phụ trách */}
                                                         {contract.group && (
                                                             <p>
-                                                                <Users className="inline w-4 h-4 mr-1" />
+                                                                <Users className="inline w-4 h-4 mr-1 text-gray-600" />
                                                                 <strong>Nhóm:</strong> {contract.group.groupName}
                                                             </p>
                                                         )}
                                                         {contract.staff && (
                                                             <p>
-                                                                <FileCheck className="inline w-4 h-4 mr-1" />
-                                                                <strong>Nhân viên phụ trách:</strong> {contract.staff.hovaTen} ({contract.staff.email})
+                                                                <FileCheck className="inline w-4 h-4 mr-1 text-gray-600" />
+                                                                <strong>Nhân viên phụ trách:</strong>{" "}
+                                                                {contract.staff.hovaTen} ({contract.staff.email})
                                                             </p>
                                                         )}
 
@@ -270,7 +279,7 @@ export default function StaffDashboard() {
                                                         {item.contractSignerList?.length > 0 && (
                                                             <div className="mt-3">
                                                                 <p className="font-semibold mb-1">Người ký hợp đồng:</p>
-                                                                <ul className="list-disc list-inside text-sm text-white/80">
+                                                                <ul className="list-disc list-inside text-sm text-gray-700">
                                                                     {item.contractSignerList.map((signer: any) => (
                                                                         <li key={signer.id}>
                                                                             {signer.hovaTen} — {signer.email} — {signer.phone}
@@ -280,28 +289,50 @@ export default function StaffDashboard() {
                                                             </div>
                                                         )}
 
-                                                        {/* Nút xem hợp đồng */}
-                                                        {contract.htmlString && (
+                                                        {/* Nút thao tác */}
+                                                        <div className="flex space-x-3 mt-4">
                                                             <Button
-                                                                variant="secondary"
-                                                                className="mt-3"
-                                                                onClick={() => window.open(contract.htmlString, "_blank")}
+                                                                variant="default"
+                                                                className="bg-green-600 hover:bg-green-700 text-white"
+                                                                onClick={() => handleApprove(contract.contractId)}
                                                             >
-                                                                Xem bản hợp đồng
+                                                                Duyệt
                                                             </Button>
-                                                        )}
+
+                                                            <Button
+                                                                variant="destructive"
+                                                                className="bg-red-600 hover:bg-red-700 text-white"
+                                                                onClick={() => handleReject(contract.contractId)}
+                                                            >
+                                                                Không duyệt
+                                                            </Button>
+
+                                                            {contract.htmlString && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="border-gray-400 text-gray-700 hover:bg-gray-100 ml-auto"
+                                                                    onClick={() =>
+                                                                        window.open(contract.htmlString, "_blank")
+                                                                    }
+                                                                >
+                                                                    Xem bản hợp đồng
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </CardContent>
                                                 </Card>
                                             );
                                         })
                                     ) : (
-                                        <p className="text-center text-white/70 mt-4">Không có hợp đồng chờ duyệt</p>
+                                        <p className="text-center text-gray-600 mt-4">
+                                            Không có hợp đồng chờ duyệt
+                                        </p>
                                     )}
-
                                 </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
+
 
                     {/* Groups Management */}
                     <TabsContent value="groups">
