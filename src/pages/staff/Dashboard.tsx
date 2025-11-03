@@ -231,27 +231,73 @@ export default function StaffDashboard() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {services.length > 0 ? (
-                                        services.map((item: any, index: number) => (
-                                            <Card key={index} className="bg-white/10 text-white border-white/20">
-                                                <CardHeader>
-                                                    <CardTitle>Hợp đồng #{item.contract.id}</CardTitle>
-                                                    <CardDescription>{item.contract.title}</CardDescription>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <p><strong>Ngày tạo:</strong> {item.contract.createdDate}</p>
-                                                    <p><strong>Trạng thái:</strong> {item.contract.status}</p>
-                                                    <p className="mt-2 font-semibold">Người ký:</p>
-                                                    <ul className="list-disc list-inside">
-                                                        {item.contractSignerList.map((user: any) => (
-                                                            <li key={user.id}>{user.fullName} — {user.email}</li>
-                                                        ))}
-                                                    </ul>
-                                                </CardContent>
-                                            </Card>
-                                        ))
+                                        services.map((item: any, index: number) => {
+                                            const contract = item.contract;
+                                            return (
+                                                <Card key={index} className="bg-white/10 text-white border-white/20 mb-4">
+                                                    <CardHeader>
+                                                        <CardTitle>Hợp đồng #{contract.contractId}</CardTitle>
+                                                        <CardDescription>
+                                                            <strong>Loại hợp đồng:</strong> {contract.contractType}
+                                                        </CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent className="space-y-2">
+                                                        <p><Calendar className="inline w-4 h-4 mr-1" />
+                                                            <strong>Ngày bắt đầu:</strong> {contract.startDate}
+                                                        </p>
+                                                        <p><Calendar className="inline w-4 h-4 mr-1" />
+                                                            <strong>Ngày kết thúc:</strong> {contract.endDate}
+                                                        </p>
+                                                        <p><Activity className="inline w-4 h-4 mr-1" />
+                                                            <strong>Trạng thái:</strong> {contract.status}
+                                                        </p>
+
+                                                        {/* Thông tin nhóm và nhân viên phụ trách */}
+                                                        {contract.group && (
+                                                            <p>
+                                                                <Users className="inline w-4 h-4 mr-1" />
+                                                                <strong>Nhóm:</strong> {contract.group.groupName}
+                                                            </p>
+                                                        )}
+                                                        {contract.staff && (
+                                                            <p>
+                                                                <FileCheck className="inline w-4 h-4 mr-1" />
+                                                                <strong>Nhân viên phụ trách:</strong> {contract.staff.hovaTen} ({contract.staff.email})
+                                                            </p>
+                                                        )}
+
+                                                        {/* Danh sách người ký */}
+                                                        {item.contractSignerList?.length > 0 && (
+                                                            <div className="mt-3">
+                                                                <p className="font-semibold mb-1">Người ký hợp đồng:</p>
+                                                                <ul className="list-disc list-inside text-sm text-white/80">
+                                                                    {item.contractSignerList.map((signer: any) => (
+                                                                        <li key={signer.id}>
+                                                                            {signer.hovaTen} — {signer.email} — {signer.phone}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Nút xem hợp đồng */}
+                                                        {contract.htmlString && (
+                                                            <Button
+                                                                variant="secondary"
+                                                                className="mt-3"
+                                                                onClick={() => window.open(contract.htmlString, "_blank")}
+                                                            >
+                                                                Xem bản hợp đồng
+                                                            </Button>
+                                                        )}
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })
                                     ) : (
                                         <p className="text-center text-white/70 mt-4">Không có hợp đồng chờ duyệt</p>
                                     )}
+
                                 </div>
                             </CardContent>
                         </Card>
