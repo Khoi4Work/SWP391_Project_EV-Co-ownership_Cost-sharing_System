@@ -28,6 +28,7 @@ import { groups as initialGroups } from "@/data/mockGroups";
 import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
+    const GET_REQUESTS = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -35,7 +36,7 @@ export default function StaffDashboard() {
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
     const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
-
+    const LEAVE_GROUP = import.meta.env.VITE_PATCH_LEAVE_GROUP_PATH;
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
         { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
@@ -43,7 +44,7 @@ export default function StaffDashboard() {
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
     useEffect(() => {
-        axiosClient.get("/staff/get/all/request-group")
+        axiosClient.get(GET_REQUESTS)
             .then(res => {
                 if (Array.isArray(res.data)) {
                     setLeaveRequests(res.data);
@@ -74,7 +75,7 @@ export default function StaffDashboard() {
 
         try {
             // Gửi request đến BE
-            const res = await axiosClient.post("/staff/leave-group", {
+            const res = await axiosClient.post(LEAVE_GROUP, {
                 groupId: request.groupMember?.group?.id || request.groupId,
                 requestId: request.id,
             });
