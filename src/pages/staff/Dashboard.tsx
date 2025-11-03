@@ -46,16 +46,28 @@ export default function StaffDashboard() {
     useEffect(() => {
         axiosClient.get(GET_REQUESTS)
             .then(res => {
-                if (Array.isArray(res.data)) {
-                    const allServices = res.data
-                        .map((item: any) => item.groupMember?.requestServices || [])
-                        .flat();
-                    setServices(allServices);
+                if (res.status === 200 && Array.isArray(res.data)) {
+                    // Lưu toàn bộ danh sách ContractPendingRes vào state
+                    setServices(res.data);
+                } else if (res.status === 204) {
+                    // Không có hợp đồng chờ duyệt
+                    setServices([]);
+                    toast({
+                        title: "Không có hợp đồng chờ duyệt",
+                        description: "Hiện không có yêu cầu nào đang chờ xử lý.",
+                    });
+                } else {
+                    console.warn("Phản hồi BE không mong đợi:", res);
                 }
             })
             .catch(err => {
                 console.error("Không kết nối được BE:", err.message);
-                setLeaveRequests([]); // đảm bảo luôn là []
+                setServices([]);
+                toast({
+                    title: "Lỗi kết nối Backend",
+                    description: "Không thể tải danh sách hợp đồng.",
+                    variant: "destructive",
+                });
             });
     }, []);
     useEffect(() => {
@@ -218,33 +230,28 @@ export default function StaffDashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {services.map((req) => (
-                                        <div
-                                            key={req.id}
-                                            className="p-4 border rounded-lg flex justify-between items-center bg-white shadow-sm"
-                                        >
-                                            <div>
-                                                <p><strong>Tên dịch vụ:</strong> {req.serviceName}</p>
-                                                <p><strong>Mô tả:</strong> {req.description}</p>
-                                                <p><strong>Giá:</strong> {req.price ? req.price.toLocaleString("vi-VN") + " ₫" : "Chưa có giá"}</p>
-                                                <p><strong>Trạng thái:</strong> {req.status}</p>
-                                                <p><strong>Ngày tạo:</strong> {req.createdAt ? new Date(req.createdAt).toLocaleString("vi-VN") : "Không rõ"}</p>
-
-                                                {req.vehicle && (
-                                                    <p><strong>Phương tiện:</strong> {req.vehicle.plateNo || "Không rõ"}</p>
-                                                )}
-
-                                                {req.groupMember && (
-                                                    <p><strong>Người yêu cầu:</strong> {req.groupMember.users?.username || "Không rõ"}</p>
-                                                )}
-                                            </div>
-
-                                            <div className="flex space-x-2">
-                                                <Button size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>
-                                                <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>Từ chối</Button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    {services.length > 0 ? (
+                                        services.map((item: any, index: number) => (
+                                            <Card key={index} className="bg-white/10 text-white border-white/20">
+                                                <CardHeader>
+                                                    <CardTitle>Hợp đồng #{item.contract.id}</CardTitle>
+                                                    <CardDescription>{item.contract.title}</CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <p><strong>Ngày tạo:</strong> {item.contract.createdDate}</p>
+                                                    <p><strong>Trạng thái:</strong> {item.contract.status}</p>
+                                                    <p className="mt-2 font-semibold">Người ký:</p>
+                                                    <ul className="list-disc list-inside">
+                                                        {item.contractSignerList.map((user: any) => (
+                                                            <li key={user.id}>{user.fullName} — {user.email}</li>
+                                                        ))}
+                                                    </ul>
+                                                </CardContent>
+                                            </Card>
+                                        ))
+                                    ) : (
+                                        <p className="text-center text-white/70 mt-4">Không có hợp đồng chờ duyệt</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
