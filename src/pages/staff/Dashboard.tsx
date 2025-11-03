@@ -160,7 +160,7 @@ export default function StaffDashboard() {
 
     const handleApprove = async (contractId: number) => {
         try {
-            const res = await axiosClient.patch(`${PATCH_CONTRACT}/${contractId}/1`);
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`);
             if (res.status === 200) {
                 toast({
                     title: "Thành công",
@@ -181,7 +181,7 @@ export default function StaffDashboard() {
 
     const handleReject = async (contractId: number) => {
         try {
-            const res = await axiosClient.patch(`${PATCH_CONTRACT}/${contractId}/0`);
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/0`);
             if (res.status === 200) {
                 toast({
                     title: "Đã từ chối hợp đồng",
