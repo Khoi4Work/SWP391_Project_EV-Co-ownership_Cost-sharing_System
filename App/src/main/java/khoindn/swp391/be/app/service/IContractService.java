@@ -7,6 +7,7 @@ import khoindn.swp391.be.app.model.Response.ContractPendingRes;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
 import khoindn.swp391.be.app.pojo.Users;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -17,12 +18,9 @@ import java.util.List;
 public interface IContractService {
     Contract getContractByContractId(int id);
 
-    ContractSigner setContract(ContractDecisionReq req)
+    ContractSigner setContract(ContractDecisionReq req, MultipartFile contractContent)
             throws
-            InvalidKeySpecException,
-            NoSuchAlgorithmException,
-            SignatureException,
-            InvalidKeyException;
+            Exception;
 
 
     List<ContractSigner> createContract(ContractCreateReq req) throws Exception;

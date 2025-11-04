@@ -57,14 +57,12 @@ public class ContractController {
 
     // Tạo/Set contract
     @PostMapping("/set")
-    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req)
+    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req,
+                                                      @RequestParam("contractContent") MultipartFile contractContent)
             throws
-            InvalidKeySpecException,
-            NoSuchAlgorithmException,
-            SignatureException,
-            InvalidKeyException {
+            Exception {
 
-        ContractSigner contractResult = iContractService.setContract(req);
+        ContractSigner contractResult = iContractService.setContract(req, contractContent);
         if (contractResult == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

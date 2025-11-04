@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -68,18 +69,16 @@ public class ContractService implements IContractService {
 
 
     @Override
-    public ContractSigner setContract(ContractDecisionReq req)
+    public ContractSigner setContract(ContractDecisionReq req, MultipartFile contracContent)
             throws
-            InvalidKeySpecException,
-            NoSuchAlgorithmException,
-            SignatureException,
-            InvalidKeyException {
+            Exception {
 
         System.out.println("Update contract...");
 
         Users user = iUserRepository.findUsersById(req.getIdUser());
         System.out.println(user.getPublicKey());
         System.out.println(req.getContract_signature());
+//        System.out.println(contracContent);
 
         //Parse privateKey va publicKey sang byte
 
@@ -111,7 +110,7 @@ public class ContractService implements IContractService {
                         new X509EncodedKeySpec(publicKeyUser));
 
                 // Nếu không có exception thì khóa hợp lệ
-                byte[] contractBytes = req.getContractContent().getBytes();
+                byte[] contractBytes = contracContent.getBytes();
                 // ký
                 Signature signature = Signature.getInstance("SHA256withRSA");
                 signature.initSign(privateKey);
@@ -161,7 +160,7 @@ public class ContractService implements IContractService {
             } else if (stillPending) {
                 contract.setStatus(StatusContract.WAITING_CONFIRMATION);
             }
-            contract.setHtmlString(req.getContractContent());
+            contract.setHtmlString(supabaseService.uploadFile(contracContent));
             iContractRepository.save(contract);
 
 
