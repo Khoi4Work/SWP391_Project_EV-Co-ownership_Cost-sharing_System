@@ -102,7 +102,11 @@ public class StaffController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
 
-        iContractService.verifyContract(contractId, decision);
+        try {
+            iContractService.verifyContract(contractId, decision);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         return ResponseEntity.status(200).body("Verify successfully");
     }
