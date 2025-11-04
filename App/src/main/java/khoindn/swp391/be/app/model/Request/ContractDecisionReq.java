@@ -24,9 +24,6 @@ public class ContractDecisionReq {
     private int idChoice;
 
     @NotBlank
-    private String contractContent;
-
-    @NotBlank
     private String contract_signature;
 
 }

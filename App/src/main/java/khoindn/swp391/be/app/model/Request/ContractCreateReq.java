@@ -28,7 +28,7 @@ public class ContractCreateReq {
     @NotEmpty(message = "UserId list cannot be empty")
     public List<Integer> userId;
 
-    @NotBlank
+    @NotNull
     private MultipartFile imageContract;
 
     @NotBlank
@@ -52,7 +52,5 @@ public class ContractCreateReq {
     private float price;
 
     private MultipartFile vehicleImage;
-
-
 
 }

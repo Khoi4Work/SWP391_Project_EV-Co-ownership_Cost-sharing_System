@@ -28,15 +28,12 @@ public interface IGroupMemberService {
     // ---------------------- NEW METHOD ----------------------
     GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage);
 
-    //member action
-
-    GroupMember leaveGroup(LeaveGroupReq request);
 
     DecisionVote createDecision(DecisionVoteReq request, GroupMember gm);
 
     DecisionVote setDecision(int choice, long idDecision, GroupMember gm);
 
-    RequestVehicleService requestVehicleService(int groupId, int serviceId);
+
 
 
 
