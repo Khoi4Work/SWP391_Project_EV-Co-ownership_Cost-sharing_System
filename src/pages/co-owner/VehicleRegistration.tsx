@@ -39,7 +39,7 @@ interface VehicleInfo {
   model: string;
   color: string;
   batteryCapacity: string;
-  price: string;
+  price: number;
 }
 
 export default function VehicleRegistration() {
