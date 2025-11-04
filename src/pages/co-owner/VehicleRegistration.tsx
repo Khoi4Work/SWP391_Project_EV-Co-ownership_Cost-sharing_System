@@ -983,6 +983,7 @@ export default function VehicleRegistration() {
                 selectedVehicle={selectedVehicle}
                 fetchUserByEmail={fetchUserByEmail}
                 mainOwnership={mainOwnership}
+                mainOwneremail={formik.values.email}
               />
             ))}
 

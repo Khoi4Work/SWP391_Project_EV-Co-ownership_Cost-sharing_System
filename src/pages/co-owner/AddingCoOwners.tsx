@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-
+import { useToast } from "@/hooks/use-toast";
 interface CoOwner {
   id: number;
   name: string;
@@ -31,7 +31,9 @@ interface Props {
   } | null;
   fetchUserByEmail: (email: string) => Promise<Partial<CoOwner> | null>;
   mainOwnership: number;
+  mainOwneremail: string; // ✅ thêm dòng này
 }
+
 
 export default function CoOwnerForm({
   coOwner,
@@ -42,7 +44,9 @@ export default function CoOwnerForm({
   selectedVehicle,
   fetchUserByEmail,
   mainOwnership,
+  mainOwneremail
 }: Props) {
+  const { toast } = useToast();
   const formik = useFormik<CoOwner>({
     initialValues: coOwner,
     enableReinitialize: true,
@@ -67,7 +71,6 @@ export default function CoOwnerForm({
       });
     },
   });
-
   return (
     <div className="p-4 border rounded-lg">
       <div className="flex justify-between items-center mb-4">
@@ -90,10 +93,24 @@ export default function CoOwnerForm({
                   placeholder="Nhập email"
                   onBlur={async (e) => {
                     field.onBlur(e);
-                    updateCoOwner(coOwner.id, "email", e.target.value);
                     const emailValue = e.target.value.trim();
                     if (!emailValue) return;
 
+                    // ⚠️ Kiểm tra trùng với chủ sở hữu chính
+                    if (emailValue.toLowerCase() === mainOwneremail.toLowerCase()) {
+                      toast({
+                        title: "Email trùng lặp",
+                        description: "Địa chỉ email này đã được nhập cho chủ sở hữu chính.",
+                        variant: "destructive",
+                      });
+                      formik.setFieldValue("email", ""); // reset email trong form
+                      updateCoOwner(coOwner.id, "email", ""); // reset trong state cha
+                      return;
+                    }
+
+                    updateCoOwner(coOwner.id, "email", emailValue);
+
+                    // ✅ Gọi API lấy thông tin user
                     const user = await fetchUserByEmail(emailValue);
                     if (user) {
                       formik.setValues({
