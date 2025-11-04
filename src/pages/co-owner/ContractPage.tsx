@@ -132,13 +132,13 @@ export default function ContractPreviewPage() {
                 alert("Không tạo được file PDF!");
                 return;
             }
+
             const { blob, fileUrl } = pdfResult;
-            const pdfBase64 = await blobToBase64(blob);
-            console.log(user.id)
-            const key = 'contractId_' + user.id;
-            console.log(key)
+            const pdfBase64Full = await blobToBase64(blob);
+            const pdfBase64 = pdfBase64Full.split(",")[1]; // cắt bỏ prefix data:application/pdf;base64,
+            const key = "contractId_" + user.id;
             const idContract = localStorage.getItem(key);
-            console.log(idContract)
+
             if (!idContract) {
                 alert("Không có contract id");
                 return;
@@ -148,42 +148,46 @@ export default function ContractPreviewPage() {
                 alert("Không tìm thấy thông tin người dùng");
                 return;
             }
-            const pdfFileName = `HopDong_${idContract}.pdf`;
-            console.log("Link PDF đã upload:", fileUrl);
-            const payload = {
-                idContract,
-                idUser: user.id,
-                idChoice: status,
-                contractContent: pdfBase64,
-                contract_signature: savedPrivateKey,
-            };
+
+            // --- 🔹 Tạo FormData ---
+            const formData = new FormData();
+            formData.append("idContract", idContract.toString());
+            formData.append("idUser", user.id.toString());
+            formData.append("idChoice", status.toString());
+            formData.append("contractContent", pdfBase64); // <-- dạng chuỗi Base64
+            formData.append("contract_signature", savedPrivateKey);
+
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
-            const res = await axiosClient.post(SET_CONTRACT, payload, {
+
+            const res = await axiosClient.post(SET_CONTRACT, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data",
                 },
             });
-            console.log("Payload gửi đi:", payload);
+
+            console.log("Payload gửi đi:", formData);
             console.log(res.data.contract.status);
+
+            // --- 🔹 Nếu contract được Activated ---
             if (res.data.contract.status === "Activated") {
-                // ✅ Khi hợp đồng thành công thì tạo group:
-                // Gom owner chính + các coOwners
                 if (!ownerInfo?.id || !vehicleData?.id) {
                     alert("Thiếu dữ liệu owner hoặc vehicle!");
                     return;
                 }
+
                 const allMembers = [
                     {
                         userId: ownerInfo?.id,
-                        ownership: ownerInfo?.ownership || 0, // nếu FE đặt tên khác thì chỉnh lại
+                        ownership: ownerInfo?.ownership || 0,
                     },
                     ...coOwners.map((co) => ({
                         userId: co.id,
-                        ownership: co.ownership || 0, // chỉnh nếu khác tên
+                        ownership: co.ownership || 0,
                     })),
                 ];
 
-                // ✅ Xác định thằng có tỷ lệ lớn nhất làm ADMIN
+                // 🔹 Tìm admin (người có tỷ lệ lớn nhất)
                 let maxRate = -1;
                 let adminId = null;
                 allMembers.forEach((m) => {
@@ -193,7 +197,6 @@ export default function ContractPreviewPage() {
                     }
                 });
 
-                // ✅ Tạo danh sách thành viên đúng format backend
                 const membersWithRole = allMembers.map((m) => ({
                     coOwnerId: m.userId,
                     roleInGroup: m.userId === adminId ? "admin" : "member",
@@ -208,6 +211,7 @@ export default function ContractPreviewPage() {
                 };
 
                 console.log("groupPayload gửi đi:", groupPayload);
+
                 const CREATE_GROUP = import.meta.env.VITE_GROUP_CREATE_PATH;
                 const resGroup = await axiosClient.post(CREATE_GROUP, groupPayload);
                 if (resGroup.status === 200 || resGroup.status === 201) {
@@ -234,8 +238,7 @@ export default function ContractPreviewPage() {
                 variant: "destructive",
             });
         }
-
-    };
+    }
 
     if (loading) return <div>Đang tải thông tin user...</div>;
     if (error) return <div className="text-red-500">{error}</div>;
