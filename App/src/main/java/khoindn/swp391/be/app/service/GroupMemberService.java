@@ -151,22 +151,6 @@ public class GroupMemberService implements IGroupMemberService {
         return iGroupMemberRepository.save(gm);
     }
 
-    @Override
-    public GroupMember leaveGroup(LeaveGroupReq request) {
-        RequestGroupService requestProcessing = iRequestGroupServiceRepository.findRequestGroupById(request.getRequestId());
-        if (requestProcessing == null) {
-            throw new RequestGroupNotFoundException("REQUEST_NOT_FOUND");
-        }
-        // Update status of GroupMember
-        GroupMember user_leaving = requestProcessing.getGroupMember();
-        user_leaving.setStatus(StatusGroupMember.LEAVED);
-        iGroupMemberRepository.save(user_leaving);
-        // Update status of Group
-        Group group = user_leaving.getGroup();
-        group.setStatus(StatusGroup.INACTIVE);
-        iGroupRepository.save(group);
-        return user_leaving;
-    }
 
     @Override
     public DecisionVote createDecision(DecisionVoteReq request, GroupMember gm) {
@@ -242,11 +226,13 @@ public class GroupMemberService implements IGroupMemberService {
         if (voteDetails.stream()
                 .filter(decisionVoteDetail -> decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
                 .anyMatch(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
+
             totalRejected += voteDetails
                     .stream()
                     .filter(decisionVoteDetail -> decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
                     .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)
                     .mapToDouble(v -> v.getGroupMember().getOwnershipPercentage()).sum();
+
         } else if (totalRejected > 0 && totalAccepted < 0.75) {
             vote.setStatus(StatusDecisionVote.REJECTED);
         } else if (totalAccepted > 0.75) {
@@ -266,21 +252,7 @@ public class GroupMemberService implements IGroupMemberService {
 //        return null;
     }
 
-    @Override
-    public RequestVehicleService requestVehicleService(int groupId, int serviceId) {
-        Users user = authenticationService.getCurrentAccount();
-        GroupMember gm = iGroupMemberRepository.findGroupMembersByUsers_IdAndGroup_GroupId(user.getId(), groupId);
-        if (gm == null) {
-            throw new GroupMemberNotFoundException("GROUP_NOT_FOUND");
-        }
-        RequestVehicleService vehicleService = new RequestVehicleService();
-        vehicleService.setGroupMember(gm);
-        vehicleService.setVehicle(iVehicleRepository.getVehiclesByGroup(gm.getGroup()));
-        vehicleService.setRequestVehicleServiceDetail(new RequestVehicleServiceDetail());
-        iRequestVehicleServiceRepository.save(vehicleService);
 
-        return vehicleService;
-    }
 
 
 }

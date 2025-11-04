@@ -74,7 +74,7 @@ public class ContractController {
 
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req)
+    public ResponseEntity<List<ContractSigner>> createContract(@ModelAttribute @Valid ContractCreateReq req)
             throws Exception {
         System.out.println(req);
         List<ContractSigner> contractResult = iContractService.createContract(req);

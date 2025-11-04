@@ -18,6 +18,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/staff")
+@CrossOrigin(origins = "http://localhost:8081")
 @SecurityRequirement(name = "api")
 public class StaffController {
     @Autowired
@@ -30,6 +31,8 @@ public class StaffController {
     private IGroupMemberService iGroupMemberService;
     @Autowired
     private IContractService iContractService;
+    @Autowired
+    private IStaffService iStaffService;
 
     // DELETE GROUP
 
@@ -47,7 +50,7 @@ public class StaffController {
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
         }
-        GroupMember user_leaving = iGroupMemberService.leaveGroup(request);
+        GroupMember user_leaving = iStaffService.leaveGroup(request);
         return ResponseEntity.status(HttpStatus.OK).body(user_leaving);
     }
 
