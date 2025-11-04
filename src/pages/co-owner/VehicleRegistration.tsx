@@ -39,7 +39,7 @@ interface VehicleInfo {
   model: string;
   color: string;
   batteryCapacity: string;
-  price: string;
+  price: number;
 }
 
 export default function VehicleRegistration() {
@@ -357,13 +357,19 @@ export default function VehicleRegistration() {
     }
   };
   const VehicleSchema = Yup.object().shape({
-    plateNo: Yup.string().required("Vui lòng nhập biển số xe"),
+    plateNo: Yup.string()
+      .required("Vui lòng nhập biển số xe")
+      .matches(
+        /^[0-9]{2}[A-Z]{1,2}-\d{3,4}\.\d{2}$/,
+        "Biển số xe không hợp lệ (ví dụ: 51H-123.45)"
+      ),
     brand: Yup.string().required("Vui lòng nhập hãng xe"),
     model: Yup.string().required("Vui lòng nhập mẫu xe"),
     color: Yup.string().required("Vui lòng nhập màu xe"),
     batteryCapacity: Yup.number()
       .typeError("Dung lượng pin phải là số")
       .positive("Dung lượng pin phải lớn hơn 0")
+      .max(200, "Dung lượng pin không vượt quá 200 kWh")
       .required("Vui lòng nhập dung lượng pin"),
     price: Yup.string()
       .required("Vui lòng nhập giá xe")
@@ -376,7 +382,7 @@ export default function VehicleRegistration() {
       model: "",
       color: "",
       batteryCapacity: "",
-      price: "",
+      price: 0,
     },
     validationSchema: VehicleSchema,
     onSubmit: (values) => {
@@ -450,7 +456,7 @@ export default function VehicleRegistration() {
   //     documentUrl: pdfUrl,
   //     contractType: "Vehicle Registration",
   //   };
-    var documentUrl = `${window.location.origin}/contract/preview/`;
+  var documentUrl = `${window.location.origin}/contract/preview/`;
   //   // ✅ Payload contract
   //   const contract = {
   //     documentUrl,
@@ -479,51 +485,51 @@ export default function VehicleRegistration() {
   //     console.error("❌ Lỗi khi gọi createContract:", err);
   //   }
   // };
-    const handleSubmit = async () => {
-        const formData = new FormData();
+  const handleSubmit = async () => {
+    const formData = new FormData();
 
 
-        // ⚙️ Gửi đúng tên field giống backend
-        formData.append("documentUrl", documentUrl); // nếu có link hợp đồng thì truyền vào
-        formData.append("contractType", "CO_OWNER"); // ví dụ: "CO_OWNER" hoặc "LEASE"
-        formData.append("plateNo", selectedVehicle.plateNo);
-        formData.append("brand", selectedVehicle.brand);
-        formData.append("model", selectedVehicle.model);
-        formData.append("color", selectedVehicle.color);
-        formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
-        formData.append("price", selectedVehicle.price);
+    // ⚙️ Gửi đúng tên field giống backend
+    formData.append("documentUrl", documentUrl); // nếu có link hợp đồng thì truyền vào
+    formData.append("contractType", "CO_OWNER"); // ví dụ: "CO_OWNER" hoặc "LEASE"
+    formData.append("plateNo", selectedVehicle.plateNo);
+    formData.append("brand", selectedVehicle.brand);
+    formData.append("model", selectedVehicle.model);
+    formData.append("color", selectedVehicle.color);
+    formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
+    formData.append("price", String(selectedVehicle.price));
 
-        // ⚙️ userId là danh sách => cần append từng phần tử
-        coOwners.forEach(owner => {
-            formData.append("userId", owner.id.toString());
-        });
+    // ⚙️ userId là danh sách => cần append từng phần tử
+    coOwners.forEach(owner => {
+      formData.append("userId", owner.id.toString());
+    });
 
-        formData.append("userId", ownerInfo.id.toString());
+    formData.append("userId", ownerInfo.id.toString());
 
 
-        // ⚙️ File upload
-        if (contractFile) formData.append("imageContract", contractFile);
-        // if (selectedVehicle.imageFile) formData.append("vehicleImage", selectedVehicle.imageFile);
+    // ⚙️ File upload
+    if (contractFile) formData.append("imageContract", contractFile);
+    // if (selectedVehicle.imageFile) formData.append("vehicleImage", selectedVehicle.imageFile);
 
-        try {
-            await axiosClient.post(CREATE_CONTRACT, formData, {
-                headers: {"Content-Type": "multipart/form-data"},
-            });
+    try {
+      await axiosClient.post(CREATE_CONTRACT, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-            toast({
-                title: "Gửi hợp đồng thành công",
-                description: "Vui lòng đợi nhân viên xác nhận"
-            });
+      toast({
+        title: "Gửi hợp đồng thành công",
+        description: "Vui lòng đợi nhân viên xác nhận"
+      });
 
-            navigate("/co-owner/dashboard");
-        } catch (err) {
-            toast({
-                title: "Gửi thất bại",
-                description: "Vui lòng thử lại sau",
-                variant: "destructive"
-            });
-        }
-    };
+      navigate("/co-owner/dashboard");
+    } catch (err) {
+      toast({
+        title: "Gửi thất bại",
+        description: "Vui lòng thử lại sau",
+        variant: "destructive"
+      });
+    }
+  };
   if (isSubmitted) {
     localStorage.setItem("ownerInfo", JSON.stringify(ownerInfo));
     localStorage.setItem("coOwners", JSON.stringify(coOwners));
@@ -729,9 +735,9 @@ export default function VehicleRegistration() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Trường nhập chung */}
                 {[
-                  { id: "plateNo", label: "Biển số xe", placeholder: "Nhập biển số xe" },
-                  { id: "brand", label: "Hãng xe", placeholder: "Nhập hãng xe" },
-                  { id: "model", label: "Mẫu xe", placeholder: "Nhập mẫu xe" },
+                  { id: "plateNo", label: "Biển số xe(VD: 51H-123.45)", placeholder: "Nhập biển số xe" },
+                  { id: "brand", label: "Hãng xe(Vd: Vinfast)", placeholder: "Nhập hãng xe" },
+                  { id: "model", label: "Mẫu xe(vd: vf8)", placeholder: "Nhập mẫu xe" },
                   { id: "color", label: "Màu xe", placeholder: "Chọn hoặc nhập mã màu" },
                   { id: "batteryCapacity", label: "Dung tích pin (kWh)", placeholder: "Nhập dung tích pin" },
                   { id: "price", label: "Giá xe (VNĐ)", placeholder: "Nhập giá xe" },

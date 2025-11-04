@@ -70,7 +70,7 @@ export default function Login() {
                 description: `Chào mừng ${hovaten} đến với EcoShare!`,
             });
             //Điều hướng theo loại tài khoản
-            console.log(role+"-"+selectedType)
+            console.log(role + "-" + selectedType)
             if (selectedType === "staff" && role.toLowerCase() === "staff") {
                 navigate("/staff/dashboard");
             } else if (selectedType === "admin" && role.toLowerCase() === "admin") {
@@ -86,9 +86,9 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        // finally {
-        //     navigate("/co-owner/dashboard");
-        // }
+        finally {
+            navigate("/co-owner/dashboard");
+        }
     };
 
 

@@ -27,7 +27,7 @@ interface Props {
     model: string;
     color: string;
     batteryCapacity: string;
-    price: string;
+    price: number;
   } | null;
   fetchUserByEmail: (email: string) => Promise<Partial<CoOwner> | null>;
   mainOwnership: number;
