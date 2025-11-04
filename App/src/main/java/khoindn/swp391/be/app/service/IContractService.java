@@ -18,7 +18,7 @@ import java.util.List;
 public interface IContractService {
     Contract getContractByContractId(int id);
 
-    ContractSigner setContract(ContractDecisionReq req, MultipartFile contractContent)
+    ContractSigner setContract(ContractDecisionReq req)
             throws
             Exception;
 

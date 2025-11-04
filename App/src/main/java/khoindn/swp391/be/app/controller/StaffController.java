@@ -28,8 +28,6 @@ public class StaffController {
     @Autowired
     private AuthenticationService authenticationService;
     @Autowired
-    private IGroupMemberService iGroupMemberService;
-    @Autowired
     private IContractService iContractService;
     @Autowired
     private IStaffService iStaffService;
