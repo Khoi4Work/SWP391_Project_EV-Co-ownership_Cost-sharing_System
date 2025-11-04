@@ -78,7 +78,8 @@ public class ContractService implements IContractService {
         System.out.println("Update contract...");
 
         Users user = iUserRepository.findUsersById(req.getIdUser());
-        System.out.println(user);
+        System.out.println(user.getPublicKey());
+        System.out.println(req.getContract_signature());
 
         //Parse privateKey va publicKey sang byte
 

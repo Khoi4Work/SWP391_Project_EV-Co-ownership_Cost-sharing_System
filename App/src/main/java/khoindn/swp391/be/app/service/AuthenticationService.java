@@ -61,6 +61,8 @@ public class AuthenticationService implements UserDetailsService {
     }
 
     public Users register(RegisterUserReq users) {
+
+
         // Kiểm tra email
         if (iAuthenticationRepository.existsByEmail((users.getEmail()))) {
             throw new EmailDuplicatedException("Email đã được sử dụng");
@@ -83,7 +85,7 @@ public class AuthenticationService implements UserDetailsService {
         }
 
         if (!iUserRoleRepository.existsUserRoleByRoleId((users.getRoleId()))) {
-            throw new RoleIsNotExistedException("Vai trò đã tồn tại");
+            throw new RoleIsNotExistedException("Vai trò ko tồn tại");
         }
 
         //process login from register controller
@@ -141,7 +143,6 @@ public class AuthenticationService implements UserDetailsService {
 
     public UsersResponse login(LoginUser loginUser) {
         // logic and authorized
-
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginUser.getEmail(),
@@ -154,6 +155,7 @@ public class AuthenticationService implements UserDetailsService {
         UsersResponse usersResponse = modelMapper.map(users, UsersResponse.class);
         String token = tokenService.generateToken(users);
         usersResponse.setToken(token);
+        System.out.println(usersResponse);
         return usersResponse;
     }
 
