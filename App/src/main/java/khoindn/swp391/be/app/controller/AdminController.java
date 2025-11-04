@@ -4,7 +4,7 @@ package khoindn.swp391.be.app.controller;
 import khoindn.swp391.be.app.model.Request.CreateStaffRequest;
 import khoindn.swp391.be.app.model.Response.StaffResponse;
 import khoindn.swp391.be.app.model.Request.UpdateStaffRequest;
-import khoindn.swp391.be.app.service.StaffManagementService;
+import khoindn.swp391.be.app.service.IStaffManagementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import java.util.List;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
-    private final StaffManagementService staffService;
+    private final IStaffManagementService staffService;
     
     @PostMapping("/create")
     public ResponseEntity<StaffResponse> createStaff(@RequestBody CreateStaffRequest request) {

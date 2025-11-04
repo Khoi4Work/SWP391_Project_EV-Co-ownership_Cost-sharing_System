@@ -24,7 +24,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (user == null) {
             throw new UsernameNotFoundException("Không tìm thấy user với email: " + email);
         }
-
         // Trả về user (vì Users của bạn đã implements UserDetails)
         return user;
     }

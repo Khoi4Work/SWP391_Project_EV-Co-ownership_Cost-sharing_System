@@ -36,8 +36,6 @@ public class AuthenticationService {
     @Autowired
     private IAuthenticationRepository iAuthenticationRepository;
     @Autowired
-    private IUserRepository iUserRepository;
-    @Autowired
     PasswordEncoder passwordEncoder;
     @Autowired
     AuthenticationManager authenticationManager;
@@ -56,8 +54,31 @@ public class AuthenticationService {
 
     public Users register(RegisterUserReq users) {
         // (Phần kiểm tra (validation) giữ nguyên)
+
+
+        // Kiểm tra email
         if (iAuthenticationRepository.existsByEmail((users.getEmail()))) {
             throw new EmailDuplicatedException("Email đã được sử dụng");
+        }
+
+        // Kiểm tra CCCD
+        if (iAuthenticationRepository.existsByCccd((users.getCccd()))) {
+            throw new CCCDDuplicatedException("CCCD đã được sử dụng");
+        }
+
+        // Kiểm tra GPLX
+        if (iAuthenticationRepository.existsByGplx((users.getGplx()))) {
+            throw new GPLXDuplicatedException("GPLX đã được sử dụng");
+        }
+
+        // Kiểm tra phone
+        if (iAuthenticationRepository.existsByPhone((users.getPhone()))) {
+            throw new PhoneDuplicatedException("Số điện thoại đã được sử dụng");
+
+        }
+
+        if (!iUserRoleRepository.existsUserRoleByRoleId((users.getRoleId()))) {
+            throw new RoleIsNotExistedException("Vai trò ko tồn tại");
         }
         // ... (các hàm kiểm tra cccd, phone, role...)
 
