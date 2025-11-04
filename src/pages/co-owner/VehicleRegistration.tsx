@@ -33,11 +33,29 @@ interface CoOwner {
   idNumber: string;
   address: string;
 }
+interface VehicleInfo {
+  plateNo: string;
+  brand: string;
+  model: string;
+  color: string;
+  batteryCapacity: string;
+  price: number;
+}
 
 export default function VehicleRegistration() {
+  const [showErrors, setShowErrors] = useState(false);
+  const [ownerInfo, setOwnerInfo] = useState({
+    id: 0,
+    name: "",
+    email: "",
+    phone: "",
+    idNumber: "",
+    address: "",
+    ownership: 0,
+  });
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
   const [step, setStep] = useState(0);
-  const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -52,10 +70,11 @@ export default function VehicleRegistration() {
     setContractFile(file);
     setFileType(uploadType); // PDF / IMAGE
     toast({
-      title: "Đã tải file hợp đồng",
+      title: "Đã nhận file hợp đồng",
       description: `Loại file: ${uploadType}`,
     });
   };
+  const [vehicles, setVehicles] = useState([]);
   const handleConfirmFile = () => {
     if (!contractFile) return;
 
@@ -109,6 +128,11 @@ export default function VehicleRegistration() {
           variant: "destructive"
         })
       };
+      toast({
+        title: "Thành công",
+        description: `Tự động điền thông tin thành công`,
+        variant: "success", // hoặc bỏ variant nếu bạn dùng toast mặc định là success
+      });
       return {
         id: user.id,
         name: user.hovaTen,       // map hovaTen -> name
@@ -150,15 +174,7 @@ export default function VehicleRegistration() {
     fetchVehicles();
   }, []);
   const formik = useFormik<CoOwner>({
-    initialValues: {
-      id: 0,
-      name: "",
-      email: "",
-      phone: "",
-      idNumber: "",
-      address: localStorage.getItem("address") || "",
-      ownership: 0,
-    },
+    initialValues: ownerInfo,
     enableReinitialize: true,
     validationSchema: Yup.object({
       email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
@@ -169,29 +185,45 @@ export default function VehicleRegistration() {
         .max(90, "Tỷ lệ sỡ hữu chính <= 90%"),
     }),
     onSubmit: (values) => {
+      setOwnerInfo(values);
       setStep(3);
     },
   });
-  const ownerInfo = formik.values;
-  const [vehicles, setVehicles] = useState([]);
   const mainOwnership = Number(formik.values.ownership) || 0;
   const totalOwnership = mainOwnership + coOwners.reduce((sum, co) => sum + (Number(co.ownership) || 0), 0);
+  useEffect(() => {
+    let completed = 0;
+    for (let i = 0; i <= 4; i++) {
+      if (isStepCompleted(i)) completed++;
+      else break;
+    }
+    console.log("✅ completedSteps:", completed, ownerInfo);
+    setCompletedSteps(completed);
+  }, [selectedVehicle, coOwners, ownerInfo]);
 
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
+      case 0:
+        // Step 0 có thể là bước khởi tạo. Ví dụ, kiểm tra xem form có được mở chưa
+        return true; // Nếu bước này không cần điều kiện đặc biệt
       case 1:
-        return selectedVehicle !== "";
+        return selectedVehicle !== null; // Xe đã được chọn chưa
       case 2:
-        return ownerInfo.name && ownerInfo.email && ownerInfo.phone && ownerInfo.idNumber && ownerInfo.address;
+        return (
+          ownerInfo.email &&
+          ownerInfo.address &&
+          ownerInfo.ownership > 0 &&
+          selectedVehicle !== null
+        );
       case 3:
         return (
           coOwners.length > 0 &&
           totalOwnership === 100 &&
-          coOwners.every(co => co.name && co.email && co.idNumber)
+          coOwners.every(co => co.email)
         );
       case 4:
-        return isStepCompleted(1) && isStepCompleted(2) && isStepCompleted(3);
+        return isStepCompleted(1) && isStepCompleted(2) && isStepCompleted(3); // Tất cả các bước trước đó phải hoàn thành
       default:
         return false;
     }
@@ -199,12 +231,8 @@ export default function VehicleRegistration() {
 
   // Calculate progress based on completed steps
   const getProgress = () => {
-    let completed = 0;
-    for (let i = 1; i <= 4; i++) {
-      if (isStepCompleted(i)) completed++;
-      else break;
-    }
-    return (completed / 4) * 100;
+    console.log("Progress:", (completedSteps / 5) * 100);
+    return (completedSteps / 5) * 100;
   };
 
   const getVehiclePrice = () => {
@@ -221,9 +249,9 @@ export default function VehicleRegistration() {
     const price = getVehiclePrice();
     return Math.round(price * (percentage / 100));
   };
-  const handleSelectVehicle = (vehicle: any) => {
-    setSelectedVehicle(vehicle); // lưu cả object
-    localStorage.setItem("selectedVehicle", JSON.stringify(vehicle)); // lưu trực tiếp
+  const handleSelectVehicle = (vehicle: VehicleInfo) => {
+    setSelectedVehicle(vehicle);
+    localStorage.setItem("selectedVehicle", JSON.stringify(vehicle));
   };
   const addCoOwner = () => {
     // Maximum 5 people total (including primary owner)
@@ -328,8 +356,41 @@ export default function VehicleRegistration() {
       );
     }
   };
-
-
+  const VehicleSchema = Yup.object().shape({
+    plateNo: Yup.string()
+      .required("Vui lòng nhập biển số xe")
+      .matches(
+        /^[0-9]{2}[A-Z]{1,2}-\d{3,4}\.\d{2}$/,
+        "Biển số xe không hợp lệ (ví dụ: 51H-123.45)"
+      ),
+    brand: Yup.string().required("Vui lòng nhập hãng xe"),
+    model: Yup.string().required("Vui lòng nhập mẫu xe"),
+    color: Yup.string().required("Vui lòng nhập màu xe"),
+    batteryCapacity: Yup.number()
+      .typeError("Dung lượng pin phải là số")
+      .positive("Dung lượng pin phải lớn hơn 0")
+      .max(200, "Dung lượng pin không vượt quá 200 kWh")
+      .required("Vui lòng nhập dung lượng pin"),
+    price: Yup.string()
+      .required("Vui lòng nhập giá xe")
+      .matches(/^\d{1,3}(,\d{3})*(\.\d+)?$|^\d+$/, "Giá phải là số hợp lệ")
+  });
+  const vehicleFormik = useFormik({
+    initialValues: {
+      plateNo: "",
+      brand: "",
+      model: "",
+      color: "",
+      batteryCapacity: "",
+      price: 0,
+    },
+    validationSchema: VehicleSchema,
+    onSubmit: (values) => {
+      console.log("Dữ liệu: ", values);
+      setSelectedVehicle(values); // lưu xe đã nhập
+      setStep(2); // sang bước kế tiếp
+    },
+  });
   useEffect(() => {
     const saved = localStorage.getItem("coOwners");
     if (saved) {
@@ -395,7 +456,7 @@ export default function VehicleRegistration() {
   //     documentUrl: pdfUrl,
   //     contractType: "Vehicle Registration",
   //   };
-  //   var documentUrl = `${window.location.origin}/contract/preview/`;
+  var documentUrl = `${window.location.origin}/contract/preview/`;
   //   // ✅ Payload contract
   //   const contract = {
   //     documentUrl,
@@ -427,14 +488,32 @@ export default function VehicleRegistration() {
   const handleSubmit = async () => {
     const formData = new FormData();
 
-    formData.append("contractFile", contractFile);
-    formData.append("vehicleInfo", JSON.stringify(selectedVehicle));
-    formData.append("owners", JSON.stringify(ownerInfo));
-    formData.append("coOwners", JSON.stringify(coOwners));
-    formData.append("imageUrl", "");
+
+    // ⚙️ Gửi đúng tên field giống backend
+    formData.append("documentUrl", documentUrl); // nếu có link hợp đồng thì truyền vào
+    formData.append("contractType", "CO_OWNER"); // ví dụ: "CO_OWNER" hoặc "LEASE"
+    formData.append("plateNo", selectedVehicle.plateNo);
+    formData.append("brand", selectedVehicle.brand);
+    formData.append("model", selectedVehicle.model);
+    formData.append("color", selectedVehicle.color);
+    formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
+    formData.append("price", String(selectedVehicle.price));
+
+    // ⚙️ userId là danh sách => cần append từng phần tử
+    coOwners.forEach(owner => {
+      formData.append("userId", owner.id.toString());
+    });
+
+    formData.append("userId", ownerInfo.id.toString());
+
+
+    // ⚙️ File upload
+    if (contractFile) formData.append("imageContract", contractFile);
+    // if (selectedVehicle.imageFile) formData.append("vehicleImage", selectedVehicle.imageFile);
+
     try {
       await axiosClient.post(CREATE_CONTRACT, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       toast({
@@ -516,7 +595,7 @@ export default function VehicleRegistration() {
                 onClick={() => {
                   setIsSubmitted(false);
                   setStep(1);
-                  setSelectedVehicle("");
+                  setSelectedVehicle(null);
                   formik.resetForm({
                     values: {
                       id: 0,
@@ -567,28 +646,29 @@ export default function VehicleRegistration() {
         <Card className="mb-6 shadow-elegant">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">Bước {step} / 4</span>
+              <span className="text-sm font-medium">Bước {step + 1} / 5</span>
               <span className="text-sm text-muted-foreground">
                 {Math.round(getProgress())}% hoàn thành
               </span>
             </div>
+
             <Progress value={getProgress()} className="mb-4" />
-            <div className="flex justify-between text-xs">
-              <span className={step === 0 ? "text-primary font-medium" : "text-muted-foreground"}>
-                Nhập hợp đồng
-              </span>
-              <span className={isStepCompleted(1) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Chọn xe
-              </span>
-              <span className={isStepCompleted(2) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Chủ sở hữu
-              </span>
-              <span className={isStepCompleted(3) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Đồng sở hữu
-              </span>
-              <span className={isStepCompleted(4) ? "text-primary font-medium" : "text-muted-foreground"}>
-                Xác nhận
-              </span>
+
+            <div className="grid grid-cols-5 text-center text-xs">
+              {["Nhập hợp đồng", "Chọn xe", "Chủ sở hữu", "Đồng sở hữu", "Xác nhận"].map(
+                (label, index) => (
+                  <span
+                    key={index}
+                    className={
+                      isStepCompleted(index)
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {label}
+                  </span>
+                )
+              )}
             </div>
           </CardContent>
         </Card>
@@ -632,60 +712,120 @@ export default function VehicleRegistration() {
       </div>
       {/* Step 1: Vehicle Selection */}
       {step === 1 && (
-        <Card className="shadow-elegant">
+        <Card className="shadow-lg border border-gray-100 rounded-xl bg-white/80 backdrop-blur-md transition-all duration-300 hover:shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Car className="h-5 w-5" />
-              <span>Chọn xe điện</span>
+            <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
+              <Car className="h-5 w-5 text-primary" />
+              <span>Nhập thông tin xe</span>
             </CardTitle>
-            <CardDescription>
-              Chọn mẫu xe điện bạn muốn tham gia đồng sở hữu
+            <CardDescription className="text-gray-500">
+              Điền đầy đủ thông tin về xe bạn muốn tham gia đồng sở hữu
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {vehicles.map((vehicle) => (
-                <div
-                  key={vehicle.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-elegant ${selectedVehicle === vehicle.id
-                    ? "border-primary bg-primary/5 shadow-elegant"
-                    : "border-border"
-                    }`}
-                  onClick={() => handleSelectVehicle(vehicle)}
-                >
-                  <img
-                    src={vehicle.image}
-                    alt={vehicle.name}
-                    className="w-full h-48 object-cover rounded-md mb-4"
-                  />
-                  <h3 className="font-semibold mb-1">{vehicle.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Biển số: {vehicle.plateNo || "N/A"}
-                  </p>
-                  <p className="text-lg font-bold text-primary mb-3">{vehicle.price}</p>
 
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <Badge variant="secondary">{vehicle.brand}</Badge>
-                    <Badge variant="secondary">{vehicle.color}</Badge>
-                    <Badge variant="secondary">{vehicle.batteryCapacity} kWh</Badge>
+          <CardContent>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setShowErrors(true);
+                vehicleFormik.handleSubmit(e);
+              }}
+              className="space-y-6"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Trường nhập chung */}
+                {[
+                  { id: "plateNo", label: "Biển số xe(VD: 51H-123.45)", placeholder: "Nhập biển số xe" },
+                  { id: "brand", label: "Hãng xe(Vd: Vinfast)", placeholder: "Nhập hãng xe" },
+                  { id: "model", label: "Mẫu xe(vd: vf8)", placeholder: "Nhập mẫu xe" },
+                  { id: "color", label: "Màu xe", placeholder: "Chọn hoặc nhập mã màu" },
+                  { id: "batteryCapacity", label: "Dung tích pin (kWh)", placeholder: "Nhập dung tích pin" },
+                  { id: "price", label: "Giá xe (VNĐ)", placeholder: "Nhập giá xe" },
+                ].map((field) => (
+                  <div key={field.id} className="flex flex-col">
+                    <Label
+                      htmlFor={field.id}
+                      className="font-medium text-gray-700 mb-1"
+                    >
+                      {field.label}
+                    </Label>
+
+                    {/* 🔹 Nếu là trường "color", hiển thị color picker */}
+                    {field.id === "color" ? (
+                      <div className="flex items-center space-x-3">
+                        {/* Color picker (hiển thị ô chọn màu) */}
+                        <input
+                          type="color"
+                          id={field.id}
+                          name={field.id}
+                          value={vehicleFormik.values.color || "#000000"}
+                          onChange={vehicleFormik.handleChange}
+                          className="w-12 h-10 border rounded cursor-pointer"
+                        />
+
+                        {/* Text input (cho phép gõ mã màu thủ công) */}
+                        <Input
+                          id={`${field.id}-text`}
+                          name={field.id}
+                          value={vehicleFormik.values.color}
+                          onChange={vehicleFormik.handleChange}
+                          placeholder={field.placeholder}
+                          className="flex-1 border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 rounded-md"
+                        />
+                      </div>
+                    ) : field.id === "price" ? (
+                      // 🔹 Nếu là trường "price", định dạng có dấu phẩy
+                      <Input
+                        id={field.id}
+                        name={field.id}
+                        value={vehicleFormik.values.price
+                          .toString()
+                          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/,/g, ""); // bỏ dấu phẩy để lấy số thật
+                          if (!isNaN(Number(value))) {
+                            vehicleFormik.setFieldValue("price", value);
+                          }
+                        }}
+                        placeholder={field.placeholder}
+                        className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
+                      />
+                    ) : (
+                      // 🔹 Các trường còn lại
+                      <Input
+                        id={field.id}
+                        name={field.id}
+                        value={vehicleFormik.values[field.id]}
+                        onChange={vehicleFormik.handleChange}
+                        placeholder={field.placeholder}
+                        className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
+                      />
+                    )}
+
+                    {/* Hiển thị lỗi nếu có */}
+                    {showErrors && vehicleFormik.errors[field.id] && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {vehicleFormik.errors[field.id]}
+                      </p>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div className="flex justify-end">
-              <Button
-                onClick={() => setStep(2)}
-                disabled={!selectedVehicle}
-                className="bg-gradient-primary hover:shadow-glow"
-              >
-                Tiếp tục
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2 rounded-md hover:shadow-md transition-all duration-300"
+                >
+                  Tiếp tục
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       )}
+
 
       {/* Step 2: Owner Information */}
       {step === 2 && (
@@ -890,7 +1030,29 @@ export default function VehicleRegistration() {
               {/* Vehicle Info */}
               <div className="border rounded-lg p-4">
                 <h3 className="font-semibold mb-2">Xe đã chọn</h3>
-                <p>{vehicles.find(v => v.id === selectedVehicle)?.name}</p>
+
+                {selectedVehicle ? (
+                  <div className="space-y-1 text-gray-700">
+                    <p><span className="font-medium">Biển số xe:</span> {selectedVehicle.plateNo}</p>
+                    <p><span className="font-medium">Hãng xe:</span> {selectedVehicle.brand}</p>
+                    <p><span className="font-medium">Mẫu xe:</span> {selectedVehicle.model}</p>
+                    <p className="flex items-center space-x-2">
+                      <span className="font-medium">Màu xe:</span>
+                      <span
+                        className="inline-block w-5 h-5 rounded-full border"
+                        style={{ backgroundColor: selectedVehicle.color }}
+                      ></span>
+                      <span>{selectedVehicle.color}</span>
+                    </p>
+                    <p><span className="font-medium">Dung tích pin:</span> {selectedVehicle.batteryCapacity} kWh</p>
+                    <p>
+                      <span className="font-medium">Giá xe:</span>{" "}
+                      {Number(selectedVehicle.price).toLocaleString("vi-VN")} VNĐ
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">Chưa có xe nào được chọn</p>
+                )}
               </div>
 
               {/* Owner Info */}

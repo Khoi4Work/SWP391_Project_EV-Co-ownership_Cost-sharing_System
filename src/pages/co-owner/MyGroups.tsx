@@ -29,10 +29,11 @@ export default function MyGroups() {
   const [leaveRequestDialogOpen, setLeaveRequestDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | number>("");
   const [groups, setGroups] = useState<any[]>([]);
+  const AUTH_CURRENT = import.meta.env.VITE_AUTH_CURRENT;
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await axiosClient.get("/auth/current");
+        const res = await axiosClient.get(AUTH_CURRENT);
 
         setCurrentUserId(res.data.id);
       } catch (err) {

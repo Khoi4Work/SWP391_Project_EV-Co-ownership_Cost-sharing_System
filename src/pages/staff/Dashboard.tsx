@@ -28,6 +28,7 @@ import { groups as initialGroups } from "@/data/mockGroups";
 import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
+    const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -35,7 +36,7 @@ export default function StaffDashboard() {
     const navigate = useNavigate();
     const [groups, setGroups] = useState(initialGroups);
     const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
-
+    const LEAVE_GROUP = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const stats = [
         { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
         { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
@@ -43,81 +44,161 @@ export default function StaffDashboard() {
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
     useEffect(() => {
-        axiosClient.get("/staff/get/all/request-group")
+        axiosClient.get(GET_REQUESTS)
             .then(res => {
-                if (Array.isArray(res.data)) {
-                    setLeaveRequests(res.data);
-                    const allServices = res.data
-                        .map((item: any) => item.groupMember?.requestServices || [])
-                        .flat();
-                    setServices(allServices);
-                    setServices(allServices);
+                if (res.status === 200 && Array.isArray(res.data)) {
+                    // Lưu toàn bộ danh sách ContractPendingRes vào state
+                    setServices(res.data);
+                } else if (res.status === 204) {
+                    // Không có hợp đồng chờ duyệt
+                    setServices([]);
+                    toast({
+                        title: "Không có hợp đồng chờ duyệt",
+                        description: "Hiện không có yêu cầu nào đang chờ xử lý.",
+                    });
                 } else {
-                    setLeaveRequests([]); // fallback
+                    console.warn("Phản hồi BE không mong đợi:", res);
                 }
             })
             .catch(err => {
                 console.error("Không kết nối được BE:", err.message);
-                setLeaveRequests([]); // đảm bảo luôn là []
-            });
-    }, []);
-    const handleApprove = async (appId: number) => {
-        const request = leaveRequests.find((r) => r.id === appId);
-        if (!request) {
-            toast({
-                title: "Lỗi",
-                description: "Không tìm thấy yêu cầu.",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        try {
-            // Gửi request đến BE
-            const res = await axiosClient.post("/staff/leave-group", {
-                groupId: request.groupMember?.group?.id || request.groupId,
-                requestId: request.id,
-            });
-
-            if (res.status === 200) {
-                // Cập nhật FE
-                setLeaveRequests((prev) => prev.filter((r) => r.id !== appId));
+                setServices([]);
                 toast({
-                    title: "Đã duyệt yêu cầu",
-                    description: "Nhân viên đã được rời khỏi nhóm thành công.",
-                });
-            } else {
-                toast({
-                    title: "Lỗi",
-                    description: "Backend trả về trạng thái không mong muốn.",
+                    title: "Lỗi kết nối Backend",
+                    description: "Không thể tải danh sách hợp đồng.",
                     variant: "destructive",
                 });
+            });
+    }, []);
+    useEffect(() => {
+        const fetchLeaveRequests = async () => {
+            try {
+                const res = await axiosClient.get(LEAVE_GROUP);
+
+                if (Array.isArray(res.data)) {
+                    setLeaveRequests(res.data);
+                    console.log("📦 Leave Requests fetched:", res.data);
+                } else if (res.status === 204 || res.data === null) {
+                    setLeaveRequests([]);
+                    console.warn("⚠️ Không có yêu cầu rời nhóm nào (204 No Content).");
+                } else {
+                    console.error("⚠️ Dữ liệu trả về không hợp lệ:", res.data);
+                    setLeaveRequests([]);
+                }
+            } catch (error: any) {
+                console.error("❌ Lỗi khi gọi API LEAVE_GROUP:", error.message);
+                toast({
+                    title: "Lỗi tải yêu cầu rời nhóm",
+                    description: "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.",
+                    variant: "destructive",
+                });
+                setLeaveRequests([]);
             }
-        } catch (error) {
-            console.error(error);
+        };
+
+        fetchLeaveRequests();
+    }, [LEAVE_GROUP]);
+    // const handleApprove = async (appId: number) => {
+    //     const request = leaveRequests.find((r) => r.id === appId);
+    //     if (!request) {
+    //         toast({
+    //             title: "Lỗi",
+    //             description: "Không tìm thấy yêu cầu.",
+    //             variant: "destructive",
+    //         });
+    //         return;
+    //     }
+
+    //     try {
+    //         // Gửi request đến BE
+    //         const res = await axiosClient.post(LEAVE_GROUP, {
+    //             groupId: request.groupMember?.group?.id || request.groupId,
+    //             requestId: request.id,
+    //         });
+
+    //         if (res.status === 200) {
+    //             // Cập nhật FE
+    //             setLeaveRequests((prev) => prev.filter((r) => r.id !== appId));
+    //             toast({
+    //                 title: "Đã duyệt yêu cầu",
+    //                 description: "Nhân viên đã được rời khỏi nhóm thành công.",
+    //             });
+    //         } else {
+    //             toast({
+    //                 title: "Lỗi",
+    //                 description: "Backend trả về trạng thái không mong muốn.",
+    //                 variant: "destructive",
+    //             });
+    //         }
+    //     } catch (error) {
+    //         console.error(error);
+    //         toast({
+    //             title: "Lỗi",
+    //             description: "Không thể xử lý yêu cầu ở backend.",
+    //             variant: "destructive",
+    //         });
+    //     }
+    // };
+
+
+
+
+    // const handleReject = (appId: string) => {
+    //     setLeaveRequests(prev =>
+    //         prev.map(r =>
+    //             r.id === appId ? { ...r, status: "rejected" } : r
+    //         )
+    //     );
+    //     setLeaveRequests(prev => prev.filter(r => r.id !== appId));
+    //     toast({
+    //         title: "Đã từ chối đơn",
+    //         description: "Yêu cầu rời nhóm không được chấp nhận.",
+    //     });
+    // };
+    const PATCH_CONTRACT = import.meta.env.VITE_PATCH_VERIFY_CONTRACT_PATH;
+    // ví dụ: /contract
+
+    const handleApprove = async (contractId: number) => {
+        try {
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`);
+            if (res.status === 200) {
+                toast({
+                    title: "Thành công",
+                    description: "Hợp đồng đã được duyệt.",
+                    variant: "success",
+                });
+                // Cập nhật lại UI
+                setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
+            }
+        } catch (err) {
             toast({
                 title: "Lỗi",
-                description: "Không thể xử lý yêu cầu ở backend.",
+                description: "Không thể duyệt hợp đồng. Vui lòng thử lại.",
                 variant: "destructive",
             });
         }
     };
 
-
-
-
-    const handleReject = (appId: string) => {
-        setLeaveRequests(prev =>
-            prev.map(r =>
-                r.id === appId ? { ...r, status: "rejected" } : r
-            )
-        );
-        setLeaveRequests(prev => prev.filter(r => r.id !== appId));
-        toast({
-            title: "Đã từ chối đơn",
-            description: "Yêu cầu rời nhóm không được chấp nhận.",
-        });
+    const handleReject = async (contractId: number) => {
+        try {
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/0`);
+            if (res.status === 200) {
+                toast({
+                    title: "Đã từ chối hợp đồng",
+                    description: "Hợp đồng đã bị từ chối thành công.",
+                    variant: "success",
+                });
+                setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
+            }
+        } catch (err) {
+            toast({
+                title: "Lỗi",
+                description: "Không thể từ chối hợp đồng. Vui lòng thử lại.",
+                variant: "destructive",
+            });
+        }
     };
+
 
 
     return (
@@ -191,35 +272,106 @@ export default function StaffDashboard() {
                                     Xem xét và phê duyệt các đơn đăng ký xe điện
                                 </CardDescription>
                             </CardHeader>
+
                             <CardContent>
                                 <div className="space-y-4">
-                                    {services.map((req) => (
-                                        <div
-                                            key={req.id}
-                                            className="p-4 border rounded-lg flex justify-between items-center bg-white shadow-sm"
-                                        >
-                                            <div>
-                                                <p><strong>Tên dịch vụ:</strong> {req.serviceName}</p>
-                                                <p><strong>Mô tả:</strong> {req.description}</p>
-                                                <p><strong>Giá:</strong> {req.price ? req.price.toLocaleString("vi-VN") + " ₫" : "Chưa có giá"}</p>
-                                                <p><strong>Trạng thái:</strong> {req.status}</p>
-                                                <p><strong>Ngày tạo:</strong> {req.createdAt ? new Date(req.createdAt).toLocaleString("vi-VN") : "Không rõ"}</p>
+                                    {services.length > 0 ? (
+                                        services.map((item: any, index: number) => {
+                                            const contract = item.contract;
+                                            return (
+                                                <Card
+                                                    key={index}
+                                                    className="bg-white text-black border-gray-300 mb-4 shadow-md"
+                                                >
+                                                    <CardHeader>
+                                                        <CardTitle>Hợp đồng #{contract.contractId}</CardTitle>
+                                                        <CardDescription className="text-gray-600">
+                                                            <strong>Loại hợp đồng:</strong> {contract.contractType}
+                                                        </CardDescription>
+                                                    </CardHeader>
 
-                                                {req.vehicle && (
-                                                    <p><strong>Phương tiện:</strong> {req.vehicle.plateNo || "Không rõ"}</p>
-                                                )}
+                                                    <CardContent className="space-y-2">
+                                                        <p>
+                                                            <Calendar className="inline w-4 h-4 mr-1 text-gray-600" />
+                                                            <strong>Ngày bắt đầu:</strong> {contract.startDate}
+                                                        </p>
+                                                        <p>
+                                                            <Calendar className="inline w-4 h-4 mr-1 text-gray-600" />
+                                                            <strong>Ngày kết thúc:</strong> {contract.endDate}
+                                                        </p>
+                                                        <p>
+                                                            <Activity className="inline w-4 h-4 mr-1 text-gray-600" />
+                                                            <strong>Trạng thái:</strong> {contract.status}
+                                                        </p>
 
-                                                {req.groupMember && (
-                                                    <p><strong>Người yêu cầu:</strong> {req.groupMember.users?.username || "Không rõ"}</p>
-                                                )}
-                                            </div>
+                                                        {/* Thông tin nhóm và nhân viên phụ trách */}
+                                                        {contract.group && (
+                                                            <p>
+                                                                <Users className="inline w-4 h-4 mr-1 text-gray-600" />
+                                                                <strong>Nhóm:</strong> {contract.group.groupName}
+                                                            </p>
+                                                        )}
+                                                        {contract.staff && (
+                                                            <p>
+                                                                <FileCheck className="inline w-4 h-4 mr-1 text-gray-600" />
+                                                                <strong>Nhân viên phụ trách:</strong>{" "}
+                                                                {contract.staff.hovaTen} ({contract.staff.email})
+                                                            </p>
+                                                        )}
 
-                                            <div className="flex space-x-2">
-                                                <Button size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>
-                                                <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>Từ chối</Button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                                        {/* Danh sách người ký */}
+                                                        {item.contractSignerList?.length > 0 && (
+                                                            <div className="mt-3">
+                                                                <p className="font-semibold mb-1">Người ký hợp đồng:</p>
+                                                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                                                    {item.contractSignerList.map((signer: any) => (
+                                                                        <li key={signer.id}>
+                                                                            {signer.hovaTen} — {signer.email} — {signer.phone}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Nút thao tác */}
+                                                        <div className="flex space-x-3 mt-4">
+                                                            <Button
+                                                                variant="default"
+                                                                className="bg-green-600 hover:bg-green-700 text-white"
+                                                                onClick={() => handleApprove(contract.contractId)}
+                                                            >
+                                                                Duyệt
+                                                            </Button>
+
+                                                            <Button
+                                                                variant="destructive"
+                                                                className="bg-red-600 hover:bg-red-700 text-white"
+                                                                onClick={() => handleReject(contract.contractId)}
+                                                            >
+                                                                Không duyệt
+                                                            </Button>
+
+                                                            {contract.htmlString && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="border-gray-400 text-gray-700 hover:bg-gray-100 ml-auto"
+                                                                    onClick={() =>
+                                                                        window.open(contract.htmlString, "_blank")
+                                                                    }
+                                                                >
+                                                                    Xem bản hợp đồng
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-center text-gray-600 mt-4">
+                                            Không có hợp đồng chờ duyệt
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

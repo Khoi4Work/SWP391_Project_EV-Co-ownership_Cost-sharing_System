@@ -132,110 +132,52 @@ export default function ContractPreviewPage() {
                 alert("Không tạo được file PDF!");
                 return;
             }
+
             const { blob, fileUrl } = pdfResult;
-            const pdfBase64 = await blobToBase64(blob);
-            console.log(user.id)
+
             const key = 'contractId_' + user.id;
-            console.log(key)
             const idContract = localStorage.getItem(key);
-            console.log(idContract)
             if (!idContract) {
                 alert("Không có contract id");
                 return;
             }
 
-            if (!user || !user.id) {
-                alert("Không tìm thấy thông tin người dùng");
-                return;
-            }
-            const pdfFileName = `HopDong_${idContract}.pdf`;
-            console.log("Link PDF đã upload:", fileUrl);
-            const payload = {
-                idContract,
-                idUser: user.id,
-                idChoice: status,
-                contractContent: pdfBase64,
-                contract_signature: savedPrivateKey,
-            };
+            const token = localStorage.getItem("accessToken");
+
+            // ⚙️ Tạo FormData
+            const formData = new FormData();
+            formData.append("idContract", idContract.toString());
+            formData.append("idUser", user.id.toString());
+            formData.append("idChoice", status.toString());
+            formData.append("contract_signature", savedPrivateKey);
+
+            // ⚙️ Chuyển blob thành file PDF
+            const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, { type: "application/pdf" });
+            formData.append("contractContent", pdfFile);
+
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
-            const res = await axiosClient.post(SET_CONTRACT, payload, {
+            const res = await axiosClient.post(SET_CONTRACT, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data",
                 },
             });
-            console.log("Payload gửi đi:", payload);
-            console.log(res.data.contract.status);
-            if (res.data.contract.status === "Activated") {
-                // ✅ Khi hợp đồng thành công thì tạo group:
-                // Gom owner chính + các coOwners
-                if (!ownerInfo?.id || !vehicleData?.id) {
-                    alert("Thiếu dữ liệu owner hoặc vehicle!");
-                    return;
-                }
-                const allMembers = [
-                    {
-                        userId: ownerInfo?.id,
-                        ownership: ownerInfo?.ownership || 0, // nếu FE đặt tên khác thì chỉnh lại
-                    },
-                    ...coOwners.map((co) => ({
-                        userId: co.id,
-                        ownership: co.ownership || 0, // chỉnh nếu khác tên
-                    })),
-                ];
 
-                // ✅ Xác định thằng có tỷ lệ lớn nhất làm ADMIN
-                let maxRate = -1;
-                let adminId = null;
-                allMembers.forEach((m) => {
-                    if (m.ownership > maxRate) {
-                        maxRate = m.ownership;
-                        adminId = m.userId;
-                    }
-                });
+            console.log("✅ Gửi thành công:", res.data);
+            toast({
+                title: "Thành công",
+                description: "Hợp đồng đã được xác nhận!",
+            });
 
-                // ✅ Tạo danh sách thành viên đúng format backend
-                const membersWithRole = allMembers.map((m) => ({
-                    coOwnerId: m.userId,
-                    roleInGroup: m.userId === adminId ? "admin" : "member",
-                    ownershipPercentage: m.ownership,
-                }));
-
-                const groupPayload = {
-                    contractId: idContract,
-                    vehicleId: vehicleData.id,
-                    members: membersWithRole,
-                    documentUrl: fileUrl,
-                };
-
-                console.log("groupPayload gửi đi:", groupPayload);
-                const CREATE_GROUP = import.meta.env.VITE_GROUP_CREATE_PATH;
-                const resGroup = await axiosClient.post(CREATE_GROUP, groupPayload);
-                if (resGroup.status === 200 || resGroup.status === 201) {
-                    toast({
-                        title: "Đăng ký thành công",
-                        description: "Nhóm sở hữu đã được tạo!",
-                    });
-                } else {
-                    toast({
-                        title: "Lỗi",
-                        description: "Gửi group thất bại!",
-                        variant: "destructive",
-                    });
-                }
-            }
-
-            alert("Gửi quyết định thành công!");
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
-
             toast({
                 title: "Lỗi",
                 description: err?.response?.data?.message || "Gửi quyết định thất bại!",
                 variant: "destructive",
             });
         }
-
-    };
+    }
 
     if (loading) return <div>Đang tải thông tin user...</div>;
     if (error) return <div className="text-red-500">{error}</div>;

@@ -21,7 +21,14 @@ interface Props {
   updateCoOwner: (id: number, field: keyof CoOwner, value: any) => void;
   removeCoOwner: (id: number) => void;
   getOwnershipAmount: (ownership: number) => number;
-  selectedVehicle: string | null;
+  selectedVehicle: {
+    plateNo: string;
+    brand: string;
+    model: string;
+    color: string;
+    batteryCapacity: string;
+    price: number;
+  } | null;
   fetchUserByEmail: (email: string) => Promise<Partial<CoOwner> | null>;
   mainOwnership: number;
 }

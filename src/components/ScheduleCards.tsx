@@ -14,6 +14,7 @@ type ScheduleItem = {
     vehicleName?: string;
     vehiclePlate?: string;
     userName?: string;
+    userId?: number; // Thêm userId để kiểm tra quyền check in/out
     hasCheckIn: boolean;
     hasCheckOut: boolean;
     checkInTime?: string; // ISO
@@ -128,6 +129,7 @@ export default function ScheduleCards() {
                             vehicleName: v ? `${v.brand} ${v.model}` : `Xe ${r.vehicleId}`,
                             vehiclePlate: v?.plateNo,
                             userName: r.userName || "Bạn",
+                            userId: r.userId || currentUserId, // Lấy userId từ booking
                             hasCheckIn: Boolean(r.checkInTime),
                             hasCheckOut: Boolean(r.checkOutTime),
                             checkInTime: r.checkInTime,
@@ -154,7 +156,12 @@ export default function ScheduleCards() {
                     throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
                 }
                 const data = await res.json();
-                setItems(data as ScheduleItem[]);
+                // Đảm bảo mỗi item có userId để kiểm tra quyền
+                const itemsWithUserId = (data as ScheduleItem[]).map(item => ({
+                    ...item,
+                    userId: item.userId || currentUserId // Fallback về currentUserId nếu không có
+                }));
+                setItems(itemsWithUserId);
             }
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
@@ -249,11 +256,30 @@ export default function ScheduleCards() {
 
     const submitCheckIn = async () => {
         if (activeId == null) return;
+        
+        // Kiểm tra xem booking có thuộc về user hiện tại không
+        const booking = items.find(item => item.scheduleId === activeId);
+        if (!booking) {
+            alert("Không tìm thấy booking");
+            return;
+        }
+        if (booking.userId !== currentUserId) {
+            alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
+            setOpenCheckIn(false);
+            return;
+        }
+        
         if (USE_MOCK) {
             const key = "mockSchedules";
             const list = JSON.parse(localStorage.getItem(key) || "[]");
             const idx = list.findIndex((b: any) => b.scheduleId === activeId);
             if (idx !== -1) {
+                // Kiểm tra lại userId trong mock data
+                if (list[idx].userId !== currentUserId) {
+                    alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
+                    setOpenCheckIn(false);
+                    return;
+                }
                 list[idx].checkInTime = new Date().toISOString();
                 localStorage.setItem(key, JSON.stringify(list));
                 alert("Check-in thành công (mock)");
@@ -291,11 +317,30 @@ export default function ScheduleCards() {
 
     const submitCheckOut = async () => {
         if (activeId == null) return;
+        
+        // Kiểm tra xem booking có thuộc về user hiện tại không
+        const booking = items.find(item => item.scheduleId === activeId);
+        if (!booking) {
+            alert("Không tìm thấy booking");
+            return;
+        }
+        if (booking.userId !== currentUserId) {
+            alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
+            setOpenCheckOut(false);
+            return;
+        }
+        
         if (USE_MOCK) {
             const key = "mockSchedules";
             const list = JSON.parse(localStorage.getItem(key) || "[]");
             const idx = list.findIndex((b: any) => b.scheduleId === activeId);
             if (idx !== -1) {
+                // Kiểm tra lại userId trong mock data
+                if (list[idx].userId !== currentUserId) {
+                    alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
+                    setOpenCheckOut(false);
+                    return;
+                }
                 list[idx].checkOutTime = new Date().toISOString();
                 localStorage.setItem(key, JSON.stringify(list));
                 alert("Check-out thành công (mock)");
@@ -362,10 +407,11 @@ export default function ScheduleCards() {
                                         <div className="flex items-center gap-2"><Clock className="h-4 w-4"/>Kết thúc: {formatDateTime(it.endTime)}</div>
                                     </div>
                                     <div className="mt-3 flex gap-2">
-                                        {!it.hasCheckIn && (
+                                        {/* Chỉ hiển thị nút Check-in/Check-out nếu booking thuộc về user hiện tại */}
+                                        {it.userId === currentUserId && !it.hasCheckIn && (
                                             <Button size="sm" onClick={() => openCheckInDialog(it.scheduleId)}>Check-in</Button>
                                         )}
-                                        {it.hasCheckIn && !it.hasCheckOut && (
+                                        {it.userId === currentUserId && it.hasCheckIn && !it.hasCheckOut && (
                                             <Button size="sm" variant="outline" onClick={() => openCheckOutDialog(it.scheduleId)}>Check-out</Button>
                                         )}
                                         <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>Xem chi tiết</Button>
