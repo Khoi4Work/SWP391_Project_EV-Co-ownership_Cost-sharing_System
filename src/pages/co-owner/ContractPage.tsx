@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import ContractPreview from "./ContractPDFPreview";
 import { Button } from "@/components/ui/button"; // nếu bạn dùng ShadCN button
@@ -24,6 +24,7 @@ export default function ContractPreviewPage() {
     const queryParams = new URLSearchParams(location.search);
     const token = queryParams.get("token");
     const BASE_URL = import.meta.env.VITE_API_URL;
+    const contractRef = useRef<HTMLDivElement>(null);
     console.log("Contract ID:", id);
     console.log("Token từ query string:", token);
     const handleSavePrivateKey = (key: string) => {
@@ -58,9 +59,9 @@ export default function ContractPreviewPage() {
         fetchUser();
     }, [token]);
     const generatePDF = async () => {
-        const element = document.getElementById("contract-area");
+        const element = contractRef.current;
         if (!element) {
-            alert("Không tìm thấy nội dung hợp đồng để xuất PDF");
+            alert("Không tìm thấy vùng hợp đồng để xuất PDF!");
             return null;
         }
 
@@ -70,32 +71,16 @@ export default function ContractPreviewPage() {
         const opt = {
             margin: 10,
             filename: `HopDong_${id}.pdf`,
-            image: {
-                type: "jpeg" as const,   // ✅ TS hiểu đúng literal
-                quality: 0.98,
-            },
-            html2canvas: {
-                scale: 2,
-            },
-            jsPDF: {
-                unit: "mm" as const,
-                format: "a4" as const,
-                orientation: "portrait" as const, // ✅ literal type
-            },
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         };
-        return new Promise((resolve) => {
-            html2pdf()
-                .set(opt)
-                .from(element)
-                .toPdf()
-                .get('pdf')
-                .then((pdf) => {
-                    const blob = pdf.output('blob');
-                    setStatus(oldStatus);
-                    const fileUrl = URL.createObjectURL(blob); // tạm thời tạo link blob
-                    resolve({ blob, fileUrl });
-                });
-        });
+
+        const pdf = await html2pdf().set(opt as any).from(element).toPdf().get("pdf");
+        const blob = pdf.output("blob");
+        const fileUrl = URL.createObjectURL(blob);
+        setStatus(oldStatus);
+        return { blob, fileUrl };
     };
     const blobToBase64 = (blob: Blob): Promise<string> => {
         return new Promise((resolve, reject) => {
@@ -122,11 +107,12 @@ export default function ContractPreviewPage() {
                 title: "Lỗi",
                 description: "Vui lòng chọn Đồng ý hoặc Không đồng ý trước khi xác nhận.",
                 variant: "destructive",
-            })
+            });
             return;
         }
 
         try {
+            // ✅ Gọi generatePDF() chỉ cho vùng ref này
             const pdfResult: any = await generatePDF();
             if (!pdfResult) {
                 alert("Không tạo được file PDF!");
@@ -134,15 +120,14 @@ export default function ContractPreviewPage() {
             }
 
             const { blob, fileUrl } = pdfResult;
-
-            const key = 'contractId_' + user.id;
+            const key = "contractId_" + user.id;
             const idContract = localStorage.getItem(key);
             if (!idContract) {
                 alert("Không có contract id");
                 return;
             }
 
-            const token = localStorage.getItem("accessToken");
+            const accessToken = localStorage.getItem("accessToken");
 
             // ⚙️ Tạo FormData
             const formData = new FormData();
@@ -150,15 +135,17 @@ export default function ContractPreviewPage() {
             formData.append("idUser", user.id.toString());
             formData.append("idChoice", status.toString());
             formData.append("contract_signature", savedPrivateKey);
+            const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+            console.log(`📄 Dung lượng file PDF: ${fileSizeMB} MB`);
 
-            // ⚙️ Chuyển blob thành file PDF
-            const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, { type: "application/pdf" });
+            const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, {
+                type: "application/pdf",
+            });
             formData.append("contractContent", pdfFile);
-
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, formData, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${accessToken}`,
                     "Content-Type": "multipart/form-data",
                 },
             });
@@ -168,16 +155,17 @@ export default function ContractPreviewPage() {
                 title: "Thành công",
                 description: "Hợp đồng đã được xác nhận!",
             });
-
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
             toast({
                 title: "Lỗi",
-                description: err?.response?.data?.message || "Gửi quyết định thất bại!",
+                description:
+                    err?.response?.data?.message || "Gửi quyết định thất bại!",
                 variant: "destructive",
             });
         }
-    }
+    };
+
 
     if (loading) return <div>Đang tải thông tin user...</div>;
     if (error) return <div className="text-red-500">{error}</div>;
@@ -188,6 +176,7 @@ export default function ContractPreviewPage() {
             <h1 className="text-2xl font-bold mb-4">Xem hợp đồng đồng sở hữu</h1>
             <div id="contract-area" className="border p-4 mb-4">
                 <ContractPreview
+                    ref={contractRef}
                     ownerInfo={ownerInfo}
                     coOwners={coOwners}
                     vehicleData={vehicleData}
@@ -201,7 +190,16 @@ export default function ContractPreviewPage() {
                 <Button onClick={handleConfirm} disabled={status === null || (status === 1 && !isPrivateKey)}>
                     Xác nhận hợp đồng
                 </Button>
-                <Button onClick={generatePDF} variant="secondary">
+                <Button
+                    onClick={() => {
+                        if (contractRef.current) {
+                            generatePDF();
+                        } else {
+                            alert("Không tìm thấy nội dung hợp đồng để xuất PDF!");
+                        }
+                    }}
+                    variant="secondary"
+                >
                     Xuất PDF
                 </Button>
                 {status !== null && (
