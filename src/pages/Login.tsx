@@ -71,12 +71,18 @@ export default function Login() {
             });
             //Điều hướng theo loại tài khoản
             console.log(role + "-" + selectedType)
-            if (selectedType === "staff" && role.toLowerCase() === "staff") {
+            if (selectedType.toLowerCase() === "staff" && role.toLowerCase() === "staff") {
+
                 navigate("/staff/dashboard");
+
             } else if (selectedType === "admin" && role.toLowerCase() === "admin") {
+
                 navigate("/admin/dashboard");
+
             } else {
+
                 navigate("/co-owner/dashboard");
+
             }
         } catch (err) {
             toast({
@@ -164,10 +170,16 @@ export default function Login() {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
-
-                        <Button type="submit" className="w-full bg-gradient-primary hover:shadow-glow">
+                        <button
+                            type="submit"
+                            className="w-full bg-gradient-primary hover:shadow-glow text-white rounded-md p-2"
+                        >
                             Đăng nhập
-                        </Button>
+                        </button>
+
+                        {/*<Button type="submit" className="w-full bg-gradient-primary hover:shadow-glow">*/}
+                        {/*    Đăng nhập*/}
+                        {/*</Button>*/}
                     </form>
 
                     <div className="mt-4 text-center text-sm">
