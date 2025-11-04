@@ -134,31 +134,28 @@ export default function ContractPreviewPage() {
             }
 
             const { blob, fileUrl } = pdfResult;
-            const pdfBase64Full = await blobToBase64(blob);
-            const pdfBase64 = pdfBase64Full.split(",")[1]; // cắt bỏ prefix data:application/pdf;base64,
-            const key = "contractId_" + user.id;
-            const idContract = localStorage.getItem(key);
 
+            const key = 'contractId_' + user.id;
+            const idContract = localStorage.getItem(key);
             if (!idContract) {
                 alert("Không có contract id");
                 return;
             }
 
-            if (!user || !user.id) {
-                alert("Không tìm thấy thông tin người dùng");
-                return;
-            }
+            const token = localStorage.getItem("accessToken");
 
-            // --- 🔹 Tạo FormData ---
+            // ⚙️ Tạo FormData
             const formData = new FormData();
             formData.append("idContract", idContract.toString());
             formData.append("idUser", user.id.toString());
             formData.append("idChoice", status.toString());
-            formData.append("contractContent", pdfBase64); // <-- dạng chuỗi Base64
             formData.append("contract_signature", savedPrivateKey);
 
-            const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
+            // ⚙️ Chuyển blob thành file PDF
+            const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, { type: "application/pdf" });
+            formData.append("contractContent", pdfFile);
 
+            const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -166,72 +163,14 @@ export default function ContractPreviewPage() {
                 },
             });
 
-            console.log("Payload gửi đi:", formData);
-            console.log(res.data.contract.status);
+            console.log("✅ Gửi thành công:", res.data);
+            toast({
+                title: "Thành công",
+                description: "Hợp đồng đã được xác nhận!",
+            });
 
-            // --- 🔹 Nếu contract được Activated ---
-            if (res.data.contract.status === "Activated") {
-                if (!ownerInfo?.id || !vehicleData?.id) {
-                    alert("Thiếu dữ liệu owner hoặc vehicle!");
-                    return;
-                }
-
-                const allMembers = [
-                    {
-                        userId: ownerInfo?.id,
-                        ownership: ownerInfo?.ownership || 0,
-                    },
-                    ...coOwners.map((co) => ({
-                        userId: co.id,
-                        ownership: co.ownership || 0,
-                    })),
-                ];
-
-                // 🔹 Tìm admin (người có tỷ lệ lớn nhất)
-                let maxRate = -1;
-                let adminId = null;
-                allMembers.forEach((m) => {
-                    if (m.ownership > maxRate) {
-                        maxRate = m.ownership;
-                        adminId = m.userId;
-                    }
-                });
-
-                const membersWithRole = allMembers.map((m) => ({
-                    coOwnerId: m.userId,
-                    roleInGroup: m.userId === adminId ? "admin" : "member",
-                    ownershipPercentage: m.ownership,
-                }));
-
-                const groupPayload = {
-                    contractId: idContract,
-                    vehicleId: vehicleData.id,
-                    members: membersWithRole,
-                    documentUrl: fileUrl,
-                };
-
-                console.log("groupPayload gửi đi:", groupPayload);
-
-                const CREATE_GROUP = import.meta.env.VITE_GROUP_CREATE_PATH;
-                const resGroup = await axiosClient.post(CREATE_GROUP, groupPayload);
-                if (resGroup.status === 200 || resGroup.status === 201) {
-                    toast({
-                        title: "Đăng ký thành công",
-                        description: "Nhóm sở hữu đã được tạo!",
-                    });
-                } else {
-                    toast({
-                        title: "Lỗi",
-                        description: "Gửi group thất bại!",
-                        variant: "destructive",
-                    });
-                }
-            }
-
-            alert("Gửi quyết định thành công!");
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
-
             toast({
                 title: "Lỗi",
                 description: err?.response?.data?.message || "Gửi quyết định thất bại!",
