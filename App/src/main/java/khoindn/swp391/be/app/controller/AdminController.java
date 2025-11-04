@@ -20,36 +20,31 @@ import java.util.List;
 public class AdminController {
 
     private final StaffManagementService staffService;
-
-    // Đường dẫn: /api/admin/staff/create
+    
     @PostMapping("/create")
     public ResponseEntity<StaffResponse> createStaff(@RequestBody CreateStaffRequest request) {
         StaffResponse newStaff = staffService.createStaff(request);
         return new ResponseEntity<>(newStaff, HttpStatus.CREATED);
     }
 
-    // Đường dẫn: /api/admin/staff/get-all
     @GetMapping("/get-all")
     public ResponseEntity<List<StaffResponse>> getAllStaff() {
         List<StaffResponse> staffList = staffService.getAllStaff();
         return ResponseEntity.ok(staffList);
     }
 
-    // Đường dẫn: /api/admin/staff/get-by-id/{id}
     @GetMapping("/get-by-id/{id}")
     public ResponseEntity<StaffResponse> getStaffById(@PathVariable Integer id) {
         StaffResponse staff = staffService.getStaffById(id);
         return ResponseEntity.ok(staff);
     }
 
-    // Đường dẫn: /api/admin/staff/update/{id}
     @PutMapping("/update/{id}")
     public ResponseEntity<StaffResponse> updateStaff(@PathVariable Integer id, @RequestBody UpdateStaffRequest request) {
         StaffResponse updatedStaff = staffService.updateStaff(id, request);
         return ResponseEntity.ok(updatedStaff);
     }
 
-    // Đường dẫn: /api/admin/staff/delete/{id}
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteStaff(@PathVariable Integer id) {
         staffService.deleteStaff(id);
