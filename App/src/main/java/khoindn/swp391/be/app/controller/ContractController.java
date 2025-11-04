@@ -57,14 +57,12 @@ public class ContractController {
 
     // Tạo/Set contract
     @PostMapping("/set")
-    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req)
+    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req,
+                                                      @RequestParam("contractContent") MultipartFile contractContent)
             throws
-            InvalidKeySpecException,
-            NoSuchAlgorithmException,
-            SignatureException,
-            InvalidKeyException {
+            Exception {
 
-        ContractSigner contractResult = iContractService.setContract(req);
+        ContractSigner contractResult = iContractService.setContract(req, contractContent);
         if (contractResult == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
@@ -74,7 +72,7 @@ public class ContractController {
 
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<List<ContractSigner>> createContract(@RequestBody @Valid ContractCreateReq req)
+    public ResponseEntity<List<ContractSigner>> createContract(@ModelAttribute @Valid ContractCreateReq req)
             throws Exception {
         System.out.println(req);
         List<ContractSigner> contractResult = iContractService.createContract(req);
@@ -115,36 +113,36 @@ public class ContractController {
 
     @GetMapping("/preview")
     public ResponseEntity renderContract(@RequestParam("contractId") int contractId) {
-        // ✅ Lấy người dùng hiện tại
+        //  Lấy người dùng hiện tại
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        // ✅ Người ký hợp đồng
+        //  Người ký hợp đồng
         List<ContractSigner> contractSigners = iContractService.getAllContractSignersByContractId(contractId);
         if (contractSigners == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy người ký hợp đồng.");
         }
-        // ✅ Lấy hợp đồng
+        //  Lấy hợp đồng
         Contract contract = iContractService.getContractByContractId(contractId);
         if (contract == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy hợp đồng.");
         }
 
 
-        // ✅ Lấy xe
+        //  Lấy xe
         Vehicle vehicle = iVehicleService.findVehicleByGroupId(contract.getGroup().getGroupId());
         if (vehicle == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy xe thuộc nhóm này.");
         }
 
-        // ✅ Lấy danh sách thành viên nhóm
+        //  Lấy danh sách thành viên nhóm
         List<GroupMember> allMembers = iGroupMemberService.getMembersByGroupId(contract.getGroup().getGroupId());
         if (allMembers == null || allMembers.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không có thành viên trong nhóm.");
         }
 
-        // ✅ Xác định chủ sở hữu chính (tỷ lệ cao nhất)
+        //  Xác định chủ sở hữu chính (tỷ lệ cao nhất)
         GroupMember ownerMember = allMembers.stream()
                 .max(Comparator.comparing(GroupMember::getOwnershipPercentage))
                 .orElse(null);
@@ -152,7 +150,7 @@ public class ContractController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy chủ sở hữu chính.");
         }
 
-        // ✅ Các đồng sở hữu khác
+        //  Các đồng sở hữu khác
         List<GroupMember> coOwnerMembers = allMembers.stream()
                 .filter(m -> !m.getUsers().getId().equals(ownerMember.getUsers().getId()))
                 .toList();

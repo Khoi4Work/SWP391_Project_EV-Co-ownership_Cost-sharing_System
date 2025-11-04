@@ -3,9 +3,11 @@ package khoindn.swp391.be.app.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import khoindn.swp391.be.app.pojo.Vehicle;
 import khoindn.swp391.be.app.service.IVehicleService;
+import khoindn.swp391.be.app.service.VehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +26,11 @@ public class VehicleController {
     public ResponseEntity<Vehicle> getVehicleByGroupID(@PathVariable int groupId) {
         Vehicle vehicle = iVehicleService.findVehicleByGroupId(groupId);
         return ResponseEntity.status(HttpStatus.OK).body(vehicle);
+    }
+
+    @GetMapping("/service")
+    public ResponseEntity getAllVehicleService() {
+        return ResponseEntity.status(HttpStatus.OK).body(iVehicleService.getAllVehicleServices());
     }
 
 }

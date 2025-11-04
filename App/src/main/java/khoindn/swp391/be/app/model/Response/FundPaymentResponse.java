@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class WithdrawResponse {
+public class FundPaymentResponse {
     private String status;
     private String message;
-    private Integer transactionId;
+    private String paymentUrl;
 }
