@@ -168,133 +168,105 @@ export default function ContractPreviewPage() {
                 },
             });
 
-            console.log("✅ Gửi thành công:", res.data);
-            toast({
-                title: "Thành công",
-                description: "Hợp đồng của bạn đã được xác nhận!",
-            });
-
-            // ✅ 3. Lấy contractId từ response (ContractSigner)
-            const contractId = res.data?.contract?.contractId;
-            if (!contractId) {
+            if (res.status !== 200 && res.status !== 201) {
                 toast({
                     title: "Lỗi",
-                    description: "Không lấy được contractId từ phản hồi BE!",
+                    description: `Gửi quyết định thất bại: HTTP ${res.status}`,
                     variant: "destructive",
                 });
                 return;
             }
 
-            // ✅ 4. Lấy lại contract chi tiết để kiểm tra signer
-            const contractRes = await axiosClient.get(`/contract/${contractId}`, {
+            // BE trả ContractSigner (theo mapping bạn cho). Thử lấy contract từ response:
+            const contract = res.data?.contract ?? res.data;
+            if (!contract) {
+                toast({
+                    title: "Lỗi",
+                    description: "Phản hồi từ server không chứa thông tin contract.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // 3) Kiểm tra trạng thái contract (BE phải cung cấp contract.status)
+            // BE dùng "CONFIRMED" khi hợp đồng đã được xác nhận (theo bạn)
+            if (String(contract.status).toUpperCase() !== "CONFIRMED") {
+                // Nếu chưa CONFIRMED -> thông báo và dừng (BE sẽ quản lý tiếp)
+                toast({
+                    title: "Đang chờ xác nhận",
+                    description: "Hợp đồng chưa được xác nhận đầy đủ (chưa ở trạng thái CONFIRMED).",
+                    variant: "default",
+                });
+                return;
+            }
+
+            // 4) Chuẩn bị payload /group/create theo GroupCreateReq
+            // BE yêu cầu members: List<CoOwner_Info> với coOwnerId (int), ownershipPercentage (Float), roleInGroup (String)
+            // Kiểm tra ownerInfo.id & coOwners[].id tồn tại (nếu không có, bạn cần lookup user để lấy id trước khi gửi)
+            if (!ownerInfo?.id) {
+                toast({
+                    title: "Thiếu dữ liệu",
+                    description: "Không có ownerInfo.id — FE cần có user id để tạo nhóm.",
+                    variant: "destructive",
+                });
+                return;
+            }
+            const missingId = coOwners.some((c: any) => !c?.id);
+            if (missingId) {
+                toast({
+                    title: "Thiếu dữ liệu đồng sở hữu",
+                    description: "Một hoặc vài đồng sở hữu chưa có user id. Vui lòng lấy user id từ email trước khi tạo nhóm.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // build members array
+            const members = [
+                {
+                    coOwnerId: Number(ownerInfo.id),
+                    ownershipPercentage: parseFloat(String(ownerInfo.ownership ?? 0)),
+                    roleInGroup: "OWNER",
+                },
+                ...coOwners.map((co: any) => ({
+                    coOwnerId: Number(co.id),
+                    ownershipPercentage: parseFloat(String(co.ownership ?? 0)),
+                    roleInGroup: "CO_OWNER",
+                })),
+            ];
+
+            // optional: validate ownership sum >= 100? (BE có thể check)
+            const groupPayload = {
+                contractId: Number(contract.contractId ?? contract.id ?? idContract),
+                documentUrl: contract.urlConfirmedContract ?? contract.documentUrl ?? fileUrl,
+                members,
+            };
+
+            // 5) Gọi create group
+            const groupRes = await axiosClient.post("/group/create", groupPayload, {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
 
-            if (contractRes.status === 200) {
-                const contract = contractRes.data;
-                console.log("📜 Contract chi tiết:", contract);
-
-                const signerList = contract.signerList || [];
-
-                if (!signerList.length) {
-                    toast({
-                        title: "Không có signer nào",
-                        description: "Không thể kiểm tra trạng thái ký hợp đồng.",
-                        variant: "destructive",
-                    });
-                    return;
-                }
-
-                const allSigned = signerList.every((s: any) => s.decision === "SIGNED");
-
-                if (allSigned) {
-                    console.log("✅ Tất cả signer đã ký — tiến hành tạo group...");
-
-                    // =========================
-                    // SỬA Ở ĐÂY: build ownership map
-                    // =========================
-                    // map theo user id (nếu có), fallback theo email
-                    const ownershipMap: Record<string | number, number> = {};
-
-                    // chủ sở hữu chính (ownerInfo)
-                    if (ownerInfo?.id) {
-                        ownershipMap[ownerInfo.id] = Number(ownerInfo.ownership) || 0;
-                    } else if (ownerInfo?.email) {
-                        ownershipMap[ownerInfo.email] = Number(ownerInfo.ownership) || 0;
-                    }
-
-                    // các đồng sở hữu
-                    coOwners.forEach(co => {
-                        if (co.id) ownershipMap[co.id] = Number(co.ownership) || 0;
-                        else if (co.email) ownershipMap[co.email] = Number(co.ownership) || 0;
-                    });
-
-                    // Tạo members đúng thứ tự từ signerList, lấy ownership từ map
-                    const membersForGroup = signerList.map((s: any) => {
-                        const userId = s.user?.id;
-                        const userEmail = s.user?.email;
-                        let ownershipPercentage = undefined as number | undefined;
-
-                        if (userId !== undefined && ownershipMap[userId] !== undefined) {
-                            ownershipPercentage = ownershipMap[userId];
-                        } else if (userEmail && ownershipMap[userEmail] !== undefined) {
-                            ownershipPercentage = ownershipMap[userEmail];
-                        }
-
-                        // fallback: nếu không tìm được ownership, chia đều
-                        if (ownershipPercentage === undefined) {
-                            console.warn(`Không tìm thấy ownership cho user ${userId || userEmail}, sẽ chia đều (fallback).`);
-                            ownershipPercentage = Math.round((100 / signerList.length) * 100) / 100; // 2 chữ số
-                        }
-
-                        return {
-                            coOwnerId: s.user?.id,
-                            ownershipPercentage,
-                            roleInGroup: s.user?.id === ownerInfo?.id ? "MAIN_OWNER" : "MEMBER",
-                        };
-                    });
-
-                    // debug log
-                    console.log("Members payload (with ownership):", membersForGroup);
-
-                    // =========================
-                    // Gọi /group/create
-                    // =========================
-                    const groupPayload = {
-                        vehicleId: contract.vehicle?.vehicleId ?? 1,
-                        contractId: contract.contractId,
-                        documentUrl: contract.urlConfirmedContract ?? fileUrl,
-                        members: membersForGroup,
-                    };
-
-                    const groupRes = await axiosClient.post("/group/create", groupPayload, {
-                        headers: { Authorization: `Bearer ${accessToken}` },
-                    });
-
-                    if (groupRes.status === 201) {
-                        toast({
-                            title: "🎉 Nhóm đã được tạo thành công!",
-                            description: `Xe ${groupRes.data.plateNo || ""} đã được đăng ký nhóm mới.`,
-                        });
-                        console.log("🎯 Group tạo thành công:", groupRes.data);
-                    }
-                } else {
-                    // ⏳ Chưa đủ người ký
-                    const signedCount = signerList.filter((s: any) => s.decision === "SIGNED")
-                        .length;
-                    toast({
-                        title: "Đang chờ thành viên khác ký...",
-                        description: `${signedCount}/${signerList.length} người đã ký.`,
-                    });
-                    console.log("⏳ Chưa đủ người ký:", signedCount, "/", signerList.length);
-                }
+            if (groupRes.status === 201) {
+                toast({
+                    title: "🎉 Nhóm đã được tạo",
+                    description: `Nhóm tạo thành công — Biển số: ${groupRes.data?.plateNo ?? "N/A"}`,
+                });
+                console.log("Group created:", groupRes.data);
+            } else {
+                // lỗi từ BE khi tạo group
+                const errText = (groupRes.data && JSON.stringify(groupRes.data)) || `HTTP ${groupRes.status}`;
+                toast({
+                    title: "Tạo nhóm thất bại",
+                    description: errText,
+                    variant: "destructive",
+                });
             }
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
             toast({
-                title: "Lỗi",
-                description:
-                    err?.response?.data?.message || "Gửi quyết định thất bại!",
+                title: "Lỗi hệ thống",
+                description: err?.response?.data?.message || "Không thể hoàn tất yêu cầu. Vui lòng thử lại.",
                 variant: "destructive",
             });
         }
