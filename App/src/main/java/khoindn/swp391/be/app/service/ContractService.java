@@ -76,9 +76,9 @@ public class ContractService implements IContractService {
         System.out.println("Update contract...");
 
         Users user = iUserRepository.findUsersById(req.getIdUser());
-        System.out.println(user.getPublicKey());
-        System.out.println(req.getContract_signature());
-        System.out.println(req.getContractContent());
+        System.out.println("PUBLIC KEY: "+user.getPublicKey());
+        System.out.println("PRIVATE KEY: "+req.getContract_signature());
+        System.out.println("CONTRACT CONTENT: "+req.getContractContent());
 
         //Parse privateKey va publicKey sang byte
 
@@ -192,11 +192,12 @@ public class ContractService implements IContractService {
             contract.setImageContract(supabaseService.uploadFile(req.getImageContract()));
         }
 
-        iContractRepository.save(contract);
 
         //TAO VEHICLE
         Vehicle vehicle = modelMapper.map(req, Vehicle.class);
+        vehicle.setContract(contract);
         iVehicleRepository.save(vehicle);
+        iContractRepository.save(contract);
 
         //TAO CONTRACT SIGNER
         for (Integer userId : req.getIdUsers()) {
