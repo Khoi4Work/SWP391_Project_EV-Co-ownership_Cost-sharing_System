@@ -19,6 +19,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 // --- Các import đã xóa (implements UserDetailsService) là ĐÚNG ---
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -32,7 +35,7 @@ import java.util.Base64;
 @Service
 @Transactional
 // (Đã xóa "implements UserDetailsService" -> Rất Tốt, giữ nguyên)
-public class AuthenticationService {
+public class AuthenticationService implements UserDetailsService {
     @Autowired
     private IAuthenticationRepository iAuthenticationRepository;
     @Autowired
@@ -157,5 +160,14 @@ public class AuthenticationService {
         } else {
             throw new AuthenticationException("User is not logged in or token is invalid");
         }
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Users user = iAuthenticationRepository.findUsersByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
+        return user;
     }
 }

@@ -1,7 +1,7 @@
 
 package khoindn.swp391.be.app.config;
 
-import khoindn.swp391.be.app.service.UserDetailsServiceImpl;
+import khoindn.swp391.be.app.service.AuthenticationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,10 +22,8 @@ public class SecurityConfig {
     Filter filter;
 
     @Autowired
-    CorsConfig corsConfig; // <--- Dòng này sẽ hết mờ sau khi bạn sửa
+    CorsConfig corsConfig; // <--- Dòng này sẽ hết mờ sau khi bạn sửa ????????????
 
-    @Autowired
-    private UserDetailsServiceImpl userDetailsServiceImpl;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -39,21 +37,17 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationService authenticationService) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // --- 👇 THÊM DÒNG NÀY VÀO ĐÂY 👇 ---
                 .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
-                // --- 👆 HẾT PHẦN THÊM 👆 ---
-
                 .authorizeHttpRequests(req -> req
                         .requestMatchers(
                                 "/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .userDetailsService(userDetailsServiceImpl)
+                .userDetailsService(authenticationService)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
                 .build();
