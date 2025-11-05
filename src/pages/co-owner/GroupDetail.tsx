@@ -189,12 +189,12 @@ export default function GroupDetail() {
             } catch (err: any) {
                 const errorStatus = err?.response?.status;
                 const errorMessage = err?.message || "Unknown error";
-                
+
                 console.warn("⚠️ Backend API failed, falling back to mock data:", {
                     status: errorStatus,
                     message: errorMessage
                 });
-                
+
                 // Fallback to mock data if API fails
                 const gid = Number(groupId);
                 const mockFee = getMonthlyFeesByGroupId(gid);
@@ -238,11 +238,11 @@ export default function GroupDetail() {
 
                 const groupIds: number[] = res.data;
                 if (!groupIds || groupIds.length === 0) {
-                    toast({
-                        title: "Thông báo",
-                        description: "Bạn chưa tham gia nhóm nào",
-                        variant: "destructive"
-                    });
+                    // toast({
+                    //     title: "Thông báo",
+                    //     description: "Bạn chưa tham gia nhóm nào",
+                    //     variant: "destructive"
+                    // });
                     navigate("/co-owner/dashboard");
                     return;
                 }
@@ -365,7 +365,7 @@ export default function GroupDetail() {
                         `/api/group-members/group/${gid}`,
                         `/group-members/group/${gid}`,
                     ]);
-                    
+
                     // Đảm bảo members là array
                     if (Array.isArray(membersResponse)) {
                         members = membersResponse;
@@ -383,7 +383,7 @@ export default function GroupDetail() {
                     } else {
                         members = [];
                     }
-                    
+
                     console.log("✅ Members loaded:", members);
                     console.log("✅ Members type check:", Array.isArray(members), "Length:", members?.length);
 
@@ -537,7 +537,7 @@ export default function GroupDetail() {
             if (response.data.paymentUrl) {
                 toast({
                     title: "Đang chuyển đến VNPay",
-                        description: "Vui lòng thanh toán quỹ tháng"
+                    description: "Vui lòng thanh toán quỹ tháng"
                 });
                 window.location.href = response.data.paymentUrl;
             } else {
@@ -641,7 +641,7 @@ export default function GroupDetail() {
                                             status: fee.status
                                         });
                                     }
-                                    
+
                                     return (
                                         <Card key={fee.fundDetailId} className="border-2">
                                             <CardContent className="pt-6">
@@ -793,62 +793,62 @@ export default function GroupDetail() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead className="bg-muted border-b">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium">Ngày</th>
-                                    <th className="px-4 py-3 text-left font-medium">Xe</th>
-                                    <th className="px-4 py-3 text-left font-medium">Người dùng</th>
-                                    <th className="px-4 py-3 text-left font-medium">Giờ</th>
-                                    <th className="px-4 py-3 text-left font-medium">Trạng thái</th>
-                                    <th className="px-4 py-3 text-center font-medium">Chi tiết</th>
-                                </tr>
+                                    <tr>
+                                        <th className="px-4 py-3 text-left font-medium">Ngày</th>
+                                        <th className="px-4 py-3 text-left font-medium">Xe</th>
+                                        <th className="px-4 py-3 text-left font-medium">Người dùng</th>
+                                        <th className="px-4 py-3 text-left font-medium">Giờ</th>
+                                        <th className="px-4 py-3 text-left font-medium">Trạng thái</th>
+                                        <th className="px-4 py-3 text-center font-medium">Chi tiết</th>
+                                    </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                {vehicleUsages.map(usage => (
-                                    <tr key={usage.id} className="hover:bg-muted/50">
-                                        <td className="px-4 py-3">{usage.date}</td>
-                                        <td className="px-4 py-3">{usage.vehicle}</td>
-                                        <td className="px-4 py-3">{usage.user}</td>
-                                        <td className="px-4 py-3">
-                                            {usage.start} - {usage.end || "..."}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Badge
-                                                className={
-                                                    usage.status === "Chờ nhận xe"
-                                                        ? "bg-blue-100 text-blue-700 border-blue-200"
-                                                        : usage.status === "Đang sử dụng"
-                                                            ? "bg-orange-100 text-orange-700 border-orange-200"
-                                                            : "bg-emerald-100 text-emerald-700 border-emerald-200"
-                                                }
-                                            >
-                                                {usage.status}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={async () => {
-                                                    try {
-                                                        const detail = await fetchUsageHistoryDetail(usage.id);
-                                                        setSelectedHistory({
-                                                            ...usage,
-                                                            note: detail.checkOutNotes || detail.checkInNotes || "",
-                                                            checkIn: detail.checkInTime ? new Date(detail.checkInTime).toLocaleTimeString() : usage.checkIn,
-                                                            checkOut: detail.checkOutTime ? new Date(detail.checkOutTime).toLocaleTimeString() : usage.checkOut,
-                                                            distance: null,
-                                                        });
-                                                        setDetailOpen(true);
-                                                    } catch (e: any) {
-                                                        toast({ title: "Lỗi", description: "Không tải được chi tiết lịch sử", variant: "destructive" });
+                                    {vehicleUsages.map(usage => (
+                                        <tr key={usage.id} className="hover:bg-muted/50">
+                                            <td className="px-4 py-3">{usage.date}</td>
+                                            <td className="px-4 py-3">{usage.vehicle}</td>
+                                            <td className="px-4 py-3">{usage.user}</td>
+                                            <td className="px-4 py-3">
+                                                {usage.start} - {usage.end || "..."}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Badge
+                                                    className={
+                                                        usage.status === "Chờ nhận xe"
+                                                            ? "bg-blue-100 text-blue-700 border-blue-200"
+                                                            : usage.status === "Đang sử dụng"
+                                                                ? "bg-orange-100 text-orange-700 border-orange-200"
+                                                                : "bg-emerald-100 text-emerald-700 border-emerald-200"
                                                     }
-                                                }}
-                                            >
-                                                Xem
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                >
+                                                    {usage.status}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={async () => {
+                                                        try {
+                                                            const detail = await fetchUsageHistoryDetail(usage.id);
+                                                            setSelectedHistory({
+                                                                ...usage,
+                                                                note: detail.checkOutNotes || detail.checkInNotes || "",
+                                                                checkIn: detail.checkInTime ? new Date(detail.checkInTime).toLocaleTimeString() : usage.checkIn,
+                                                                checkOut: detail.checkOutTime ? new Date(detail.checkOutTime).toLocaleTimeString() : usage.checkOut,
+                                                                distance: null,
+                                                            });
+                                                            setDetailOpen(true);
+                                                        } catch (e: any) {
+                                                            toast({ title: "Lỗi", description: "Không tải được chi tiết lịch sử", variant: "destructive" });
+                                                        }
+                                                    }}
+                                                >
+                                                    Xem
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
@@ -917,8 +917,8 @@ export default function GroupDetail() {
             </Dialog>
 
             {/* Dialog chi tiết thanh toán quỹ tháng */}
-            <Dialog 
-                open={feeDetailOpen} 
+            <Dialog
+                open={feeDetailOpen}
                 onOpenChange={(open) => {
                     setFeeDetailOpen(open);
                     if (!open) {

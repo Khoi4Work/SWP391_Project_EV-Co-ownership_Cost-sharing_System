@@ -546,10 +546,10 @@ export default function VehicleRegistration() {
 
             <div className="space-y-4">
               <h2 className="text-3xl font-bold text-foreground">
-                Đăng ký xe thành công!
+                Đăng ký hợp đồng thành công!
               </h2>
               <p className="text-muted-foreground text-lg">
-                Đơn đăng ký xe điện của bạn đã được gửi thành công.
+                Hợp đồng của bạn đã được gửi thành công.
                 Chúng tôi sẽ xem xét và phản hồi trong vòng 24 giờ.
               </p>
             </div>
