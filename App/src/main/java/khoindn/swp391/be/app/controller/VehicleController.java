@@ -3,14 +3,10 @@ package khoindn.swp391.be.app.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import khoindn.swp391.be.app.pojo.Vehicle;
 import khoindn.swp391.be.app.service.IVehicleService;
-import khoindn.swp391.be.app.service.VehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:8081")
@@ -29,8 +25,13 @@ public class VehicleController {
     }
 
     @GetMapping("/service")
-    public ResponseEntity getAllVehicleService() {
-        return ResponseEntity.status(HttpStatus.OK).body(iVehicleService.getAllVehicleServices());
+    public ResponseEntity getMenuVehicleService() {
+        return ResponseEntity.status(HttpStatus.OK).body(iVehicleService.getMenuVehicleServices());
+    }
+
+    @GetMapping("/service/request")
+    public ResponseEntity getVehicleServiceRequest() {
+        return  ResponseEntity.status(200).body(iVehicleService.getAllRequestVehicleSerive());
     }
 
 }

@@ -4,15 +4,12 @@ import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.pojo.MenuVehicleService;
 import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.pojo.Users;
-import khoindn.swp391.be.app.pojo.Vehicle;
 import khoindn.swp391.be.app.repository.IMenuVehicleServiceRepository;
 import khoindn.swp391.be.app.service.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -135,7 +132,7 @@ public class DataInitializer implements CommandLineRunner {
 
         }
 
-        if (iVehicleService.getAllVehicleServices().isEmpty()) {
+        if (iVehicleService.getMenuVehicleServices().isEmpty()) {
             // Car wash service
             MenuVehicleService washService = new MenuVehicleService();
             washService.setServiceName("Car Wash");

@@ -20,9 +20,9 @@ public interface IVehicleService {
 
     MenuVehicleService addVehicleService(MenuVehicleService vehicleService);
 
-    List<MenuVehicleService> getAllVehicleServices();
+    List<MenuVehicleService> getMenuVehicleServices();
 
     RequestVehicleService requestVehicleService(int groupId, int serviceId);
 
-
+    List<RequestVehicleService> getAllRequestVehicleSerive();
 }
