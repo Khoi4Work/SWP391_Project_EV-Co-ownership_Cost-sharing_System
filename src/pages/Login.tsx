@@ -51,7 +51,6 @@ export default function Login() {
                 });
                 return;
             }
-
             // ✅ Trích xuất dữ liệu từ response
             const token = response.data.token;
             const userId = response.data.id;
@@ -92,9 +91,9 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        finally {
-            navigate("/co-owner/dashboard");
-        }
+        // finally {
+        //     navigate("/co-owner/dashboard");
+        // }
     };
 
 

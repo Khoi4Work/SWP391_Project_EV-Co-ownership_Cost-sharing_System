@@ -500,10 +500,10 @@ export default function VehicleRegistration() {
 
     // ⚙️ userId là danh sách => cần append từng phần tử
     coOwners.forEach(owner => {
-      formData.append("userId", owner.id.toString());
+      formData.append("idUsers", owner.id.toString());
     });
 
-    formData.append("userId", ownerInfo.id.toString());
+    formData.append("idUsers", ownerInfo.id.toString());
 
 
     // ⚙️ File upload
