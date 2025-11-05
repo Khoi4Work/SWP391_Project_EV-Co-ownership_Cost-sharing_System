@@ -56,13 +56,12 @@ public class ContractController {
     }
 
     // Tạo/Set contract
-    @PostMapping("/set")
-    public ResponseEntity<ContractSigner> setContract(@RequestBody @Valid ContractDecisionReq req,
-                                                      @RequestParam("contractContent") MultipartFile contractContent)
+    @PostMapping(value = "/set", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ContractSigner> setContract(@ModelAttribute @Valid ContractDecisionReq req)
             throws
             Exception {
 
-        ContractSigner contractResult = iContractService.setContract(req, contractContent);
+        ContractSigner contractResult = iContractService.setContract(req);
         if (contractResult == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

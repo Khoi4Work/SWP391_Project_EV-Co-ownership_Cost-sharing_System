@@ -7,9 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class VotingRequest {
-    long decisionId;
-    int groupId;
-    int vote;
-    int serviceId;
+public class ContentSender {
+
+    private String subject;
+    private String email;
+    private String content;
+    private String attachmentPath;
 }

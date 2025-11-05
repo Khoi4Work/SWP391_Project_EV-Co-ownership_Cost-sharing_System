@@ -28,8 +28,6 @@ public class StaffController {
     @Autowired
     private AuthenticationService authenticationService;
     @Autowired
-    private IGroupMemberService iGroupMemberService;
-    @Autowired
     private IContractService iContractService;
     @Autowired
     private IStaffService iStaffService;
@@ -81,7 +79,7 @@ public class StaffController {
     // 1. GET PENDING CONTRACTS
 
     @GetMapping("/contract/pending")
-    public ResponseEntity getPendingContracts() {
+    public ResponseEntity getPendingContractRequests() {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
             return ResponseEntity.status(403).body("Unauthorized");

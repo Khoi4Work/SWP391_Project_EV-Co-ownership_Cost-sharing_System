@@ -4,12 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class VotingRequest {
-    long decisionId;
-    int groupId;
-    int vote;
-    int serviceId;
+public class SendEmailReq {
+    private String content;
+    private List<String> email;
 }

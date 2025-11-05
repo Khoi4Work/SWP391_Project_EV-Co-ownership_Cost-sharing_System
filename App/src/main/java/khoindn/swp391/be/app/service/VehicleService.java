@@ -69,7 +69,7 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<MenuVehicleService> getAllVehicleServices() {
+    public List<MenuVehicleService> getMenuVehicleServices() {
         return iMenuVehicleServiceRepository.findAll();
     }
 
@@ -88,4 +88,11 @@ public class VehicleService implements IVehicleService {
 
         return vehicleService;
     }
+
+    @Override
+    public List<RequestVehicleService> getAllRequestVehicleSerive() {
+        return iRequestVehicleServiceRepository.findAll();
+    }
+
+
 }

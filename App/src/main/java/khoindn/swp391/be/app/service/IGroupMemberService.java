@@ -31,10 +31,8 @@ public interface IGroupMemberService {
 
     DecisionVote createDecision(DecisionVoteReq request, GroupMember gm);
 
-    DecisionVote setDecision(int choice, long idDecision, GroupMember gm);
+    DecisionVote setDecision(int choice, long idDecision, int serviceId, GroupMember gm);
 
-
-
-
+    DecisionVote checkAllVoters(DecisionVote vote, int groupId, int serviceId);
 
 }
