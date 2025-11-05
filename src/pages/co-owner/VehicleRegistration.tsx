@@ -488,7 +488,6 @@ export default function VehicleRegistration() {
   const handleSubmit = async () => {
     const formData = new FormData();
 
-
     // ⚙️ Gửi đúng tên field giống backend
     formData.append("documentUrl", documentUrl); // nếu có link hợp đồng thì truyền vào
     formData.append("contractType", "CO_OWNER"); // ví dụ: "CO_OWNER" hoặc "LEASE"

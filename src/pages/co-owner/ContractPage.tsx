@@ -102,6 +102,17 @@ export default function ContractPreviewPage() {
     }, [id]);
 
     const handleConfirm = async () => {
+        const members = [
+            {
+                email: ownerInfo.email,
+                ownershipPercentage: ownerInfo.ownership,
+            },
+            ...coOwners.map(co => ({
+                email: co.email,
+                ownershipPercentage: co.ownership,
+            })),
+        ];
+
         if (status === null) {
             toast({
                 title: "Lỗi",
@@ -112,10 +123,14 @@ export default function ContractPreviewPage() {
         }
 
         try {
-            // ✅ Gọi generatePDF() chỉ cho vùng ref này
+            // ✅ 1. Tạo file PDF hợp đồng
             const pdfResult: any = await generatePDF();
             if (!pdfResult) {
-                alert("Không tạo được file PDF!");
+                toast({
+                    title: "Lỗi",
+                    description: "Không thể tạo file PDF hợp đồng!",
+                    variant: "destructive",
+                });
                 return;
             }
 
@@ -123,25 +138,28 @@ export default function ContractPreviewPage() {
             const key = "contractId_" + user.id;
             const idContract = localStorage.getItem(key);
             if (!idContract) {
-                alert("Không có contract id");
+                toast({
+                    title: "Lỗi",
+                    description: "Không tìm thấy contract ID!",
+                    variant: "destructive",
+                });
                 return;
             }
 
             const accessToken = localStorage.getItem("accessToken");
 
-            // ⚙️ Tạo FormData
+            // ✅ 2. Tạo FormData gửi BE
             const formData = new FormData();
             formData.append("idContract", idContract.toString());
             formData.append("idUser", user.id.toString());
             formData.append("idChoice", status.toString());
             formData.append("contract_signature", savedPrivateKey);
-            const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
-            console.log(`📄 Dung lượng file PDF: ${fileSizeMB} MB`);
 
             const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, {
                 type: "application/pdf",
             });
             formData.append("contractContent", pdfFile);
+
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, formData, {
                 headers: {
@@ -153,8 +171,124 @@ export default function ContractPreviewPage() {
             console.log("✅ Gửi thành công:", res.data);
             toast({
                 title: "Thành công",
-                description: "Hợp đồng đã được xác nhận!",
+                description: "Hợp đồng của bạn đã được xác nhận!",
             });
+
+            // ✅ 3. Lấy contractId từ response (ContractSigner)
+            const contractId = res.data?.contract?.contractId;
+            if (!contractId) {
+                toast({
+                    title: "Lỗi",
+                    description: "Không lấy được contractId từ phản hồi BE!",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // ✅ 4. Lấy lại contract chi tiết để kiểm tra signer
+            const contractRes = await axiosClient.get(`/contract/${contractId}`, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+
+            if (contractRes.status === 200) {
+                const contract = contractRes.data;
+                console.log("📜 Contract chi tiết:", contract);
+
+                const signerList = contract.signerList || [];
+
+                if (!signerList.length) {
+                    toast({
+                        title: "Không có signer nào",
+                        description: "Không thể kiểm tra trạng thái ký hợp đồng.",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+
+                const allSigned = signerList.every((s: any) => s.decision === "SIGNED");
+
+                if (allSigned) {
+                    console.log("✅ Tất cả signer đã ký — tiến hành tạo group...");
+
+                    // =========================
+                    // SỬA Ở ĐÂY: build ownership map
+                    // =========================
+                    // map theo user id (nếu có), fallback theo email
+                    const ownershipMap: Record<string | number, number> = {};
+
+                    // chủ sở hữu chính (ownerInfo)
+                    if (ownerInfo?.id) {
+                        ownershipMap[ownerInfo.id] = Number(ownerInfo.ownership) || 0;
+                    } else if (ownerInfo?.email) {
+                        ownershipMap[ownerInfo.email] = Number(ownerInfo.ownership) || 0;
+                    }
+
+                    // các đồng sở hữu
+                    coOwners.forEach(co => {
+                        if (co.id) ownershipMap[co.id] = Number(co.ownership) || 0;
+                        else if (co.email) ownershipMap[co.email] = Number(co.ownership) || 0;
+                    });
+
+                    // Tạo members đúng thứ tự từ signerList, lấy ownership từ map
+                    const membersForGroup = signerList.map((s: any) => {
+                        const userId = s.user?.id;
+                        const userEmail = s.user?.email;
+                        let ownershipPercentage = undefined as number | undefined;
+
+                        if (userId !== undefined && ownershipMap[userId] !== undefined) {
+                            ownershipPercentage = ownershipMap[userId];
+                        } else if (userEmail && ownershipMap[userEmail] !== undefined) {
+                            ownershipPercentage = ownershipMap[userEmail];
+                        }
+
+                        // fallback: nếu không tìm được ownership, chia đều
+                        if (ownershipPercentage === undefined) {
+                            console.warn(`Không tìm thấy ownership cho user ${userId || userEmail}, sẽ chia đều (fallback).`);
+                            ownershipPercentage = Math.round((100 / signerList.length) * 100) / 100; // 2 chữ số
+                        }
+
+                        return {
+                            coOwnerId: s.user?.id,
+                            ownershipPercentage,
+                            roleInGroup: s.user?.id === ownerInfo?.id ? "MAIN_OWNER" : "MEMBER",
+                        };
+                    });
+
+                    // debug log
+                    console.log("Members payload (with ownership):", membersForGroup);
+
+                    // =========================
+                    // Gọi /group/create
+                    // =========================
+                    const groupPayload = {
+                        vehicleId: contract.vehicle?.vehicleId ?? 1,
+                        contractId: contract.contractId,
+                        documentUrl: contract.urlConfirmedContract ?? fileUrl,
+                        members: membersForGroup,
+                    };
+
+                    const groupRes = await axiosClient.post("/group/create", groupPayload, {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                    });
+
+                    if (groupRes.status === 201) {
+                        toast({
+                            title: "🎉 Nhóm đã được tạo thành công!",
+                            description: `Xe ${groupRes.data.plateNo || ""} đã được đăng ký nhóm mới.`,
+                        });
+                        console.log("🎯 Group tạo thành công:", groupRes.data);
+                    }
+                } else {
+                    // ⏳ Chưa đủ người ký
+                    const signedCount = signerList.filter((s: any) => s.decision === "SIGNED")
+                        .length;
+                    toast({
+                        title: "Đang chờ thành viên khác ký...",
+                        description: `${signedCount}/${signerList.length} người đã ký.`,
+                    });
+                    console.log("⏳ Chưa đủ người ký:", signedCount, "/", signerList.length);
+                }
+            }
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
             toast({
@@ -165,8 +299,6 @@ export default function ContractPreviewPage() {
             });
         }
     };
-
-
     if (loading) return <div>Đang tải thông tin user...</div>;
     if (error) return <div className="text-red-500">{error}</div>;
     if (!ownerInfo || !vehicleData) return <p>Đang tải dữ liệu hợp đồng...</p>;
