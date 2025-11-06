@@ -53,7 +53,6 @@ interface Transaction {
 
 interface Group {
     id: string;
-    fundId: number;
     name: string;
     ownerId: string;
     fund: number;
@@ -104,12 +103,7 @@ const API_BASE_URL = "http://localhost:8080";
 const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
 
 // 🔧 CONFIG: Chuyển đổi giữa mock data và backend thật
-// - true: Sử dụng mock data (không cần backend) - dùng để test UI
-// - false: Sử dụng backend thật (cần BE chạy ở http://localhost:8080) - dùng khi có BE
-// 
-// 📝 LƯU Ý: Khi USE_MOCK_DATA = false, nếu backend không available, code sẽ tự động
-// fallback về mock data để tránh lỗi. Để test hoàn toàn với BE, đảm bảo BE đang chạy.
-const USE_MOCK_DATA = false; // ⚠️ ĐỔI THÀNH false KHI CÓ BACKEND ĐỂ TEST
+const USE_MOCK_DATA = false;
 
 export default function GroupDetail() {
     const { groupId } = useParams<{ groupId: string }>();
@@ -133,8 +127,10 @@ export default function GroupDetail() {
     useEffect(() => {
         const userIdStr = localStorage.getItem("userId");
         if (!groupId || !userIdStr) return;
+
         const userIdNum = Number(userIdStr);
         const gId = Number(groupId);
+
         fetchUsageHistoryList(userIdNum, gId)
             .then(list => {
                 const mapped: VehicleUsage[] = list.map((it: any) => {
@@ -142,6 +138,7 @@ export default function GroupDetail() {
                     const hasIn = Boolean(it.hasCheckIn);
                     const hasOut = Boolean(it.hasCheckOut);
                     const statusText = !hasIn ? "Chờ nhận xe" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
+
                     return {
                         id: it.scheduleId,
                         date: it.date,
@@ -169,7 +166,6 @@ export default function GroupDetail() {
 
         async function fetchMonthlyFees() {
             if (USE_MOCK_DATA) {
-                // Use mock data
                 console.log("📦 Using MOCK DATA for monthly fees");
                 const gid = Number(groupId);
                 const mockFee = getMonthlyFeesByGroupId(gid);
@@ -179,7 +175,6 @@ export default function GroupDetail() {
                 return;
             }
 
-            // Use real API
             console.log("🔗 Connecting to BACKEND API for monthly fees");
             try {
                 const token = localStorage.getItem("accessToken");
@@ -194,7 +189,6 @@ export default function GroupDetail() {
             } catch (err: any) {
                 const errorStatus = err?.response?.status;
                 const errorMessage = err?.message || "Unknown error";
-
                 console.warn("⚠️ Backend API failed, falling back to mock data:", {
                     status: errorStatus,
                     message: errorMessage
@@ -205,7 +199,6 @@ export default function GroupDetail() {
                 const mockFee = getMonthlyFeesByGroupId(gid);
                 if (mockFee) {
                     setGroupFee(mockFee);
-                    // Only show warning if it's a network/connection error (not 404 which might be expected)
                     if (!errorStatus || errorStatus >= 500) {
                         toast({
                             title: "⚠️ Backend không khả dụng",
@@ -224,7 +217,7 @@ export default function GroupDetail() {
 
     // EFFECT 1: Load group ID nếu chưa có
     useEffect(() => {
-        if (groupId) return; // Nếu đã có groupId param thì skip
+        if (groupId) return;
 
         async function loadGroupId() {
             try {
@@ -235,8 +228,8 @@ export default function GroupDetail() {
                 }
 
                 const token = localStorage.getItem("accessToken");
-                // Lấy danh sách group của user (qua biến môi trường)
                 const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
+                
                 const res = await axiosClient.get(endpoint, {
                     params: { userId },
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -244,16 +237,10 @@ export default function GroupDetail() {
 
                 const groupIds: number[] = res.data;
                 if (!groupIds || groupIds.length === 0) {
-                    // toast({
-                    //     title: "Thông báo",
-                    //     description: "Bạn chưa tham gia nhóm nào",
-                    //     variant: "destructive"
-                    // });
                     navigate("/co-owner/dashboard");
                     return;
                 }
 
-                // Điều hướng sang group đầu tiên
                 navigate(`/group/${groupIds[0]}`);
             } catch (err) {
                 console.error("Error loading group ID:", err);
@@ -277,32 +264,27 @@ export default function GroupDetail() {
                 console.log("=== FETCHING GROUP DETAIL ===");
                 console.log("GroupId:", gid);
 
-                // Nếu dùng mock data, load từ mockGroups
                 if (USE_MOCK_DATA) {
                     console.log("📦 Using MOCK DATA for group detail");
-                    // Try to find by string ID first, then by index (groupId as number - 1)
                     let mockGroup = getGroupById(groupId);
                     if (!mockGroup && !isNaN(gid) && gid > 0) {
-                        // If groupId is a number, use it as index (groupId 1 = groups[0])
                         const index = gid - 1;
                         if (index >= 0 && index < groups.length) {
                             mockGroup = groups[index];
                         }
                     }
-                    // Fallback to first group
                     if (!mockGroup) {
                         mockGroup = groups[0];
                     }
+
                     if (!mockGroup) {
                         setError("Không tìm thấy nhóm");
                         setLoading(false);
                         return;
                     }
 
-                    // Convert mock group to Group format
                     const mappedGroup: Group = {
                         id: mockGroup.id,
-                        fundId: 0,
                         name: mockGroup.name,
                         ownerId: mockGroup.ownerId,
                         fund: mockGroup.fund,
@@ -338,10 +320,8 @@ export default function GroupDetail() {
                     return;
                 }
 
-                // Use real API
                 const token = localStorage.getItem("accessToken");
 
-                // Helper: try multiple endpoints in case BE route differs between envs
                 const getWithFallback = async <T,>(paths: string[]): Promise<T> => {
                     let lastError: any = null;
                     for (const path of paths) {
@@ -353,7 +333,6 @@ export default function GroupDetail() {
                         } catch (err: any) {
                             lastError = err;
                             if (err?.response?.status && err.response.status !== 404) {
-                                // If not 404, break early (e.g., 401/500)
                                 break;
                             }
                         }
@@ -372,14 +351,11 @@ export default function GroupDetail() {
                         `/group-members/group/${gid}`,
                     ]);
 
-                    // Đảm bảo members là array
                     if (Array.isArray(membersResponse)) {
                         members = membersResponse;
                     } else if (membersResponse && Array.isArray(membersResponse.data)) {
-                        // Nếu response có dạng { data: [...] }
                         members = membersResponse.data;
                     } else if (membersResponse && typeof membersResponse === 'object') {
-                        // Nếu response là object, thử lấy array đầu tiên
                         const firstArrayKey = Object.keys(membersResponse).find(key => Array.isArray(membersResponse[key]));
                         if (firstArrayKey) {
                             members = membersResponse[firstArrayKey];
@@ -391,7 +367,6 @@ export default function GroupDetail() {
                     }
 
                     console.log("✅ Members loaded:", members);
-                    console.log("✅ Members type check:", Array.isArray(members), "Length:", members?.length);
 
                     if (!Array.isArray(members) || members.length === 0) {
                         setError("Nhóm không có thành viên");
@@ -399,51 +374,27 @@ export default function GroupDetail() {
                         return;
                     }
                 } catch (err: any) {
-                    console.error("❌ Error fetching members:", {
-                        status: err.response?.status,
-                        message: err.message,
-                        endpoint: `members endpoints tried for group ${gid}`
-                    });
+                    console.error("❌ Error fetching members:", err);
                     setError(`Không thể lấy danh sách thành viên (${err.response?.status || "Network Error"})`);
                     setLoading(false);
                     return;
                 }
 
-                // 2. Fetch CommonFund
-                console.log("Step 2: Fetching fund...");
-                let commonFund: any = null;
+                // 2. Fetch Group Info (optional - để lấy tên nhóm)
+                console.log("Step 2: Fetching group info...");
+                let groupName = "Nhóm";
                 try {
-                    const res = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`, {
+                    const groupInfo = await axiosClient.get(`/api/groups/${gid}`, {
                         headers: token ? { Authorization: `Bearer ${token}` } : {}
                     });
-                    commonFund = res.data;
-                    console.log("✅ Fund loaded:", commonFund);
+                    groupName = groupInfo.data?.name || groupInfo.data?.groupName || "Nhóm";
+                    console.log("✅ Group info loaded:", groupInfo.data);
                 } catch (err: any) {
-                    console.warn("⚠️ Fund not found, using defaults:", err.message);
-                    commonFund = {
-                        fundId: 0,
-                        balance: 0,
-                        group: { groupId: gid, groupName: "Nhóm" }
-                    };
+                    console.warn("⚠️ Group info not found, using default name:", err.message);
                 }
 
-                // 3. Fetch FundDetails
-                console.log("Step 3: Fetching fund details...");
-                let fundDetails: any[] = [];
-                if (commonFund?.fundId) {
-                    try {
-                        const res = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`, {
-                            headers: token ? { Authorization: `Bearer ${token}` } : {}
-                        });
-                        fundDetails = res.data || [];
-                        console.log("✅ Fund details loaded:", fundDetails);
-                    } catch (err: any) {
-                        console.warn("⚠️ Fund details not found:", err.message);
-                    }
-                }
-
-                // 4. Fetch Vehicles
-                console.log("Step 4: Fetching vehicles...");
+                // 3. Fetch Vehicles
+                console.log("Step 3: Fetching vehicles...");
                 let vehicles: any[] = [];
                 try {
                     const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`, {
@@ -456,13 +407,12 @@ export default function GroupDetail() {
                 }
 
                 // Map dữ liệu vào Group object
-                console.log("Step 5: Mapping data...");
+                console.log("Step 4: Mapping data...");
                 const mappedGroup: Group = {
                     id: gid.toString(),
-                    fundId: commonFund?.fundId || 0,
-                    name: commonFund?.group?.groupName || "Nhóm",
+                    name: groupName,
                     ownerId: (Array.isArray(members) ? members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId?.toString() : "") || "",
-                    fund: Number(commonFund?.balance || 0),
+                    fund: 0, // Không còn fetch từ common-fund nữa
                     minTransfer: 10000,
                     users: members.map(m => ({
                         id: m.userId.toString(),
@@ -479,18 +429,7 @@ export default function GroupDetail() {
                         status: "available",
                         imageUrl: v.imageUrl
                     })),
-                    transactions: fundDetails.map(fd => ({
-                        id: fd.fundDetailId?.toString() || fd.id?.toString() || "",
-                        name: fd.transactionType || "Giao dịch",
-                        type: fd.transactionType?.toLowerCase().includes("deposit")
-                            ? "deposit"
-                            : fd.transactionType?.toLowerCase().includes("withdraw")
-                                ? "withdraw"
-                                : "transfer",
-                        amount: Number(fd.amount || 0),
-                        date: fd.createdAt || new Date().toISOString(),
-                        userId: fd.groupMember?.userId?.toString() || ""
-                    }))
+                    transactions: [] // Không còn fetch fund details nữa
                 };
 
                 console.log("✅ Final group data:", mappedGroup);
@@ -509,10 +448,8 @@ export default function GroupDetail() {
     // Handle pay quỹ tháng
     const handlePayFee = async (fundDetailId: number) => {
         setProcessingPayment(fundDetailId);
-
         try {
             if (USE_MOCK_DATA) {
-                // Simulate payment with mock data
                 console.log("📦 Simulating payment with MOCK DATA for fundDetailId:", fundDetailId);
                 const result = payFeeMock(fundDetailId);
                 if (result.success && result.updatedFee) {
@@ -520,7 +457,6 @@ export default function GroupDetail() {
                         title: "✅ Thanh toán thành công",
                         description: "Thanh toán quỹ tháng đã được thanh toán (mock data)"
                     });
-                    // Update fees state with the updated data
                     setGroupFee(result.updatedFee);
                 } else {
                     throw new Error("Không tìm thấy quỹ tháng cần thanh toán");
@@ -528,10 +464,8 @@ export default function GroupDetail() {
                 return;
             }
 
-            // Use real API
             console.log("🔗 Creating payment via BACKEND API for fundDetailId:", fundDetailId);
             const token = localStorage.getItem("accessToken");
-
             const response = await axiosClient.post<{ status: string; message: string; paymentUrl: string }>(
                 `/api/fund-fee/${fundDetailId}/create-payment`,
                 {},
@@ -597,13 +531,11 @@ export default function GroupDetail() {
     const currentUser = group.users.find(u => u.id === userId);
     const myRole = currentUser?.role || "member";
 
-    // Helper để format monthYear (yyyy-MM) thành MM/yyyy
     const formatMonthYear = (monthYear: string) => {
         const [year, month] = monthYear.split("-");
         return `${month}/${year}`;
     };
 
-    // Helper để format dueDate
     const formatDueDate = (dueDate: string) => {
         const date = new Date(dueDate);
         return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -637,16 +569,6 @@ export default function GroupDetail() {
                                 {groupFee.fees.map((fee) => {
                                     const isPending = fee.status === "PENDING";
                                     const isCurrentUser = fee.userId.toString() === userId;
-                                    // Debug: log để kiểm tra
-                                    if (isPending) {
-                                        console.log("Fee debug:", {
-                                            feeUserId: fee.userId,
-                                            feeUserIdStr: fee.userId.toString(),
-                                            currentUserId: userId,
-                                            isCurrentUser,
-                                            status: fee.status
-                                        });
-                                    }
 
                                     return (
                                         <Card key={fee.fundDetailId} className="border-2">
@@ -658,7 +580,6 @@ export default function GroupDetail() {
                                                         <p className="text-sm text-muted-foreground">Nhóm: {groupFee.groupName}</p>
                                                     </div>
                                                 </div>
-
                                                 <div className="space-y-2 mb-4">
                                                     <div className="flex justify-between">
                                                         <span className="text-sm text-muted-foreground">Tháng:</span>
@@ -701,7 +622,6 @@ export default function GroupDetail() {
                                                         <span className="text-sm font-medium">{fee.userName}</span>
                                                     </div>
                                                 </div>
-
                                                 <div className="flex gap-2 mt-4">
                                                     {isPending && (
                                                         <Button
@@ -722,7 +642,6 @@ export default function GroupDetail() {
                                     );
                                 })}
                             </div>
-
                             {groupFee && (
                                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                                     <div className="grid grid-cols-3 gap-4 text-center">
@@ -860,7 +779,6 @@ export default function GroupDetail() {
                         </div>
                     </CardContent>
                 </Card>
-
             </section>
 
             {/* Dialog chi tiết lịch sử xe */}
@@ -928,8 +846,8 @@ export default function GroupDetail() {
                 onOpenChange={(open) => {
                     setFeeDetailOpen(open);
                     if (!open) {
-                        setPaymentQRUrl(null); // Reset QR URL khi đóng dialog
-                        setLoadingQR(false); // Reset loading state
+                        setPaymentQRUrl(null);
+                        setLoadingQR(false);
                     }
                 }}
             >
@@ -991,7 +909,6 @@ export default function GroupDetail() {
                                     </p>
                                 </div>
                             </div>
-
                             {/* QR Code Thanh toán */}
                             {selectedFee.status === "PENDING" && selectedFee.userId.toString() === userId && (
                                 <div className="border-t pt-4">
@@ -1026,7 +943,6 @@ export default function GroupDetail() {
                                     )}
                                 </div>
                             )}
-
                             {selectedFee.status === "PENDING" && selectedFee.userId.toString() === userId && (
                                 <div className="flex gap-2">
                                     <Button
