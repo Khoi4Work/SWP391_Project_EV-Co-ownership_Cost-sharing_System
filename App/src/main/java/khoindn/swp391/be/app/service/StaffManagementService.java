@@ -36,6 +36,9 @@ public class StaffManagementService implements IStaffManagementService {
         if (userRepository.existsByPhone(request.getPhone())) {
             throw new RuntimeException("Lỗi: Số điện thoại đã tồn tại!");
         }
+        if (userRepository.existsByGplx(request.getGplx())) {
+            throw new RuntimeException("Lỗi: GPLX đã tồn tại!");
+        }
 
         UserRole staffRole = userRoleRepository.findUserRoleByRoleId(STAFF_ROLE_ID);
         if (staffRole == null) {
@@ -49,6 +52,7 @@ public class StaffManagementService implements IStaffManagementService {
         newStaff.setCccd(request.getCccd());
         newStaff.setPhone(request.getPhone());
         newStaff.setRole(staffRole);
+        newStaff.setGplx(request.getGplx());
 
         Users savedStaff = userRepository.save(newStaff);
         return mapEntityToResponse(savedStaff);
@@ -90,6 +94,9 @@ public class StaffManagementService implements IStaffManagementService {
         if (request.getPhone() != null && !request.getPhone().isEmpty()) {
             existingStaff.setPhone(request.getPhone());
         }
+        if (request.getGplx() != null && !request.getGplx().isEmpty()) {
+            existingStaff.setGplx(request.getGplx());
+        }
 
         Users updatedStaff = userRepository.save(existingStaff);
         return mapEntityToResponse(updatedStaff);
@@ -113,6 +120,7 @@ public class StaffManagementService implements IStaffManagementService {
         response.setEmail(user.getEmail());
         response.setCccd(user.getCccd());
         response.setPhone(user.getPhone());
+        response.setGplx(user.getGplx());
 
         if (user.getRole() != null) {
             response.setRoleName(user.getRole().getRoleName()); // Giả sử hàm là getRoleName()
