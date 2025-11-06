@@ -156,7 +156,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
         }
     }, [open]);
 
-    const handleRegister = () => {
+    const handleRegister = async () => {
         if (!selectedService) {
             toast({
                 title: "Chưa chọn dịch vụ",
@@ -166,14 +166,58 @@ function RegisterVehicleServiceModal({ open, onClose }) {
             return;
         }
 
-        // ⚙️ Sau này sẽ gọi API /vehicle/service/request
-        toast({
-            title: "Đăng ký dịch vụ thành công",
-            description: `Bạn đã chọn dịch vụ: ${selectedService}`,
-        });
+        try {
+            // 🧠 1️⃣ Gửi request tạo DecisionVote
+            const decisionReq = {
+                decisionName: selectedService,
+                description: `Yêu cầu dịch vụ ${selectedService} được tạo bởi thành viên trong nhóm.`,
+            };
 
-        onClose(); // đóng modal
+            const decisionRes = await axiosClient.post(`/decision/group/${idGroup}`, decisionReq);
+
+            if (decisionRes.status !== 201) {
+                throw new Error("Không thể tạo quyết định mới");
+            }
+
+            const decisionVote = decisionRes.data;
+
+            // 🧠 2️⃣ Lấy danh sách email từ DecisionVoteDetail
+            const emailList = decisionVote.decisionVoteDetails
+                .map((detail: any) => detail.groupMember?.users?.email)
+                .filter((email: string) => email);
+
+            // 🧠 3️⃣ Gửi email đến từng co-owner
+            await Promise.all(
+                emailList.map((email: string) =>
+                    axiosClient.post("/email/send", {
+                        email,
+                        subject: "Biểu quyết dịch vụ mới",
+                        url: `${window.location.origin}/vote/${decisionVote.id}`,
+                        template: `Nhóm ${groupName} - thành viên ${currentUser.hovaTen} đã tạo yêu cầu dịch vụ ${selectedService}. 
+                    Xin vui lòng vào link này để biểu quyết.`,
+                    })
+                )
+            );
+
+            // 🧠 4️⃣ Hiển thị thông báo thành công
+            toast({
+                title: "Đăng ký dịch vụ thành công",
+                description: `Đã gửi thông báo biểu quyết đến các thành viên trong nhóm.`,
+            });
+
+            // 🧠 5️⃣ (Tuỳ chọn) mở component Vote với dữ liệu decisionVote
+            setActiveDecision(decisionVote);
+            onClose(); // đóng modal đăng ký dịch vụ
+        } catch (err: any) {
+            console.error(err);
+            toast({
+                title: "Lỗi",
+                description: "Không thể khởi tạo quyết định hoặc gửi email.",
+                variant: "destructive",
+            });
+        }
     };
+
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -420,9 +464,9 @@ export default function ScheduleCards() {
                 ? booking.userId === currentUserId
                 : (booking.userName === currentUserName || booking.userName === "Bạn");
             if (!isMine) {
-            alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
-            setOpenCheckIn(false);
-            return;
+                alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
+                setOpenCheckIn(false);
+                return;
             }
         }
 
@@ -486,9 +530,9 @@ export default function ScheduleCards() {
                 ? booking.userId === currentUserId
                 : (booking.userName === currentUserName || booking.userName === "Bạn");
             if (!isMine) {
-            alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
-            setOpenCheckOut(false);
-            return;
+                alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
+                setOpenCheckOut(false);
+                return;
             }
         }
 
@@ -562,21 +606,21 @@ export default function ScheduleCards() {
                             const normalizeName = (name?: string) => name?.trim().toLowerCase() || "";
                             const bookingName = normalizeName(it.userName);
                             const currentName = normalizeName(currentUserName);
-                            
+
                             // So sánh linh hoạt: chính xác hoặc một trong hai chứa tên kia
-                            const nameMatches = bookingName === currentName || 
-                                               bookingName === "bạn" ||
-                                               (bookingName && currentName && (
-                                                   bookingName.includes(currentName) || 
-                                                   currentName.includes(bookingName)
-                                               ));
-                            
+                            const nameMatches = bookingName === currentName ||
+                                bookingName === "bạn" ||
+                                (bookingName && currentName && (
+                                    bookingName.includes(currentName) ||
+                                    currentName.includes(bookingName)
+                                ));
+
                             const isMyBooking = (
                                 it.userId != null && it.userId !== undefined
                                     ? it.userId === currentUserId
                                     : nameMatches
                             );
-                            
+
                             // Debug log để kiểm tra
                             if (it.scheduleId) {
                                 console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}", nameMatches=${nameMatches}`);
