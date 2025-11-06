@@ -29,7 +29,6 @@ import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
     const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
-    const USE_MOCK = true; // Bật DB ảo
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -45,12 +44,6 @@ export default function StaffDashboard() {
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
     useEffect(() => {
-        if (USE_MOCK) {
-            // Mock data cho hợp đồng chờ duyệt
-            setServices([]);
-            return;
-        }
-        
         axiosClient.get(GET_REQUESTS)
             .then(res => {
                 if (res.status === 200 && Array.isArray(res.data)) {
@@ -80,12 +73,6 @@ export default function StaffDashboard() {
     useEffect(() => {
         const fetchLeaveRequests = async () => {
             try {
-                if (USE_MOCK) {
-                    // Mock data cho yêu cầu rời nhóm
-                    setLeaveRequests([]);
-                    return;
-                }
-
                 const res = await axiosClient.get(LEAVE_GROUP);
 
                 if (Array.isArray(res.data)) {
