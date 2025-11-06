@@ -280,10 +280,13 @@ export default function ScheduleCards() {
                     throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
                 }
                 const data = await res.json();
+                console.log("📦 Raw data from BE:", data);
                 const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
                 const normalized = (arr as any[])
                     .map(normalizeScheduleItem)
                     .filter((x): x is ScheduleItem => x !== null);
+                console.log("✅ Normalized items:", normalized);
+                console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
                 setItems(normalized);
             }
         } catch (e: any) {
@@ -556,11 +559,19 @@ export default function ScheduleCards() {
 
                             // Only show check-in/out buttons if the booking belongs to current user
                             // Fallback theo userName khi BE không trả userId
+                            const normalizeName = (name?: string) => name?.trim().toLowerCase() || "";
                             const isMyBooking = (
-                                it.userId != null
+                                it.userId != null && it.userId !== undefined
                                     ? it.userId === currentUserId
-                                    : (it.userName === currentUserName || it.userName === "Bạn")
+                                    : (normalizeName(it.userName) === normalizeName(currentUserName) || 
+                                       normalizeName(it.userName) === "bạn" ||
+                                       it.userName === "Bạn")
                             );
+                            
+                            // Debug log để kiểm tra
+                            if (it.scheduleId) {
+                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}"`);
+                            }
 
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
