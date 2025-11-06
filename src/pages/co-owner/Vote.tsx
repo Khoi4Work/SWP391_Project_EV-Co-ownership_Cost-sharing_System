@@ -69,7 +69,7 @@ export default function Vote() {
         voteStatus: vote ? "APPROVED" : "REJECTED",
       };
 
-      await axiosClient.patch(`/decision`, body);
+      await axiosClient.patch(`groupMember/decision`, body);
 
       toast({
         title: "Đã gửi biểu quyết",

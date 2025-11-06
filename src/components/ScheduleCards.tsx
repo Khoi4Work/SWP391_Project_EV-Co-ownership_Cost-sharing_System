@@ -156,6 +156,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 });
         }
     }, [open]);
+    const CREATE_DECISION = import.meta.env.VITE_PATCH_CREATE_DECISION_PATH;
     const groupId = Number(localStorage.getItem("groupId"));
     const handleRegister = async () => {
         if (!selectedService) {
@@ -175,7 +176,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 // nếu DecisionVoteReq cần thêm field (ví dụ serviceId), thêm ở đây
             };
 
-            const decisionRes = await axiosClient.post(`/decision/group/${groupId}`, decisionReq);
+            const decisionRes = await axiosClient.post(`${CREATE_DECISION}${groupId}`, decisionReq);
 
             if (decisionRes.status !== 201) {
                 throw new Error("Không thể tạo quyết định mới");
