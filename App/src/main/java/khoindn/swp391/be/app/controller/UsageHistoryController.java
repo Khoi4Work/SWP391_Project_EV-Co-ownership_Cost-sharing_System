@@ -30,7 +30,7 @@ public class UsageHistoryController {
         return ResponseEntity.ok(history);
     }
 
-    @GetMapping("/booking{groupId}")
+    @GetMapping("/booking/{groupId}")
     public ResponseEntity<List<UsageHistoryListResponse>> getUsageHistoryList(
             @PathVariable int groupId) {
         List<UsageHistoryListResponse> history =
