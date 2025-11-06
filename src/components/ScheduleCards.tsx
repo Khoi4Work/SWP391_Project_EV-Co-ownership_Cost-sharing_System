@@ -336,7 +336,7 @@ export default function ScheduleCards() {
         // Kiểm tra xem booking có thuộc về user hiện tại không
         const booking = items.find(item => item.scheduleId === activeId);
         if (!booking) {
-            alert("Không tìm thấy booking");
+            alert("Không tìm thấy lịch đặt xe");
             return;
         }
         if (booking.userId !== currentUserId) {
@@ -397,7 +397,7 @@ export default function ScheduleCards() {
         // Kiểm tra xem booking có thuộc về user hiện tại không
         const booking = items.find(item => item.scheduleId === activeId);
         if (!booking) {
-            alert("Không tìm thấy booking");
+            alert("Không tìm thấy lịch đặt xe");
             return;
         }
         if (booking.userId !== currentUserId) {
@@ -470,6 +470,10 @@ export default function ScheduleCards() {
                             const statusBadge = !it.hasCheckIn ? { text: "Chờ nhận xe", style: "bg-blue-600" }
                                 : it.hasCheckIn && !it.hasCheckOut ? { text: "Đang sử dụng", style: "bg-orange-500" }
                                     : { text: "Đã trả xe", style: "bg-green-600" };
+
+                            // Only show check-in/out buttons if the booking belongs to current user
+                            const isMyBooking = it.userId === currentUserId;
+
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
                                     <div className="flex items-center justify-between">
@@ -483,14 +487,27 @@ export default function ScheduleCards() {
                                         <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Kết thúc: {formatDateTime(it.endTime)}</div>
                                     </div>
                                     <div className="mt-3 flex gap-2">
-                                        {/* Chỉ hiển thị nút Check-in/Check-out nếu booking thuộc về user hiện tại */}
-                                        {it.userId === currentUserId && !it.hasCheckIn && (
-                                            <Button size="sm" onClick={() => openCheckInDialog(it.scheduleId)}>Check-in</Button>
+                                        {isMyBooking ? (
+                                            <>
+                                                {!it.hasCheckIn && (
+                                                    <Button size="sm" onClick={() => openCheckInDialog(it.scheduleId)}>
+                                                        Check-in
+                                                    </Button>
+                                                )}
+                                                {it.hasCheckIn && !it.hasCheckOut && (
+                                                    <Button size="sm" variant="outline" onClick={() => openCheckOutDialog(it.scheduleId)}>
+                                                        Check-out
+                                                    </Button>
+                                                )}
+                                                <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>
+                                                    Xem chi tiết
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>
+                                                Xem chi tiết
+                                            </Button>
                                         )}
-                                        {it.userId === currentUserId && it.hasCheckIn && !it.hasCheckOut && (
-                                            <Button size="sm" variant="outline" onClick={() => openCheckOutDialog(it.scheduleId)}>Check-out</Button>
-                                        )}
-                                        <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>Xem chi tiết</Button>
                                     </div>
                                 </div>
                             );
@@ -566,13 +583,13 @@ export default function ScheduleCards() {
                                     setCheckOutForm(prev => ({ ...prev, images: imgs }));
                                 }} />
                             </div>
-                            {/* Đã bỏ đánh giá theo yêu cầu */}
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckOut}>Xác nhận</Button>
                             </div>
                         </div>
                     </DialogContent>
                 </Dialog>
+
                 {/* Detail dialog */}
                 <Dialog open={openDetail} onOpenChange={setOpenDetail}>
                     <DialogContent className="max-w-2xl">
@@ -659,5 +676,3 @@ export default function ScheduleCards() {
         </Card>
     );
 }
-
-

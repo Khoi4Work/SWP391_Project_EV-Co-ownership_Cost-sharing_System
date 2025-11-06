@@ -90,7 +90,8 @@ export default function VehicleBooking() {
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
     const USE_MOCK = false; // dùng DB ảo, tắt BE thật
     const beBaseUrl = "http://localhost:8080";
-    const currentUserId = USE_MOCK ? 2 : Number(localStorage.getItem("userId"));
+    const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
+    const currentUserId = Number(localStorage.getItem("userId")) || 2;
     const token = USE_MOCK ? null : localStorage.getItem("accessToken");
     const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
@@ -191,7 +192,8 @@ export default function VehicleBooking() {
                 localStorage.setItem("groupId", String(mockGroupIds[0]));
                 return;
             }
-            const groupIds: number[] = await apiCall(`/groupMember/getGroupIdsByUserId?userId=${currentUserId}`);
+            const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
+            const groupIds: number[] = await apiCall(`${endpoint}?userId=${currentUserId}`);
             if (!groupIds || groupIds.length === 0) {
                 showToast("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
                 return;
