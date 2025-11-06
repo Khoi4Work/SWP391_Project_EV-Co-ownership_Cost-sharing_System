@@ -64,7 +64,9 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = false; // tắt mock, dùng BE thật
+const USE_MOCK = false; // dùng BE thật để test
+
+
 function formatDateTime(iso?: string) {
     if (!iso) return "-";
     const d = new Date(iso);
@@ -205,7 +207,7 @@ export default function ScheduleCards() {
                             vehicleName: v ? `${v.brand} ${v.model}` : `Xe ${r.vehicleId}`,
                             vehiclePlate: v?.plateNo,
                             userName: r.userName || "Bạn",
-                            userId: r.userId || currentUserId, // Lấy userId từ booking
+                            userId: r.userId, // chỉ gán userId nếu có trong booking
                             hasCheckIn: Boolean(r.checkInTime),
                             hasCheckOut: Boolean(r.checkOutTime),
                             checkInTime: r.checkInTime,
@@ -232,12 +234,8 @@ export default function ScheduleCards() {
                     throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
                 }
                 const data = await res.json();
-                // Đảm bảo mỗi item có userId để kiểm tra quyền
-                const itemsWithUserId = (data as ScheduleItem[]).map(item => ({
-                    ...item,
-                    userId: item.userId || currentUserId // Fallback về currentUserId nếu không có
-                }));
-                setItems(itemsWithUserId);
+                // Không fallback userId để tránh cấp quyền sai
+                setItems(data as ScheduleItem[]);
             }
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
@@ -319,12 +317,24 @@ export default function ScheduleCards() {
     };
 
     const openCheckInDialog = (id: number) => {
+        // Chỉ mở dialog nếu là lịch của tôi
+        const booking = items.find(item => item.scheduleId === id);
+        if (!booking || booking.userId !== currentUserId) {
+            alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
+            return;
+        }
         setActiveId(id);
         setCheckInForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckIn(true);
     };
 
     const openCheckOutDialog = (id: number) => {
+        // Chỉ mở dialog nếu là lịch của tôi
+        const booking = items.find(item => item.scheduleId === id);
+        if (!booking || booking.userId !== currentUserId) {
+            alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
+            return;
+        }
         setActiveId(id);
         setCheckOutForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckOut(true);
@@ -472,7 +482,13 @@ export default function ScheduleCards() {
                                     : { text: "Đã trả xe", style: "bg-green-600" };
 
                             // Only show check-in/out buttons if the booking belongs to current user
-                            const isMyBooking = it.userId === currentUserId;
+                            // BE có thể không trả về userId → fallback theo userName hoặc cho phép hiển thị
+                            const storedUserName = localStorage.getItem("userName");
+                            const isMyBooking = (
+                                it.userId != null
+                                    ? it.userId === currentUserId
+                                    : (it.userName === "Bạn" || (storedUserName ? it.userName === storedUserName : true))
+                            );
 
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">

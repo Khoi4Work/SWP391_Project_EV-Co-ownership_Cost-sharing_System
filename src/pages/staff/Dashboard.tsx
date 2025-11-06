@@ -79,12 +79,6 @@ export default function StaffDashboard() {
     useEffect(() => {
         const fetchLeaveRequests = async () => {
             try {
-                if (USE_MOCK) {
-                    // Mock data cho yêu cầu rời nhóm
-                    setLeaveRequests([]);
-                    return;
-                }
-
                 const res = await axiosClient.get(LEAVE_GROUP);
 
                 if (Array.isArray(res.data)) {
