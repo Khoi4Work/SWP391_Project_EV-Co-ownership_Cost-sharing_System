@@ -384,7 +384,7 @@ export default function GroupDetail() {
                 console.log("Step 2: Fetching group info...");
                 let groupName = "Nhóm";
                 try {
-                    const groupInfo = await axiosClient.get(`/api/groups/${gid}`, {
+                    const groupInfo = await axiosClient.get(`/group/${gid}`, {
                         headers: token ? { Authorization: `Bearer ${token}` } : {}
                     });
                     groupName = groupInfo.data?.name || groupInfo.data?.groupName || "Nhóm";
