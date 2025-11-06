@@ -194,10 +194,7 @@ export default function VehicleBooking() {
             }
             const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
             const groupIds: number[] = await apiCall(`${endpoint}?userId=${currentUserId}`);
-            if (!groupIds || groupIds.length === 0) {
-                showToast("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
-                return;
-            }
+        
             localStorage.setItem("groupIds", JSON.stringify(groupIds));
             localStorage.setItem("groupId", groupIds[0].toString());
         } catch (error: any) {
