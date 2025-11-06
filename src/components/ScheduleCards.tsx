@@ -177,6 +177,7 @@ export default function ScheduleCards() {
     const [checkInForm, setCheckInForm] = useState<CheckInForm>({ condition: "GOOD", notes: "", images: [] });
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
+    const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
 
     // Detail states
     const [detailLoading, setDetailLoading] = useState(false);
@@ -319,7 +320,14 @@ export default function ScheduleCards() {
     const openCheckInDialog = (id: number) => {
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
-        if (!booking || booking.userId !== currentUserId) {
+        if (!booking) {
+            alert("Không tìm thấy lịch đặt xe");
+            return;
+        }
+        const isMine = booking.userId != null
+            ? booking.userId === currentUserId
+            : (booking.userName === currentUserName || booking.userName === "Bạn");
+        if (!isMine) {
             alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
             return;
         }
@@ -331,7 +339,14 @@ export default function ScheduleCards() {
     const openCheckOutDialog = (id: number) => {
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
-        if (!booking || booking.userId !== currentUserId) {
+        if (!booking) {
+            alert("Không tìm thấy lịch đặt xe");
+            return;
+        }
+        const isMine = booking.userId != null
+            ? booking.userId === currentUserId
+            : (booking.userName === currentUserName || booking.userName === "Bạn");
+        if (!isMine) {
             alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
             return;
         }
@@ -349,10 +364,15 @@ export default function ScheduleCards() {
             alert("Không tìm thấy lịch đặt xe");
             return;
         }
-        if (booking.userId !== currentUserId) {
+        {
+            const isMine = booking.userId != null
+                ? booking.userId === currentUserId
+                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            if (!isMine) {
             alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
             setOpenCheckIn(false);
             return;
+            }
         }
 
         if (USE_MOCK) {
@@ -410,10 +430,15 @@ export default function ScheduleCards() {
             alert("Không tìm thấy lịch đặt xe");
             return;
         }
-        if (booking.userId !== currentUserId) {
+        {
+            const isMine = booking.userId != null
+                ? booking.userId === currentUserId
+                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            if (!isMine) {
             alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
             setOpenCheckOut(false);
             return;
+            }
         }
 
         if (USE_MOCK) {
@@ -482,12 +507,11 @@ export default function ScheduleCards() {
                                     : { text: "Đã trả xe", style: "bg-green-600" };
 
                             // Only show check-in/out buttons if the booking belongs to current user
-                            // BE có thể không trả về userId → fallback theo userName hoặc cho phép hiển thị
-                            const storedUserName = localStorage.getItem("userName");
+                            // Fallback theo userName khi BE không trả userId
                             const isMyBooking = (
                                 it.userId != null
                                     ? it.userId === currentUserId
-                                    : (it.userName === "Bạn" || (storedUserName ? it.userName === storedUserName : true))
+                                    : (it.userName === currentUserName || it.userName === "Bạn")
                             );
 
                             return (
