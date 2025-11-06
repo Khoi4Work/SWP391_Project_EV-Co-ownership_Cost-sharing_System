@@ -29,7 +29,7 @@ public class Group {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
     @Column
-    @Enumerated(EnumType.STRING)
+//    @Enumerated(EnumType.STRING)
     private StatusGroup status = StatusGroup.ACTIVE; // active by default
     // Relationships
 
