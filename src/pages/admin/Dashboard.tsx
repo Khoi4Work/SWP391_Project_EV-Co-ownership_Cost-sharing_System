@@ -66,6 +66,9 @@ export default function AdminDashboard() {
     const [selectedContract, setSelectedContract] = useState<any>(null);
     const { toast } = useToast();
     const CREATE_STAFF = import.meta.env.VITE_POST_CREATE_STAFF_PATH;
+    const displayedStaff = searchTerm.trim()
+        ? filteredStaff
+        : staffList;
     const stats = [{
         label: "Tổng nhân viên",
         value: 25,
@@ -491,63 +494,43 @@ export default function AdminDashboard() {
                                         />
                                     </div>
                                 </div>
-                                {filteredStaff.length > 0 ? (
-                                    filteredStaff.map((staff: any) => (
-                                        <div key={staff.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                            <div>
-                                                <h3 className="font-semibold">{staff.hovaTen}</h3>
-                                                <p className="text-sm text-muted-foreground">{staff.email}</p>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-muted-foreground mt-4">Không tìm thấy nhân viên nào.</p>
-                                )}
                                 <div className="space-y-4">
-                                    {staffList.map(staff => <div key={staff.id}
-                                        className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex-1">
-                                            <div className="flex items-center space-x-3">
-                                                {/* 🔹 Họ và tên */}
-                                                <h3 className="font-semibold">{staff.hovaTen}</h3>
+                                    {displayedStaff.length > 0 ? (
+                                        displayedStaff.map((staff: any) => (
+                                            <div key={staff.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-3">
+                                                        {/* 🔹 Họ và tên */}
+                                                        <h3 className="font-semibold">{staff.hovaTen}</h3>
 
-                                                {/* 🔹 Role (nếu muốn hiển thị quyền của nhân viên) */}
-                                                <Badge variant={getRoleColor(staff.roleName) as any}>
-                                                    {staff.roleName}
-                                                </Badge>
+                                                        {/* 🔹 Role */}
+                                                        <Badge variant={getRoleColor(staff.roleName) as any}>
+                                                            {staff.roleName}
+                                                        </Badge>
+                                                    </div>
+
+                                                    <div className="text-sm text-muted-foreground mt-1">
+                                                        {/* 🔹 Email */}
+                                                        <span>{staff.email}</span>
+
+                                                        <span className="mx-2">•</span>
+
+                                                        {/* 🔹 CCCD */}
+                                                        <span>CCCD: {staff.cccd}</span>
+
+                                                        <span className="mx-2">•</span>
+
+                                                        {/* 🔹 Số điện thoại */}
+                                                        <span>📞 {staff.phone}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-
-                                            <div className="text-sm text-muted-foreground mt-1">
-                                                {/* 🔹 Email */}
-
-                                                <span className="mx-2">•</span>
-
-                                                {/* 🔹 CCCD */}
-                                                <span>CCCD: {staff.cccd}</span>
-
-                                                <span className="mx-2">•</span>
-
-                                                {/* 🔹 Số điện thoại */}
-                                                <span>📞 {staff.phone}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Button size="sm" variant="outline" onClick={() => handleEditStaff(staff)}>
-                                                <Settings className="h-4 w-4 mr-1" />
-                                                Chỉnh sửa
-                                            </Button>
-                                            <Button size="sm" variant="outline" onClick={() => handleLockUnlock(staff)}>
-                                                <Lock className="h-4 w-4 mr-1" />
-                                                {staff.status === "active" ? "Khóa" : "Mở khóa"}
-                                            </Button>
-                                            {staff.status === "inactive" && <Button size="sm" variant="outline"
-                                                className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                                onClick={() => handleFire(staff)}>
-                                                <Trash2 className="h-4 w-4 mr-1" />
-                                                Sa thải
-                                            </Button>}
-                                        </div>
-                                    </div>)}
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground mt-4">
+                                            Không tìm thấy nhân viên nào.
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
