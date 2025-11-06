@@ -151,19 +151,23 @@ public class GroupMemberService implements IGroupMemberService {
     public DecisionVote createDecision(DecisionVoteReq request, GroupMember gm) {
         DecisionVote createdDecisionVote = modelMapper.map(request, DecisionVote.class);
         createdDecisionVote.setEndedAt(LocalDateTime.now().plusDays(1));
+        createdDecisionVote.setCreatedBy(gm);
         iDecisionVoteRepository.save(createdDecisionVote);
         Users user = authenticationService.getCurrentAccount();
         List<GroupMember> members = iGroupMemberRepository.findAllByGroup_GroupId(gm.getGroup().getGroupId())
                 .stream()
                 .filter(groupMember -> !groupMember.getUsers().getId().equals(user.getId()))
                 .toList();
+        List<DecisionVoteDetail> allvoters = new ArrayList<>();
         for (GroupMember each : members) {
             DecisionVoteDetail voteDetail = new DecisionVoteDetail();
             voteDetail.setGroupMember(each);
             voteDetail.setDecisionVote(createdDecisionVote);
+            allvoters.add(voteDetail);
             iDecisionVoteDetailRepository.save(voteDetail);
         }
-
+        iDecisionVoteRepository.save(createdDecisionVote);
+        System.out.println(createdDecisionVote.getDecisionVoteDetails());
         return createdDecisionVote;
     }
 

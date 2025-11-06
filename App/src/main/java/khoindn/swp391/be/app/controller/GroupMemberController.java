@@ -12,6 +12,8 @@ import khoindn.swp391.be.app.pojo.DecisionVote;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.repository.IDecisionVoteDetailRepository;
+import khoindn.swp391.be.app.repository.IDecisionVoteRepository;
 import khoindn.swp391.be.app.service.AuthenticationService;
 import khoindn.swp391.be.app.service.IGroupMemberService;
 import khoindn.swp391.be.app.service.IGroupService;
@@ -37,6 +39,10 @@ public class GroupMemberController {
     private IGroupService iGroupService;
     @Autowired
     private AuthenticationService authenticationService;
+    @Autowired
+    private IDecisionVoteDetailRepository iDecisionVoteDetailRepository;
+    @Autowired
+    private IDecisionVoteRepository iDecisionVoteRepository;
 
     // ---------------------- EXISTING CODE ----------------------
     @GetMapping("/getByUserId")
@@ -95,10 +101,11 @@ public class GroupMemberController {
     @PostMapping("/decision/group/{idGroup}")
     public ResponseEntity createDecision(@PathVariable int idGroup, @RequestBody @Valid DecisionVoteReq request) {
         Users user = authenticationService.getCurrentAccount();
+        System.out.println(user.getId()+"-"+idGroup);
         if (user == null) {
             return ResponseEntity.status(403).body("Unauthorized");
         }
-        GroupMember gm = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(user.getId(), idGroup);
+        GroupMember gm = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(idGroup, user.getId());
         if (gm == null) {
             throw new GroupMemberNotFoundException("Member is not in Group!");
         }
@@ -132,5 +139,10 @@ public class GroupMemberController {
                 groupMember);
 
         return ResponseEntity.status(200).body(vote);
+    }
+
+    @GetMapping("/decision/vote")
+    public ResponseEntity getDecisionVote(long id) {
+        return ResponseEntity.status(200).body(iDecisionVoteRepository.getDecisionVoteById(id));
     }
 }
