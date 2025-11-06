@@ -87,6 +87,51 @@ async function fileListToBase64(files: FileList | null): Promise<string[]> {
     }
     return Promise.all(tasks);
 }
+
+// Chuẩn hóa item từ BE về dạng ScheduleItem để UI hoạt động ổn định
+function normalizeScheduleItem(raw: any): ScheduleItem | null {
+    if (!raw) return null;
+
+    const scheduleId = raw.scheduleId ?? raw.id ?? raw.scheduleID;
+    const startTime = raw.startTime ?? raw.start ?? raw.start_time;
+    const endTime = raw.endTime ?? raw.end ?? raw.end_time;
+
+    const vehicleBrand = raw.vehicle?.brand ?? raw.brand;
+    const vehicleModel = raw.vehicle?.model ?? raw.model;
+    const vehicleName = raw.vehicleName ?? (vehicleBrand && vehicleModel ? `${vehicleBrand} ${vehicleModel}` : undefined);
+    const vehiclePlate = raw.vehiclePlate ?? raw.plateNo ?? raw.licensePlate ?? raw.vehicle?.plateNo ?? raw.vehicle?.licensePlate;
+
+    const userId = raw.userId ?? raw.renterId ?? raw.bookedById ?? raw.user?.id ?? raw.user?.userId;
+    const userName = raw.userName ?? raw.renterName ?? raw.bookedByName ?? raw.user?.fullName ?? raw.user?.name;
+
+    const checkInObj = raw.checkIn ?? raw.checkin ?? raw.check_in;
+    const checkOutObj = raw.checkOut ?? raw.checkout ?? raw.check_out;
+    const checkInTime = raw.checkInTime ?? checkInObj?.checkInTime ?? checkInObj?.time ?? checkInObj?.createdAt;
+    const checkOutTime = raw.checkOutTime ?? checkOutObj?.checkOutTime ?? checkOutObj?.time ?? checkOutObj?.createdAt;
+
+    const hasCheckIn = (raw.hasCheckIn !== undefined && raw.hasCheckIn !== null)
+        ? Boolean(raw.hasCheckIn)
+        : ((checkInTime != null) || (checkInObj != null));
+    const hasCheckOut = (raw.hasCheckOut !== undefined && raw.hasCheckOut !== null)
+        ? Boolean(raw.hasCheckOut)
+        : ((checkOutTime != null) || (checkOutObj != null));
+
+    if (scheduleId == null || !startTime || !endTime) return null;
+
+    return {
+        scheduleId,
+        startTime: String(startTime),
+        endTime: String(endTime),
+        vehicleName,
+        vehiclePlate,
+        userName,
+        userId: userId != null ? Number(userId) : undefined,
+        hasCheckIn,
+        hasCheckOut,
+        checkInTime: checkInTime ? String(checkInTime) : undefined,
+        checkOutTime: checkOutTime ? String(checkOutTime) : undefined,
+    } as ScheduleItem;
+}
 function RegisterVehicleServiceModal({ open, onClose }) {
     const [vehicleServices, setVehicleServices] = useState([]);
     const [selectedService, setSelectedService] = useState("");
@@ -235,8 +280,11 @@ export default function ScheduleCards() {
                     throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
                 }
                 const data = await res.json();
-                // Không fallback userId để tránh cấp quyền sai
-                setItems(data as ScheduleItem[]);
+                const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
+                const normalized = (arr as any[])
+                    .map(normalizeScheduleItem)
+                    .filter((x): x is ScheduleItem => x !== null);
+                setItems(normalized);
             }
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
