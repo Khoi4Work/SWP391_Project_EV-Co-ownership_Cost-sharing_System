@@ -482,7 +482,13 @@ export default function ScheduleCards() {
                                     : { text: "Đã trả xe", style: "bg-green-600" };
 
                             // Only show check-in/out buttons if the booking belongs to current user
-                            const isMyBooking = it.userId === currentUserId;
+                            // BE có thể không trả về userId → fallback theo userName hoặc cho phép hiển thị
+                            const storedUserName = localStorage.getItem("userName");
+                            const isMyBooking = (
+                                it.userId != null
+                                    ? it.userId === currentUserId
+                                    : (it.userName === "Bạn" || (storedUserName ? it.userName === storedUserName : true))
+                            );
 
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
