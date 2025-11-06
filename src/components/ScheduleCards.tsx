@@ -87,6 +87,51 @@ async function fileListToBase64(files: FileList | null): Promise<string[]> {
     }
     return Promise.all(tasks);
 }
+
+// Chuẩn hóa item từ BE về dạng ScheduleItem để UI hoạt động ổn định
+function normalizeScheduleItem(raw: any): ScheduleItem | null {
+    if (!raw) return null;
+
+    const scheduleId = raw.scheduleId ?? raw.id ?? raw.scheduleID;
+    const startTime = raw.startTime ?? raw.start ?? raw.start_time;
+    const endTime = raw.endTime ?? raw.end ?? raw.end_time;
+
+    const vehicleBrand = raw.vehicle?.brand ?? raw.brand;
+    const vehicleModel = raw.vehicle?.model ?? raw.model;
+    const vehicleName = raw.vehicleName ?? (vehicleBrand && vehicleModel ? `${vehicleBrand} ${vehicleModel}` : undefined);
+    const vehiclePlate = raw.vehiclePlate ?? raw.plateNo ?? raw.licensePlate ?? raw.vehicle?.plateNo ?? raw.vehicle?.licensePlate;
+
+    const userId = raw.userId ?? raw.renterId ?? raw.bookedById ?? raw.user?.id ?? raw.user?.userId;
+    const userName = raw.userName ?? raw.renterName ?? raw.bookedByName ?? raw.user?.fullName ?? raw.user?.name;
+
+    const checkInObj = raw.checkIn ?? raw.checkin ?? raw.check_in;
+    const checkOutObj = raw.checkOut ?? raw.checkout ?? raw.check_out;
+    const checkInTime = raw.checkInTime ?? checkInObj?.checkInTime ?? checkInObj?.time ?? checkInObj?.createdAt;
+    const checkOutTime = raw.checkOutTime ?? checkOutObj?.checkOutTime ?? checkOutObj?.time ?? checkOutObj?.createdAt;
+
+    const hasCheckIn = (raw.hasCheckIn !== undefined && raw.hasCheckIn !== null)
+        ? Boolean(raw.hasCheckIn)
+        : ((checkInTime != null) || (checkInObj != null));
+    const hasCheckOut = (raw.hasCheckOut !== undefined && raw.hasCheckOut !== null)
+        ? Boolean(raw.hasCheckOut)
+        : ((checkOutTime != null) || (checkOutObj != null));
+
+    if (scheduleId == null || !startTime || !endTime) return null;
+
+    return {
+        scheduleId,
+        startTime: String(startTime),
+        endTime: String(endTime),
+        vehicleName,
+        vehiclePlate,
+        userName,
+        userId: userId != null ? Number(userId) : undefined,
+        hasCheckIn,
+        hasCheckOut,
+        checkInTime: checkInTime ? String(checkInTime) : undefined,
+        checkOutTime: checkOutTime ? String(checkOutTime) : undefined,
+    } as ScheduleItem;
+}
 function RegisterVehicleServiceModal({ open, onClose }) {
     const [vehicleServices, setVehicleServices] = useState([]);
     const [selectedService, setSelectedService] = useState("");
@@ -177,6 +222,7 @@ export default function ScheduleCards() {
     const [checkInForm, setCheckInForm] = useState<CheckInForm>({ condition: "GOOD", notes: "", images: [] });
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
+    const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
 
     // Detail states
     const [detailLoading, setDetailLoading] = useState(false);
@@ -234,8 +280,14 @@ export default function ScheduleCards() {
                     throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
                 }
                 const data = await res.json();
-                // Không fallback userId để tránh cấp quyền sai
-                setItems(data as ScheduleItem[]);
+                console.log("📦 Raw data from BE:", data);
+                const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
+                const normalized = (arr as any[])
+                    .map(normalizeScheduleItem)
+                    .filter((x): x is ScheduleItem => x !== null);
+                console.log("✅ Normalized items:", normalized);
+                console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
+                setItems(normalized);
             }
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
@@ -319,7 +371,14 @@ export default function ScheduleCards() {
     const openCheckInDialog = (id: number) => {
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
-        if (!booking || booking.userId !== currentUserId) {
+        if (!booking) {
+            alert("Không tìm thấy lịch đặt xe");
+            return;
+        }
+        const isMine = booking.userId != null
+            ? booking.userId === currentUserId
+            : (booking.userName === currentUserName || booking.userName === "Bạn");
+        if (!isMine) {
             alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
             return;
         }
@@ -331,7 +390,14 @@ export default function ScheduleCards() {
     const openCheckOutDialog = (id: number) => {
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
-        if (!booking || booking.userId !== currentUserId) {
+        if (!booking) {
+            alert("Không tìm thấy lịch đặt xe");
+            return;
+        }
+        const isMine = booking.userId != null
+            ? booking.userId === currentUserId
+            : (booking.userName === currentUserName || booking.userName === "Bạn");
+        if (!isMine) {
             alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
             return;
         }
@@ -349,10 +415,15 @@ export default function ScheduleCards() {
             alert("Không tìm thấy lịch đặt xe");
             return;
         }
-        if (booking.userId !== currentUserId) {
+        {
+            const isMine = booking.userId != null
+                ? booking.userId === currentUserId
+                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            if (!isMine) {
             alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
             setOpenCheckIn(false);
             return;
+            }
         }
 
         if (USE_MOCK) {
@@ -410,10 +481,15 @@ export default function ScheduleCards() {
             alert("Không tìm thấy lịch đặt xe");
             return;
         }
-        if (booking.userId !== currentUserId) {
+        {
+            const isMine = booking.userId != null
+                ? booking.userId === currentUserId
+                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            if (!isMine) {
             alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
             setOpenCheckOut(false);
             return;
+            }
         }
 
         if (USE_MOCK) {
@@ -482,13 +558,20 @@ export default function ScheduleCards() {
                                     : { text: "Đã trả xe", style: "bg-green-600" };
 
                             // Only show check-in/out buttons if the booking belongs to current user
-                            // BE có thể không trả về userId → fallback theo userName hoặc cho phép hiển thị
-                            const storedUserName = localStorage.getItem("userName");
+                            // Fallback theo userName khi BE không trả userId
+                            const normalizeName = (name?: string) => name?.trim().toLowerCase() || "";
                             const isMyBooking = (
-                                it.userId != null
+                                it.userId != null && it.userId !== undefined
                                     ? it.userId === currentUserId
-                                    : (it.userName === "Bạn" || (storedUserName ? it.userName === storedUserName : true))
+                                    : (normalizeName(it.userName) === normalizeName(currentUserName) || 
+                                       normalizeName(it.userName) === "bạn" ||
+                                       it.userName === "Bạn")
                             );
+                            
+                            // Debug log để kiểm tra
+                            if (it.scheduleId) {
+                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}"`);
+                            }
 
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
