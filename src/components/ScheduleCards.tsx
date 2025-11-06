@@ -157,7 +157,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
         }
     }, [open]);
     const CREATE_DECISION = import.meta.env.VITE_PATCH_CREATE_DECISION_PATH;
-    const groupId = Number(localStorage.getItem("groupId"));
+    const idGroup = Number(localStorage.getItem("groupId"));
     const handleRegister = async () => {
         if (!selectedService) {
             toast({
@@ -176,25 +176,31 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 // nếu DecisionVoteReq cần thêm field (ví dụ serviceId), thêm ở đây
             };
 
-            const decisionRes = await axiosClient.post(`${CREATE_DECISION}${groupId}`, decisionReq);
-
+            const decisionRes = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, decisionReq);
+            console.log(decisionRes.data.status)
             if (decisionRes.status !== 201) {
                 throw new Error("Không thể tạo quyết định mới");
             }
 
+            console.log(decisionRes)
             const decisionVote = decisionRes.data;
 
-            // 2. Lấy thông tin creator + groupName + decisionName từ response (an toàn)
-            const creatorName = decisionVote?.createdBy?.users?.hovaTen ?? "Một thành viên";
-            const groupNameFromRes = decisionVote?.createdBy?.group?.groupName ?? "Nhóm";
-            const decisionName = decisionVote?.decisionName ?? selectedService;
+            console.log("✅ Full decisionVote:", decisionVote);
 
-            // 3. Lấy danh sách email (bảo đảm là mảng và lọc null)
-            const emailList = Array.isArray(decisionVote?.decisionVoteDetails)
-                ? decisionVote.decisionVoteDetails
-                    .map((detail: any) => detail?.groupMember?.users?.email)
-                    .filter((e: any) => typeof e === "string" && e.length > 0)
-                : [];
+// 1️⃣ Creator name & group name (có thể null)
+            const creatorName =
+                decisionVote?.createdBy?.users?.hovaTen || "Một thành viên";
+            const groupNameFromRes =
+                decisionVote?.createdBy?.group?.groupName || "Nhóm";
+            const decisionName = decisionVote?.decisionName || selectedService;
+
+// 2️⃣ Lấy danh sách email từ decisionVoteDetails
+            const emailList =
+                decisionVote?.decisionVoteDetails?.map(
+                    (detail: any) => detail?.groupMember?.users?.email
+                ).filter((email: string | undefined) => email) || [];
+
+            console.log("✅ Email list:", emailList);
 
             // 4. Nếu không có email thì vẫn xử lý (thông báo hoặc log)
             if (emailList.length === 0) {
