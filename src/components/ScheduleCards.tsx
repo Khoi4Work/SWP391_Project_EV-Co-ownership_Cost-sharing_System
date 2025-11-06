@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Car, Clock, User } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
+import Vote from "@/pages/co-owner/Vote";
 type ScheduleItem = {
     scheduleId: number;
     startTime: string; // ISO
@@ -155,7 +156,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 });
         }
     }, [open]);
-
+    const groupId = Number(localStorage.getItem("groupId"));
     const handleRegister = async () => {
         if (!selectedService) {
             toast({
@@ -167,13 +168,14 @@ function RegisterVehicleServiceModal({ open, onClose }) {
         }
 
         try {
-            // 🧠 1️⃣ Gửi request tạo DecisionVote
+            // 1. tạo DecisionVote
             const decisionReq = {
                 decisionName: selectedService,
-                description: `Yêu cầu dịch vụ ${selectedService} được tạo bởi thành viên trong nhóm.`,
+                description: `${selectedService} request`,
+                // nếu DecisionVoteReq cần thêm field (ví dụ serviceId), thêm ở đây
             };
 
-            const decisionRes = await axiosClient.post(`/decision/group/${idGroup}`, decisionReq);
+            const decisionRes = await axiosClient.post(`/decision/group/${groupId}`, decisionReq);
 
             if (decisionRes.status !== 201) {
                 throw new Error("Không thể tạo quyết định mới");
@@ -181,75 +183,98 @@ function RegisterVehicleServiceModal({ open, onClose }) {
 
             const decisionVote = decisionRes.data;
 
-            // 🧠 2️⃣ Lấy danh sách email từ DecisionVoteDetail
-            const emailList = decisionVote.decisionVoteDetails
-                .map((detail: any) => detail.groupMember?.users?.email)
-                .filter((email: string) => email);
+            // 2. Lấy thông tin creator + groupName + decisionName từ response (an toàn)
+            const creatorName = decisionVote?.createdBy?.users?.hovaTen ?? "Một thành viên";
+            const groupNameFromRes = decisionVote?.createdBy?.group?.groupName ?? "Nhóm";
+            const decisionName = decisionVote?.decisionName ?? selectedService;
 
-            // 🧠 3️⃣ Gửi email đến từng co-owner
-            await Promise.all(
-                emailList.map((email: string) =>
-                    axiosClient.post("/email/send", {
-                        email,
-                        subject: "Biểu quyết dịch vụ mới",
-                        url: `${window.location.origin}/vote/${decisionVote.id}`,
-                        template: `Nhóm ${groupName} - thành viên ${currentUser.hovaTen} đã tạo yêu cầu dịch vụ ${selectedService}. 
-                    Xin vui lòng vào link này để biểu quyết.`,
-                    })
-                )
+            // 3. Lấy danh sách email (bảo đảm là mảng và lọc null)
+            const emailList = Array.isArray(decisionVote?.decisionVoteDetails)
+                ? decisionVote.decisionVoteDetails
+                    .map((detail: any) => detail?.groupMember?.users?.email)
+                    .filter((e: any) => typeof e === "string" && e.length > 0)
+                : [];
+
+            // 4. Nếu không có email thì vẫn xử lý (thông báo hoặc log)
+            if (emailList.length === 0) {
+                console.warn("Không tìm thấy email co-owner trong decisionVote:", decisionVote);
+            }
+
+            // 5. Gửi email cho từng co-owner (POST /email/send)
+            //    Tạo template đúng format: "group này - member này tạo service này. Xin vui lòng vào link này để vote."
+            const emailPayloads = emailList.map((email: string) => ({
+                email,
+                subject: `Yêu cầu biểu quyết dịch vụ: ${decisionName}`,
+                url: `${window.location.origin}/vote/${decisionVote.id}`,
+                template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này để vote.`
+            }));
+
+            // Gửi song song; bắt lỗi từng request
+            const sendResults = await Promise.allSettled(
+                emailPayloads.map((payload) => axiosClient.post("/email/send", payload))
             );
 
-            // 🧠 4️⃣ Hiển thị thông báo thành công
-            toast({
-                title: "Đăng ký dịch vụ thành công",
-                description: `Đã gửi thông báo biểu quyết đến các thành viên trong nhóm.`,
-            });
-
-            // 🧠 5️⃣ (Tuỳ chọn) mở component Vote với dữ liệu decisionVote
-            setActiveDecision(decisionVote);
-            onClose(); // đóng modal đăng ký dịch vụ
-        } catch (err: any) {
-            console.error(err);
+            // Kiểm tra kết quả gửi email
+            const failed = sendResults.filter(r => r.status === "rejected");
+            if (failed.length > 0) {
+                console.error(`${failed.length} email gửi thất bại`, failed);
+                // tuỳ chọn: hiển thị toast thông báo 1 phần thành công / 1 phần thất bại
+                toast({
+                    title: "Gửi email",
+                    description: `${emailList.length - failed.length} / ${emailList.length} email đã được gửi.`,
+                    variant: failed.length === emailList.length ? "destructive" : undefined,
+                });
+            } else {
+                toast({
+                    title: "Đăng ký dịch vụ thành công",
+                    description: `Đã gửi thông báo biểu quyết đến ${emailList.length} thành viên trong nhóm.`,
+                });
+            }
+        } catch (error) {
+            console.error("Lỗi khi tạo decision hoặc gửi email:", error);
             toast({
                 title: "Lỗi",
                 description: "Không thể khởi tạo quyết định hoặc gửi email.",
                 variant: "destructive",
             });
         }
+
     };
 
 
     return (
-        <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Đăng ký dịch vụ xe</DialogTitle>
-                </DialogHeader>
+        <div>
+            <Dialog open={open} onOpenChange={onClose}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Đăng ký dịch vụ xe</DialogTitle>
+                    </DialogHeader>
 
-                <div className="space-y-3 py-2">
-                    <label className="text-sm font-medium">Chọn dịch vụ</label>
-                    <Select onValueChange={setSelectedService}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Chọn một dịch vụ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {vehicleServices.map(service => (
-                                <SelectItem key={service.id} value={service.serviceName}>
-                                    {service.serviceName} — {service.price?.toLocaleString()}đ
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                    <div className="space-y-3 py-2">
+                        <label className="text-sm font-medium">Chọn dịch vụ</label>
+                        <Select onValueChange={setSelectedService}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Chọn một dịch vụ" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {vehicleServices.map(service => (
+                                    <SelectItem key={service.id} value={service.serviceName}>
+                                        {service.serviceName} — {service.price?.toLocaleString()}đ
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>
-                        Hủy
-                    </Button>
-                    <Button onClick={handleRegister}>Đăng ký</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={onClose}>
+                            Hủy
+                        </Button>
+                        <Button onClick={handleRegister}>Đăng ký</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }
 export default function ScheduleCards() {
