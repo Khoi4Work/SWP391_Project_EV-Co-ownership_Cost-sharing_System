@@ -7,8 +7,13 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
 import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHistory";
-import { getMonthlyFeesByGroupId, payMonthlyFee as payFeeMock } from "@/data/mockMonthlyFees";
-import { getGroupById, groups } from "@/data/mockGroups";
+import { 
+    groups,
+    getGroupById,
+    monthlyFees,
+    getMonthlyFeesByGroupId,
+    payMonthlyFee as payFeeMock
+} from "@/mock/mockData";
 import QRCode from "react-qr-code";
 
 // Interface cho GroupMember response từ BE
@@ -97,6 +102,7 @@ interface GroupFeeResponse {
 }
 
 const API_BASE_URL = "http://localhost:8080";
+const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
 
 // 🔧 CONFIG: Chuyển đổi giữa mock data và backend thật
 // - true: Sử dụng mock data (không cần backend) - dùng để test UI
@@ -230,8 +236,9 @@ export default function GroupDetail() {
                 }
 
                 const token = localStorage.getItem("accessToken");
-                // Lấy danh sách group của user
-                const res = await axiosClient.get(`/groupMember/getGroupIdsByUserId`, {
+                // Lấy danh sách group của user (qua biến môi trường)
+                const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
+                const res = await axiosClient.get(endpoint, {
                     params: { userId },
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
