@@ -29,7 +29,7 @@ import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
     const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
-    const USE_MOCK = true; // Bật DB ảo
+    const USE_MOCK = false; // Bật DB ảo
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -50,7 +50,6 @@ export default function StaffDashboard() {
             setServices([]);
             return;
         }
-        
         axiosClient.get(GET_REQUESTS)
             .then(res => {
                 if (res.status === 200 && Array.isArray(res.data)) {
@@ -291,7 +290,7 @@ export default function StaffDashboard() {
                                     {services.length > 0 ? (
                                         services.map((item: any, index: number) => {
                                             const contract = item.contract;
-                                            console.log(contract.htmlString);
+                                            console.log(contract.imageContract);
                                             return (
                                                 <Card
                                                     key={index}
@@ -368,14 +367,14 @@ export default function StaffDashboard() {
                                                                 variant="outline"
                                                                 className="border-gray-400 text-gray-700 hover:bg-gray-100 ml-auto"
                                                                 onClick={() => {
-                                                                    if (!contract.htmlString || contract.htmlString.trim() === "") {
+                                                                    if (!contract.imageContract || contract.imageContract.trim() === "") {
                                                                         toast({
                                                                             title: "Không có link hợp đồng",
                                                                             description: "Hợp đồng này chưa có đường dẫn để xem.",
                                                                             variant: "destructive", // màu đỏ nhẹ
                                                                         });
                                                                     } else {
-                                                                        window.open(contract.htmlString, "_blank");
+                                                                        window.open(contract.imageContract, "_blank");
                                                                     }
                                                                 }}
                                                             >
