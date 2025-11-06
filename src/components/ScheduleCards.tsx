@@ -560,17 +560,26 @@ export default function ScheduleCards() {
                             // Only show check-in/out buttons if the booking belongs to current user
                             // Fallback theo userName khi BE không trả userId
                             const normalizeName = (name?: string) => name?.trim().toLowerCase() || "";
+                            const bookingName = normalizeName(it.userName);
+                            const currentName = normalizeName(currentUserName);
+                            
+                            // So sánh linh hoạt: chính xác hoặc một trong hai chứa tên kia
+                            const nameMatches = bookingName === currentName || 
+                                               bookingName === "bạn" ||
+                                               (bookingName && currentName && (
+                                                   bookingName.includes(currentName) || 
+                                                   currentName.includes(bookingName)
+                                               ));
+                            
                             const isMyBooking = (
                                 it.userId != null && it.userId !== undefined
                                     ? it.userId === currentUserId
-                                    : (normalizeName(it.userName) === normalizeName(currentUserName) || 
-                                       normalizeName(it.userName) === "bạn" ||
-                                       it.userName === "Bạn")
+                                    : nameMatches
                             );
                             
                             // Debug log để kiểm tra
                             if (it.scheduleId) {
-                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}"`);
+                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}", nameMatches=${nameMatches}`);
                             }
 
                             return (
