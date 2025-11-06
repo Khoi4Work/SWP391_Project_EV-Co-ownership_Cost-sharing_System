@@ -134,9 +134,9 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        // finally {
-        //     navigate("/co-owner/dashboard");
-        // }
+        finally {
+            navigate("/co-owner/dashboard");
+        }
     };
 
 

@@ -291,6 +291,7 @@ export default function StaffDashboard() {
                                     {services.length > 0 ? (
                                         services.map((item: any, index: number) => {
                                             const contract = item.contract;
+                                            console.log(contract.htmlString);
                                             return (
                                                 <Card
                                                     key={index}
@@ -363,18 +364,23 @@ export default function StaffDashboard() {
                                                             >
                                                                 Không duyệt
                                                             </Button>
-
-                                                            {contract.htmlString && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    className="border-gray-400 text-gray-700 hover:bg-gray-100 ml-auto"
-                                                                    onClick={() =>
-                                                                        window.open(contract.htmlString, "_blank")
+                                                            <Button
+                                                                variant="outline"
+                                                                className="border-gray-400 text-gray-700 hover:bg-gray-100 ml-auto"
+                                                                onClick={() => {
+                                                                    if (!contract.htmlString || contract.htmlString.trim() === "") {
+                                                                        toast({
+                                                                            title: "Không có link hợp đồng",
+                                                                            description: "Hợp đồng này chưa có đường dẫn để xem.",
+                                                                            variant: "destructive", // màu đỏ nhẹ
+                                                                        });
+                                                                    } else {
+                                                                        window.open(contract.htmlString, "_blank");
                                                                     }
-                                                                >
-                                                                    Xem bản hợp đồng
-                                                                </Button>
-                                                            )}
+                                                                }}
+                                                            >
+                                                                Xem bản hợp đồng
+                                                            </Button>
                                                         </div>
                                                     </CardContent>
                                                 </Card>
