@@ -49,7 +49,6 @@ export default function Login() {
             let response: any;
 
             if (USE_MOCK) {
-                // Mock login - tìm user trong danh sách mock
                 const mockUser = MOCK_USERS.find(u => u.email === email && u.password === password);
 
                 if (!mockUser) {
@@ -61,7 +60,6 @@ export default function Login() {
                     return;
                 }
 
-                // Kiểm tra role có khớp với loại tài khoản đã chọn không
                 const roleMatch =
                     (selectedType === "co-owner" && mockUser.role.roleName === "co-owner") ||
                     (selectedType === "staff" && mockUser.role.roleName === "staff") ||
@@ -94,12 +92,12 @@ export default function Login() {
                 });
                 return;
             }
-            // ✅ Trích xuất dữ liệu từ response
+
             const token = response.data.token;
             const userId = response.data.id;
-            const hovaten = response.data.hovaten; // Tên field từ backend
+            const hovaten = response.data.hovaTen;
             const role = response.data.role.roleName;
-            // ✅ Lưu vào localStorage
+
             localStorage.setItem("accessToken", token);
             localStorage.setItem("userId", userId.toString());
             localStorage.setItem("hovaten", hovaten);
@@ -111,20 +109,15 @@ export default function Login() {
                 title: "Đăng nhập thành công",
                 description: `Chào mừng ${hovaten} đến với EcoShare!`,
             });
-            //Điều hướng theo loại tài khoản
-            console.log(role + "-" + selectedType)
-            if (selectedType.toLowerCase() === "staff" && role.toLowerCase() === "staff") {
 
+            console.log("Role from backend:", role);
+
+            if (role.toLowerCase() === "staff") {
                 navigate("/staff/dashboard");
-
-            } else if (selectedType === "admin" && role.toLowerCase() === "admin") {
-
+            } else if (role.toLowerCase() === "admin") {
                 navigate("/admin/dashboard");
-
             } else {
-
                 navigate("/co-owner/dashboard");
-
             }
         } catch (err) {
             toast({
@@ -134,9 +127,7 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        finally {
-            navigate("/admin/dashboard");
-        }
+        // ✅ BỎ finally block
     };
 
 
