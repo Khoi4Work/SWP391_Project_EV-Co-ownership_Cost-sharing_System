@@ -30,13 +30,13 @@ public class UsageHistoryController {
         return ResponseEntity.ok(history);
     }
 
-    @GetMapping("/booking/{groupId}")
-    public ResponseEntity<List<UsageHistoryListResponse>> getUsageHistoryList(
-            @PathVariable int groupId) {
-        List<UsageHistoryListResponse> history =
-                iVehicleUsageHistoryService.getUsageHistoryListByGroupId(groupId);
-        return ResponseEntity.ok(history);
-    }
+//    @GetMapping("/booking/{groupId}")
+//    public ResponseEntity<List<UsageHistoryListResponse>> getUsageByGroupId(
+//            @PathVariable int groupId) {
+//        List<UsageHistoryListResponse> history =
+//                iVehicleUsageHistoryService.getUsageHistoryListByGroupId(groupId);
+//        return ResponseEntity.ok(history);
+//    }
 
     @GetMapping("/booking/detail/{scheduleId}")
     public ResponseEntity<UsageHistoryDetailResponse> getUsageHistoryDetail(
