@@ -1,12 +1,13 @@
-import {useEffect, useMemo, useState} from "react";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Textarea} from "@/components/ui/textarea";
-import {Car, Clock, User} from "lucide-react";
-
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Car, Clock, User } from "lucide-react";
+import axiosClient from "@/api/axiosClient";
+import { useToast } from "@/hooks/use-toast";
 type ScheduleItem = {
     scheduleId: number;
     startTime: string; // ISO
@@ -65,11 +66,12 @@ type CheckOutForm = {
 const beBaseUrl = "http://localhost:8080";
 const USE_MOCK = false; // dùng BE thật để test
 
+
 function formatDateTime(iso?: string) {
     if (!iso) return "-";
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "-";
-    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", {hour: "2-digit", minute: "2-digit", hour12: false})}`;
+    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
 }
 
 async function fileListToBase64(files: FileList | null): Promise<string[]> {
@@ -85,8 +87,84 @@ async function fileListToBase64(files: FileList | null): Promise<string[]> {
     }
     return Promise.all(tasks);
 }
+function RegisterVehicleServiceModal({ open, onClose }) {
+    const [vehicleServices, setVehicleServices] = useState([]);
+    const [selectedService, setSelectedService] = useState("");
+    const { toast } = useToast();
+    // ✅ Gọi API lấy danh sách dịch vụ
+    useEffect(() => {
+        if (open) {
+            axiosClient
+                .get("/vehicle/service")
+                .then(res => {
+                    if (res.status === 200) {
+                        setVehicleServices(res.data);
+                    }
+                })
+                .catch(() => {
+                    toast({
+                        title: "Lỗi tải danh sách dịch vụ",
+                        description: "Không thể tải danh sách dịch vụ xe.",
+                        variant: "destructive",
+                    });
+                });
+        }
+    }, [open]);
 
+    const handleRegister = () => {
+        if (!selectedService) {
+            toast({
+                title: "Chưa chọn dịch vụ",
+                description: "Vui lòng chọn một dịch vụ trước khi đăng ký.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // ⚙️ Sau này sẽ gọi API /vehicle/service/request
+        toast({
+            title: "Đăng ký dịch vụ thành công",
+            description: `Bạn đã chọn dịch vụ: ${selectedService}`,
+        });
+
+        onClose(); // đóng modal
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Đăng ký dịch vụ xe</DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-3 py-2">
+                    <label className="text-sm font-medium">Chọn dịch vụ</label>
+                    <Select onValueChange={setSelectedService}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Chọn một dịch vụ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {vehicleServices.map(service => (
+                                <SelectItem key={service.id} value={service.serviceName}>
+                                    {service.serviceName} — {service.price?.toLocaleString()}đ
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>
+                        Hủy
+                    </Button>
+                    <Button onClick={handleRegister}>Đăng ký</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 export default function ScheduleCards() {
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -96,8 +174,8 @@ export default function ScheduleCards() {
     const [openDetail, setOpenDetail] = useState(false);
     const [activeId, setActiveId] = useState<number | null>(null);
 
-    const [checkInForm, setCheckInForm] = useState<CheckInForm>({condition: "GOOD", notes: "", images: []});
-    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({condition: "GOOD", notes: "", images: []});
+    const [checkInForm, setCheckInForm] = useState<CheckInForm>({ condition: "GOOD", notes: "", images: [] });
+    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
 
     // Detail states
@@ -142,7 +220,7 @@ export default function ScheduleCards() {
                 const res = await fetch(`${beBaseUrl}/booking/schedules/group/${groupId}/booked`, {
                     headers: {
                         "Accept": "application/json",
-                        ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
                     },
                     credentials: "include",
                 });
@@ -224,7 +302,7 @@ export default function ScheduleCards() {
                     method: "GET",
                     headers: {
                         "Accept": "application/json",
-                        ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
                     },
                     credentials: "include",
                 });
@@ -246,7 +324,7 @@ export default function ScheduleCards() {
             return;
         }
         setActiveId(id);
-        setCheckInForm({condition: "GOOD", notes: "", images: []});
+        setCheckInForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckIn(true);
     };
 
@@ -258,14 +336,14 @@ export default function ScheduleCards() {
             return;
         }
         setActiveId(id);
-        setCheckOutForm({condition: "GOOD", notes: "", images: []});
+        setCheckOutForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckOut(true);
     };
 
     const submitCheckIn = async () => {
         if (activeId == null) return;
-        
-        // Check if booking belongs to current user
+
+        // Kiểm tra xem booking có thuộc về user hiện tại không
         const booking = items.find(item => item.scheduleId === activeId);
         if (!booking) {
             alert("Không tìm thấy lịch đặt xe");
@@ -276,7 +354,7 @@ export default function ScheduleCards() {
             setOpenCheckIn(false);
             return;
         }
-        
+
         if (USE_MOCK) {
             const key = "mockSchedules";
             const list = JSON.parse(localStorage.getItem(key) || "[]");
@@ -307,7 +385,7 @@ export default function ScheduleCards() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
                 body: JSON.stringify(payload)
@@ -325,8 +403,8 @@ export default function ScheduleCards() {
 
     const submitCheckOut = async () => {
         if (activeId == null) return;
-        
-        // Check if booking belongs to current user
+
+        // Kiểm tra xem booking có thuộc về user hiện tại không
         const booking = items.find(item => item.scheduleId === activeId);
         if (!booking) {
             alert("Không tìm thấy lịch đặt xe");
@@ -337,7 +415,7 @@ export default function ScheduleCards() {
             setOpenCheckOut(false);
             return;
         }
-        
+
         if (USE_MOCK) {
             const key = "mockSchedules";
             const list = JSON.parse(localStorage.getItem(key) || "[]");
@@ -368,7 +446,7 @@ export default function ScheduleCards() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
                 body: JSON.stringify(payload)
@@ -399,13 +477,13 @@ export default function ScheduleCards() {
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {items.map(it => {
-                            const statusBadge = !it.hasCheckIn ? {text: "Chờ nhận xe", style: "bg-blue-600"}
-                                : it.hasCheckIn && !it.hasCheckOut ? {text: "Đang sử dụng", style: "bg-orange-500"}
-                                    : {text: "Đã trả xe", style: "bg-green-600"};
-                                
+                            const statusBadge = !it.hasCheckIn ? { text: "Chờ nhận xe", style: "bg-blue-600" }
+                                : it.hasCheckIn && !it.hasCheckOut ? { text: "Đang sử dụng", style: "bg-orange-500" }
+                                    : { text: "Đã trả xe", style: "bg-green-600" };
+
                             // Only show check-in/out buttons if the booking belongs to current user
                             const isMyBooking = it.userId === currentUserId;
-                            
+
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
                                     <div className="flex items-center justify-between">
@@ -414,9 +492,9 @@ export default function ScheduleCards() {
                                     </div>
                                     <div className="text-sm text-muted-foreground mt-1">Biển số: {it.vehiclePlate || "-"}</div>
                                     <div className="mt-3 space-y-1 text-sm">
-                                        <div className="flex items-center gap-2"><User className="h-4 w-4"/>Người thuê: {it.userName || "-"}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4"/>Bắt đầu: {formatDateTime(it.startTime)}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4"/>Kết thúc: {formatDateTime(it.endTime)}</div>
+                                        <div className="flex items-center gap-2"><User className="h-4 w-4" />Người thuê: {it.userName || "-"}</div>
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Bắt đầu: {formatDateTime(it.startTime)}</div>
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Kết thúc: {formatDateTime(it.endTime)}</div>
                                     </div>
                                     <div className="mt-3 flex gap-2">
                                         {isMyBooking ? (
@@ -456,8 +534,8 @@ export default function ScheduleCards() {
                         <div className="space-y-3">
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
-                                <Select value={checkInForm.condition} onValueChange={(v) => setCheckInForm(prev => ({...prev, condition: v}))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng"/></SelectTrigger>
+                                <Select value={checkInForm.condition} onValueChange={(v) => setCheckInForm(prev => ({ ...prev, condition: v }))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
                                         <SelectItem value="NORMAL">Bình thường</SelectItem>
@@ -467,14 +545,14 @@ export default function ScheduleCards() {
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
-                                <Textarea value={checkInForm.notes} onChange={(e) => setCheckInForm(prev => ({...prev, notes: e.target.value}))} placeholder="Ghi chú..."/>
+                                <Textarea value={checkInForm.notes} onChange={(e) => setCheckInForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Ghi chú..." />
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
                                 <input type="file" multiple onChange={async (e) => {
                                     const imgs = await fileListToBase64(e.target.files);
-                                    setCheckInForm(prev => ({...prev, images: imgs}));
-                                }}/>
+                                    setCheckInForm(prev => ({ ...prev, images: imgs }));
+                                }} />
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckIn}>Xác nhận</Button>
@@ -495,8 +573,8 @@ export default function ScheduleCards() {
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
-                                <Select value={checkOutForm.condition} onValueChange={(v) => setCheckOutForm(prev => ({...prev, condition: v}))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng"/></SelectTrigger>
+                                <Select value={checkOutForm.condition} onValueChange={(v) => setCheckOutForm(prev => ({ ...prev, condition: v }))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
                                         <SelectItem value="NORMAL">Bình thường</SelectItem>
@@ -506,14 +584,14 @@ export default function ScheduleCards() {
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
-                                <Textarea value={checkOutForm.notes} onChange={(e) => setCheckOutForm(prev => ({...prev, notes: e.target.value}))} placeholder="Ghi chú..."/>
+                                <Textarea value={checkOutForm.notes} onChange={(e) => setCheckOutForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Ghi chú..." />
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
                                 <input type="file" multiple onChange={async (e) => {
                                     const imgs = await fileListToBase64(e.target.files);
-                                    setCheckOutForm(prev => ({...prev, images: imgs}));
-                                }}/>
+                                    setCheckOutForm(prev => ({ ...prev, images: imgs }));
+                                }} />
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckOut}>Xác nhận</Button>
@@ -567,14 +645,20 @@ export default function ScheduleCards() {
                                             <div>Tình trạng: {detail.checkIn.condition}</div>
                                             <div>Ghi chú: {detail.checkIn.notes || '-'}</div>
                                             {detail.checkIn.images && (
-                                                <img src={detail.checkIn.images} alt="checkin" className="mt-2 max-h-48 object-contain"/>
+                                                <img src={detail.checkIn.images} alt="checkin" className="mt-2 max-h-48 object-contain" />
                                             )}
+                                            <Button
+                                                variant="default"
+                                                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
+                                                onClick={() => setShowRegisterModal(true)}
+                                            >
+                                                Đăng ký dịch vụ
+                                            </Button>
                                         </div>
                                     ) : (
                                         <div className="text-sm text-muted-foreground">Chưa check-in</div>
                                     )}
                                 </div>
-
                                 <div className="border rounded-md p-3">
                                     <div className="font-semibold mb-2">Check-out</div>
                                     {detail.checkOut ? (
@@ -583,13 +667,17 @@ export default function ScheduleCards() {
                                             <div>Tình trạng: {detail.checkOut.condition}</div>
                                             <div>Ghi chú: {detail.checkOut.notes || '-'}</div>
                                             {detail.checkOut.images && (
-                                                <img src={detail.checkOut.images} alt="checkout" className="mt-2 max-h-48 object-contain"/>
+                                                <img src={detail.checkOut.images} alt="checkout" className="mt-2 max-h-48 object-contain" />
                                             )}
                                         </div>
                                     ) : (
                                         <div className="text-sm text-muted-foreground">Chưa check-out</div>
                                     )}
                                 </div>
+                                <RegisterVehicleServiceModal
+                                    open={showRegisterModal}
+                                    onClose={() => setShowRegisterModal(false)}
+                                />
                             </div>
                         )}
                     </DialogContent>
