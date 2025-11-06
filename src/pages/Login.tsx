@@ -47,11 +47,11 @@ export default function Login() {
 
         try {
             let response: any;
-            
+
             if (USE_MOCK) {
                 // Mock login - tìm user trong danh sách mock
                 const mockUser = MOCK_USERS.find(u => u.email === email && u.password === password);
-                
+
                 if (!mockUser) {
                     toast({
                         title: "Lỗi đăng nhập",
@@ -60,13 +60,13 @@ export default function Login() {
                     });
                     return;
                 }
-                
+
                 // Kiểm tra role có khớp với loại tài khoản đã chọn không
-                const roleMatch = 
+                const roleMatch =
                     (selectedType === "co-owner" && mockUser.role.roleName === "co-owner") ||
                     (selectedType === "staff" && mockUser.role.roleName === "staff") ||
                     (selectedType === "admin" && mockUser.role.roleName === "admin");
-                
+
                 if (!roleMatch) {
                     toast({
                         title: "Lỗi đăng nhập",
@@ -75,7 +75,7 @@ export default function Login() {
                     });
                     return;
                 }
-                
+
                 response = { data: mockUser };
             } else {
                 response = await axiosClient.post(`${LOGIN}/${roleId}`, {
@@ -96,7 +96,7 @@ export default function Login() {
             }
             // ✅ Trích xuất dữ liệu từ response
             const token = response.data.token;
-            const userId = response.data.id;    
+            const userId = response.data.id;
             const hovaten = response.data.hovaten; // Tên field từ backend
             const role = response.data.role.roleName;
             // ✅ Lưu vào localStorage
@@ -135,7 +135,7 @@ export default function Login() {
             });
         }
         finally {
-            navigate("/co-owner/dashboard");
+            navigate("/admin/dashboard");
         }
     };
 

@@ -153,7 +153,7 @@ export default function ContractPreviewPage() {
             formData.append("idContract", idContract.toString());
             formData.append("idUser", user.id.toString());
             formData.append("idChoice", status.toString());
-            formData.append("contract_signature", savedPrivateKey);
+            formData.append("contract_signature", savedPrivateKey.trim());
 
             const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, {
                 type: "application/pdf",
