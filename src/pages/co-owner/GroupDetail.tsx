@@ -10,7 +10,6 @@ import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHisto
 import { 
     groups,
     getGroupById,
-    monthlyFees,
     getMonthlyFeesByGroupId,
     payMonthlyFee as payFeeMock
 } from "@/mock/mockData";
