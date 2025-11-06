@@ -29,6 +29,7 @@ public class Group {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
     @Column
+    @Enumerated(EnumType.STRING)
     private StatusGroup status = StatusGroup.ACTIVE; // active by default
     // Relationships
 
@@ -37,6 +38,6 @@ public class Group {
     private List<GroupMember> groupMembers = new ArrayList<>();
     @OneToMany(mappedBy = "group")
     @JsonIgnore
-    private  List<Vehicle> vehicles = new ArrayList<>();
+    private List<Vehicle> vehicles = new ArrayList<>();
 
 }

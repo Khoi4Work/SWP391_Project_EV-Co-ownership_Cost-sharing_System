@@ -61,37 +61,62 @@ public class DataInitializer implements CommandLineRunner {
         }
 
 
-
-
         if (userService.getAllUsers().isEmpty()) {
             UserRole role = userRoleService.findUserRoleByRoleId(1); // roleId = 1 như JSON của bạn
             UserRole roleStaff = userRoleService.findUserRoleByRoleId(4); // roleId = 1 như JSON của bạn
 
-            Users u1 = new Users();
-            u1.setHovaTen("Ndnk");
-            u1.setEmail("khoimapu8@gmail.com");
-            u1.setPassword("12341234"); // mã hóa mật khẩu
-            u1.setCccd("12341234");
-            u1.setGplx("12341234");
-            u1.setPhone("0918842699");
-            u1.setRole(role);
+//            Users u1 = new Users();
+//            u1.setHovaTen("Ndnk");
+//            u1.setEmail("khoimapu8@gmail.com");
+//            u1.setPassword("12341234"); // mã hóa mật khẩu
+//            u1.setCccd("12341234");
+//            u1.setGplx("12341234");
+//            u1.setPhone("0918842699");
+//            u1.setRole(role);
+//
+//            RegisterUserReq ur1 = modelMapper.map(u1, RegisterUserReq.class);
+//            ur1.setRoleId(role.getRoleId());
+//            authenticationService.register(ur1);
+//
+//            Users u2 = new Users();
+//            u2.setHovaTen("NguyenKhoi");
+//            u2.setEmail("khoimapu2k5@gmail.com");
+//            u2.setPassword("123123"); // mã hóa mật khẩu
+//            u2.setCccd("123123123");
+//            u2.setGplx("123123123");
+//            u2.setPhone("0966893655");
+//            u2.setRole(role);
+//
+//            RegisterUserReq ur2 = modelMapper.map(u2, RegisterUserReq.class);
+//            ur2.setRoleId(role.getRoleId());
+//            authenticationService.register(ur2);
 
-            RegisterUserReq ur1 = modelMapper.map(u1, RegisterUserReq.class);
-            ur1.setRoleId(role.getRoleId());
-            authenticationService.register(ur1);
 
-            Users u2 = new Users();
-            u2.setHovaTen("NguyenKhoi");
-            u2.setEmail("khoimapu2k5@gmail.com");
-            u2.setPassword("123123"); // mã hóa mật khẩu
-            u2.setCccd("123123123");
-            u2.setGplx("123123123");
-            u2.setPhone("0966893655");
-            u2.setRole(role);
+            Users u3 = new Users();
+            u3.setHovaTen("lamvantuan");
+            u3.setEmail("tlamvantuan@gmail.com");
+            u3.setPassword("123123"); // mã hóa mật khẩu
+            u3.setCccd("123123124");
+            u3.setGplx("123123124");
+            u3.setPhone("0877762076");
+            u3.setRole(role);
 
-            RegisterUserReq ur2 = modelMapper.map(u2, RegisterUserReq.class);
-            ur2.setRoleId(role.getRoleId());
-            authenticationService.register(ur2);
+            RegisterUserReq ur3 = modelMapper.map(u3, RegisterUserReq.class);
+            ur3.setRoleId(role.getRoleId());
+            authenticationService.register(ur3);
+
+            Users u4 = new Users();
+            u4.setHovaTen("tuan");
+            u4.setEmail("tuanlv.skillcetera@gmail.com");
+            u4.setPassword("123123"); // mã hóa mật khẩu
+            u4.setCccd("123123125");
+            u4.setGplx("123123125");
+            u4.setPhone("0877762075");
+            u4.setRole(role);
+
+            RegisterUserReq ur4 = modelMapper.map(u4, RegisterUserReq.class);
+            ur4.setRoleId(role.getRoleId());
+            authenticationService.register(ur4);
 
             Users staff = new Users();
             staff.setHovaTen("staff");
@@ -104,33 +129,8 @@ public class DataInitializer implements CommandLineRunner {
 
             RegisterUserReq urstaff = modelMapper.map(staff, RegisterUserReq.class);
             urstaff.setRoleId(roleStaff.getRoleId());
+
             authenticationService.register(urstaff);
-
-
-//            Users u3 = new Users();
-//            u3.setHovaTen("lamvantuan");
-//            u3.setEmail("tlamvantuan@gmail.com");
-//            u3.setPassword("123123"); // mã hóa mật khẩu
-//            u3.setCccd("123123124");
-//            u3.setGplx("123123124");
-//            u3.setPhone("0877762076");
-//            u3.setRole(role);
-//
-//            RegisterUserReq ur3 = modelMapper.map(u3, RegisterUserReq.class);
-//            authenticationService.register(ur3);
-//
-//            Users u4 = new Users();
-//            u4.setHovaTen("tuan");
-//            u4.setEmail("tuanlv.skillcetera@gmail.com");
-//            u4.setPassword("123123"); // mã hóa mật khẩu
-//            u4.setCccd("123123125");
-//            u4.setGplx("123123125");
-//            u4.setPhone("0877762075");
-//            u4.setRole(role);
-//
-//            RegisterUserReq ur4 = modelMapper.map(u4, RegisterUserReq.class);
-//            authenticationService.register(ur4);
-
 
 
         }
