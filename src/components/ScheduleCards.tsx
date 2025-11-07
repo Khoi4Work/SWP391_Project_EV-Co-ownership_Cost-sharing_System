@@ -207,7 +207,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 email,
                 subject: `Yêu cầu biểu quyết dịch vụ: ${decisionName}`,
                 url: `${window.location.origin}/vote/${decisionVote.id}`,
-                template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này để vote.`
+                template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${decisionVote.id} để vote.`
             }));
 
             // Gửi song song; bắt lỗi từng request

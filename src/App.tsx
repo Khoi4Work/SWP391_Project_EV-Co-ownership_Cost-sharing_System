@@ -23,6 +23,7 @@ import PDFContract from "./pages/co-owner/PDFContract";
 import PaymentSuccess from "./pages/co-owner/PaymentSuccess";
 import PaymentFailed from "./pages/co-owner/PaymentFailed";
 import { useEffect } from "react";
+import Vote from "./pages/co-owner/Vote";
 const queryClient = new QueryClient();
 function TitleUpdater() {
     const location = useLocation();
@@ -65,6 +66,7 @@ const App = () => {
                         <Route path="/co-owner/groups/:groupId/usage-history" element={<UsageHistory />} />
                         <Route path="/co-owner/usage-history/:scheduleId" element={<UsageHistoryDetail />} />
                         <Route path="/co-owner/contracts" element={<Contracts />} />
+                        <Route path="/vote/:id" element={<Vote />} />
                         {/* Payment return routes */}
                         <Route path="/co-owner/payment-success" element={<PaymentSuccess />} />
                         <Route path="/co-owner/payment-failed" element={<PaymentFailed />} />

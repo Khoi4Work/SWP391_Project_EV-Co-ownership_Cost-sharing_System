@@ -4,7 +4,6 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import axiosClient from "@/api/axiosClient";
-
 interface DecisionVoteDetail {
   id: number;
   voteStatus: string; // "PENDING", "APPROVED", "REJECTED"
