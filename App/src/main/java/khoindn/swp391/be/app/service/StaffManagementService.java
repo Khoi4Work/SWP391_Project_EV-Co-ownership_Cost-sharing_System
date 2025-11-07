@@ -1,4 +1,4 @@
-// trong /service/StaffManagementService.java
+
 package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.model.Request.CreateStaffRequest;
@@ -22,7 +22,6 @@ public class StaffManagementService implements IStaffManagementService {
     private final IUserRepository userRepository;
     private final IUserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
-
     private static final Integer STAFF_ROLE_ID = 4;
 
     @Override
@@ -104,7 +103,6 @@ public class StaffManagementService implements IStaffManagementService {
 
     @Override
     public void deleteStaff(Integer staffId) {
-        // Đã sửa: Dùng hàm đã fix lỗi và check null
         Users staff = userRepository.findByIdAndRole_RoleId(staffId, STAFF_ROLE_ID);
         if (staff == null) {
             throw new RuntimeException("Không tìm thấy Staff với ID: " + staffId);
@@ -112,7 +110,6 @@ public class StaffManagementService implements IStaffManagementService {
         userRepository.delete(staff);
     }
 
-    // Phương thức Helper (Hỗ trợ)
     private StaffResponse mapEntityToResponse(Users user) {
         StaffResponse response = new StaffResponse();
         response.setId(user.getId());

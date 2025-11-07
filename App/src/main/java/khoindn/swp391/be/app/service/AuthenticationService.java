@@ -30,7 +30,6 @@ import java.util.Base64;
 
 @Service
 @Transactional
-// (Đã xóa "implements UserDetailsService" -> Rất Tốt, giữ nguyên)
 public class AuthenticationService implements UserDetailsService {
     @Autowired
     private IAuthenticationRepository iAuthenticationRepository;
