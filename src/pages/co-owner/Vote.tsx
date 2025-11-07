@@ -25,7 +25,7 @@ interface DecisionVote {
 }
 
 export default function Vote() {
-  const groupId = Number(localStorage.getItem("groupId"));
+  const idGroup = Number(localStorage.getItem("groupId"));
   const { id } = useParams(); // lấy id từ URL
   const [decision, setDecision] = useState<DecisionVote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function Vote() {
   useEffect(() => {
     const fetchDecision = async () => {
       try {
-        const decisionRes = await axiosClient.post(`/decision/group/${groupId}`);
+        const decisionRes = await axiosClient.post(`/decision/vote/${idGroup}`);
         if (decisionRes.status !== 201) {
           throw new Error("Không thể tạo quyết định mới");
         }
