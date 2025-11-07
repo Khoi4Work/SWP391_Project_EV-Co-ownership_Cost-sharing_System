@@ -32,6 +32,6 @@ public interface IContractService {
 
     void sendDeclinedContractNotification(int contractId) throws Exception;
 
-    void verifyContract(int contractId, int decision, Users staff) throws Exception;
+    void verifyContract(int contractId, int decision, Users staff, String declinedContractLink) throws Exception;
 
 }

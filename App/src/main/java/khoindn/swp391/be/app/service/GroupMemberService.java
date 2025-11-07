@@ -150,6 +150,7 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public DecisionVoteRes createDecision(DecisionVoteReq request, GroupMember gm) {
         DecisionVoteRes res = new DecisionVoteRes();
+
         // map request to decisionVote
         DecisionVote createdDecisionVote = modelMapper.map(request, DecisionVote.class);
         createdDecisionVote.setEndedAt(LocalDateTime.now().plusDays(1));

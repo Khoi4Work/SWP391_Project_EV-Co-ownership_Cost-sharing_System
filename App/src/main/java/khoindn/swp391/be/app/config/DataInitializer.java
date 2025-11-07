@@ -140,35 +140,30 @@ public class DataInitializer implements CommandLineRunner {
             MenuVehicleService washService = new MenuVehicleService();
             washService.setServiceName("Car Wash");
             washService.setDescription("Comprehensive car washing service");
-            washService.setPrice(500000.0); // example price
             iVehicleService.addVehicleService(washService);
 
             // Maintenance service
             MenuVehicleService maintenanceService = new MenuVehicleService();
             maintenanceService.setServiceName("Maintenance");
             maintenanceService.setDescription("Periodic car maintenance");
-            maintenanceService.setPrice(10000000.0);
             iVehicleService.addVehicleService(maintenanceService);
 
             // Repair service
             MenuVehicleService repairService = new MenuVehicleService();
             repairService.setServiceName("Repair");
             repairService.setDescription("Minor repair and servicing");
-            repairService.setPrice(20000000.0);
             iVehicleService.addVehicleService(repairService);
 
             // Parts replacement service
             MenuVehicleService replacementService = new MenuVehicleService();
             replacementService.setServiceName("Parts Replacement");
             replacementService.setDescription("Replace genuine car parts");
-            replacementService.setPrice(10000000.0);
             iVehicleService.addVehicleService(replacementService);
 
             // Battery check service (for electric cars)
             MenuVehicleService batteryCheckService = new MenuVehicleService();
             batteryCheckService.setServiceName("Battery Check");
             batteryCheckService.setDescription("Check and optimize battery performance");
-            batteryCheckService.setPrice(200000.0);
             iVehicleService.addVehicleService(batteryCheckService);
         }
 

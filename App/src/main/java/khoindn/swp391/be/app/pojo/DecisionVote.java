@@ -21,7 +21,7 @@ public class DecisionVote{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name = "decision_name")
-    private String decisionName; // Maintenance, Insurance, Battery / Energy, Financial
+    private List<String> decisionName; // Maintenance, Insurance, Battery / Energy, Financial
     @Column(name = "description")
     private String description;
     @Column(name = "status")

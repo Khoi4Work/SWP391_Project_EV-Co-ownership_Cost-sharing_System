@@ -94,7 +94,8 @@ public class StaffController {
     // 2. APPROVE or REJECT CONTRACT AND SEND EMAIL RESULT TO CUSTOMER
 
     @PatchMapping("/contract/{contractId}/{decision}")
-    public ResponseEntity verifyContract(@PathVariable int contractId, @PathVariable int decision) throws Exception {
+    public ResponseEntity verifyContract(@PathVariable int contractId, @PathVariable int decision,
+                                         @ModelAttribute String declinedContractLink) throws Exception {
         System.out.println("verifying...");
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
@@ -102,7 +103,7 @@ public class StaffController {
         }
 
         try {
-            iContractService.verifyContract(contractId, decision, staff);
+            iContractService.verifyContract(contractId, decision, staff, declinedContractLink);
         } catch (Exception e) {
             throw new RuntimeException(e + " error during verifying!");
         }

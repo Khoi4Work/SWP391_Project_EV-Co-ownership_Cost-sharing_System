@@ -21,6 +21,7 @@ import khoindn.swp391.be.app.service.IGroupService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -99,13 +100,13 @@ public class GroupMemberController {
         return ResponseEntity.status(HttpStatus.OK).body(allMembers);
     }
 
-    @PostMapping("/decision/group/{idGroup}")
-    public ResponseEntity createDecision(@PathVariable int idGroup, @RequestBody @Valid DecisionVoteReq request) {
+    @PostMapping(value = "/decision/group/{idGroup}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity createDecision(@PathVariable int idGroup, @ModelAttribute @Valid DecisionVoteReq request) {
         Users user = authenticationService.getCurrentAccount();
-        System.out.println(user.getId()+"-"+idGroup);
         if (user == null) {
             return ResponseEntity.status(403).body("Unauthorized");
         }
+        System.out.println(user.getId()+"-"+idGroup);
         GroupMember gm = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(idGroup, user.getId());
         if (gm == null) {
             throw new GroupMemberNotFoundException("Member is not in Group!");
@@ -140,11 +141,6 @@ public class GroupMemberController {
                 groupMember);
 
         return ResponseEntity.status(200).body(vote);
-    }
-
-    @GetMapping("/decision/vote/{idGroup}")
-    public ResponseEntity getDecisionVote(@PathVariable int idGroup) {
-        return ResponseEntity.status(200).body(iDecisionVoteRepository.getDecisionVoteByCreatedBy_Group_GroupId(idGroup));
     }
 
     @GetMapping("/decision/vote/detail/{id}")

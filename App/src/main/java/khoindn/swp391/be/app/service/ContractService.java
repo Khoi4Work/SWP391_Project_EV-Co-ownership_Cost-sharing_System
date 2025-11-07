@@ -5,7 +5,6 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
 import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
-import khoindn.swp391.be.app.exception.exceptions.UserNotFoundException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
@@ -83,6 +82,9 @@ public class ContractService implements IContractService {
         cleanKey(req.getContract_signature());
         //Parse privateKey va publicKey sang byte
 
+        if (iContractRepository.existsById(req.getIdContract())) {
+            throw new ContractNotExistedException("Contract cannot found!");
+        }
         byte[] privateKeyReceived;
         byte[] publicKeyUser;
         try {
@@ -186,7 +188,7 @@ public class ContractService implements IContractService {
         Contract contract = new Contract();
         contract.setContractType(req.getContractType());
         contract.setStartDate(LocalDate.now());
-        contract.setUrlConfirmedContract(req.getDocumentUrl());
+        contract.setUrlContract(req.getDocumentUrl());
         if (supabaseService.isFileExist(req.getImageContract().getOriginalFilename())) {
             contract.setImageContract(supabaseService.getFileUrl(req.getImageContract().getOriginalFilename()));
         } else {
@@ -294,7 +296,7 @@ public class ContractService implements IContractService {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlConfirmedContract() + contract.getContractId() + "?token=" + token;
+                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
                 try {
                     MimeMessage message = javaMailSender.createMimeMessage();
                     MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -305,7 +307,7 @@ public class ContractService implements IContractService {
                     String content = templateEngine.process("contract", context);
 
                     helper.setTo(signer.getUser().getEmail());
-                    helper.setSubject("[EcoShare System] Send E-Contract to User");
+                    helper.setSubject("[EcoShare System] Your contract is waiting for confirmation");
                     helper.setText(content, true);
                     javaMailSender.send(message);
                 } catch (MessagingException e) {
@@ -326,7 +328,7 @@ public class ContractService implements IContractService {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlConfirmedContract() + contract.getContractId() + "?token=" + token;
+                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
                 // SEND MULTIPLE USERS
                 try {
                     MimeMessage message = javaMailSender.createMimeMessage();
@@ -338,7 +340,7 @@ public class ContractService implements IContractService {
                     String content = templateEngine.process("contract_decline", context);
 
                     helper.setTo(signer.getUser().getEmail());
-                    helper.setSubject("[EcoShare System] Send E-Contract to User");
+                    helper.setSubject("[EcoShare System] Your contract is declined!");
                     helper.setText(content, true);
                     javaMailSender.send(message);
                 } catch (MessagingException e) {
@@ -349,7 +351,7 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void verifyContract(int contractId, int decision, Users staff) throws Exception {
+    public void verifyContract(int contractId, int decision, Users staff, String declinedContractLink) throws Exception {
         Contract contract = getContractByContractId(contractId);
 
         if (contract == null || !contract.getStatus().equals(StatusContract.PENDING_REVIEW)) {
@@ -365,6 +367,7 @@ public class ContractService implements IContractService {
             contract.setStatus(StatusContract.DECLINED);
             contract.setEndDate(LocalDate.now());
             contract.setStaff(staff);
+            contract.setUrlContract(declinedContractLink);
             iContractRepository.save(contract);
             sendDeclinedContractNotification(contractId);
         } else {

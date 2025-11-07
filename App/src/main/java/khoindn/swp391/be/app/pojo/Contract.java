@@ -29,7 +29,7 @@ public class Contract {
     @Column(name = "content_string", length = 5000)
     private String htmlString; // link PDF do FE render
     @Column(name = "url_contract")
-    private String urlConfirmedContract;
+    private String urlContract;
     @Column(name = "image_contract")
     private String imageContract;
 
