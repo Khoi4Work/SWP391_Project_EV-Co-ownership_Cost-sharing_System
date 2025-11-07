@@ -179,22 +179,7 @@ public class ScheduleService implements IScheduleService {
 
         List<Schedule> schedules = iScheduleRepository.findByGroupMember_Group_GroupId(groupId);
 
-        return schedules.stream()
-                .filter(s -> !s.getStatus().equals(StatusSchedule.OVERRIDE_TRACKER))
-                .map(schedule -> {
-                    ScheduleRes res = modelMapper.map(schedule, ScheduleRes.class);
-                    res.setUserId(schedule.getGroupMember().getUsers().getId());
-                    res.setUserName(schedule.getGroupMember().getUsers().getUsername());
-                    res.setGroupId(schedule.getGroupMember().getGroup().getGroupId());
-                    res.setOwnershipPercentage(schedule.getGroupMember().getOwnershipPercentage());
-                    Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
-                    if (vehicle != null) {
-                        res.setVehicleId(vehicle.getVehicleId());
-                    }
-
-                    return res;
-                })
-                .collect(Collectors.toList());
+        return mapSchedulesToResponse(schedules);
     }
 
     @Override
@@ -226,6 +211,57 @@ public class ScheduleService implements IScheduleService {
                 2,
                 startOfMonth.getMonth().toString(),
                 startOfMonth.plusMonths(1).toLocalDate());
+    }
+
+    @Override
+    public List<ScheduleRes> findBookedSchedulesByGroupId(int groupId) {
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        List<Schedule> schedules = iScheduleRepository
+                .findByGroupMember_Group_GroupIdAndStatus(groupId, StatusSchedule.BOOKED);
+
+        return mapSchedulesToResponse(schedules);
+    }
+
+    @Override
+    public List<ScheduleRes> findOverrideTrackersByGroupId(int groupId) {
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        List<Schedule> schedules = iScheduleRepository
+                .findByGroupMember_Group_GroupIdAndStatus(groupId, StatusSchedule.OVERRIDE_TRACKER);
+
+        return mapSchedulesToResponse(schedules);
+    }
+
+    @Override
+    public List<ScheduleRes> findCanceledSchedulesByGroupId(int groupId) {
+        Group group = iGroupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found"));
+
+        List<Schedule> schedules = iScheduleRepository
+                .findByGroupMember_Group_GroupIdAndStatus(groupId, StatusSchedule.CANCELED);
+
+        return mapSchedulesToResponse(schedules);
+    }
+
+    // Helper method to reduce code duplication
+    private List<ScheduleRes> mapSchedulesToResponse(List<Schedule> schedules) {
+        return schedules.stream()
+                .map(schedule -> {
+                    ScheduleRes res = modelMapper.map(schedule, ScheduleRes.class);
+                    res.setUserId(schedule.getGroupMember().getUsers().getId());
+                    res.setUserName(schedule.getGroupMember().getUsers().getUsername());
+                    res.setGroupId(schedule.getGroupMember().getGroup().getGroupId());
+                    res.setOwnershipPercentage(schedule.getGroupMember().getOwnershipPercentage());
+                    Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
+                    if (vehicle != null) {
+                        res.setVehicleId(vehicle.getVehicleId());
+                    }
+                    return res;
+                })
+                .collect(Collectors.toList());
     }
 
     private void sendSimpleOverrideEmail(Users affectedUser, Users overridingUser, Schedule canceledSchedule) {

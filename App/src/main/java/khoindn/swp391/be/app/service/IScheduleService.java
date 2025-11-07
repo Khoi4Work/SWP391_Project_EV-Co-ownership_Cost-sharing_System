@@ -6,6 +6,7 @@ import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.Schedule;
 import khoindn.swp391.be.app.pojo.Vehicle;
+import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,10 @@ public interface IScheduleService {
     void cancelSchedule(int scheduleId);
     List<ScheduleRes> findByGroupMember_Group_GroupId(int groupId);
     OverrideInfoRes getOverrideCountForUser(int userId, int groupId);
+
+    List<ScheduleRes> findBookedSchedulesByGroupId(int groupId);
+    List<ScheduleRes> findOverrideTrackersByGroupId(int groupId);
+    List<ScheduleRes> findCanceledSchedulesByGroupId(int groupId);
 
 
 }
