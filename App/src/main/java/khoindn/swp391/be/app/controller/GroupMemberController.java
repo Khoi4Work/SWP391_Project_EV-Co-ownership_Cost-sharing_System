@@ -142,8 +142,8 @@ public class GroupMemberController {
         return ResponseEntity.status(200).body(vote);
     }
 
-    @GetMapping("/decision/vote")
-    public ResponseEntity getDecisionVote(long id) {
-        return ResponseEntity.status(200).body(iDecisionVoteRepository.getDecisionVoteById(id));
+    @GetMapping("/decision/vote/{idGroup}")
+    public ResponseEntity getDecisionVote(@PathVariable int idGroup) {
+        return ResponseEntity.status(200).body(iDecisionVoteRepository.getDecisionVoteByCreatedBy_Group_GroupId(idGroup));
     }
 }

@@ -32,7 +32,7 @@ public class EmailService implements IEmailService {
             helper.setTo(contentSender.getEmail());
             helper.setSubject(contentSender.getSubject());
             helper.setText(contentSender.getTemplate(), true); // true = nội dung HTML
-            
+
 
             javaMailSender.send(mimeMessage);
             System.out.println("✅ Email sent successfully to " + contentSender.getEmail());
