@@ -485,17 +485,6 @@ export default function GroupDetail() {
 
     // Handle pay quỹ tháng
     const handlePayFee = async (fundDetailId: number) => {
-        // Kiểm tra xem fee có quá hạn không
-        const fee = groupFee?.fees?.find(f => f.fundDetailId === fundDetailId);
-        if (fee?.isOverdue) {
-            toast({
-                title: "⚠️ Không thể thanh toán",
-                description: "Quỹ tháng này đã quá hạn thanh toán. Vui lòng liên hệ quản trị viên.",
-                variant: "destructive"
-            });
-            return;
-        }
-
         setProcessingPayment(fundDetailId);
         try {
             if (USE_MOCK_DATA) {
@@ -673,30 +662,17 @@ export default function GroupDetail() {
                                                 </div>
                                                 <div className="flex gap-2 mt-4">
                                                     {isPending && (
-                                                        <>
-                                                            {fee.isOverdue ? (
-                                                                <div className="w-full p-3 bg-red-50 border border-red-200 rounded-md text-center">
-                                                                    <p className="text-sm text-red-700 font-medium">
-                                                                        ⚠️ Đã quá hạn thanh toán
-                                                                    </p>
-                                                                    <p className="text-xs text-red-600 mt-1">
-                                                                        Vui lòng liên hệ quản trị viên
-                                                                    </p>
-                                                                </div>
-                                                            ) : (
-                                                                <Button
-                                                                    size="sm"
-                                                                    onClick={() => handlePayFee(fee.fundDetailId)}
-                                                                    disabled={processingPayment === fee.fundDetailId || !isCurrentUser}
-                                                                    className="w-full"
-                                                                    variant={isCurrentUser ? "default" : "secondary"}
-                                                                >
-                                                                    {processingPayment === fee.fundDetailId
-                                                                        ? "⏳ Đang xử lý..."
-                                                                        : "Thanh toán VNPay"}
-                                                                </Button>
-                                                            )}
-                                                        </>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handlePayFee(fee.fundDetailId)}
+                                                            disabled={processingPayment === fee.fundDetailId || !isCurrentUser}
+                                                            className="w-full"
+                                                            variant={isCurrentUser ? "default" : "secondary"}
+                                                        >
+                                                            {processingPayment === fee.fundDetailId
+                                                                ? "⏳ Đang xử lý..."
+                                                                : "Thanh toán VNPay"}
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </CardContent>
