@@ -59,7 +59,8 @@ export default function AdminDashboard() {
         email: "",
         password: "",
         cccd: "",
-        phone: ""
+        phone: "",
+        gplx: ""
     });
     const [createdStaff, setCreatedStaff] = useState<any>(null);
     const [showContractDetailModal, setShowContractDetailModal] = useState(false);
@@ -174,6 +175,7 @@ export default function AdminDashboard() {
                 password: newStaffData.password,
                 cccd: newStaffData.cccd,
                 phone: newStaffData.phone,
+                gplx: newStaffData.gplx,
             });
 
             // cập nhật lại danh sách hiển thị trong UI
@@ -196,6 +198,7 @@ export default function AdminDashboard() {
                 password: "",
                 cccd: "",
                 phone: "",
+                gplx: "",
             });
         } catch (err: any) {
             console.error("Lỗi khi tạo nhân viên:", err);

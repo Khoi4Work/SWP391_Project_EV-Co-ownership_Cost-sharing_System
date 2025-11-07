@@ -40,9 +40,8 @@ export default function Vote() {
           throw new Error("Không thể tải quyết định");
         }
 
-        const decisionList = decisionRes.data;
-        const found = decisionList.find((d: DecisionVote) => d.id === Number(id));
-        setDecision(found || null);
+        // ✅ Dữ liệu trả về là một object, không phải mảng
+        setDecision(decisionRes.data);
       } catch (err) {
         console.error(err);
         toast({
