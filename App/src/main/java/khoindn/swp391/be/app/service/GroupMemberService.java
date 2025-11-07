@@ -5,6 +5,7 @@ import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
+import khoindn.swp391.be.app.model.Response.DecisionVoteRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo.RequestGroupService;
@@ -37,7 +38,6 @@ public class GroupMemberService implements IGroupMemberService {
     private IUserRepository userRepository;
     @Autowired
     private ModelMapper modelMapper;
-    private IRequestGroupServiceRepository iRequestGroupServiceRepository;
     @Autowired
     private IDecisionVoteRepository iDecisionVoteRepository;
     @Autowired
@@ -148,27 +148,33 @@ public class GroupMemberService implements IGroupMemberService {
 
 
     @Override
-    public DecisionVote createDecision(DecisionVoteReq request, GroupMember gm) {
+    public DecisionVoteRes createDecision(DecisionVoteReq request, GroupMember gm) {
+        DecisionVoteRes res = new DecisionVoteRes();
+        // map request to decisionVote
         DecisionVote createdDecisionVote = modelMapper.map(request, DecisionVote.class);
         createdDecisionVote.setEndedAt(LocalDateTime.now().plusDays(1));
         createdDecisionVote.setCreatedBy(gm);
         iDecisionVoteRepository.save(createdDecisionVote);
+
+        res.setCreator(createdDecisionVote);
+
         Users user = authenticationService.getCurrentAccount();
         List<GroupMember> members = iGroupMemberRepository.findAllByGroup_GroupId(gm.getGroup().getGroupId())
                 .stream()
                 .filter(groupMember -> !groupMember.getUsers().getId().equals(user.getId()))
                 .toList();
-        List<DecisionVoteDetail> allvoters = new ArrayList<>();
+
+
         for (GroupMember each : members) {
             DecisionVoteDetail voteDetail = new DecisionVoteDetail();
             voteDetail.setGroupMember(each);
             voteDetail.setDecisionVote(createdDecisionVote);
-            allvoters.add(voteDetail);
             iDecisionVoteDetailRepository.save(voteDetail);
         }
-        iDecisionVoteRepository.save(createdDecisionVote);
-        System.out.println(createdDecisionVote.getDecisionVoteDetails());
-        return createdDecisionVote;
+
+        res.setVoters(iDecisionVoteDetailRepository.getAllByDecisionVote(createdDecisionVote));
+
+        return res;
     }
 
     @Override

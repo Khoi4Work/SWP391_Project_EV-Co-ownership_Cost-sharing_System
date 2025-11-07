@@ -6,6 +6,7 @@ import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.model.Request.AddMemberRequest;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.VotingRequest;
+import khoindn.swp391.be.app.model.Response.DecisionVoteRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberResponse;
 import khoindn.swp391.be.app.pojo.DecisionVote;
@@ -109,11 +110,11 @@ public class GroupMemberController {
         if (gm == null) {
             throw new GroupMemberNotFoundException("Member is not in Group!");
         }
-        DecisionVote decisionVote = iGroupMemberService.createDecision(request, gm);
-        if (decisionVote == null) {
+        DecisionVoteRes res = iGroupMemberService.createDecision(request, gm);
+        if (res == null) {
             return ResponseEntity.status(500).body("INTERNAL SERVER ERROR");
         }
-        return ResponseEntity.status(201).body(decisionVote);
+        return ResponseEntity.status(201).body(res);
     }
 
     @GetMapping("/group/{groupId}")

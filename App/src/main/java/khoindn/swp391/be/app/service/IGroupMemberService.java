@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
+import khoindn.swp391.be.app.model.Response.DecisionVoteRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.pojo.DecisionVote;
 import khoindn.swp391.be.app.pojo.GroupMember;
@@ -29,7 +30,7 @@ public interface IGroupMemberService {
     GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage);
 
 
-    DecisionVote createDecision(DecisionVoteReq request, GroupMember gm);
+    DecisionVoteRes createDecision(DecisionVoteReq request, GroupMember gm);
 
     DecisionVote setDecision(int choice, long idDecision, int serviceId, GroupMember gm);
 

@@ -144,7 +144,6 @@ public class AuthenticationService implements UserDetailsService {
     }
 
     public Users getCurrentAccount() {
-        // (Logic này giữ nguyên)
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         System.out.println("Principal type: " +
                 SecurityContextHolder.getContext().getAuthentication().getPrincipal().getClass());
