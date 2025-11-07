@@ -208,17 +208,8 @@ public class ScheduleService implements IScheduleService {
         GroupMember gm = iGroupMemberRepository.findByGroupAndUsers(group, user)
                 .orElseThrow(() -> new UserNotBelongException("User does not belong to this group"));
 
-        LocalDateTime startOfMonth = LocalDateTime.now()
-                .withDayOfMonth(1)
-                .withHour(0)
-                .withMinute(0)
-                .withSecond(0);
-
-        LocalDateTime endOfMonth = LocalDateTime.now()
-                .withDayOfMonth(LocalDateTime.now().toLocalDate().lengthOfMonth())
-                .withHour(23)
-                .withMinute(59)
-                .withSecond(59);
+        LocalDateTime startOfMonth = getStartOfMonth();
+        LocalDateTime endOfMonth = getEndOfMonth();
 
         long overrideCount = iScheduleRepository
                 .countByGroupMember_IdAndStatusAndCreatedAtBetween(
