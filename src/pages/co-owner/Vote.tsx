@@ -35,8 +35,8 @@ export default function Vote() {
   useEffect(() => {
     const fetchDecision = async () => {
       try {
-        const decisionRes = await axiosClient.get(`groupMember/decision/vote/${id}`);
-        if (decisionRes.status !== 20) {
+        const decisionRes = await axiosClient.get(`/groupMember/decision/vote/${id}`);
+        if (decisionRes.status !== 200) {
           throw new Error("Không thể tạo quyết định mới");
         }
         const decisionVote = decisionRes.data;
@@ -67,7 +67,7 @@ export default function Vote() {
         voteStatus: vote ? "APPROVED" : "REJECTED",
       };
 
-      await axiosClient.patch(`groupMember/decision`, body);
+      await axiosClient.patch(`/groupMember/decision`, body);
 
       toast({
         title: "Đã gửi biểu quyết",
