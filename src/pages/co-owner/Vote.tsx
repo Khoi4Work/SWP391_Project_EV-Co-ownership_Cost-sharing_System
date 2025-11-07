@@ -35,7 +35,7 @@ export default function Vote() {
   useEffect(() => {
     const fetchDecision = async () => {
       try {
-        const decisionRes = await axiosClient.get(`/groupMember/decision/vote/${id}`);
+        const decisionRes = await axiosClient.get(`/groupMember/decision/vote/detail/${id}`);
         if (decisionRes.status !== 200) {
           throw new Error("Không thể tải quyết định");
         }
