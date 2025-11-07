@@ -6,8 +6,11 @@ import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
+interface ContractPreviewPageProps {
+    readonly?: boolean;
+}
 
-export default function ContractPreviewPage() {
+export default function ContractPreviewPage({ readonly = false }: ContractPreviewPageProps) {
     const [isPrivateKey, setIsPrivateKey] = useState(false);
     const [savedPrivateKey, setSavedPrivateKey] = useState("");
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
@@ -31,7 +34,6 @@ export default function ContractPreviewPage() {
         setSavedPrivateKey(key);
         setIsPrivateKey(true);   // <-- Lưu lại để dùng khi gọi API
     };
-
     useEffect(() => {
         if (!token) {
             setError("Token không hợp lệ");
@@ -287,6 +289,7 @@ export default function ContractPreviewPage() {
                     status={status}
                     setStatus={setStatus}
                     onSavePrivateKey={handleSavePrivateKey}
+                    readonly={readonly}
                 />
             </div>
 

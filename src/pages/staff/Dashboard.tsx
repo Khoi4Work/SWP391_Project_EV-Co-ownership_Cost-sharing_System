@@ -187,13 +187,26 @@ export default function StaffDashboard() {
 
     const handleReject = async (contractId: number) => {
         try {
-            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/0`);
+            // Tạo URL bản xem hợp đồng readonly
+            const previewUrl = `${window.location.origin}/contract/view/${contractId}`;
+
+            // Gửi PATCH request với previewUrl dưới dạng request param
+            const res = await axiosClient.patch(
+                `${PATCH_CONTRACT}${contractId}/0`,
+                {}, // body rỗng
+                {
+                    params: { previewUrl }, // gửi kèm dưới dạng query param
+                }
+            );
+
             if (res.status === 200) {
                 toast({
                     title: "Đã từ chối hợp đồng",
-                    description: "Hợp đồng đã bị từ chối thành công.",
+                    description: "Đường link xem hợp đồng đã được gửi cho người dùng.",
                     variant: "success",
                 });
+
+                // Cập nhật lại danh sách hợp đồng trên FE
                 setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
             }
         } catch (err) {
@@ -204,9 +217,6 @@ export default function StaffDashboard() {
             });
         }
     };
-
-
-
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
