@@ -37,6 +37,7 @@ type CheckOutDetailResponse = {
     checkOutId: number;
     checkOutTime: string;
     condition: string;
+
     notes: string;
     images: string;
 };

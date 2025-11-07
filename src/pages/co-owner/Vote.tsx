@@ -14,6 +14,9 @@ interface DecisionVoteDetail {
       hovaTen: string;
       email: string;
     };
+    group: {
+      groupId: number;
+    }
   };
 }
 
@@ -63,10 +66,12 @@ export default function Vote() {
     setSubmitting(true);
 
     try {
+      const groupId = decision[0].groupMember.group.groupId
       const body = {
+        groupId,
         decisionId: Number(id),
         userId: userId,
-        voteStatus: vote ? "APPROVED" : "REJECTED",
+        vote: vote ? 1 : 0,
       };
 
       await axiosClient.patch(`/groupMember/decision`, body);
