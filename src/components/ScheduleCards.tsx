@@ -9,6 +9,7 @@ import { Car, Clock, User } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import Vote from "@/pages/co-owner/Vote";
+
 type ScheduleItem = {
     scheduleId: number;
     startTime: string; // ISO
@@ -72,7 +73,11 @@ function formatDateTime(iso?: string) {
     if (!iso) return "-";
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "-";
-    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+    })}`;
 }
 
 async function fileListToBase64(files: FileList | null): Promise<string[]> {
@@ -133,6 +138,7 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
         checkOutTime: checkOutTime ? String(checkOutTime) : undefined,
     } as ScheduleItem;
 }
+
 function RegisterVehicleServiceModal({ open, onClose }) {
     const [vehicleServices, setVehicleServices] = useState([]);
     const [selectedService, setSelectedService] = useState("");
@@ -157,7 +163,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
         }
     }, [open]);
     const CREATE_DECISION = import.meta.env.VITE_PATCH_CREATE_DECISION_PATH;
-    const groupId = Number(localStorage.getItem("groupId"));
+    const idGroup = Number(localStorage.getItem("groupId"));
     const handleRegister = async () => {
         if (!selectedService) {
             toast({
@@ -176,29 +182,36 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 // nếu DecisionVoteReq cần thêm field (ví dụ serviceId), thêm ở đây
             };
 
-            const decisionRes = await axiosClient.post(`${CREATE_DECISION}${groupId}`, decisionReq);
-
-            if (decisionRes.status !== 201) {
+            const res = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, decisionReq);
+            console.log(res.data.creator.status)
+            if (res.status !== 201) {
                 throw new Error("Không thể tạo quyết định mới");
             }
 
-            const decisionVote = decisionRes.data;
+            console.log(res)
+            const voters = res.data.voters;
+            const creator = res.data.creator;
 
-            // 2. Lấy thông tin creator + groupName + decisionName từ response (an toàn)
-            const creatorName = decisionVote?.createdBy?.users?.hovaTen ?? "Một thành viên";
-            const groupNameFromRes = decisionVote?.createdBy?.group?.groupName ?? "Nhóm";
-            const decisionName = decisionVote?.decisionName ?? selectedService;
+            console.log("✅ Full decisionVote:", res.data);
 
-            // 3. Lấy danh sách email (bảo đảm là mảng và lọc null)
-            const emailList = Array.isArray(decisionVote?.decisionVoteDetails)
-                ? decisionVote.decisionVoteDetails
-                    .map((detail: any) => detail?.groupMember?.users?.email)
-                    .filter((e: any) => typeof e === "string" && e.length > 0)
-                : [];
+            // 1️⃣ Creator name & group name (có thể null)
+            const creatorName =
+                creator?.createdBy?.users?.hovaTen || "Một thành viên";
+            const groupNameFromRes =
+                creator?.createdBy?.group?.groupName || "Nhóm";
+            const decisionName = creator?.decisionName || selectedService;
+
+            // 2️⃣ Lấy danh sách email từ decisionVoteDetails
+            const emailList =
+                voters?.map(
+                    (detail: any) => detail?.groupMember?.users?.email
+                ).filter((email: string | undefined) => email) || [];
+
+            console.log("✅ Email list:", emailList);
 
             // 4. Nếu không có email thì vẫn xử lý (thông báo hoặc log)
             if (emailList.length === 0) {
-                console.warn("Không tìm thấy email co-owner trong decisionVote:", decisionVote);
+                console.warn("Không tìm thấy email co-owner trong voters:", voters);
             }
 
             // 5. Gửi email cho từng co-owner (POST /email/send)
@@ -206,8 +219,8 @@ function RegisterVehicleServiceModal({ open, onClose }) {
             const emailPayloads = emailList.map((email: string) => ({
                 email,
                 subject: `Yêu cầu biểu quyết dịch vụ: ${decisionName}`,
-                url: `${window.location.origin}/vote/${decisionVote.id}`,
-                template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${decisionVote.id} để vote.`
+                url: `${window.location.origin}/vote/${creator.id}`,
+                template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${creator.id} để vote.`
             }));
 
             // Gửi song song; bắt lỗi từng request
@@ -278,6 +291,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
         </div>
     );
 }
+
 export default function ScheduleCards() {
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [items, setItems] = useState<ScheduleItem[]>([]);
@@ -656,13 +670,18 @@ export default function ScheduleCards() {
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
                                     <div className="flex items-center justify-between">
                                         <div className="font-semibold">{it.vehicleName || "Xe"}</div>
-                                        <span className={`text-xs text-white px-2 py-0.5 rounded ${statusBadge.style}`}>{statusBadge.text}</span>
+                                        <span
+                                            className={`text-xs text-white px-2 py-0.5 rounded ${statusBadge.style}`}>{statusBadge.text}</span>
                                     </div>
-                                    <div className="text-sm text-muted-foreground mt-1">Biển số: {it.vehiclePlate || "-"}</div>
+                                    <div className="text-sm text-muted-foreground mt-1">Biển
+                                        số: {it.vehiclePlate || "-"}</div>
                                     <div className="mt-3 space-y-1 text-sm">
-                                        <div className="flex items-center gap-2"><User className="h-4 w-4" />Người thuê: {it.userName || "-"}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Bắt đầu: {formatDateTime(it.startTime)}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Kết thúc: {formatDateTime(it.endTime)}</div>
+                                        <div className="flex items-center gap-2"><User className="h-4 w-4" />Người
+                                            thuê: {it.userName || "-"}</div>
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Bắt
+                                            đầu: {formatDateTime(it.startTime)}</div>
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Kết
+                                            thúc: {formatDateTime(it.endTime)}</div>
                                     </div>
                                     <div className="mt-3 flex gap-2">
                                         {isMyBooking ? (
@@ -673,16 +692,19 @@ export default function ScheduleCards() {
                                                     </Button>
                                                 )}
                                                 {it.hasCheckIn && !it.hasCheckOut && (
-                                                    <Button size="sm" variant="outline" onClick={() => openCheckOutDialog(it.scheduleId)}>
+                                                    <Button size="sm" variant="outline"
+                                                        onClick={() => openCheckOutDialog(it.scheduleId)}>
                                                         Check-out
                                                     </Button>
                                                 )}
-                                                <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>
+                                                <Button size="sm" variant="ghost"
+                                                    onClick={() => openDetailDialog(it.scheduleId)}>
                                                     Xem chi tiết
                                                 </Button>
                                             </>
                                         ) : (
-                                            <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>
+                                            <Button size="sm" variant="ghost"
+                                                onClick={() => openDetailDialog(it.scheduleId)}>
                                                 Xem chi tiết
                                             </Button>
                                         )}
@@ -702,7 +724,8 @@ export default function ScheduleCards() {
                         <div className="space-y-3">
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
-                                <Select value={checkInForm.condition} onValueChange={(v) => setCheckInForm(prev => ({ ...prev, condition: v }))}>
+                                <Select value={checkInForm.condition}
+                                    onValueChange={(v) => setCheckInForm(prev => ({ ...prev, condition: v }))}>
                                     <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
@@ -713,7 +736,9 @@ export default function ScheduleCards() {
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
-                                <Textarea value={checkInForm.notes} onChange={(e) => setCheckInForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Ghi chú..." />
+                                <Textarea value={checkInForm.notes}
+                                    onChange={(e) => setCheckInForm(prev => ({ ...prev, notes: e.target.value }))}
+                                    placeholder="Ghi chú..." />
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
@@ -737,11 +762,13 @@ export default function ScheduleCards() {
                         </DialogHeader>
                         <div className="space-y-3">
                             <div className="text-sm text-muted-foreground">
-                                Hãy kiểm tra lại tình trạng xe so với lúc check-in: {formatDateTime(items.find(i => i.scheduleId === activeId)?.checkInTime)}
+                                Hãy kiểm tra lại tình trạng xe so với lúc
+                                check-in: {formatDateTime(items.find(i => i.scheduleId === activeId)?.checkInTime)}
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
-                                <Select value={checkOutForm.condition} onValueChange={(v) => setCheckOutForm(prev => ({ ...prev, condition: v }))}>
+                                <Select value={checkOutForm.condition}
+                                    onValueChange={(v) => setCheckOutForm(prev => ({ ...prev, condition: v }))}>
                                     <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
@@ -752,7 +779,9 @@ export default function ScheduleCards() {
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
-                                <Textarea value={checkOutForm.notes} onChange={(e) => setCheckOutForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Ghi chú..." />
+                                <Textarea value={checkOutForm.notes}
+                                    onChange={(e) => setCheckOutForm(prev => ({ ...prev, notes: e.target.value }))}
+                                    placeholder="Ghi chú..." />
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
@@ -813,7 +842,8 @@ export default function ScheduleCards() {
                                             <div>Tình trạng: {detail.checkIn.condition}</div>
                                             <div>Ghi chú: {detail.checkIn.notes || '-'}</div>
                                             {detail.checkIn.images && (
-                                                <img src={detail.checkIn.images} alt="checkin" className="mt-2 max-h-48 object-contain" />
+                                                <img src={detail.checkIn.images} alt="checkin"
+                                                    className="mt-2 max-h-48 object-contain" />
                                             )}
                                             <Button
                                                 variant="default"
@@ -835,7 +865,8 @@ export default function ScheduleCards() {
                                             <div>Tình trạng: {detail.checkOut.condition}</div>
                                             <div>Ghi chú: {detail.checkOut.notes || '-'}</div>
                                             {detail.checkOut.images && (
-                                                <img src={detail.checkOut.images} alt="checkout" className="mt-2 max-h-48 object-contain" />
+                                                <img src={detail.checkOut.images} alt="checkout"
+                                                    className="mt-2 max-h-48 object-contain" />
                                             )}
                                         </div>
                                     ) : (

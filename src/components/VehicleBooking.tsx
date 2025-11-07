@@ -64,6 +64,7 @@ export default function VehicleBooking() {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [daysUsedThisMonth, setDaysUsedThisMonth] = useState(0);
     const [newlyCreatedBooking, setNewlyCreatedBooking] = useState<number | null>(null);
+    const [hasOverdueFee, setHasOverdueFee] = useState(false);
 
     // Booking Form State
     const [bookingForm, setBookingForm] = useState({
@@ -194,10 +195,7 @@ export default function VehicleBooking() {
             }
             const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
             const groupIds: number[] = await apiCall(`${endpoint}?userId=${currentUserId}`);
-            if (!groupIds || groupIds.length === 0) {
-                showToast("Thông báo", "Bạn chưa tham gia nhóm nào", "destructive");
-                return;
-            }
+        
             localStorage.setItem("groupIds", JSON.stringify(groupIds));
             localStorage.setItem("groupId", groupIds[0].toString());
         } catch (error: any) {
@@ -381,6 +379,38 @@ export default function VehicleBooking() {
         }
     };
 
+    // Kiểm tra xem user có fee quá hạn không
+    const checkOverdueFee = async (groupId: number) => {
+        try {
+            if (USE_MOCK) {
+                setHasOverdueFee(false);
+                return;
+            }
+            const token = localStorage.getItem("accessToken");
+            const res = await fetch(`${beBaseUrl}/api/fund-fee/group/${groupId}/current-month`, {
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                credentials: "include",
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const userOverdueFee = data?.fees?.find((fee: any) => 
+                    fee.userId === currentUserId && 
+                    fee.status === "PENDING" && 
+                    fee.isOverdue === true
+                );
+                setHasOverdueFee(!!userOverdueFee);
+            } else {
+                setHasOverdueFee(false);
+            }
+        } catch (error: any) {
+            console.error("Error checking overdue fee:", error);
+            setHasOverdueFee(false);
+        }
+    };
+
     // ===== EVENT HANDLERS =====
     const handleTimeSelection = (isEdit: boolean = false) => {
         const form = isEdit ? editForm : bookingForm;
@@ -394,6 +424,11 @@ export default function VehicleBooking() {
     };
 
     const handleBooking = async () => {
+        // Kiểm tra quá hạn thanh toán
+        if (hasOverdueFee) {
+            showToast("⚠️ Không thể đặt lịch", "Bạn có quỹ tháng quá hạn thanh toán. Vui lòng thanh toán trước khi đặt lịch sử dụng xe.", "destructive");
+            return;
+        }
 
         if (daysUsedThisMonth > 3) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
@@ -549,7 +584,10 @@ export default function VehicleBooking() {
             const groupIdsStr = localStorage.getItem("groupIds");
             if (groupIdsStr) {
                 const groupIds: number[] = JSON.parse(groupIdsStr);
-                if (groupIds.length > 0) await loadOverrideInfo(groupIds[0]);
+                if (groupIds.length > 0) {
+                    await loadOverrideInfo(groupIds[0]);
+                    await checkOverdueFee(groupIds[0]);
+                }
             }
         };
         initData();
@@ -851,6 +889,21 @@ export default function VehicleBooking() {
                         </div>
                     </div>
 
+                    {/* Cảnh báo quá hạn thanh toán */}
+                    {hasOverdueFee && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-start space-x-2">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5"/>
+                                <div className="flex-1">
+                                    <p className="font-medium text-red-900">⚠️ Quỹ tháng quá hạn thanh toán</p>
+                                    <p className="text-sm text-red-700 mt-1">
+                                        Bạn có quỹ tháng quá hạn thanh toán. Vui lòng thanh toán trước khi đặt lịch sử dụng xe.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Override Info */}
                     {overrideInfo && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -877,8 +930,12 @@ export default function VehicleBooking() {
                     )}
 
                     <Button onClick={handleBooking} className="w-full"
-                            disabled={!bookingForm.vehicle || !bookingForm.date || !bookingForm.time || daysUsedThisMonth > 3}>
-                        {daysUsedThisMonth > 3 ? "Đã hết lượt đặt lịch tháng này" : "Đặt lịch"}
+                            disabled={!bookingForm.vehicle || !bookingForm.date || !bookingForm.time || daysUsedThisMonth > 3 || hasOverdueFee}>
+                        {hasOverdueFee 
+                            ? "⚠️ Không thể đặt lịch (Quá hạn thanh toán)" 
+                            : daysUsedThisMonth > 3 
+                                ? "Đã hết lượt đặt lịch tháng này" 
+                                : "Đặt lịch"}
                     </Button>
 
                     {/* Time Selector Dialog */}
