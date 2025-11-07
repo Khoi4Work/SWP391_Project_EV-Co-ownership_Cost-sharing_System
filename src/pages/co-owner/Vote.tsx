@@ -37,10 +37,12 @@ export default function Vote() {
       try {
         const decisionRes = await axiosClient.get(`/groupMember/decision/vote/${id}`);
         if (decisionRes.status !== 200) {
-          throw new Error("Không thể tạo quyết định mới");
+          throw new Error("Không thể tải quyết định");
         }
-        const decisionVote = decisionRes.data;
-        setDecision(decisionVote);
+
+        const decisionList = decisionRes.data;
+        const found = decisionList.find((d: DecisionVote) => d.id === Number(id));
+        setDecision(found || null);
       } catch (err) {
         console.error(err);
         toast({
@@ -75,7 +77,7 @@ export default function Vote() {
       });
 
       // Cập nhật lại danh sách vote
-      const updated = await axiosClient.get(`/decision/${id}`);
+      const updated = await axiosClient.get(`/groupMember/decision/${id}`);
       setDecision(updated.data);
     } catch (err) {
       console.error(err);
@@ -108,7 +110,7 @@ export default function Vote() {
           </p>
           <h3 className="font-semibold mb-2 text-center">Trạng thái biểu quyết:</h3>
           <ul className="text-sm space-y-1">
-            {decision.decisionVoteDetails.map((d) => (
+            {decision?.decisionVoteDetails?.map((d) => (
               <li
                 key={d.id}
                 className="flex justify-between border-b py-1 text-muted-foreground"
