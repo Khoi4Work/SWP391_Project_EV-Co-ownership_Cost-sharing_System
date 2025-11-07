@@ -6,7 +6,8 @@ import { toast } from "@/components/ui/use-toast";
 import axiosClient from "@/api/axiosClient";
 interface DecisionVoteDetail {
   id: number;
-  voteStatus: string; // "PENDING", "APPROVED", "REJECTED"
+  optionDecisionVote: string; // "PENDING", "APPROVED", "REJECTED", "ABSENT"
+  votedAt: string;
   groupMember: {
     users: {
       id: number;
@@ -15,6 +16,7 @@ interface DecisionVoteDetail {
     };
   };
 }
+
 
 interface DecisionVote {
   id: number;
@@ -26,7 +28,7 @@ interface DecisionVote {
 
 export default function Vote() {
   const { id } = useParams(); // lấy id từ URL
-  const [decision, setDecision] = useState<DecisionVote | null>(null);
+  const [decision, setDecision] = useState<DecisionVoteDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const userId = localStorage.getItem("userId");
@@ -35,13 +37,11 @@ export default function Vote() {
   useEffect(() => {
     const fetchDecision = async () => {
       try {
-        const decisionRes = await axiosClient.get(`/groupMember/decision/vote/detail/${id}`);
-        if (decisionRes.status !== 200) {
-          throw new Error("Không thể tải quyết định");
-        }
+        const res = await axiosClient.get(`/groupMember/decision/vote/detail/${id}`);
+        if (res.status !== 200) throw new Error("Không thể tải danh sách biểu quyết");
 
-        // ✅ Dữ liệu trả về là một object, không phải mảng
-        setDecision(decisionRes.data);
+        const details: DecisionVoteDetail[] = res.data;
+        setDecision(details); // 🟢 Lưu trực tiếp danh sách detail
       } catch (err) {
         console.error(err);
         toast({
@@ -53,6 +53,7 @@ export default function Vote() {
         setLoading(false);
       }
     };
+
     fetchDecision();
   }, [id]);
 
@@ -63,7 +64,7 @@ export default function Vote() {
 
     try {
       const body = {
-        decisionId: decision.id,
+        decisionId: Number(id),
         userId: userId,
         voteStatus: vote ? "APPROVED" : "REJECTED",
       };
@@ -91,34 +92,32 @@ export default function Vote() {
   };
 
   if (loading) return <p className="text-center py-10">Đang tải...</p>;
-  if (!decision) return <p className="text-center py-10">Không tìm thấy quyết định.</p>;
+  if (!decision || decision.length === 0)
+    return <p className="text-center py-10">Không có chi tiết biểu quyết.</p>;
 
   return (
     <div className="flex justify-center py-10">
       <Card className="w-full max-w-lg shadow-md">
         <CardHeader>
-          <h2 className="text-xl font-bold text-center">{decision.decisionName}</h2>
+          <h2 className="text-xl font-bold text-center">Chi tiết biểu quyết #{id}</h2>
           <p className="text-sm text-muted-foreground text-center mt-2">
-            {decision.description}
+            Danh sách thành viên và lựa chọn của họ
           </p>
         </CardHeader>
 
         <CardContent>
-          <p className="text-sm mb-4 text-center">
-            Ngày tạo: {new Date(decision.createdDate).toLocaleString("vi-VN")}
-          </p>
-          <h3 className="font-semibold mb-2 text-center">Trạng thái biểu quyết:</h3>
           <ul className="text-sm space-y-1">
-            {decision?.decisionVoteDetails?.map((d) => (
+            {decision.map((d) => (
               <li
                 key={d.id}
                 className="flex justify-between border-b py-1 text-muted-foreground"
               >
                 <span>{d.groupMember.users.hovaTen}</span>
                 <span>
-                  {d.voteStatus === "PENDING" && "⏳ Chưa biểu quyết"}
-                  {d.voteStatus === "APPROVED" && "✅ Đồng ý"}
-                  {d.voteStatus === "REJECTED" && "❌ Không đồng ý"}
+                  {d.optionDecisionVote === "PENDING" && "⏳ Chưa biểu quyết"}
+                  {d.optionDecisionVote === "APPROVED" && "✅ Đồng ý"}
+                  {d.optionDecisionVote === "REJECTED" && "❌ Không đồng ý"}
+                  {d.optionDecisionVote === "ABSENT" && "🚫 Vắng mặt"}
                 </span>
               </li>
             ))}
