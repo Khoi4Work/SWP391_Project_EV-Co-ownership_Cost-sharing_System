@@ -3,9 +3,7 @@ package khoindn.swp391.be.app.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,9 +33,11 @@ public class Group {
 
     @OneToMany(mappedBy = "group")
     @JsonIgnore
+    @ToString.Exclude
     private List<GroupMember> groupMembers = new ArrayList<>();
     @OneToMany(mappedBy = "group")
     @JsonIgnore
+    @ToString.Exclude
     private List<Vehicle> vehicles = new ArrayList<>();
 
 }

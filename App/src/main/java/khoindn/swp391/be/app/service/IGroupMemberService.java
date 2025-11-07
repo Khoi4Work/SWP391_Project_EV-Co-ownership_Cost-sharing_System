@@ -5,10 +5,7 @@ import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.model.Response.DecisionVoteRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
-import khoindn.swp391.be.app.pojo.DecisionVote;
-import khoindn.swp391.be.app.pojo.GroupMember;
-import khoindn.swp391.be.app.pojo.RequestVehicleService;
-import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo.*;
 
 import java.util.List;
 
@@ -36,4 +33,7 @@ public interface IGroupMemberService {
 
     DecisionVote checkAllVoters(DecisionVote vote, int groupId, int serviceId);
 
+    DecisionVote getDecisionVoteById(long id);
+
+    List<DecisionVoteDetail> getAllDecisionVoteDetailByDecisionVote(DecisionVote decisionVote);
 }

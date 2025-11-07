@@ -265,7 +265,15 @@ public class GroupMemberService implements IGroupMemberService {
         return vote;
     }
 
+    @Override
+    public DecisionVote getDecisionVoteById(long id) {
+        return iDecisionVoteRepository.getDecisionVoteById(id);
+    }
 
+    @Override
+    public List<DecisionVoteDetail> getAllDecisionVoteDetailByDecisionVote(DecisionVote decisionVote) {
+        return iDecisionVoteDetailRepository.findAllByDecisionVote(decisionVote);
+    }
 
 
 }
