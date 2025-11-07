@@ -58,7 +58,7 @@ const App = () => {
                         <Route path="/register" element={<Register />} />
                         <Route path="/verify-otp" element={<VerifyOTP />} />
                         <Route path="/contract/preview/:id" element={<ContractPreviewPage />} />
-                        <Route path="/contract-preview" element={<ContractPreviewPage readonly={true} />} />
+                        <Route path="/contract/view-only/:id" element={<ContractPreviewPage readonly={true} />} />
                         <Route path="/contract/preview.pdf/:contractId" element={<PDFContract />} />
                         {/* Co-owner routes */}
                         <Route path="/co-owner/dashboard" element={<CoOwnerDashboard />} />

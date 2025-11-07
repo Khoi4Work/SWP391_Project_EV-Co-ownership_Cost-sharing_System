@@ -186,18 +186,19 @@ export default function StaffDashboard() {
     };
 
     const handleReject = async (contractId: number) => {
-        try {
-            // Tạo URL bản xem hợp đồng readonly
-            const previewUrl = `${window.location.origin}/contract/view/${contractId}`;
 
+
+        try {
+            const formData = new FormData();
+            // Tạo URL bản xem hợp đồng readonly
+            const previewUrl = `${window.location.origin}/contract/view-only/${contractId}`;
+            console.log(previewUrl)
+            formData.append("declinedContractLink", previewUrl);
             // Gửi PATCH request với previewUrl dưới dạng request param
             const res = await axiosClient.patch(
-                `${PATCH_CONTRACT}${contractId}/0`,
-                {}, // body rỗng
-                {
-                    params: { previewUrl }, // gửi kèm dưới dạng query param
-                }
+                `${PATCH_CONTRACT}${contractId}/0`, formData
             );
+
 
             if (res.status === 200) {
                 toast({
