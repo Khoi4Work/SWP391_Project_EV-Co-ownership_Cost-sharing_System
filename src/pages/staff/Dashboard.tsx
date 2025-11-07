@@ -166,7 +166,9 @@ export default function StaffDashboard() {
 
     const handleApprove = async (contractId: number) => {
         try {
-            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`);
+            const formData = new FormData();
+            formData.append("declinedContractLink", "");
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`,formData);
             if (res.status === 200) {
                 toast({
                     title: "Thành công",
@@ -192,8 +194,9 @@ export default function StaffDashboard() {
             const formData = new FormData();
             // Tạo URL bản xem hợp đồng readonly
             const previewUrl = `${window.location.origin}/contract/view-only/${contractId}`;
-            console.log(previewUrl)
             formData.append("declinedContractLink", previewUrl);
+            console.log(previewUrl)
+
             // Gửi PATCH request với previewUrl dưới dạng request param
             const res = await axiosClient.patch(
                 `${PATCH_CONTRACT}${contractId}/0`, formData

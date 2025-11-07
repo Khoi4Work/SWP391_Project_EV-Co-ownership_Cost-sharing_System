@@ -152,7 +152,8 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
 
             // ✅ 2. Tạo FormData gửi BE
             const formData = new FormData();
-            formData.append("idContract", idContract.toString());
+            console.log(idContract)
+            formData.append("idContract", id.toString());
             formData.append("idUser", user.id.toString());
             formData.append("idChoice", status.toString());
             formData.append("contract_signature", savedPrivateKey.trim());
