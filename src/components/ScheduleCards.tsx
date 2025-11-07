@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Car, Clock, User } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
-import Vote from "@/pages/co-owner/Vote";
-
+import { Input } from "./ui/input";
+import { useNavigate } from "react-router-dom";
 type ScheduleItem = {
     scheduleId: number;
     startTime: string; // ISO
@@ -141,8 +141,10 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
 }
 
 function RegisterVehicleServiceModal({ open, onClose }) {
+    const navigate = useNavigate();
     const [vehicleServices, setVehicleServices] = useState([]);
     const [selectedService, setSelectedService] = useState("");
+    const [customService, setCustomService] = useState("");
     const { toast } = useToast();
     // ✅ Gọi API lấy danh sách dịch vụ
     useEffect(() => {
@@ -174,122 +176,145 @@ function RegisterVehicleServiceModal({ open, onClose }) {
             });
             return;
         }
+        navigate("/service-detail", { state: { selectedService } });
+        // try {
+        //     // 1. tạo DecisionVote
+        //     const decisionReq = {
+        //         decisionName: selectedService,
+        //         description: `${selectedService} request`,
+        //         // nếu DecisionVoteReq cần thêm field (ví dụ serviceId), thêm ở đây
+        //     };
 
-        try {
-            // 1. tạo DecisionVote
-            const decisionReq = {
-                decisionName: selectedService,
-                description: `${selectedService} request`,
-                // nếu DecisionVoteReq cần thêm field (ví dụ serviceId), thêm ở đây
-            };
+        //     const res = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, decisionReq);
+        //     console.log(res.data.creator.status)
+        //     if (res.status !== 201) {
+        //         throw new Error("Không thể tạo quyết định mới");
+        //     }
 
-            const res = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, decisionReq);
-            console.log(res.data.creator.status)
-            if (res.status !== 201) {
-                throw new Error("Không thể tạo quyết định mới");
-            }
+        //     console.log(res)
+        //     const voters = res.data.voters;
+        //     const creator = res.data.creator;
 
-            console.log(res)
-            const voters = res.data.voters;
-            const creator = res.data.creator;
+        //     console.log("✅ Full decisionVote:", res.data);
 
-            console.log("✅ Full decisionVote:", res.data);
+        //     // 1️⃣ Creator name & group name (có thể null)
+        //     const creatorName =
+        //         creator?.createdBy?.users?.hovaTen || "Một thành viên";
+        //     const groupNameFromRes =
+        //         creator?.createdBy?.group?.groupName || "Nhóm";
+        //     const decisionName = creator?.decisionName || selectedService;
 
-            // 1️⃣ Creator name & group name (có thể null)
-            const creatorName =
-                creator?.createdBy?.users?.hovaTen || "Một thành viên";
-            const groupNameFromRes =
-                creator?.createdBy?.group?.groupName || "Nhóm";
-            const decisionName = creator?.decisionName || selectedService;
+        //     // 2️⃣ Lấy danh sách email từ decisionVoteDetails
+        //     const emailList =
+        //         voters?.map(
+        //             (detail: any) => detail?.groupMember?.users?.email
+        //         ).filter((email: string | undefined) => email) || [];
 
-            // 2️⃣ Lấy danh sách email từ decisionVoteDetails
-            const emailList =
-                voters?.map(
-                    (detail: any) => detail?.groupMember?.users?.email
-                ).filter((email: string | undefined) => email) || [];
+        //     console.log("✅ Email list:", emailList);
 
-            console.log("✅ Email list:", emailList);
+        //     // 4. Nếu không có email thì vẫn xử lý (thông báo hoặc log)
+        //     if (emailList.length === 0) {
+        //         console.warn("Không tìm thấy email co-owner trong voters:", voters);
+        //     }
 
-            // 4. Nếu không có email thì vẫn xử lý (thông báo hoặc log)
-            if (emailList.length === 0) {
-                console.warn("Không tìm thấy email co-owner trong voters:", voters);
-            }
+        //     // 5. Gửi email cho từng co-owner (POST /email/send)
+        //     //    Tạo template đúng format: "group này - member này tạo service này. Xin vui lòng vào link này để vote."
+        //     const emailPayloads = emailList.map((email: string) => ({
+        //         email,
+        //         subject: `Yêu cầu biểu quyết dịch vụ: ${decisionName}`,
+        //         url: `${window.location.origin}/vote/${creator.id}`,
+        //         template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${creator.id} để vote.`
+        //     }));
 
-            // 5. Gửi email cho từng co-owner (POST /email/send)
-            //    Tạo template đúng format: "group này - member này tạo service này. Xin vui lòng vào link này để vote."
-            const emailPayloads = emailList.map((email: string) => ({
-                email,
-                subject: `Yêu cầu biểu quyết dịch vụ: ${decisionName}`,
-                url: `${window.location.origin}/vote/${creator.id}`,
-                template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${creator.id} để vote.`
-            }));
+        //     // Gửi song song; bắt lỗi từng request
+        //     const sendResults = await Promise.allSettled(
+        //         emailPayloads.map((payload) => axiosClient.post("/email/send", payload))
+        //     );
 
-            // Gửi song song; bắt lỗi từng request
-            const sendResults = await Promise.allSettled(
-                emailPayloads.map((payload) => axiosClient.post("/email/send", payload))
-            );
-
-            // Kiểm tra kết quả gửi email
-            const failed = sendResults.filter(r => r.status === "rejected");
-            if (failed.length > 0) {
-                console.error(`${failed.length} email gửi thất bại`, failed);
-                // tuỳ chọn: hiển thị toast thông báo 1 phần thành công / 1 phần thất bại
-                toast({
-                    title: "Gửi email",
-                    description: `${emailList.length - failed.length} / ${emailList.length} email đã được gửi.`,
-                    variant: failed.length === emailList.length ? "destructive" : undefined,
-                });
-            } else {
-                toast({
-                    title: "Đăng ký dịch vụ thành công",
-                    description: `Đã gửi thông báo biểu quyết đến ${emailList.length} thành viên trong nhóm.`,
-                });
-            }
-        } catch (error) {
-            console.error("Lỗi khi tạo decision hoặc gửi email:", error);
-            toast({
-                title: "Lỗi",
-                description: "Không thể khởi tạo quyết định hoặc gửi email.",
-                variant: "destructive",
-            });
-        }
+        //     // Kiểm tra kết quả gửi email
+        //     const failed = sendResults.filter(r => r.status === "rejected");
+        //     if (failed.length > 0) {
+        //         console.error(`${failed.length} email gửi thất bại`, failed);
+        //         // tuỳ chọn: hiển thị toast thông báo 1 phần thành công / 1 phần thất bại
+        //         toast({
+        //             title: "Gửi email",
+        //             description: `${emailList.length - failed.length} / ${emailList.length} email đã được gửi.`,
+        //             variant: failed.length === emailList.length ? "destructive" : undefined,
+        //         });
+        //     } else {
+        //         toast({
+        //             title: "Đăng ký dịch vụ thành công",
+        //             description: `Đã gửi thông báo biểu quyết đến ${emailList.length} thành viên trong nhóm.`,
+        //         });
+        //     }
+        // } catch (error) {
+        //     console.error("Lỗi khi tạo decision hoặc gửi email:", error);
+        //     toast({
+        //         title: "Lỗi",
+        //         description: "Không thể khởi tạo quyết định hoặc gửi email.",
+        //         variant: "destructive",
+        //     });
+        // }
 
     };
+    const onConfirm = () => {
+        const serviceName =
+            selectedService === "other" ? customService.trim() : selectedService;
 
+        if (!serviceName) {
+            alert("Vui lòng chọn hoặc nhập tên dịch vụ!");
+            return;
+        }
+
+        handleRegister();
+    };
 
     return (
-        <div>
-            <Dialog open={open} onOpenChange={onClose}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Đăng ký dịch vụ xe</DialogTitle>
-                    </DialogHeader>
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Đăng ký dịch vụ xe</DialogTitle>
+                </DialogHeader>
 
-                    <div className="space-y-3 py-2">
-                        <label className="text-sm font-medium">Chọn dịch vụ</label>
-                        <Select onValueChange={setSelectedService}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Chọn một dịch vụ" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {vehicleServices.map(service => (
-                                    <SelectItem key={service.id} value={service.serviceName}>
-                                        {service.serviceName} — {service.price?.toLocaleString()}đ
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                {/* Select box */}
+                <div className="space-y-3 py-2">
+                    <label className="text-sm font-medium">Chọn dịch vụ</label>
+                    <Select onValueChange={setSelectedService}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Chọn một dịch vụ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {vehicleServices.map(service => (
+                                <SelectItem key={service.id} value={service.serviceName}>
+                                    {service.serviceName}
+                                </SelectItem>
+                            ))}
+                            {/* Thêm lựa chọn “Khác” */}
+                            <SelectItem value="other">Khác</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Textbox chỉ bật khi chọn “Khác” */}
+                {selectedService === "other" && (
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Nhập tên dịch vụ khác</label>
+                        <Input
+                            placeholder="Nhập tên dịch vụ bạn muốn"
+                            value={customService}
+                            onChange={(e) => setCustomService(e.target.value)}
+                        />
                     </div>
+                )}
 
-                    <DialogFooter>
-                        <Button variant="outline" onClick={onClose}>
-                            Hủy
-                        </Button>
-                        <Button onClick={handleRegister}>Đăng ký</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>
+                        Hủy
+                    </Button>
+                    <Button onClick={onConfirm}>Đăng ký</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
