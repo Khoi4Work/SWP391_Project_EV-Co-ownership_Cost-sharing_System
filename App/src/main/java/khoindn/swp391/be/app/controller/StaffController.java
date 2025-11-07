@@ -95,7 +95,7 @@ public class StaffController {
 
     @PatchMapping("/contract/{contractId}/{decision}")
     public ResponseEntity verifyContract(@PathVariable int contractId, @PathVariable int decision,
-                                         @ModelAttribute String declinedContractLink) throws Exception {
+                                         @RequestParam("declinedContractLink") String declinedContractLink) throws Exception {
         System.out.println("verifying...");
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {

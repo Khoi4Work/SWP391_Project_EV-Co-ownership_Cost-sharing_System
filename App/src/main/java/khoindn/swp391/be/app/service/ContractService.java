@@ -82,7 +82,8 @@ public class ContractService implements IContractService {
         cleanKey(req.getContract_signature());
         //Parse privateKey va publicKey sang byte
 
-        if (iContractRepository.existsById(req.getIdContract())) {
+        System.out.println(req.getIdContract());
+        if (!iContractRepository.existsById(req.getIdContract())) {
             throw new ContractNotExistedException("Contract cannot found!");
         }
         byte[] privateKeyReceived;
@@ -328,7 +329,7 @@ public class ContractService implements IContractService {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
+                String secureUrl = contract.getUrlContract()+ "?token=" + token;
                 // SEND MULTIPLE USERS
                 try {
                     MimeMessage message = javaMailSender.createMimeMessage();
@@ -364,6 +365,7 @@ public class ContractService implements IContractService {
             iContractRepository.save(contract);
             SendWaitingConfirmedContract(contractId);
         } else if (decision == 0) {
+            System.out.println("link declined contract: "+declinedContractLink);
             contract.setStatus(StatusContract.DECLINED);
             contract.setEndDate(LocalDate.now());
             contract.setStaff(staff);
