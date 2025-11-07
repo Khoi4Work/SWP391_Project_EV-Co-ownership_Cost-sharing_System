@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Car, Clock, User } from "lucide-react";
+import {useEffect, useMemo, useState} from "react";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Textarea} from "@/components/ui/textarea";
+import {Car, Clock, User} from "lucide-react";
 import axiosClient from "@/api/axiosClient";
-import { useToast } from "@/hooks/use-toast";
+import {useToast} from "@/hooks/use-toast";
 import Vote from "@/pages/co-owner/Vote";
+
 type ScheduleItem = {
     scheduleId: number;
     startTime: string; // ISO
@@ -72,7 +73,11 @@ function formatDateTime(iso?: string) {
     if (!iso) return "-";
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "-";
-    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+    })}`;
 }
 
 async function fileListToBase64(files: FileList | null): Promise<string[]> {
@@ -133,10 +138,11 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
         checkOutTime: checkOutTime ? String(checkOutTime) : undefined,
     } as ScheduleItem;
 }
-function RegisterVehicleServiceModal({ open, onClose }) {
+
+function RegisterVehicleServiceModal({open, onClose}) {
     const [vehicleServices, setVehicleServices] = useState([]);
     const [selectedService, setSelectedService] = useState("");
-    const { toast } = useToast();
+    const {toast} = useToast();
     // ✅ Gọi API lấy danh sách dịch vụ
     useEffect(() => {
         if (open) {
@@ -176,27 +182,28 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 // nếu DecisionVoteReq cần thêm field (ví dụ serviceId), thêm ở đây
             };
 
-            const decisionRes = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, decisionReq);
-            console.log(decisionRes.data.status)
-            if (decisionRes.status !== 201) {
+            const res = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, decisionReq);
+            console.log(res.data.creator.status)
+            if (res.status !== 201) {
                 throw new Error("Không thể tạo quyết định mới");
             }
 
-            console.log(decisionRes)
-            const decisionVote = decisionRes.data;
+            console.log(res)
+            const voters = res.data.voters;
+            const creator = res.data.creator;
 
-            console.log("✅ Full decisionVote:", decisionVote);
+            console.log("✅ Full decisionVote:", res.data);
 
 // 1️⃣ Creator name & group name (có thể null)
             const creatorName =
-                decisionVote?.createdBy?.users?.hovaTen || "Một thành viên";
+                creator?.createdBy?.users?.hovaTen || "Một thành viên";
             const groupNameFromRes =
-                decisionVote?.createdBy?.group?.groupName || "Nhóm";
-            const decisionName = decisionVote?.decisionName || selectedService;
+                creator?.createdBy?.group?.groupName || "Nhóm";
+            const decisionName = creator?.decisionName || selectedService;
 
 // 2️⃣ Lấy danh sách email từ decisionVoteDetails
             const emailList =
-                decisionVote?.decisionVoteDetails?.map(
+                voters?.map(
                     (detail: any) => detail?.groupMember?.users?.email
                 ).filter((email: string | undefined) => email) || [];
 
@@ -204,7 +211,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
 
             // 4. Nếu không có email thì vẫn xử lý (thông báo hoặc log)
             if (emailList.length === 0) {
-                console.warn("Không tìm thấy email co-owner trong decisionVote:", decisionVote);
+                console.warn("Không tìm thấy email co-owner trong voters:", voters);
             }
 
             // 5. Gửi email cho từng co-owner (POST /email/send)
@@ -212,7 +219,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
             const emailPayloads = emailList.map((email: string) => ({
                 email,
                 subject: `Yêu cầu biểu quyết dịch vụ: ${decisionName}`,
-                url: `${window.location.origin}/vote/${decisionVote.id}`,
+                url: `${window.location.origin}/vote/${creator.id}`,
                 template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này để vote.`
             }));
 
@@ -261,7 +268,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                         <label className="text-sm font-medium">Chọn dịch vụ</label>
                         <Select onValueChange={setSelectedService}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Chọn một dịch vụ" />
+                                <SelectValue placeholder="Chọn một dịch vụ"/>
                             </SelectTrigger>
                             <SelectContent>
                                 {vehicleServices.map(service => (
@@ -284,6 +291,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
         </div>
     );
 }
+
 export default function ScheduleCards() {
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [items, setItems] = useState<ScheduleItem[]>([]);
@@ -295,8 +303,8 @@ export default function ScheduleCards() {
     const [openDetail, setOpenDetail] = useState(false);
     const [activeId, setActiveId] = useState<number | null>(null);
 
-    const [checkInForm, setCheckInForm] = useState<CheckInForm>({ condition: "GOOD", notes: "", images: [] });
-    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
+    const [checkInForm, setCheckInForm] = useState<CheckInForm>({condition: "GOOD", notes: "", images: []});
+    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({condition: "GOOD", notes: "", images: []});
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
     const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
 
@@ -314,9 +322,9 @@ export default function ScheduleCards() {
                 // đọc mock schedules từ localStorage (được tạo bởi VehicleBooking)
                 const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
                 const vehiclesMock = [
-                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8" },
-                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric" },
-                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3" },
+                    {vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8"},
+                    {vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric"},
+                    {vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3"},
                 ];
                 const mapped: ScheduleItem[] = raw
                     .filter((r: any) => r.groupId === groupId)
@@ -342,7 +350,7 @@ export default function ScheduleCards() {
                 const res = await fetch(`${beBaseUrl}/booking/schedules/group/${groupId}/booked`, {
                     headers: {
                         "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                        ...(token ? {"Authorization": `Bearer ${token}`} : {})
                     },
                     credentials: "include",
                 });
@@ -395,9 +403,9 @@ export default function ScheduleCards() {
                 const r = raw.find((x: any) => x.scheduleId === id);
                 if (!r) throw new Error("Không tìm thấy lịch trong mock");
                 const vehiclesMock = [
-                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8" },
-                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric" },
-                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3" },
+                    {vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8"},
+                    {vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric"},
+                    {vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3"},
                 ];
                 const v = vehiclesMock.find((x) => x.vehicleId === r.vehicleId);
                 const d: ScheduleDetailResponse = {
@@ -430,7 +438,7 @@ export default function ScheduleCards() {
                     method: "GET",
                     headers: {
                         "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                        ...(token ? {"Authorization": `Bearer ${token}`} : {})
                     },
                     credentials: "include",
                 });
@@ -459,7 +467,7 @@ export default function ScheduleCards() {
             return;
         }
         setActiveId(id);
-        setCheckInForm({ condition: "GOOD", notes: "", images: [] });
+        setCheckInForm({condition: "GOOD", notes: "", images: []});
         setOpenCheckIn(true);
     };
 
@@ -478,7 +486,7 @@ export default function ScheduleCards() {
             return;
         }
         setActiveId(id);
-        setCheckOutForm({ condition: "GOOD", notes: "", images: [] });
+        setCheckOutForm({condition: "GOOD", notes: "", images: []});
         setOpenCheckOut(true);
     };
 
@@ -532,7 +540,7 @@ export default function ScheduleCards() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
                 body: JSON.stringify(payload)
@@ -598,7 +606,7 @@ export default function ScheduleCards() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
                 body: JSON.stringify(payload)
@@ -629,9 +637,9 @@ export default function ScheduleCards() {
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {items.map(it => {
-                            const statusBadge = !it.hasCheckIn ? { text: "Chờ nhận xe", style: "bg-blue-600" }
-                                : it.hasCheckIn && !it.hasCheckOut ? { text: "Đang sử dụng", style: "bg-orange-500" }
-                                    : { text: "Đã trả xe", style: "bg-green-600" };
+                            const statusBadge = !it.hasCheckIn ? {text: "Chờ nhận xe", style: "bg-blue-600"}
+                                : it.hasCheckIn && !it.hasCheckOut ? {text: "Đang sử dụng", style: "bg-orange-500"}
+                                    : {text: "Đã trả xe", style: "bg-green-600"};
 
                             // Only show check-in/out buttons if the booking belongs to current user
                             // Fallback theo userName khi BE không trả userId
@@ -662,13 +670,18 @@ export default function ScheduleCards() {
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
                                     <div className="flex items-center justify-between">
                                         <div className="font-semibold">{it.vehicleName || "Xe"}</div>
-                                        <span className={`text-xs text-white px-2 py-0.5 rounded ${statusBadge.style}`}>{statusBadge.text}</span>
+                                        <span
+                                            className={`text-xs text-white px-2 py-0.5 rounded ${statusBadge.style}`}>{statusBadge.text}</span>
                                     </div>
-                                    <div className="text-sm text-muted-foreground mt-1">Biển số: {it.vehiclePlate || "-"}</div>
+                                    <div className="text-sm text-muted-foreground mt-1">Biển
+                                        số: {it.vehiclePlate || "-"}</div>
                                     <div className="mt-3 space-y-1 text-sm">
-                                        <div className="flex items-center gap-2"><User className="h-4 w-4" />Người thuê: {it.userName || "-"}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Bắt đầu: {formatDateTime(it.startTime)}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Kết thúc: {formatDateTime(it.endTime)}</div>
+                                        <div className="flex items-center gap-2"><User className="h-4 w-4"/>Người
+                                            thuê: {it.userName || "-"}</div>
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4"/>Bắt
+                                            đầu: {formatDateTime(it.startTime)}</div>
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4"/>Kết
+                                            thúc: {formatDateTime(it.endTime)}</div>
                                     </div>
                                     <div className="mt-3 flex gap-2">
                                         {isMyBooking ? (
@@ -679,16 +692,19 @@ export default function ScheduleCards() {
                                                     </Button>
                                                 )}
                                                 {it.hasCheckIn && !it.hasCheckOut && (
-                                                    <Button size="sm" variant="outline" onClick={() => openCheckOutDialog(it.scheduleId)}>
+                                                    <Button size="sm" variant="outline"
+                                                            onClick={() => openCheckOutDialog(it.scheduleId)}>
                                                         Check-out
                                                     </Button>
                                                 )}
-                                                <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>
+                                                <Button size="sm" variant="ghost"
+                                                        onClick={() => openDetailDialog(it.scheduleId)}>
                                                     Xem chi tiết
                                                 </Button>
                                             </>
                                         ) : (
-                                            <Button size="sm" variant="ghost" onClick={() => openDetailDialog(it.scheduleId)}>
+                                            <Button size="sm" variant="ghost"
+                                                    onClick={() => openDetailDialog(it.scheduleId)}>
                                                 Xem chi tiết
                                             </Button>
                                         )}
@@ -708,8 +724,9 @@ export default function ScheduleCards() {
                         <div className="space-y-3">
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
-                                <Select value={checkInForm.condition} onValueChange={(v) => setCheckInForm(prev => ({ ...prev, condition: v }))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
+                                <Select value={checkInForm.condition}
+                                        onValueChange={(v) => setCheckInForm(prev => ({...prev, condition: v}))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng"/></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
                                         <SelectItem value="NORMAL">Bình thường</SelectItem>
@@ -719,14 +736,16 @@ export default function ScheduleCards() {
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
-                                <Textarea value={checkInForm.notes} onChange={(e) => setCheckInForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Ghi chú..." />
+                                <Textarea value={checkInForm.notes}
+                                          onChange={(e) => setCheckInForm(prev => ({...prev, notes: e.target.value}))}
+                                          placeholder="Ghi chú..."/>
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
                                 <input type="file" multiple onChange={async (e) => {
                                     const imgs = await fileListToBase64(e.target.files);
-                                    setCheckInForm(prev => ({ ...prev, images: imgs }));
-                                }} />
+                                    setCheckInForm(prev => ({...prev, images: imgs}));
+                                }}/>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckIn}>Xác nhận</Button>
@@ -743,12 +762,14 @@ export default function ScheduleCards() {
                         </DialogHeader>
                         <div className="space-y-3">
                             <div className="text-sm text-muted-foreground">
-                                Hãy kiểm tra lại tình trạng xe so với lúc check-in: {formatDateTime(items.find(i => i.scheduleId === activeId)?.checkInTime)}
+                                Hãy kiểm tra lại tình trạng xe so với lúc
+                                check-in: {formatDateTime(items.find(i => i.scheduleId === activeId)?.checkInTime)}
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
-                                <Select value={checkOutForm.condition} onValueChange={(v) => setCheckOutForm(prev => ({ ...prev, condition: v }))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
+                                <Select value={checkOutForm.condition}
+                                        onValueChange={(v) => setCheckOutForm(prev => ({...prev, condition: v}))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng"/></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
                                         <SelectItem value="NORMAL">Bình thường</SelectItem>
@@ -758,14 +779,16 @@ export default function ScheduleCards() {
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
-                                <Textarea value={checkOutForm.notes} onChange={(e) => setCheckOutForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Ghi chú..." />
+                                <Textarea value={checkOutForm.notes}
+                                          onChange={(e) => setCheckOutForm(prev => ({...prev, notes: e.target.value}))}
+                                          placeholder="Ghi chú..."/>
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
                                 <input type="file" multiple onChange={async (e) => {
                                     const imgs = await fileListToBase64(e.target.files);
-                                    setCheckOutForm(prev => ({ ...prev, images: imgs }));
-                                }} />
+                                    setCheckOutForm(prev => ({...prev, images: imgs}));
+                                }}/>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckOut}>Xác nhận</Button>
@@ -819,7 +842,8 @@ export default function ScheduleCards() {
                                             <div>Tình trạng: {detail.checkIn.condition}</div>
                                             <div>Ghi chú: {detail.checkIn.notes || '-'}</div>
                                             {detail.checkIn.images && (
-                                                <img src={detail.checkIn.images} alt="checkin" className="mt-2 max-h-48 object-contain" />
+                                                <img src={detail.checkIn.images} alt="checkin"
+                                                     className="mt-2 max-h-48 object-contain"/>
                                             )}
                                             <Button
                                                 variant="default"
@@ -841,7 +865,8 @@ export default function ScheduleCards() {
                                             <div>Tình trạng: {detail.checkOut.condition}</div>
                                             <div>Ghi chú: {detail.checkOut.notes || '-'}</div>
                                             {detail.checkOut.images && (
-                                                <img src={detail.checkOut.images} alt="checkout" className="mt-2 max-h-48 object-contain" />
+                                                <img src={detail.checkOut.images} alt="checkout"
+                                                     className="mt-2 max-h-48 object-contain"/>
                                             )}
                                         </div>
                                     ) : (
