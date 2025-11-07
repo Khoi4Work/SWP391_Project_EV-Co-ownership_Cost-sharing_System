@@ -36,8 +36,8 @@ export default function Vote() {
   useEffect(() => {
     const fetchDecision = async () => {
       try {
-        const decisionRes = await axiosClient.post(`/decision/vote/${idGroup}`);
-        if (decisionRes.status !== 201) {
+        const decisionRes = await axiosClient.get(`/groupMember/decision/vote/${idGroup}`);
+        if (decisionRes.status !== 200) {
           throw new Error("Không thể tạo quyết định mới");
         }
         const decisionVote = decisionRes.data;
