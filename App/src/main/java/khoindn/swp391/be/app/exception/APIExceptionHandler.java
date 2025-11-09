@@ -1,14 +1,18 @@
 package khoindn.swp391.be.app.exception;
 
 import khoindn.swp391.be.app.exception.exceptions.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestControllerAdvice
@@ -52,6 +56,14 @@ public class APIExceptionHandler {
     @ExceptionHandler(UserIsExistedException.class)
     public ResponseEntity handleUserIsExistedException(UserIsExistedException exception) {
         return ResponseEntity.status(401).body("Username is existed!"); // 401
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Map<String, String>> handleDisabledException(DisabledException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "Tài khoản đã bị khóa");
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     // ==========================

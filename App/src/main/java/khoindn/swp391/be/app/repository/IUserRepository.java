@@ -1,6 +1,7 @@
 package khoindn.swp391.be.app.repository;
 
 import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,4 +22,6 @@ public interface IUserRepository extends JpaRepository<Users, Integer> {
     boolean existsByCccd(String cccd);
     boolean existsByPhone(String phone);
     boolean existsByGplx(String gplx);
+
+    List<Users> findAllByStatus(StatusUser status);
 }
