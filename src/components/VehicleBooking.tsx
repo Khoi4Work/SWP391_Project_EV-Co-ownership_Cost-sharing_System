@@ -62,7 +62,7 @@ export default function VehicleBooking() {
     const [searchText, setSearchText] = useState("");
     const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
     const [loadingBookings, setLoadingBookings] = useState(false);
-    const [overrideInfo, setOverrideInfo] = useState<OverrideInfo | null>(null);
+    const [overrideInfoByGroup, setOverrideInfoByGroup] = useState<Record<number, OverrideInfo>>({});
     const [loadingOverrideInfo, setLoadingOverrideInfo] = useState(false);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [daysUsedThisMonth, setDaysUsedThisMonth] = useState(0);
@@ -96,6 +96,14 @@ export default function VehicleBooking() {
     const beBaseUrl = "http://localhost:8080";
     const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
     const currentUserId = Number(localStorage.getItem("userId")) || 2;
+    const [currentGroupId, setCurrentGroupId] = useState<number>(
+        Number(localStorage.getItem('groupId')) || 0
+    );
+    const overrideInfo = currentGroupId > 0 ? overrideInfoByGroup[currentGroupId] : null;
+
+    console.log('currentGroupId:', currentGroupId);
+    console.log('overrideInfoByGroup:', overrideInfoByGroup);
+    console.log('overrideInfo:', overrideInfo);
     const token = USE_MOCK ? null : localStorage.getItem("accessToken");
     const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
 
@@ -386,10 +394,16 @@ export default function VehicleBooking() {
     const loadOverrideInfo = async (groupId: number) => {
         setLoadingOverrideInfo(true);
         try {
-            const data: OverrideInfo = await apiCall(`/schedule/override-count?userId=${currentUserId}&groupId=${groupId}`);
-            setOverrideInfo(data);
+            const data: OverrideInfo = await apiCall(
+                `/schedule/override-count?userId=${currentUserId}&groupId=${groupId}`  // ← THÊM "/" Ở ĐẦU
+            );
+
+            setOverrideInfoByGroup(prev => ({
+                ...prev,
+                [groupId]: data
+            }));
         } catch (error: any) {
-            console.error("Error loading override info:", error);
+            console.error('Error loading override info:', error);
         } finally {
             setLoadingOverrideInfo(false);
         }
@@ -593,22 +607,57 @@ export default function VehicleBooking() {
 
     // ===== EFFECTS =====
     useEffect(() => {
+        const handleStorageChange = () => {
+            const newGroupId = Number(localStorage.getItem('groupId'));
+            if (newGroupId && newGroupId !== currentGroupId) {
+                setCurrentGroupId(newGroupId);
+                console.log('✅ Group changed to:', newGroupId);
+
+                // Load override info if not loaded yet
+                if (!overrideInfoByGroup[newGroupId]) {
+                    loadOverrideInfo(newGroupId);
+                }
+            }
+        };
+
+        // Listen to custom events
+        window.addEventListener('groupChanged', handleStorageChange);
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('groupChanged', handleStorageChange);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [currentGroupId, overrideInfoByGroup]);
+    useEffect(() => {
         const initData = async () => {
+            // LOAD GROUP ID TRƯỚC
             await loadGroupId();
+
+            // ĐỢI 1 CHÚT ĐỂ ĐẢM BẢO localStorage ĐÃ CẬP NHẬT
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             await loadVehicles();
 
-            const groupIdsStr = localStorage.getItem("groupIds");
+            const groupIdsStr = localStorage.getItem('groupIds');
             if (groupIdsStr) {
                 const groupIds: number[] = JSON.parse(groupIdsStr);
+
+                // LOAD OVERRIDE INFO CHO TẤT CẢ GROUPS
+                for (const groupId of groupIds) {
+                    console.log(`Loading override info for group ${groupId}`); // ← LOG
+                    await loadOverrideInfo(groupId);
+                }
+
                 if (groupIds.length > 0) {
-                    await loadOverrideInfo(groupIds[0]);
                     await checkOverdueFee(groupIds[0]);
                 }
+            } else {
+                console.error('❌ groupIds not found in localStorage'); // ← LOG
             }
         };
         initData();
     }, []);
-
     useEffect(() => {
         if (vehicles && vehicles.length > 0) loadBookings();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -848,8 +897,26 @@ export default function VehicleBooking() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn xe</label>
-                            <Select value={bookingForm.vehicle}
-                                    onValueChange={(val) => setBookingForm(prev => ({...prev, vehicle: val}))}>
+                            <Select
+                                value={bookingForm.vehicle}
+                                onValueChange={(val) => {
+                                    setBookingForm(prev => ({...prev, vehicle: val}));
+
+                                    // Update groupId khi chọn xe
+                                    const selectedVehicle = vehicles.find(v => String(v.vehicleId) === val);
+                                    if (selectedVehicle && selectedVehicle.groupId) {
+                                        const newGroupId = selectedVehicle.groupId;
+                                        const oldGroupId = Number(localStorage.getItem('groupId'));
+
+                                        if (newGroupId !== oldGroupId) {
+                                            localStorage.setItem('groupId', String(newGroupId));
+                                            window.dispatchEvent(new Event('groupChanged'));
+                                            console.log('🔄 Group changed from', oldGroupId, 'to', newGroupId);
+                                        }
+                                    }
+                                }}
+                            >
+
                                 <SelectTrigger>
                                     <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}>
                                         {bookingForm.vehicle && vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle) && (
@@ -971,8 +1038,26 @@ export default function VehicleBooking() {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Chọn xe</label>
-                                    <Select value={editForm.vehicle}
-                                            onValueChange={(val) => setEditForm(prev => ({...prev, vehicle: val}))}>
+                                    <Select
+                                        value={editForm.vehicle}
+                                        onValueChange={(val) => {
+                                            setEditForm(prev => ({...prev, vehicle: val}));
+
+                                            // Update groupId khi chọn xe (edit mode)
+                                            const selectedVehicle = vehicles.find(v => String(v.vehicleId) === val);
+                                            if (selectedVehicle && selectedVehicle.groupId) {
+                                                const newGroupId = selectedVehicle.groupId;
+                                                const oldGroupId = Number(localStorage.getItem('groupId'));
+
+                                                if (newGroupId !== oldGroupId) {
+                                                    localStorage.setItem('groupId', String(newGroupId));
+                                                    window.dispatchEvent(new Event('groupChanged'));
+                                                    console.log('🔄 Group changed (edit) from', oldGroupId, 'to', newGroupId);
+                                                }
+                                            }
+                                        }}
+                                    >
+
                                         <SelectTrigger><SelectValue placeholder="Chọn xe"/></SelectTrigger>
                                         <SelectContent>
                                             {vehicles.map((vehicle) => (
