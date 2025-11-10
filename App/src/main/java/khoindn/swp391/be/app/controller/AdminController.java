@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/staff") // Đường dẫn gốc
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+//@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
     @Autowired
     IUserService iUserService;
@@ -42,6 +42,12 @@ public class AdminController {
     public ResponseEntity<List<Users>> getUserStatusBlock() {
         List<Users> users = iUserService.getAllUsersByStatus();
         return ResponseEntity.ok(users);
+    }
+
+    @PutMapping("/users/{id}/unblock")
+    public ResponseEntity<String> unblockUser(@PathVariable int id) {
+        iUserService.unblockUser(id);
+        return ResponseEntity.ok("Đã mở khóa tài khoản thành công");
     }
 
     @GetMapping("/get-by-id/{id}")

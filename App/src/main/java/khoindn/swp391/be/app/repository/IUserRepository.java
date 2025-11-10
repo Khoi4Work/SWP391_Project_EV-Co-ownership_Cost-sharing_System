@@ -24,4 +24,5 @@ public interface IUserRepository extends JpaRepository<Users, Integer> {
     boolean existsByGplx(String gplx);
 
     List<Users> findAllByStatus(StatusUser status);
+
 }

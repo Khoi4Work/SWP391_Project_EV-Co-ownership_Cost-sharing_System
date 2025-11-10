@@ -74,5 +74,14 @@ public class UserService implements IUserService {
         return iUserRepository.findAllByStatus(StatusUser.BLOCK);
     }
 
+    @Override
+    public void unblockUser(int id) {
+        Users user = iUserRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với id: " + id));
+
+        user.setStatus(StatusUser.ACTIVE);
+        iUserRepository.save(user);
+    }
+
 
 }
