@@ -67,7 +67,7 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = true; // dùng BE thật để test
+const USE_MOCK = false; // dùng BE thật để test
 
 
 function formatDateTime(iso?: string) {

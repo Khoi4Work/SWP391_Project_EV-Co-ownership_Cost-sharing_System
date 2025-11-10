@@ -92,7 +92,7 @@ export default function VehicleBooking() {
 
     // ===== REFS & CONSTANTS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
-    const USE_MOCK = true; // dùng DB ảo, tắt BE thật
+    const USE_MOCK = false; // dùng DB ảo, tắt BE thật
     const beBaseUrl = "http://localhost:8080";
     const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
     const currentUserId = Number(localStorage.getItem("userId")) || 2;
@@ -336,7 +336,7 @@ export default function VehicleBooking() {
                 const endpointByStatus = (gid: number) => {
                     if (statusFilter === "BOOKED") return `/schedule/group/${gid}/booked`;
                     if (statusFilter === "CANCELED") return `/schedule/group/${gid}/canceled`;
-                    return `/schedule/group/${gid}/override-trackers`;
+                    return `/schedule/group/${gid}/overridden`;
                 };
                 const fetchPromises = groupIds.map(groupId => apiCall(endpointByStatus(groupId)));
                 const allBookingsArrays = await Promise.all(fetchPromises);
