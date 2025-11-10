@@ -90,6 +90,23 @@ public class ScheduleController {
 //                                                      @RequestBody ScheduleReq req) {
 //        return ResponseEntity.notFound().build();
 //    }
+@GetMapping("/group/{groupId}/booked")
+public ResponseEntity<List<ScheduleRes>> getBookedSchedules(@PathVariable int groupId) {
+    List<ScheduleRes> schedules = scheduleService.findBookedSchedulesByGroupId(groupId);
+    return ResponseEntity.ok(schedules);
+}
+
+    @GetMapping("/group/{groupId}/override-trackers")
+    public ResponseEntity<List<ScheduleRes>> getOverrideTrackers(@PathVariable int groupId) {
+        List<ScheduleRes> schedules = scheduleService.findOverrideTrackersByGroupId(groupId);
+        return ResponseEntity.ok(schedules);
+    }
+
+    @GetMapping("/group/{groupId}/canceled")
+    public ResponseEntity<List<ScheduleRes>> getCanceledSchedules(@PathVariable int groupId) {
+        List<ScheduleRes> schedules = scheduleService.findCanceledSchedulesByGroupId(groupId);
+        return ResponseEntity.ok(schedules);
+    }
 
 
 }

@@ -6,6 +6,7 @@ import khoindn.swp391.be.app.model.Response.GroupFeeResponse;
 import khoindn.swp391.be.app.pojo.FundDetail;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo._enum.StatusFundDetail;
+import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import khoindn.swp391.be.app.repository.IFundDetailRepository;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
 import khoindn.swp391.be.app.repository.IGroupRepository;
@@ -50,7 +51,10 @@ public class FundDetailService implements IFundDetailService {
     @Override
     @Transactional
     @Scheduled(cron = "0 0 0 1 * *")
+//    @Scheduled(fixedRate = 10000)  //  10 giây, dùng tạm thời
+
     public void generateMonthlyFeesForAllGroups() {
+        System.out.println("Running");
         String currentMonthYear = YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
 
         groupRepository.findAll().forEach(group -> {
@@ -181,6 +185,7 @@ public class FundDetailService implements IFundDetailService {
                 .collect(Collectors.toList());
         overdueFees.forEach(fee -> {
             fee.setIsOverdue(true);
+            fee.getGroupMember().getUsers().setStatus(StatusUser.BLOCK);
             fundDetailRepository.save(fee);
 
 
@@ -207,6 +212,7 @@ public class FundDetailService implements IFundDetailService {
                 currentMonthYear);
         return toFundFeeResponse(fee);
     }
+
 
     @Override
     @Transactional
@@ -251,5 +257,16 @@ public class FundDetailService implements IFundDetailService {
         response.setDueDate(fee.getDueDate());
         response.setCreatedAt(fee.getCreatedAt());
         return response;
+    }
+
+    // test
+    @Override
+    public FundDetail findById(int id) {
+        return fundDetailRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public FundDetail addFund(FundDetail fundDetail) {
+        return fundDetailRepository.save(fundDetail);
     }
 }

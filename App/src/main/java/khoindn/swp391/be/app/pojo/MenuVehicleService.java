@@ -21,8 +21,7 @@ public class MenuVehicleService {
     private String serviceName; // Maintenance, Insurance, Battery / Energy, Financial
     @Column(name = "description", unique = true)
     private String description;
-    @Column(name = "price")
-    private Double price;
+
     // Relationships
     @OneToMany(mappedBy = "menuVehicleService", cascade = CascadeType.ALL)
     @JsonIgnore

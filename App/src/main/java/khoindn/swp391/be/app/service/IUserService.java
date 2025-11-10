@@ -5,7 +5,7 @@ import khoindn.swp391.be.app.pojo.Users;
 import java.util.List;
 import java.util.Optional;
 
-public interface IUserService{
+public interface IUserService {
     public Optional<Users> findUserById(int id);
 
     public Users addUser(Users users);
@@ -17,5 +17,7 @@ public interface IUserService{
     public Users getUserByEmail(String email);
 
     public List<Users> getAllUsers();
+
+    public List<Users> getAllUsersByStatus();
 
 }

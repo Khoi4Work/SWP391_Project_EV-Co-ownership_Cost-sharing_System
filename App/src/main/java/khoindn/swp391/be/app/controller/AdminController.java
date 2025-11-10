@@ -4,8 +4,11 @@ package khoindn.swp391.be.app.controller;
 import khoindn.swp391.be.app.model.Request.CreateStaffRequest;
 import khoindn.swp391.be.app.model.Response.StaffResponse;
 import khoindn.swp391.be.app.model.Request.UpdateStaffRequest;
+import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.IStaffManagementService;
+import khoindn.swp391.be.app.service.IUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,9 +21,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
+    @Autowired
+    IUserService iUserService;
 
     private final IStaffManagementService staffService;
-    
+
     @PostMapping("/create")
     public ResponseEntity<StaffResponse> createStaff(@RequestBody CreateStaffRequest request) {
         StaffResponse newStaff = staffService.createStaff(request);
@@ -31,6 +36,12 @@ public class AdminController {
     public ResponseEntity<List<StaffResponse>> getAllStaff() {
         List<StaffResponse> staffList = staffService.getAllStaff();
         return ResponseEntity.ok(staffList);
+    }
+
+    @GetMapping("/getUserStatusBlock")
+    public ResponseEntity<List<Users>> getUserStatusBlock() {
+        List<Users> users = iUserService.getAllUsersByStatus();
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/get-by-id/{id}")

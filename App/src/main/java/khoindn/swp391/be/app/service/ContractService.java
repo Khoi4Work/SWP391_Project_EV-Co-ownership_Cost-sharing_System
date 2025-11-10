@@ -18,12 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDate;
@@ -77,16 +75,21 @@ public class ContractService implements IContractService {
         System.out.println("Update contract...");
 
         Users user = iUserRepository.findUsersById(req.getIdUser());
-        System.out.println(user.getPublicKey());
-        System.out.println(req.getContract_signature());
-        System.out.println(req.getContractContent());
+        System.out.println("PUBLIC KEY: "+user.getPublicKey());
+        System.out.println("PRIVATE KEY: "+req.getContract_signature());
+        System.out.println("CONTRACT CONTENT: "+req.getContractContent());
 
+        cleanKey(req.getContract_signature());
         //Parse privateKey va publicKey sang byte
 
+        System.out.println(req.getIdContract());
+        if (!iContractRepository.existsById(req.getIdContract())) {
+            throw new ContractNotExistedException("Contract cannot found!");
+        }
         byte[] privateKeyReceived;
         byte[] publicKeyUser;
         try {
-            privateKeyReceived = Base64.getDecoder().decode(req.getContract_signature());
+            privateKeyReceived = Base64.getDecoder().decode(cleanKey(req.getContract_signature()));
             publicKeyUser = Base64.getDecoder().decode(user.getPublicKey());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid Base64 encoding for keys");
@@ -172,7 +175,7 @@ public class ContractService implements IContractService {
 
             return contractSigner;
         } else {
-            throw new IllegalArgumentException("Invalid userId value");
+            throw new IllegalArgumentException("Invalid idUsers value");
         }
     }
 
@@ -186,21 +189,22 @@ public class ContractService implements IContractService {
         Contract contract = new Contract();
         contract.setContractType(req.getContractType());
         contract.setStartDate(LocalDate.now());
-        contract.setUrlConfirmedContract(req.getDocumentUrl());
+        contract.setUrlContract(req.getDocumentUrl());
         if (supabaseService.isFileExist(req.getImageContract().getOriginalFilename())) {
             contract.setImageContract(supabaseService.getFileUrl(req.getImageContract().getOriginalFilename()));
         } else {
             contract.setImageContract(supabaseService.uploadFile(req.getImageContract()));
         }
 
-        iContractRepository.save(contract);
 
         //TAO VEHICLE
         Vehicle vehicle = modelMapper.map(req, Vehicle.class);
+        vehicle.setContract(contract);
         iVehicleRepository.save(vehicle);
+        iContractRepository.save(contract);
 
         //TAO CONTRACT SIGNER
-        for (Integer userId : req.getUserId()) {
+        for (Integer userId : req.getIdUsers()) {
             Users users = iUserRepository.findUsersById(userId);
             ContractSigner contractSigner = new ContractSigner();
 
@@ -225,7 +229,7 @@ public class ContractService implements IContractService {
 
             Contract contract = iContractRepository.findContractByGroup_GroupId(groupMember.getGroup().getGroupId());
             if (contract == null) {
-                throw new IllegalArgumentException("Invalid userId value");
+                throw new IllegalArgumentException("Invalid idUsers value");
             }
             Vehicle vehicle = iVehicleRepository.findVehicleByGroup(groupMember.getGroup());
             if (vehicle == null) {
@@ -283,15 +287,17 @@ public class ContractService implements IContractService {
 
     @Override
     public void SendWaitingConfirmedContract(int contractId) {
+        System.out.println("SENDING CONTRACT CONFIRMATION");
         List<ContractSigner> signerList = getContractSignerByContractId(contractId);
 
         Contract contract = getContractByContractId(contractId);
 
         if (contract.getStatus().equals(StatusContract.WAITING_CONFIRMATION)) {
+            System.out.println("SENDING...");
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlConfirmedContract() + contract.getContractId() + "?token=" + token;
+                String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
                 try {
                     MimeMessage message = javaMailSender.createMimeMessage();
                     MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -302,7 +308,7 @@ public class ContractService implements IContractService {
                     String content = templateEngine.process("contract", context);
 
                     helper.setTo(signer.getUser().getEmail());
-                    helper.setSubject("[EcoShare System] Send E-Contract to User");
+                    helper.setSubject("[EcoShare System] Your contract is waiting for confirmation");
                     helper.setText(content, true);
                     javaMailSender.send(message);
                 } catch (MessagingException e) {
@@ -323,7 +329,7 @@ public class ContractService implements IContractService {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlConfirmedContract() + contract.getContractId() + "?token=" + token;
+                String secureUrl = contract.getUrlContract()+ "?token=" + token;
                 // SEND MULTIPLE USERS
                 try {
                     MimeMessage message = javaMailSender.createMimeMessage();
@@ -335,7 +341,7 @@ public class ContractService implements IContractService {
                     String content = templateEngine.process("contract_decline", context);
 
                     helper.setTo(signer.getUser().getEmail());
-                    helper.setSubject("[EcoShare System] Send E-Contract to User");
+                    helper.setSubject("[EcoShare System] Your contract is declined!");
                     helper.setText(content, true);
                     javaMailSender.send(message);
                 } catch (MessagingException e) {
@@ -346,25 +352,35 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void verifyContract(int contractId, int decision) throws Exception {
+    public void verifyContract(int contractId, int decision, Users staff, String declinedContractLink) throws Exception {
         Contract contract = getContractByContractId(contractId);
+
         if (contract == null || !contract.getStatus().equals(StatusContract.PENDING_REVIEW)) {
             throw new ContractNotExistedException("Contract cannot found or invalid status!");
         }
         if (decision == 1) {
+            System.out.println("DECISION IS APPROVED");
             contract.setStatus(StatusContract.WAITING_CONFIRMATION);
-            contract.setStaff(authenticationService.getCurrentAccount());
+            contract.setStaff(staff);
             iContractRepository.save(contract);
             SendWaitingConfirmedContract(contractId);
         } else if (decision == 0) {
+            System.out.println("link declined contract: "+declinedContractLink);
             contract.setStatus(StatusContract.DECLINED);
             contract.setEndDate(LocalDate.now());
-            contract.setStaff(authenticationService.getCurrentAccount());
+            contract.setStaff(staff);
+            contract.setUrlContract(declinedContractLink);
             iContractRepository.save(contract);
             sendDeclinedContractNotification(contractId);
         } else {
             throw new UndefinedChoiceException("Invalid decision value");
         }
+    }
+    public static String cleanKey(String key) {
+        return key
+                .replaceAll("-----BEGIN (.*)-----", "")
+                .replaceAll("-----END (.*)-----", "")
+                .replaceAll("\\s", ""); // xóa toàn bộ khoảng trắng, xuống dòng
     }
 
 

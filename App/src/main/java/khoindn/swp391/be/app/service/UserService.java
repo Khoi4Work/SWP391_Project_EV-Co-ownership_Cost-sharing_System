@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.service;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.UserNotFoundException;
 import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import khoindn.swp391.be.app.repository.IUserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +67,11 @@ public class UserService implements IUserService {
     @Override
     public List<Users> getAllUsers() {
         return iUserRepository.findAll();
+    }
+
+    @Override
+    public List<Users> getAllUsersByStatus() {
+        return iUserRepository.findAllByStatus(StatusUser.BLOCK);
     }
 
 
