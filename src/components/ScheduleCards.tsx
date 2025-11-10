@@ -67,7 +67,7 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = false; // dùng BE thật để test
+const USE_MOCK = true; // dùng BE thật để test
 
 
 function formatDateTime(iso?: string) {
@@ -373,7 +373,8 @@ export default function ScheduleCards() {
                 setItems(mapped);
             } else {
                 const token = localStorage.getItem("accessToken");
-                const res = await fetch(`${beBaseUrl}/booking/schedules/group/${groupId}/booked`, {
+                // sử dụng endpoint chuẩn theo BE: /schedule/group/{groupId}/booked
+                const res = await fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
                     headers: {
                         "Accept": "application/json",
                         ...(token ? { "Authorization": `Bearer ${token}` } : {})
