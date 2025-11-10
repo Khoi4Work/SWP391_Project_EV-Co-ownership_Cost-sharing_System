@@ -96,9 +96,9 @@ public ResponseEntity<List<ScheduleRes>> getBookedSchedules(@PathVariable int gr
     return ResponseEntity.ok(schedules);
 }
 
-    @GetMapping("/group/{groupId}/override-trackers")
-    public ResponseEntity<List<ScheduleRes>> getOverrideTrackers(@PathVariable int groupId) {
-        List<ScheduleRes> schedules = scheduleService.findOverrideTrackersByGroupId(groupId);
+    @GetMapping("/group/{groupId}/overridden")
+    public ResponseEntity<List<ScheduleRes>> getOverridden(@PathVariable int groupId) {
+        List<ScheduleRes> schedules = scheduleService.findOverridenByGroupId(groupId);
         return ResponseEntity.ok(schedules);
     }
 

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletResponse;
 import khoindn.swp391.be.app.model.Response.*;
 import khoindn.swp391.be.app.pojo.FundDetail;
+import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import khoindn.swp391.be.app.repository.IFundDetailRepository;
 import khoindn.swp391.be.app.service.IFundDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,7 @@ public class FundDetailController {
         fundDetailRepository.findById(feeId).ifPresentOrElse(
                 fee -> {
                     fee.setIsOverdue(true);
+                    fee.getGroupMember().getUsers().setStatus(StatusUser.BLOCK);
                     fundDetailRepository.save(fee);
                     System.out.println("Fee " + feeId + " marked as overdue");
                 },
