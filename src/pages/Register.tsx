@@ -186,9 +186,7 @@ export default function Register() {
                                 cccd: values.cccd,
                                 gplx: values.gplx,
                                 password: values.password,
-                                roleId: {
-                                    roleId: 1
-                                }
+                                roleId: 1
                             };
 
                             console.log("Dữ liệu đăng ký:", userObject);

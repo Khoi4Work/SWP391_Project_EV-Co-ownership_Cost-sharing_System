@@ -23,6 +23,8 @@ import PDFContract from "./pages/co-owner/PDFContract";
 import PaymentSuccess from "./pages/co-owner/PaymentSuccess";
 import PaymentFailed from "./pages/co-owner/PaymentFailed";
 import { useEffect } from "react";
+import Vote from "./pages/co-owner/Vote";
+import ServiceDetail from "./pages/co-owner/ServiceDetail";
 const queryClient = new QueryClient();
 function TitleUpdater() {
     const location = useLocation();
@@ -56,6 +58,7 @@ const App = () => {
                         <Route path="/register" element={<Register />} />
                         <Route path="/verify-otp" element={<VerifyOTP />} />
                         <Route path="/contract/preview/:id" element={<ContractPreviewPage />} />
+                        <Route path="/contract/view-only/:id" element={<ContractPreviewPage readonly={true} />} />
                         <Route path="/contract/preview.pdf/:contractId" element={<PDFContract />} />
                         {/* Co-owner routes */}
                         <Route path="/co-owner/dashboard" element={<CoOwnerDashboard />} />
@@ -65,6 +68,8 @@ const App = () => {
                         <Route path="/co-owner/groups/:groupId/usage-history" element={<UsageHistory />} />
                         <Route path="/co-owner/usage-history/:scheduleId" element={<UsageHistoryDetail />} />
                         <Route path="/co-owner/contracts" element={<Contracts />} />
+                        <Route path="/vote/:id" element={<Vote />} />
+                        <Route path="/service-detail" element={<ServiceDetail />} />
                         {/* Payment return routes */}
                         <Route path="/co-owner/payment-success" element={<PaymentSuccess />} />
                         <Route path="/co-owner/payment-failed" element={<PaymentFailed />} />

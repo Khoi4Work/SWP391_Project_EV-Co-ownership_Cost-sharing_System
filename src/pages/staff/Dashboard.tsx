@@ -29,6 +29,7 @@ import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
     const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
+    const USE_MOCK = false; // Bật DB ảo
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -44,6 +45,11 @@ export default function StaffDashboard() {
         { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
     ];
     useEffect(() => {
+        if (USE_MOCK) {
+            // Mock data cho hợp đồng chờ duyệt
+            setServices([]);
+            return;
+        }
         axiosClient.get(GET_REQUESTS)
             .then(res => {
                 if (res.status === 200 && Array.isArray(res.data)) {
@@ -160,7 +166,9 @@ export default function StaffDashboard() {
 
     const handleApprove = async (contractId: number) => {
         try {
-            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`);
+            const formData = new FormData();
+            formData.append("declinedContractLink", "");
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`,formData);
             if (res.status === 200) {
                 toast({
                     title: "Thành công",
@@ -180,14 +188,29 @@ export default function StaffDashboard() {
     };
 
     const handleReject = async (contractId: number) => {
+
+
         try {
-            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/0`);
+            const formData = new FormData();
+            // Tạo URL bản xem hợp đồng readonly
+            const previewUrl = `${window.location.origin}/contract/view-only/${contractId}`;
+            formData.append("declinedContractLink", previewUrl);
+            console.log(previewUrl)
+
+            // Gửi PATCH request với previewUrl dưới dạng request param
+            const res = await axiosClient.patch(
+                `${PATCH_CONTRACT}${contractId}/0`, formData
+            );
+
+
             if (res.status === 200) {
                 toast({
                     title: "Đã từ chối hợp đồng",
-                    description: "Hợp đồng đã bị từ chối thành công.",
+                    description: "Đường link xem hợp đồng đã được gửi cho người dùng.",
                     variant: "success",
                 });
+
+                // Cập nhật lại danh sách hợp đồng trên FE
                 setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
             }
         } catch (err) {
@@ -198,9 +221,6 @@ export default function StaffDashboard() {
             });
         }
     };
-
-
-
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
@@ -278,6 +298,7 @@ export default function StaffDashboard() {
                                     {services.length > 0 ? (
                                         services.map((item: any, index: number) => {
                                             const contract = item.contract;
+                                            console.log(contract.imageContract);
                                             return (
                                                 <Card
                                                     key={index}
@@ -350,18 +371,23 @@ export default function StaffDashboard() {
                                                             >
                                                                 Không duyệt
                                                             </Button>
-
-                                                            {contract.htmlString && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    className="border-gray-400 text-gray-700 hover:bg-gray-100 ml-auto"
-                                                                    onClick={() =>
-                                                                        window.open(contract.htmlString, "_blank")
+                                                            <Button
+                                                                variant="outline"
+                                                                className="border-gray-400 text-gray-700 hover:bg-gray-100 ml-auto"
+                                                                onClick={() => {
+                                                                    if (!contract.imageContract || contract.imageContract.trim() === "") {
+                                                                        toast({
+                                                                            title: "Không có link hợp đồng",
+                                                                            description: "Hợp đồng này chưa có đường dẫn để xem.",
+                                                                            variant: "destructive", // màu đỏ nhẹ
+                                                                        });
+                                                                    } else {
+                                                                        window.open(contract.imageContract, "_blank");
                                                                     }
-                                                                >
-                                                                    Xem bản hợp đồng
-                                                                </Button>
-                                                            )}
+                                                                }}
+                                                            >
+                                                                Xem bản hợp đồng
+                                                            </Button>
                                                         </div>
                                                     </CardContent>
                                                 </Card>

@@ -40,9 +40,9 @@ async function getWithFallback<T>(paths: string[]) {
 }
 
 export async function fetchUsageHistoryList(userId: number, groupId: number) {
-    // Gọi đúng route BE cung cấp
+    // Chỉ cần groupId, bỏ userId vì backend không dùng
     return await getWithFallback<UsageHistoryListItem[]>([
-        `/api/usage-history/booking/${userId}/${groupId}`,
+        `/api/usage-history/booking/${groupId}`,  // ← Sửa: chỉ dùng groupId
     ]);
 }
 

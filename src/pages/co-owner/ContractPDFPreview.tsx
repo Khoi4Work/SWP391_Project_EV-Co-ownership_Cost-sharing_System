@@ -32,9 +32,10 @@ export interface ContractViewProps {
   setStatus: (val: number) => void;
   // nếu muốn, bạn có thể truyền vào callback khi lưu:
   onSavePrivateKey?: (key: string) => void;
+  readonly?: boolean;
 }
 const ContractView = forwardRef<HTMLDivElement, ContractViewProps>(
-  ({ ownerInfo, coOwners, vehicleData, status, setStatus, onSavePrivateKey }, ref) => {
+  ({ ownerInfo, coOwners, vehicleData, status, setStatus, onSavePrivateKey, readonly }, ref) => {
     const [privateKey, setPrivateKey] = useState<string>("");
     const [saving, setSaving] = useState<boolean>(false);
 
@@ -333,163 +334,165 @@ const ContractView = forwardRef<HTMLDivElement, ContractViewProps>(
           </section>
         </div>
         {/* Xác nhận section */}
-        <section style={{ marginTop: "2rem" }}>
-          <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
-            5. Xác nhận
-          </h2>
-          <p>Vui lòng xác nhận đồng ý hoặc không đồng ý với các điều khoản trong hợp đồng:</p>
+        {!readonly && (
+          <section style={{ marginTop: "2rem" }}>
+            <h2 style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.3rem" }}>
+              5. Xác nhận
+            </h2>
+            <p>Vui lòng xác nhận đồng ý hoặc không đồng ý với các điều khoản trong hợp đồng:</p>
 
-          <div
-            style={{
-              border: "1px solid #cfd8dc",
-              background: "#f9fcff",
-              padding: "1rem 1.2rem",
-              borderRadius: "8px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-            }}
-          >
-            <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
-              <input
-                type="radio"
-                name="agreement"
-                checked={status === 1}
-                onChange={() => setStatus(1)}
-              />{" "}
-              Tôi <strong>đồng ý</strong> với toàn bộ điều khoản
-            </label>
-
-            <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
-              <input
-                type="radio"
-                name="agreement"
-                checked={status === 0}
-                onChange={() => setStatus(0)}
-              />{" "}
-              Tôi <strong>không đồng ý</strong> với các điều khoản
-            </label>
-          </div>
-
-          <p
-            style={{
-              marginTop: "1.5rem",
-              padding: "0.75rem 1rem",
-              background: "#e3f2fd",
-              borderLeft: "4px solid #2196f3",
-              borderRadius: "6px",
-              fontSize: "1rem",
-              color: "#0d47a1",
-              fontWeight: 500,
-            }}
-          >
-            ⚠️ <strong>Lưu ý:</strong> Khi tick <em>"Đồng ý"</em>, bạn xác nhận đã đọc và chấp thuận tất cả các điều
-            khoản nêu trong hợp đồng này.
-          </p>
-
-          {status === 1 && (
             <div
               style={{
-                marginTop: "2rem",
-                background: "#f9fafb",
                 border: "1px solid #cfd8dc",
-                borderRadius: "10px",
-                padding: "1.5rem",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                maxWidth: "800px",
+                background: "#f9fcff",
+                padding: "1rem 1.2rem",
+                borderRadius: "8px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
               }}
             >
-              <h3
+              <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="agreement"
+                  checked={status === 1}
+                  onChange={() => setStatus(1)}
+                />{" "}
+                Tôi <strong>đồng ý</strong> với toàn bộ điều khoản
+              </label>
+
+              <label style={{ display: "block", margin: "0.5rem 0", cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="agreement"
+                  checked={status === 0}
+                  onChange={() => setStatus(0)}
+                />{" "}
+                Tôi <strong>không đồng ý</strong> với các điều khoản
+              </label>
+            </div>
+
+            <p
+              style={{
+                marginTop: "1.5rem",
+                padding: "0.75rem 1rem",
+                background: "#e3f2fd",
+                borderLeft: "4px solid #2196f3",
+                borderRadius: "6px",
+                fontSize: "1rem",
+                color: "#0d47a1",
+                fontWeight: 500,
+              }}
+            >
+              ⚠️ <strong>Lưu ý:</strong> Khi tick <em>"Đồng ý"</em>, bạn xác nhận đã đọc và chấp thuận tất cả các điều
+              khoản nêu trong hợp đồng này.
+            </p>
+
+            {status === 1 && (
+              <div
                 style={{
-                  borderBottom: "2px solid #1976d2",
-                  paddingBottom: "0.5rem",
-                  color: "#0d47a1",
-                  fontSize: "1.25rem",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
+                  marginTop: "2rem",
+                  background: "#f9fafb",
+                  border: "1px solid #cfd8dc",
+                  borderRadius: "10px",
+                  padding: "1.5rem",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  maxWidth: "800px",
                 }}
               >
-                🔐 6. Xác nhận bằng Private Key
-              </h3>
-
-              <p style={{ marginTop: "0.8rem", fontSize: "1rem", color: "#333" }}>
-                Vui lòng nhập <strong>Private Key</strong> của bạn để hoàn tất quá trình xác nhận hợp đồng.
-              </p>
-
-              <div style={{ marginTop: "1.2rem" }}>
-                <label
-                  htmlFor="privateKeyArea"
+                <h3
                   style={{
-                    display: "block",
-                    marginBottom: "0.5rem",
-                    fontWeight: 500,
-                    color: "#444",
-                  }}
-                >
-                  Private Key
-                </label>
-
-                <textarea
-                  id="privateKeyArea"
-                  rows={6}
-                  value={privateKey}
-                  onChange={(e) => setPrivateKey(e.target.value)}
-                  style={{
-                    width: "100%",
-                    maxWidth: "700px",
-                    border: "1.5px solid #90a4ae",
-                    padding: "0.75rem",
-                    borderRadius: "6px",
-                    boxSizing: "border-box",
-                    fontFamily: "monospace",
-                    background: "#fff",
-                  }}
-                  placeholder="Dán private key của bạn tại đây"
-                />
-
-                <div
-                  style={{
-                    marginTop: "0.8rem",
+                    borderBottom: "2px solid #1976d2",
+                    paddingBottom: "0.5rem",
+                    color: "#0d47a1",
+                    fontSize: "1.25rem",
+                    fontWeight: 600,
                     display: "flex",
-                    gap: "0.6rem",
-                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: "0.5rem",
                   }}
                 >
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    style={{
-                      padding: "0.55rem 1.2rem",
-                      border: "1px solid #bbb",
-                      borderRadius: "6px",
-                      background: "#fafafa",
-                      cursor: "pointer",
-                    }}
-                  >
-                    🧹 Xóa
-                  </button>
+                  🔐 6. Xác nhận bằng Private Key
+                </h3>
 
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving}
+                <p style={{ marginTop: "0.8rem", fontSize: "1rem", color: "#333" }}>
+                  Vui lòng nhập <strong>Private Key</strong> của bạn để hoàn tất quá trình xác nhận hợp đồng.
+                </p>
+
+                <div style={{ marginTop: "1.2rem" }}>
+                  <label
+                    htmlFor="privateKeyArea"
                     style={{
-                      padding: "0.55rem 1.2rem",
-                      border: "none",
-                      borderRadius: "6px",
-                      background: saving ? "#90caf9" : "#1976d2",
-                      color: "white",
+                      display: "block",
+                      marginBottom: "0.5rem",
                       fontWeight: 500,
-                      cursor: saving ? "not-allowed" : "pointer",
+                      color: "#444",
                     }}
                   >
-                    {saving ? "⏳ Đang lưu..." : "💾 Lưu"}
-                  </button>
+                    Private Key
+                  </label>
+
+                  <textarea
+                    id="privateKeyArea"
+                    rows={6}
+                    value={privateKey}
+                    onChange={(e) => setPrivateKey(e.target.value)}
+                    style={{
+                      width: "100%",
+                      maxWidth: "700px",
+                      border: "1.5px solid #90a4ae",
+                      padding: "0.75rem",
+                      borderRadius: "6px",
+                      boxSizing: "border-box",
+                      fontFamily: "monospace",
+                      background: "#fff",
+                    }}
+                    placeholder="Dán private key của bạn tại đây"
+                  />
+
+                  <div
+                    style={{
+                      marginTop: "0.8rem",
+                      display: "flex",
+                      gap: "0.6rem",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={handleClear}
+                      style={{
+                        padding: "0.55rem 1.2rem",
+                        border: "1px solid #bbb",
+                        borderRadius: "6px",
+                        background: "#fafafa",
+                        cursor: "pointer",
+                      }}
+                    >
+                      🧹 Xóa
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      style={{
+                        padding: "0.55rem 1.2rem",
+                        border: "none",
+                        borderRadius: "6px",
+                        background: saving ? "#90caf9" : "#1976d2",
+                        color: "white",
+                        fontWeight: 500,
+                        cursor: saving ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {saving ? "⏳ Đang lưu..." : "💾 Lưu"}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </section>
+            )}
+          </section>
+        )}
       </div >
     );
   }

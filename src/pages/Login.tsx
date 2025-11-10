@@ -8,6 +8,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Car, ArrowLeft } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
+
+const USE_MOCK = false; // Bật DB ảo cho login
+
+const MOCK_USERS = [
+    { email: "coowner@test.com", password: "123", id: 2, hovaten: "Nguyễn Văn A", role: { roleName: "co-owner" }, token: "mock-token-coowner" },
+    { email: "coowner2@test.com", password: "123", id: 4, hovaten: "Trần Thị B", role: { roleName: "co-owner" }, token: "mock-token-coowner-2" },
+    { email: "staff@test.com", password: "123", id: 3, hovaten: "Nhân viên Test", role: { roleName: "staff" }, token: "mock-token-staff" },
+    { email: "admin@test.com", password: "123", id: 1, hovaten: "Admin Test", role: { roleName: "admin" }, token: "mock-token-admin" },
+];
+
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -36,10 +46,41 @@ export default function Login() {
         const roleId = roleMap[selectedType];
 
         try {
-            const response = await axiosClient.post(`${LOGIN}/${roleId}`, {
-                email,
-                password,
-            });
+            let response: any;
+
+            if (USE_MOCK) {
+                const mockUser = MOCK_USERS.find(u => u.email === email && u.password === password);
+
+                if (!mockUser) {
+                    toast({
+                        title: "Lỗi đăng nhập",
+                        description: "Tài khoản hoặc mật khẩu không đúng.",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+
+                const roleMatch =
+                    (selectedType === "co-owner" && mockUser.role.roleName === "co-owner") ||
+                    (selectedType === "staff" && mockUser.role.roleName === "staff") ||
+                    (selectedType === "admin" && mockUser.role.roleName === "admin");
+
+                if (!roleMatch) {
+                    toast({
+                        title: "Lỗi đăng nhập",
+                        description: "Loại tài khoản không khớp. Vui lòng chọn đúng loại tài khoản.",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+
+                response = { data: mockUser };
+            } else {
+                response = await axiosClient.post(`${LOGIN}/${roleId}`, {
+                    email,
+                    password,
+                });
+            }
 
             const hasValidData = Boolean(response?.data && (response.data.token || response.data.id));
 
@@ -52,12 +93,11 @@ export default function Login() {
                 return;
             }
 
-            // ✅ Trích xuất dữ liệu từ response
             const token = response.data.token;
             const userId = response.data.id;
-            const hovaten = response.data.hovaten; // Tên field từ backend
+            const hovaten = response.data.hovaTen;
             const role = response.data.role.roleName;
-            // ✅ Lưu vào localStorage
+
             localStorage.setItem("accessToken", token);
             localStorage.setItem("userId", userId.toString());
             localStorage.setItem("hovaten", hovaten);
@@ -69,20 +109,15 @@ export default function Login() {
                 title: "Đăng nhập thành công",
                 description: `Chào mừng ${hovaten} đến với EcoShare!`,
             });
-            //Điều hướng theo loại tài khoản
-            console.log(role + "-" + selectedType)
-            if (selectedType.toLowerCase() === "staff" && role.toLowerCase() === "staff") {
 
+            console.log("Role from backend:", role);
+
+            if (role.toLowerCase() === "staff") {
                 navigate("/staff/dashboard");
-
-            } else if (selectedType === "admin" && role.toLowerCase() === "admin") {
-
+            } else if (role.toLowerCase() === "admin") {
                 navigate("/admin/dashboard");
-
             } else {
-
                 navigate("/co-owner/dashboard");
-
             }
         } catch (err) {
             toast({
@@ -92,9 +127,7 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        finally {
-            navigate("/co-owner/dashboard");
-        }
+        // ✅ BỎ finally block
     };
 
 

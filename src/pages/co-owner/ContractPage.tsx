@@ -6,8 +6,11 @@ import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
+interface ContractPreviewPageProps {
+    readonly?: boolean;
+}
 
-export default function ContractPreviewPage() {
+export default function ContractPreviewPage({ readonly = false }: ContractPreviewPageProps) {
     const [isPrivateKey, setIsPrivateKey] = useState(false);
     const [savedPrivateKey, setSavedPrivateKey] = useState("");
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
@@ -31,7 +34,6 @@ export default function ContractPreviewPage() {
         setSavedPrivateKey(key);
         setIsPrivateKey(true);   // <-- Lưu lại để dùng khi gọi API
     };
-
     useEffect(() => {
         if (!token) {
             setError("Token không hợp lệ");
@@ -102,6 +104,17 @@ export default function ContractPreviewPage() {
     }, [id]);
 
     const handleConfirm = async () => {
+        const members = [
+            {
+                email: ownerInfo.email,
+                ownershipPercentage: ownerInfo.ownership,
+            },
+            ...coOwners.map(co => ({
+                email: co.email,
+                ownershipPercentage: co.ownership,
+            })),
+        ];
+
         if (status === null) {
             toast({
                 title: "Lỗi",
@@ -112,10 +125,14 @@ export default function ContractPreviewPage() {
         }
 
         try {
-            // ✅ Gọi generatePDF() chỉ cho vùng ref này
+            // ✅ 1. Tạo file PDF hợp đồng
             const pdfResult: any = await generatePDF();
             if (!pdfResult) {
-                alert("Không tạo được file PDF!");
+                toast({
+                    title: "Lỗi",
+                    description: "Không thể tạo file PDF hợp đồng!",
+                    variant: "destructive",
+                });
                 return;
             }
 
@@ -123,25 +140,29 @@ export default function ContractPreviewPage() {
             const key = "contractId_" + user.id;
             const idContract = localStorage.getItem(key);
             if (!idContract) {
-                alert("Không có contract id");
+                toast({
+                    title: "Lỗi",
+                    description: "Không tìm thấy contract ID!",
+                    variant: "destructive",
+                });
                 return;
             }
 
             const accessToken = localStorage.getItem("accessToken");
 
-            // ⚙️ Tạo FormData
+            // ✅ 2. Tạo FormData gửi BE
             const formData = new FormData();
-            formData.append("idContract", idContract.toString());
+            console.log(idContract)
+            formData.append("idContract", id.toString());
             formData.append("idUser", user.id.toString());
             formData.append("idChoice", status.toString());
-            formData.append("contract_signature", savedPrivateKey);
-            const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
-            console.log(`📄 Dung lượng file PDF: ${fileSizeMB} MB`);
+            formData.append("contract_signature", savedPrivateKey.trim());
 
             const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, {
                 type: "application/pdf",
             });
             formData.append("contractContent", pdfFile);
+
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, formData, {
                 headers: {
@@ -150,23 +171,109 @@ export default function ContractPreviewPage() {
                 },
             });
 
-            console.log("✅ Gửi thành công:", res.data);
-            toast({
-                title: "Thành công",
-                description: "Hợp đồng đã được xác nhận!",
+            if (res.status !== 200 && res.status !== 201) {
+                toast({
+                    title: "Lỗi",
+                    description: `Gửi quyết định thất bại: HTTP ${res.status}`,
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // BE trả ContractSigner (theo mapping bạn cho). Thử lấy contract từ response:
+            const contract = res.data?.contract ?? res.data;
+            if (!contract) {
+                toast({
+                    title: "Lỗi",
+                    description: "Phản hồi từ server không chứa thông tin contract.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // 3) Kiểm tra trạng thái contract (BE phải cung cấp contract.status)
+            // BE dùng "CONFIRMED" khi hợp đồng đã được xác nhận (theo bạn)
+            if (String(contract.status).toUpperCase() !== "CONFIRMED") {
+                // Nếu chưa CONFIRMED -> thông báo và dừng (BE sẽ quản lý tiếp)
+                toast({
+                    title: "Đang chờ xác nhận",
+                    description: "Hợp đồng chưa được xác nhận đầy đủ (chưa ở trạng thái CONFIRMED).",
+                    variant: "default",
+                });
+                return;
+            }
+
+            // 4) Chuẩn bị payload /group/create theo GroupCreateReq
+            // BE yêu cầu members: List<CoOwner_Info> với coOwnerId (int), ownershipPercentage (Float), roleInGroup (String)
+            // Kiểm tra ownerInfo.id & coOwners[].id tồn tại (nếu không có, bạn cần lookup user để lấy id trước khi gửi)
+            if (!ownerInfo?.id) {
+                toast({
+                    title: "Thiếu dữ liệu",
+                    description: "Không có ownerInfo.id — FE cần có user id để tạo nhóm.",
+                    variant: "destructive",
+                });
+                return;
+            }
+            const missingId = coOwners.some((c: any) => !c?.id);
+            if (missingId) {
+                toast({
+                    title: "Thiếu dữ liệu đồng sở hữu",
+                    description: "Một hoặc vài đồng sở hữu chưa có user id. Vui lòng lấy user id từ email trước khi tạo nhóm.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            // build members array
+            const members = [
+                {
+                    coOwnerId: Number(ownerInfo.id),
+                    ownershipPercentage: parseFloat(String(ownerInfo.ownership ?? 0)),
+                    roleInGroup: "OWNER",
+                },
+                ...coOwners.map((co: any) => ({
+                    coOwnerId: Number(co.id),
+                    ownershipPercentage: parseFloat(String(co.ownership ?? 0)),
+                    roleInGroup: "CO_OWNER",
+                })),
+            ];
+
+            // optional: validate ownership sum >= 100? (BE có thể check)
+            const groupPayload = {
+                contractId: Number(contract.contractId ?? contract.id ?? idContract),
+                documentUrl: contract.urlConfirmedContract ?? contract.documentUrl ?? fileUrl,
+                members,
+            };
+
+            // 5) Gọi create group
+            const groupRes = await axiosClient.post("/group/create", groupPayload, {
+                headers: { Authorization: `Bearer ${accessToken}` },
             });
+
+            if (groupRes.status === 201) {
+                toast({
+                    title: "🎉 Nhóm đã được tạo",
+                    description: `Nhóm tạo thành công — Biển số: ${groupRes.data?.plateNo ?? "N/A"}`,
+                });
+                console.log("Group created:", groupRes.data);
+            } else {
+                // lỗi từ BE khi tạo group
+                const errText = (groupRes.data && JSON.stringify(groupRes.data)) || `HTTP ${groupRes.status}`;
+                toast({
+                    title: "Tạo nhóm thất bại",
+                    description: errText,
+                    variant: "destructive",
+                });
+            }
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
             toast({
-                title: "Lỗi",
-                description:
-                    err?.response?.data?.message || "Gửi quyết định thất bại!",
+                title: "Lỗi hệ thống",
+                description: err?.response?.data?.message || "Không thể hoàn tất yêu cầu. Vui lòng thử lại.",
                 variant: "destructive",
             });
         }
     };
-
-
     if (loading) return <div>Đang tải thông tin user...</div>;
     if (error) return <div className="text-red-500">{error}</div>;
     if (!ownerInfo || !vehicleData) return <p>Đang tải dữ liệu hợp đồng...</p>;
@@ -183,6 +290,7 @@ export default function ContractPreviewPage() {
                     status={status}
                     setStatus={setStatus}
                     onSavePrivateKey={handleSavePrivateKey}
+                    readonly={readonly}
                 />
             </div>
 

@@ -1,8 +1,8 @@
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import {Input} from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import {
     Shield,
     Users,
@@ -26,12 +26,14 @@ import {
     Trash2
 } from "lucide-react";
 import ChatBox from "@/components/ChatBox";
-import {useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {useToast} from "@/hooks/use-toast";
-
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import axiosClient from "@/api/axiosClient";
 export default function AdminDashboard() {
     const navigate = useNavigate();
+    const [staffList, setStaffList] = useState([]);
+    const GET_STAFFS = import.meta.env.VITE_GET_GET_ALL_STAFF_PATH;
     const [showChat, setShowChat] = useState(false);
     const [showAddStaffModal, setShowAddStaffModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -44,32 +46,30 @@ export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState("analytics");
     const [confirmationText, setConfirmationText] = useState("");
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredStaff, setFilteredStaff] = useState([]);
+    const UPDATE_STAFF = import.meta.env.VITE_PUT_UPDATE_STAFF_PATH;
     const [editStaffData, setEditStaffData] = useState({
-        name: "",
-        email: "",
+        hovaTen: "",
         phone: "",
-        address: "",
-        birthDate: "",
-        province: ""
+        cccd: "",
     });
     const [newStaffData, setNewStaffData] = useState({
-        name: "",
+        hovaTen: "",
         email: "",
-        username: "",
         password: "",
-        province: "",
+        cccd: "",
         phone: "",
-        address: "",
-        birthDate: "",
-        role: "staff",
-        showroom: ""
+        gplx: ""
     });
     const [createdStaff, setCreatedStaff] = useState<any>(null);
     const [showContractDetailModal, setShowContractDetailModal] = useState(false);
     const [selectedContract, setSelectedContract] = useState<any>(null);
-    const {
-        toast
-    } = useToast();
+    const { toast } = useToast();
+    const CREATE_STAFF = import.meta.env.VITE_POST_CREATE_STAFF_PATH;
+    const displayedStaff = searchTerm.trim()
+        ? filteredStaff
+        : staffList;
     const stats = [{
         label: "Tổng nhân viên",
         value: 25,
@@ -90,31 +90,6 @@ export default function AdminDashboard() {
         value: "2.5B VNĐ",
         icon: BarChart3,
         color: "primary"
-    }];
-    const staffList = [{
-        id: "ST001",
-        name: "Nguyễn Văn Nam",
-        email: "nam.nguyen@ecoshare.vn",
-        role: "Staff",
-        status: "active",
-        groups: 3,
-        province: "Hồ Chí Minh"
-    }, {
-        id: "ST002",
-        name: "Trần Thị Lan",
-        email: "lan.tran@ecoshare.vn",
-        role: "Staff",
-        status: "active",
-        groups: 2,
-        province: "Hà Nội"
-    }, {
-        id: "ST003",
-        name: "Lê Văn Tùng",
-        email: "tung.le@ecoshare.vn",
-        role: "Staff",
-        status: "inactive",
-        groups: 0,
-        province: "Đà Nẵng"
     }];
     const showrooms = [{
         id: "SR001",
@@ -151,53 +126,102 @@ export default function AdminDashboard() {
                 return "Không xác định";
         }
     };
-    const handleCreateStaff = () => {
-        if (!newStaffData.name || !newStaffData.email || !newStaffData.username || !newStaffData.password || !newStaffData.province) {
+    useEffect(() => {
+        const fetchStaffList = async () => {
+            try {
+                const res = await axiosClient.get(GET_STAFFS);
+                setStaffList(res.data); // BE trả về List<StaffResponse>
+            } catch (err: any) {
+                console.error(err);
+                toast({
+                    title: "lỗi",
+                    description: "lấy nhân viên thất bại",
+                    variant: "destructive"
+                })
+            }
+        };
+
+        fetchStaffList();
+    }, []);
+    useEffect(() => {
+        if (!searchTerm.trim()) {
+            setFilteredStaff(staffList);
+        } else {
+            const lower = searchTerm.toLowerCase();
+            const filtered = staffList.filter((staff: any) =>
+                staff.hovaTen.toLowerCase().includes(lower) ||
+                staff.email.toLowerCase().includes(lower) ||
+                staff.cccd.toLowerCase().includes(lower)
+            );
+            setFilteredStaff(filtered);
+        }
+    }, [searchTerm, staffList]);
+    const handleCreateStaff = async () => {
+        // kiểm tra dữ liệu
+        if (!newStaffData.hovaTen || !newStaffData.email || !newStaffData.password || !newStaffData.cccd || !newStaffData.phone) {
             toast({
                 title: "Lỗi",
-                description: "Vui lòng nhập đầy đủ thông tin",
-                variant: "destructive"
+                description: "Vui lòng nhập đầy đủ thông tin bắt buộc",
+                variant: "destructive",
             });
             return;
         }
 
-        // Simulate staff creation
-        const created = {
-            id: `ST${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
-            ...newStaffData
-        };
-        setCreatedStaff(created);
-        setShowAddStaffModal(false);
-        setShowSuccessModal(true);
+        try {
+            // gọi API BE
+            const res = await axiosClient.post(CREATE_STAFF, {
+                hovaTen: newStaffData.hovaTen,
+                email: newStaffData.email,
+                password: newStaffData.password,
+                cccd: newStaffData.cccd,
+                phone: newStaffData.phone,
+                gplx: newStaffData.gplx,
+            });
 
-        // Reset form
-        setNewStaffData({
-            name: "",
-            email: "",
-            username: "",
-            password: "",
-            province: "",
-            phone: "",
-            address: "",
-            birthDate: "",
-            role: "staff",
-            showroom: ""
-        });
+            // cập nhật lại danh sách hiển thị trong UI
+            setStaffList((prev) => [...prev, res.data]);
+
+            // hiển thị thông báo thành công
+            toast({
+                title: "Thành công",
+                description: "Tạo nhân viên mới thành công",
+            });
+
+            // đóng modal và mở modal thành công nếu có
+            setShowAddStaffModal(false);
+            setShowSuccessModal(true);
+
+            // reset form
+            setNewStaffData({
+                hovaTen: "",
+                email: "",
+                password: "",
+                cccd: "",
+                phone: "",
+                gplx: "",
+            });
+        } catch (err: any) {
+            console.error("Lỗi khi tạo nhân viên:", err);
+            toast({
+                title: "Lỗi",
+                description: "Không thể tạo nhân viên. Vui lòng thử lại",
+                variant: "destructive",
+            });
+        }
     };
+
     const handleEditStaff = (staff: any) => {
+        // chỉ mở modal và set dữ liệu form
         setSelectedStaff(staff);
         setEditStaffData({
-            name: staff.name,
-            email: staff.email,
-            phone: staff.phone || "",
-            address: staff.address || "",
-            birthDate: staff.birthDate || "",
-            province: staff.province
+            hovaTen: staff.hovaTen,
+            cccd: staff.cccd,
+            phone: staff.phone
         });
         setShowEditStaffModal(true);
     };
-    const handleUpdateStaff = () => {
-        if (!editStaffData.name || !editStaffData.email || !editStaffData.province) {
+    const handleUpdateStaff = async () => {
+        if (!editStaffData.hovaTen || !editStaffData.phone || !editStaffData.cccd) {
             toast({
                 title: "Lỗi",
                 description: "Vui lòng nhập đầy đủ thông tin bắt buộc",
@@ -205,10 +229,38 @@ export default function AdminDashboard() {
             });
             return;
         }
+        try {
+            const res = await axiosClient.put(
+                `${UPDATE_STAFF}${selectedStaff.id}`,
+                editStaffData // body: { hovaTen, cccd, phone }
+            );
 
-        // Simulate staff update
-        setShowEditStaffModal(false);
-        setShowUpdateSuccessModal(true);
+            toast({
+                title: "Thành công",
+                description: "Cập nhật thông tin nhân viên thành công",
+            });
+
+            // cập nhật lại danh sách trong UI
+            setStaffList(prev =>
+                prev.map((s) => (s.id === selectedStaff.id ? res.data : s))
+            );
+            setShowEditStaffModal(false);
+            setShowUpdateSuccessModal(true);
+        } catch (err: any) {
+            console.error(err);
+            toast({
+                title: "Lỗi",
+                description: "Cập nhật nhân viên thất bại",
+                variant: "destructive",
+            });
+        }
+    };
+    const getRoleColor = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case "admin": return "destructive";
+            case "staff": return "secondary";
+            default: return "outline";
+        }
     };
     const handleLockUnlock = (staff: any) => {
         setSelectedStaff(staff);
@@ -244,7 +296,7 @@ export default function AdminDashboard() {
             {/* Logo/Header */}
             <div className="p-6 border-b border-border">
                 <div className="flex items-center space-x-3">
-                    <Shield className="h-8 w-8 text-primary"/>
+                    <Shield className="h-8 w-8 text-primary" />
                     <div>
                         <h1 className="text-lg font-bold">AdminKit</h1>
                         <p className="text-xs text-muted-foreground">PRO</p>
@@ -274,35 +326,35 @@ export default function AdminDashboard() {
                 <button
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium transition-colors ${activeTab === 'analytics' ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
                     onClick={() => setActiveTab('analytics')}>
-                    <BarChart3 className="h-4 w-4"/>
+                    <BarChart3 className="h-4 w-4" />
                     <span>Analytics</span>
                 </button>
 
                 <button
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'staff' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
                     onClick={() => setActiveTab('staff')}>
-                    <Users className="h-4 w-4"/>
+                    <Users className="h-4 w-4" />
                     <span>Nhân viên</span>
                 </button>
 
                 <button
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'showrooms' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
                     onClick={() => setActiveTab('showrooms')}>
-                    <Building className="h-4 w-4"/>
+                    <Building className="h-4 w-4" />
                     <span>Showroom</span>
                 </button>
 
                 <button
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'contracts' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
                     onClick={() => setActiveTab('contracts')}>
-                    <FileText className="h-4 w-4"/>
+                    <FileText className="h-4 w-4" />
                     <span>Hợp đồng</span>
                 </button>
 
                 <button
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'history' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
                     onClick={() => setActiveTab('history')}>
-                    <Car className="h-4 w-4"/>
+                    <Car className="h-4 w-4" />
                     <span>Lịch sử xe</span>
                 </button>
 
@@ -315,7 +367,7 @@ export default function AdminDashboard() {
             <header className="bg-gradient-primary text-white p-4 shadow-glow">
                 <div className="container mx-auto flex justify-between items-center">
                     <div className="flex items-center space-x-3">
-                        <Car className="h-8 w-8"/>
+                        <Car className="h-8 w-8" />
                         <div>
                             <h1 className="text-2xl font-bold">EcoShare</h1>
                             <p className="text-sm opacity-90">Bảng điều khiển quản trị</p>
@@ -324,14 +376,14 @@ export default function AdminDashboard() {
                     <div className="flex items-center space-x-4">
                         <button
                             className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/90 hover:text-white transition-colors">
-                            <Settings className="h-4 w-4"/>
+                            <Settings className="h-4 w-4" />
                             <span>Cài đặt</span>
                         </button>
 
                         <button
                             className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/90 hover:text-white transition-colors"
                             onClick={() => navigate('/login')}>
-                            <LogOut className="h-4 w-4"/>
+                            <LogOut className="h-4 w-4" />
                             <span>Đăng xuất</span>
                         </button>
                     </div>
@@ -348,7 +400,7 @@ export default function AdminDashboard() {
                                     <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
                                     <p className="text-2xl font-bold">{stat.value}</p>
                                 </div>
-                                <stat.icon className={`h-8 w-8 text-${stat.color}`}/>
+                                <stat.icon className={`h-8 w-8 text-${stat.color}`} />
                             </div>
                         </CardContent>
                     </Card>)}
@@ -363,7 +415,7 @@ export default function AdminDashboard() {
                         <Card className="shadow-elegant">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <BarChart3 className="h-5 w-5"/>
+                                    <BarChart3 className="h-5 w-5" />
                                     <span>Phân tích doanh thu</span>
                                 </CardTitle>
                                 <CardDescription>
@@ -376,7 +428,7 @@ export default function AdminDashboard() {
                                         <Card>
                                             <CardContent className="p-4">
                                                 <div className="flex items-center space-x-2">
-                                                    <DollarSign className="h-5 w-5 text-success"/>
+                                                    <DollarSign className="h-5 w-5 text-success" />
                                                     <div>
                                                         <p className="text-sm text-muted-foreground">Doanh thu tháng</p>
                                                         <p className="text-lg font-bold">2.5B VNĐ</p>
@@ -387,7 +439,7 @@ export default function AdminDashboard() {
                                         <Card>
                                             <CardContent className="p-4">
                                                 <div className="flex items-center space-x-2">
-                                                    <TrendingUp className="h-5 w-5 text-primary"/>
+                                                    <TrendingUp className="h-5 w-5 text-primary" />
                                                     <div>
                                                         <p className="text-sm text-muted-foreground">Tăng trưởng</p>
                                                         <p className="text-lg font-bold text-success">+12.5%</p>
@@ -398,7 +450,7 @@ export default function AdminDashboard() {
                                         <Card>
                                             <CardContent className="p-4">
                                                 <div className="flex items-center space-x-2">
-                                                    <Users className="h-5 w-5 text-warning"/>
+                                                    <Users className="h-5 w-5 text-warning" />
                                                     <div>
                                                         <p className="text-sm text-muted-foreground">Khách hàng mới</p>
                                                         <p className="text-lg font-bold">248</p>
@@ -418,7 +470,7 @@ export default function AdminDashboard() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Users className="h-5 w-5"/>
+                                            <Users className="h-5 w-5" />
                                             <span>Quản lý nhân viên</span>
                                         </CardTitle>
                                         <CardDescription>
@@ -426,55 +478,62 @@ export default function AdminDashboard() {
                                         </CardDescription>
                                     </div>
                                     <Button className="bg-gradient-primary hover:shadow-glow"
-                                            onClick={() => setShowAddStaffModal(true)}>
-                                        <UserPlus className="h-4 w-4 mr-2"/>
+                                        onClick={() => setShowAddStaffModal(true)}>
+                                        <UserPlus className="h-4 w-4 mr-2" />
                                         Thêm nhân viên
                                     </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* 🔍 Thanh tìm kiếm */}
                                 <div className="flex items-center space-x-4">
                                     <div className="relative flex-1">
-                                        <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground"/>
-                                        <Input placeholder="Tìm kiếm nhân viên..." className="pl-9"/>
+                                        <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Tìm kiếm nhân viên..."
+                                            className="pl-9"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
                                     </div>
                                 </div>
-
                                 <div className="space-y-4">
-                                    {staffList.map(staff => <div key={staff.id}
-                                                                 className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex-1">
-                                            <div className="flex items-center space-x-3">
-                                                <h3 className="font-semibold">{staff.name}</h3>
-                                                <Badge variant={getStatusColor(staff.status) as any}>
-                                                    {getStatusText(staff.status)}
-                                                </Badge>
+                                    {displayedStaff.length > 0 ? (
+                                        displayedStaff.map((staff: any) => (
+                                            <div key={staff.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-3">
+                                                        {/* 🔹 Họ và tên */}
+                                                        <h3 className="font-semibold">{staff.hovaTen}</h3>
+
+                                                        {/* 🔹 Role */}
+                                                        <Badge variant={getRoleColor(staff.roleName) as any}>
+                                                            {staff.roleName}
+                                                        </Badge>
+                                                    </div>
+
+                                                    <div className="text-sm text-muted-foreground mt-1">
+                                                        {/* 🔹 Email */}
+                                                        <span>{staff.email}</span>
+
+                                                        <span className="mx-2">•</span>
+
+                                                        {/* 🔹 CCCD */}
+                                                        <span>CCCD: {staff.cccd}</span>
+
+                                                        <span className="mx-2">•</span>
+
+                                                        {/* 🔹 Số điện thoại */}
+                                                        <span>📞 {staff.phone}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-sm text-muted-foreground mt-1">
-                                                <span>{staff.email}</span>
-                                                <span className="mx-2">•</span>
-                                                <span>{staff.province}</span>
-                                                <span className="mx-2">•</span>
-                                                <span>{staff.groups} nhóm quản lý</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Button size="sm" variant="outline" onClick={() => handleEditStaff(staff)}>
-                                                <Settings className="h-4 w-4 mr-1"/>
-                                                Chỉnh sửa
-                                            </Button>
-                                            <Button size="sm" variant="outline" onClick={() => handleLockUnlock(staff)}>
-                                                <Lock className="h-4 w-4 mr-1"/>
-                                                {staff.status === "active" ? "Khóa" : "Mở khóa"}
-                                            </Button>
-                                            {staff.status === "inactive" && <Button size="sm" variant="outline"
-                                                                                    className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                                                                    onClick={() => handleFire(staff)}>
-                                                <Trash2 className="h-4 w-4 mr-1"/>
-                                                Sa thải
-                                            </Button>}
-                                        </div>
-                                    </div>)}
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground mt-4">
+                                            Không tìm thấy nhân viên nào.
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -487,7 +546,7 @@ export default function AdminDashboard() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Building className="h-5 w-5"/>
+                                            <Building className="h-5 w-5" />
                                             <span>Quản lý Showroom</span>
                                         </CardTitle>
                                         <CardDescription>
@@ -495,7 +554,7 @@ export default function AdminDashboard() {
                                         </CardDescription>
                                     </div>
                                     <Button className="bg-gradient-primary hover:shadow-glow">
-                                        <Plus className="h-4 w-4 mr-2"/>
+                                        <Plus className="h-4 w-4 mr-2" />
                                         Thêm showroom
                                     </Button>
                                 </div>
@@ -503,7 +562,7 @@ export default function AdminDashboard() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {showrooms.map(showroom => <div key={showroom.id}
-                                                                    className="flex items-center justify-between p-4 border rounded-lg">
+                                        className="flex items-center justify-between p-4 border rounded-lg">
                                         <div className="flex-1">
                                             <div className="flex items-center space-x-3">
                                                 <h3 className="font-semibold">{showroom.name}</h3>
@@ -524,7 +583,7 @@ export default function AdminDashboard() {
                                                 Xem hợp đồng
                                             </Button>
                                             <Button size="sm" variant="outline">
-                                                <Settings className="h-4 w-4 mr-1"/>
+                                                <Settings className="h-4 w-4 mr-1" />
                                                 Chỉnh sửa
                                             </Button>
                                         </div>
@@ -550,9 +609,9 @@ export default function AdminDashboard() {
                                         <CardContent>
                                             <div className="relative">
                                                 <Search
-                                                    className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"/>
+                                                    className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                                 <Input placeholder="Nhập tên hợp đồng, nhân viên hoặc mã hợp đồng..."
-                                                       className="pl-10"/>
+                                                    className="pl-10" />
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -560,7 +619,7 @@ export default function AdminDashboard() {
 
                                 <Card className="shadow-elegant">
                                     <CardHeader className="text-center">
-                                        <FileText className="h-8 w-8 text-primary mx-auto mb-2"/>
+                                        <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
                                         <CardTitle>15</CardTitle>
                                         <CardDescription>Tổng số hợp đồng</CardDescription>
                                     </CardHeader>
@@ -571,7 +630,7 @@ export default function AdminDashboard() {
                             <Card className="shadow-elegant">
                                 <CardHeader>
                                     <CardTitle className="flex items-center space-x-2">
-                                        <FileText className="h-5 w-5"/>
+                                        <FileText className="h-5 w-5" />
                                         <span>Danh sách hợp đồng</span>
                                     </CardTitle>
                                     <CardDescription>
@@ -650,7 +709,7 @@ export default function AdminDashboard() {
                                                 }
                                             };
                                             return <div key={contract.id}
-                                                        className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+                                                className="border rounded-lg p-6 hover:shadow-md transition-shadow">
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
                                                         <div className="flex items-center space-x-3 mb-2">
@@ -663,15 +722,15 @@ export default function AdminDashboard() {
                                                         <div
                                                             className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-4">
                                                             <div className="flex items-center space-x-2">
-                                                                <Calendar className="h-4 w-4"/>
+                                                                <Calendar className="h-4 w-4" />
                                                                 <span>Ngày ký: {contract.signedDate}</span>
                                                             </div>
                                                             <div className="flex items-center space-x-2">
-                                                                <Users className="h-4 w-4"/>
+                                                                <Users className="h-4 w-4" />
                                                                 <span>{contract.memberCount} thành viên</span>
                                                             </div>
                                                             <div className="flex items-center space-x-2">
-                                                                <Car className="h-4 w-4"/>
+                                                                <Car className="h-4 w-4" />
                                                                 <span>{contract.vehicleCount} xe điện</span>
                                                             </div>
                                                         </div>
@@ -702,7 +761,7 @@ export default function AdminDashboard() {
                                                             setSelectedContract(contract);
                                                             setShowContractDetailModal(true);
                                                         }}>
-                                                            <Eye className="h-4 w-4 mr-1"/>
+                                                            <Eye className="h-4 w-4 mr-1" />
                                                             Xem
                                                         </Button>
                                                         <Button size="sm" variant="outline" onClick={() => {
@@ -711,7 +770,7 @@ export default function AdminDashboard() {
                                                                 description: contract.status === 'active' ? "Hợp đồng có thể tải xuống" : "Hợp đồng chưa sẵn sàng để tải"
                                                             });
                                                         }}>
-                                                            <Download className="h-4 w-4 mr-1"/>
+                                                            <Download className="h-4 w-4 mr-1" />
                                                             Tải về
                                                         </Button>
                                                     </div>
@@ -729,7 +788,7 @@ export default function AdminDashboard() {
                         <Card className="shadow-elegant">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <BarChart3 className="h-5 w-5"/>
+                                    <BarChart3 className="h-5 w-5" />
                                     <span>Phân tích & Báo cáo AI</span>
                                 </CardTitle>
                                 <CardDescription>
@@ -740,7 +799,7 @@ export default function AdminDashboard() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <TrendingUp className="h-8 w-8 mx-auto mb-2 text-success"/>
+                                            <TrendingUp className="h-8 w-8 mx-auto mb-2 text-success" />
                                             <p className="text-2xl font-bold">+25%</p>
                                             <p className="text-sm text-muted-foreground">Tăng trưởng doanh thu</p>
                                         </CardContent>
@@ -748,7 +807,7 @@ export default function AdminDashboard() {
 
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <Users className="h-8 w-8 mx-auto mb-2 text-primary"/>
+                                            <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
                                             <p className="text-2xl font-bold">1,245</p>
                                             <p className="text-sm text-muted-foreground">Người dùng hoạt động</p>
                                         </CardContent>
@@ -756,7 +815,7 @@ export default function AdminDashboard() {
 
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <Car className="h-8 w-8 mx-auto mb-2 text-warning"/>
+                                            <Car className="h-8 w-8 mx-auto mb-2 text-warning" />
                                             <p className="text-2xl font-bold">92%</p>
                                             <p className="text-sm text-muted-foreground">Tỷ lệ sử dụng xe</p>
                                         </CardContent>
@@ -764,7 +823,7 @@ export default function AdminDashboard() {
 
                                     <Card>
                                         <CardContent className="p-4 text-center">
-                                            <DollarSign className="h-8 w-8 mx-auto mb-2 text-success"/>
+                                            <DollarSign className="h-8 w-8 mx-auto mb-2 text-success" />
                                             <p className="text-2xl font-bold">156M</p>
                                             <p className="text-sm text-muted-foreground">Doanh thu tháng</p>
                                         </CardContent>
@@ -810,7 +869,7 @@ export default function AdminDashboard() {
                                                             ngày 1</p>
                                                     </div>
                                                     <Button size="sm" variant="outline">
-                                                        <Download className="h-4 w-4 mr-1"/>
+                                                        <Download className="h-4 w-4 mr-1" />
                                                         Tải về
                                                     </Button>
                                                 </div>
@@ -821,7 +880,7 @@ export default function AdminDashboard() {
                                                             tuần</p>
                                                     </div>
                                                     <Button size="sm" variant="outline">
-                                                        <Eye className="h-4 w-4 mr-1"/>
+                                                        <Eye className="h-4 w-4 mr-1" />
                                                         Xem
                                                     </Button>
                                                 </div>
@@ -832,7 +891,7 @@ export default function AdminDashboard() {
                                                             tới</p>
                                                     </div>
                                                     <Button size="sm" className="bg-gradient-primary hover:shadow-glow">
-                                                        <BarChart3 className="h-4 w-4 mr-1"/>
+                                                        <BarChart3 className="h-4 w-4 mr-1" />
                                                         Phân tích
                                                     </Button>
                                                 </div>
@@ -849,7 +908,7 @@ export default function AdminDashboard() {
                         <Card className="shadow-elegant">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <Car className="h-5 w-5"/>
+                                    <Car className="h-5 w-5" />
                                     <span>Lịch sử mua bán xe</span>
                                 </CardTitle>
                                 <CardDescription>
@@ -911,7 +970,7 @@ export default function AdminDashboard() {
                                             date: "18/01/2024",
                                             status: "processing"
                                         }].map(transaction => <div key={transaction.id}
-                                                                   className="flex items-center justify-between p-4 border rounded-lg">
+                                            className="flex items-center justify-between p-4 border rounded-lg">
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-3">
                                                     <Badge
@@ -937,11 +996,11 @@ export default function AdminDashboard() {
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <Button size="sm" variant="outline">
-                                                    <Eye className="h-4 w-4 mr-1"/>
+                                                    <Eye className="h-4 w-4 mr-1" />
                                                     Chi tiết
                                                 </Button>
                                                 <Button size="sm" variant="outline">
-                                                    <FileText className="h-4 w-4 mr-1"/>
+                                                    <FileText className="h-4 w-4 mr-1" />
                                                     Hợp đồng
                                                 </Button>
                                             </div>
@@ -956,13 +1015,13 @@ export default function AdminDashboard() {
                 {/* AI Chat Button */}
                 <div className="fixed bottom-6 right-6">
                     <Button onClick={() => setShowChat(true)} size="lg"
-                            className="rounded-full bg-gradient-primary hover:shadow-glow shadow-lg">
+                        className="rounded-full bg-gradient-primary hover:shadow-glow shadow-lg">
                         Phân tích AI
                     </Button>
                 </div>
 
                 {/* Chat Box */}
-                {showChat && <ChatBox isOpen={showChat} onClose={() => setShowChat(false)} userType="admin"/>}
+                {showChat && <ChatBox isOpen={showChat} onClose={() => setShowChat(false)} userType="admin" />}
 
                 {/* Add Staff Modal */}
                 {showAddStaffModal &&
@@ -971,7 +1030,7 @@ export default function AdminDashboard() {
                             className="bg-background rounded-lg shadow-elegant max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                             <div className="p-6 border-b">
                                 <h2 className="text-xl font-bold flex items-center space-x-2">
-                                    <UserPlus className="h-5 w-5"/>
+                                    <UserPlus className="h-5 w-5" />
                                     <span>Thêm nhân viên mới</span>
                                 </h2>
                                 <p className="text-muted-foreground mt-1">
@@ -984,7 +1043,7 @@ export default function AdminDashboard() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Users className="h-5 w-5"/>
+                                            <Users className="h-5 w-5" />
                                             <span>Thông tin cá nhân</span>
                                         </CardTitle>
                                     </CardHeader>
@@ -992,68 +1051,29 @@ export default function AdminDashboard() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium mb-2">Họ và tên *</label>
-                                                <Input placeholder="Nhập họ và tên đầy đủ" value={newStaffData.name}
-                                                       onChange={e => setNewStaffData({
-                                                           ...newStaffData,
-                                                           name: e.target.value
-                                                       })}/>
+                                                <Input placeholder="Nhập họ và tên đầy đủ" value={newStaffData.hovaTen}
+                                                    onChange={e => setNewStaffData({
+                                                        ...newStaffData,
+                                                        hovaTen: e.target.value
+                                                    })} />
                                             </div>
 
                                             <div>
                                                 <label className="block text-sm font-medium mb-2">Email *</label>
                                                 <Input type="email" placeholder="example@ecoshare.vn"
-                                                       value={newStaffData.email} onChange={e => setNewStaffData({
-                                                    ...newStaffData,
-                                                    email: e.target.value
-                                                })}/>
+                                                    value={newStaffData.email} onChange={e => setNewStaffData({
+                                                        ...newStaffData,
+                                                        email: e.target.value
+                                                    })} />
                                             </div>
 
                                             <div>
                                                 <label className="block text-sm font-medium mb-2">Số điện thoại</label>
                                                 <Input placeholder="0123456789" value={newStaffData.phone || ''}
-                                                       onChange={e => setNewStaffData({
-                                                           ...newStaffData,
-                                                           phone: e.target.value
-                                                       })}/>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2">Ngày sinh</label>
-                                                <Input type="date" value={newStaffData.birthDate || ''}
-                                                       onChange={e => setNewStaffData({
-                                                           ...newStaffData,
-                                                           birthDate: e.target.value
-                                                       })}/>
-                                            </div>
-
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium mb-2">Địa chỉ</label>
-                                                <Input placeholder="Nhập địa chỉ" value={newStaffData.address || ''}
-                                                       onChange={e => setNewStaffData({
-                                                           ...newStaffData,
-                                                           address: e.target.value
-                                                       })}/>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2">Tỉnh/Thành phố làm
-                                                    việc *</label>
-                                                <select
-                                                    className="w-full p-3 border border-input rounded-md bg-background"
-                                                    value={newStaffData.province} onChange={e => setNewStaffData({
-                                                    ...newStaffData,
-                                                    province: e.target.value
-                                                })}>
-                                                    <option value="">Chọn tỉnh/thành phố</option>
-                                                    <option value="Hồ Chí Minh">Hồ Chí Minh</option>
-                                                    <option value="Hà Nội">Hà Nội</option>
-                                                    <option value="Đà Nẵng">Đà Nẵng</option>
-                                                    <option value="Cần Thơ">Cần Thơ</option>
-                                                    <option value="Hải Phòng">Hải Phòng</option>
-                                                    <option value="Bình Dương">Bình Dương</option>
-                                                    <option value="Đồng Nai">Đồng Nai</option>
-                                                    <option value="Khánh Hòa">Khánh Hòa</option>
-                                                </select>
+                                                    onChange={e => setNewStaffData({
+                                                        ...newStaffData,
+                                                        phone: e.target.value
+                                                    })} />
                                             </div>
                                         </div>
                                     </CardContent>
@@ -1063,33 +1083,33 @@ export default function AdminDashboard() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Shield className="h-5 w-5"/>
+                                            <Shield className="h-5 w-5" />
                                             <span>Thông tin tài khoản</span>
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
+                                            {/* <div>
                                                 <label className="block text-sm font-medium mb-2">Tên đăng nhập
                                                     *</label>
                                                 <Input placeholder="Nhập tên đăng nhập" value={newStaffData.username}
-                                                       onChange={e => setNewStaffData({
-                                                           ...newStaffData,
-                                                           username: e.target.value
-                                                       })}/>
+                                                    onChange={e => setNewStaffData({
+                                                        ...newStaffData,
+                                                        username: e.target.value
+                                                    })} />
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     Tên đăng nhập sẽ được sử dụng để đăng nhập vào hệ thống
                                                 </p>
-                                            </div>
+                                            </div> */}
 
                                             <div>
                                                 <label className="block text-sm font-medium mb-2">Mật khẩu tạm thời
                                                     *</label>
                                                 <Input type="password" placeholder="Nhập mật khẩu tạm thời"
-                                                       value={newStaffData.password} onChange={e => setNewStaffData({
-                                                    ...newStaffData,
-                                                    password: e.target.value
-                                                })}/>
+                                                    value={newStaffData.password} onChange={e => setNewStaffData({
+                                                        ...newStaffData,
+                                                        password: e.target.value
+                                                    })} />
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     Nhân viên sẽ được yêu cầu thay đổi mật khẩu khi đăng nhập lần đầu
                                                 </p>
@@ -1102,12 +1122,6 @@ export default function AdminDashboard() {
                                                 <p><span
                                                     className="font-medium">Email:</span> {newStaffData.email || 'Chưa nhập'}
                                                 </p>
-                                                <p><span
-                                                    className="font-medium">Tên đăng nhập:</span> {newStaffData.username || 'Chưa nhập'}
-                                                </p>
-                                                <p><span
-                                                    className="font-medium">Tỉnh/TP:</span> {newStaffData.province || 'Chưa chọn'}
-                                                </p>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -1119,7 +1133,7 @@ export default function AdminDashboard() {
                                     Hủy
                                 </Button>
                                 <Button className="bg-gradient-primary hover:shadow-glow" onClick={handleCreateStaff}>
-                                    <UserPlus className="h-4 w-4 mr-2"/>
+                                    <UserPlus className="h-4 w-4 mr-2" />
                                     Tạo nhân viên
                                 </Button>
                             </div>
@@ -1133,7 +1147,7 @@ export default function AdminDashboard() {
                             <div className="p-6 text-center">
                                 <div
                                     className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-success/10 mb-4">
-                                    <CheckCircle className="h-6 w-6 text-success"/>
+                                    <CheckCircle className="h-6 w-6 text-success" />
                                 </div>
                                 <h3 className="text-lg font-semibold mb-2">Thêm nhân viên thành công!</h3>
                                 <p className="text-muted-foreground mb-6">
@@ -1152,7 +1166,7 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <Button className="w-full bg-gradient-primary hover:shadow-glow"
-                                        onClick={() => setShowSuccessModal(false)}>
+                                    onClick={() => setShowSuccessModal(false)}>
                                     Đóng
                                 </Button>
                             </div>
@@ -1166,7 +1180,7 @@ export default function AdminDashboard() {
                             className="bg-background rounded-lg shadow-elegant max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                             <div className="p-6 border-b">
                                 <h2 className="text-xl font-bold flex items-center space-x-2">
-                                    <Settings className="h-5 w-5"/>
+                                    <Settings className="h-5 w-5" />
                                     <span>Chỉnh sửa thông tin nhân viên</span>
                                 </h2>
                                 <p className="text-muted-foreground mt-1">
@@ -1179,7 +1193,7 @@ export default function AdminDashboard() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Shield className="h-5 w-5"/>
+                                            <Shield className="h-5 w-5" />
                                             <span>Thông tin tài khoản</span>
                                         </CardTitle>
                                         <CardDescription>Thông tin này không thể chỉnh sửa</CardDescription>
@@ -1212,7 +1226,7 @@ export default function AdminDashboard() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Users className="h-5 w-5"/>
+                                            <Users className="h-5 w-5" />
                                             <span>Thông tin cá nhân</span>
                                         </CardTitle>
                                         <CardDescription>Chỉnh sửa thông tin cá nhân của nhân viên</CardDescription>
@@ -1221,69 +1235,28 @@ export default function AdminDashboard() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium mb-2">Họ và tên *</label>
-                                                <Input placeholder="Nhập họ và tên đầy đủ" value={editStaffData.name}
-                                                       onChange={e => setEditStaffData({
-                                                           ...editStaffData,
-                                                           name: e.target.value
-                                                       })}/>
+                                                <Input placeholder="Nhập họ và tên đầy đủ" value={editStaffData.hovaTen}
+                                                    onChange={e => setEditStaffData({
+                                                        ...editStaffData,
+                                                        hovaTen: e.target.value
+                                                    })} />
                                             </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2">Email *</label>
-                                                <Input type="email" placeholder="example@ecoshare.vn"
-                                                       value={editStaffData.email} onChange={e => setEditStaffData({
-                                                    ...editStaffData,
-                                                    email: e.target.value
-                                                })}/>
-                                            </div>
-
                                             <div>
                                                 <label className="block text-sm font-medium mb-2">Số điện thoại</label>
                                                 <Input placeholder="0123456789" value={editStaffData.phone}
-                                                       onChange={e => setEditStaffData({
-                                                           ...editStaffData,
-                                                           phone: e.target.value
-                                                       })}/>
+                                                    onChange={e => setEditStaffData({
+                                                        ...editStaffData,
+                                                        phone: e.target.value
+                                                    })} />
                                             </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2">Ngày sinh</label>
-                                                <Input type="date" value={editStaffData.birthDate}
-                                                       onChange={e => setEditStaffData({
-                                                           ...editStaffData,
-                                                           birthDate: e.target.value
-                                                       })}/>
-                                            </div>
-
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium mb-2">Địa chỉ</label>
-                                                <Input placeholder="Nhập địa chỉ" value={editStaffData.address}
-                                                       onChange={e => setEditStaffData({
-                                                           ...editStaffData,
-                                                           address: e.target.value
-                                                       })}/>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium mb-2">Tỉnh/Thành phố làm
-                                                    việc *</label>
-                                                <select
-                                                    className="w-full p-3 border border-input rounded-md bg-background"
-                                                    value={editStaffData.province} onChange={e => setEditStaffData({
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Căn cước công dân</label>
+                                            <Input placeholder="0123456789" value={editStaffData.cccd}
+                                                onChange={e => setEditStaffData({
                                                     ...editStaffData,
-                                                    province: e.target.value
-                                                })}>
-                                                    <option value="">Chọn tỉnh/thành phố</option>
-                                                    <option value="Hồ Chí Minh">Hồ Chí Minh</option>
-                                                    <option value="Hà Nội">Hà Nội</option>
-                                                    <option value="Đà Nẵng">Đà Nẵng</option>
-                                                    <option value="Cần Thơ">Cần Thơ</option>
-                                                    <option value="Hải Phòng">Hải Phòng</option>
-                                                    <option value="Bình Dương">Bình Dương</option>
-                                                    <option value="Đồng Nai">Đồng Nai</option>
-                                                    <option value="Khánh Hòa">Khánh Hòa</option>
-                                                </select>
-                                            </div>
+                                                    cccd: e.target.value
+                                                })} />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -1294,7 +1267,7 @@ export default function AdminDashboard() {
                                     Hủy
                                 </Button>
                                 <Button className="bg-gradient-primary hover:shadow-glow" onClick={handleUpdateStaff}>
-                                    <CheckCircle className="h-4 w-4 mr-2"/>
+                                    <CheckCircle className="h-4 w-4 mr-2" />
                                     Cập nhật
                                 </Button>
                             </div>
@@ -1308,7 +1281,7 @@ export default function AdminDashboard() {
                             <div className="p-6 text-center">
                                 <div
                                     className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-success/10 mb-4">
-                                    <CheckCircle className="h-6 w-6 text-success"/>
+                                    <CheckCircle className="h-6 w-6 text-success" />
                                 </div>
                                 <h3 className="text-lg font-semibold mb-2">Cập nhật thành công!</h3>
                                 <p className="text-muted-foreground mb-6">
@@ -1316,7 +1289,7 @@ export default function AdminDashboard() {
                                 </p>
 
                                 <Button className="w-full bg-gradient-primary hover:shadow-glow"
-                                        onClick={() => setShowUpdateSuccessModal(false)}>
+                                    onClick={() => setShowUpdateSuccessModal(false)}>
                                     Đóng
                                 </Button>
                             </div>
@@ -1342,7 +1315,7 @@ export default function AdminDashboard() {
                                     </label>
                                     <Input
                                         placeholder={actionType === "lock" ? "Xác nhận khóa nhân viên này" : "Xác nhận mở khóa nhân viên này"}
-                                        value={confirmationText} onChange={e => setConfirmationText(e.target.value)}/>
+                                        value={confirmationText} onChange={e => setConfirmationText(e.target.value)} />
                                 </div>
                                 <div className="flex justify-end space-x-3">
                                     <Button variant="outline" onClick={() => setShowLockConfirmModal(false)}>
@@ -1374,7 +1347,7 @@ export default function AdminDashboard() {
                                         Nhập "Xác nhận sa thải nhân viên này" để xác nhận:
                                     </label>
                                     <Input placeholder="Xác nhận sa thải nhân viên này" value={confirmationText}
-                                           onChange={e => setConfirmationText(e.target.value)}/>
+                                        onChange={e => setConfirmationText(e.target.value)} />
                                 </div>
                                 <div className="flex justify-end space-x-3">
                                     <Button variant="outline" onClick={() => setShowFireConfirmModal(false)}>
@@ -1395,7 +1368,7 @@ export default function AdminDashboard() {
                             <div className="p-6 text-center">
                                 <div
                                     className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-success/10 mb-4">
-                                    <CheckCircle className="h-6 w-6 text-success"/>
+                                    <CheckCircle className="h-6 w-6 text-success" />
                                 </div>
                                 <h3 className="text-lg font-semibold mb-2">
                                     {actionType === "lock" ? "Khóa thành công!" : actionType === "unlock" ? "Mở khóa thành công!" : "Sa thải thành công!"}
@@ -1405,7 +1378,7 @@ export default function AdminDashboard() {
                                 </p>
 
                                 <Button className="w-full bg-gradient-primary hover:shadow-glow"
-                                        onClick={() => setShowActionSuccessModal(false)}>
+                                    onClick={() => setShowActionSuccessModal(false)}>
                                     Đóng
                                 </Button>
                             </div>
@@ -1419,7 +1392,7 @@ export default function AdminDashboard() {
                             className="bg-background rounded-lg shadow-elegant max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                             <div className="p-6 border-b">
                                 <h2 className="text-xl font-bold flex items-center space-x-2">
-                                    <FileText className="h-5 w-5"/>
+                                    <FileText className="h-5 w-5" />
                                     <span>Chi tiết hợp đồng</span>
                                 </h2>
                                 <p className="text-muted-foreground mt-1">
@@ -1432,7 +1405,7 @@ export default function AdminDashboard() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <FileText className="h-5 w-5"/>
+                                            <FileText className="h-5 w-5" />
                                             <span>Thông tin hợp đồng</span>
                                         </CardTitle>
                                     </CardHeader>
@@ -1473,7 +1446,7 @@ export default function AdminDashboard() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Users className="h-5 w-5"/>
+                                            <Users className="h-5 w-5" />
                                             <span>Thông tin nhóm & nhân viên</span>
                                         </CardTitle>
                                     </CardHeader>
@@ -1503,7 +1476,7 @@ export default function AdminDashboard() {
                                 {selectedContract.contractType.includes('đồng sở hữu') && <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
-                                            <Car className="h-5 w-5"/>
+                                            <Car className="h-5 w-5" />
                                             <span>Chi tiết phương tiện</span>
                                         </CardTitle>
                                     </CardHeader>
@@ -1544,7 +1517,7 @@ export default function AdminDashboard() {
                                         description: selectedContract.status === 'active' ? "Hợp đồng có thể tải xuống" : "Hợp đồng chưa sẵn sàng để tải"
                                     });
                                 }}>
-                                    <Download className="h-4 w-4 mr-2"/>
+                                    <Download className="h-4 w-4 mr-2" />
                                     Tải về hợp đồng
                                 </Button>
                             </div>

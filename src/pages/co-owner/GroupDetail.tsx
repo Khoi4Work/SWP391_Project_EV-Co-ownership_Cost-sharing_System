@@ -7,8 +7,12 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
 import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHistory";
-import { getMonthlyFeesByGroupId, payMonthlyFee as payFeeMock } from "@/data/mockMonthlyFees";
-import { getGroupById, groups } from "@/data/mockGroups";
+import { 
+    groups,
+    getGroupById,
+    getMonthlyFeesByGroupId,
+    payMonthlyFee as payFeeMock
+} from "@/mock/mockData";
 import QRCode from "react-qr-code";
 
 // Interface cho GroupMember response từ BE
@@ -49,7 +53,6 @@ interface Transaction {
 
 interface Group {
     id: string;
-    fundId: number;
     name: string;
     ownerId: string;
     fund: number;
@@ -97,14 +100,10 @@ interface GroupFeeResponse {
 }
 
 const API_BASE_URL = "http://localhost:8080";
+const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
 
 // 🔧 CONFIG: Chuyển đổi giữa mock data và backend thật
-// - true: Sử dụng mock data (không cần backend) - dùng để test UI
-// - false: Sử dụng backend thật (cần BE chạy ở http://localhost:8080) - dùng khi có BE
-// 
-// 📝 LƯU Ý: Khi USE_MOCK_DATA = false, nếu backend không available, code sẽ tự động
-// fallback về mock data để tránh lỗi. Để test hoàn toàn với BE, đảm bảo BE đang chạy.
-const USE_MOCK_DATA = false; // ⚠️ ĐỔI THÀNH false KHI CÓ BACKEND ĐỂ TEST
+const USE_MOCK_DATA = false;
 
 export default function GroupDetail() {
     const { groupId } = useParams<{ groupId: string }>();
@@ -128,8 +127,11 @@ export default function GroupDetail() {
     useEffect(() => {
         const userIdStr = localStorage.getItem("userId");
         if (!groupId || !userIdStr) return;
+
         const userIdNum = Number(userIdStr);
         const gId = Number(groupId);
+
+        // Gọi API cần userId và groupId
         fetchUsageHistoryList(userIdNum, gId)
             .then(list => {
                 const mapped: VehicleUsage[] = list.map((it: any) => {
@@ -137,6 +139,7 @@ export default function GroupDetail() {
                     const hasIn = Boolean(it.hasCheckIn);
                     const hasOut = Boolean(it.hasCheckOut);
                     const statusText = !hasIn ? "Chờ nhận xe" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
+
                     return {
                         id: it.scheduleId,
                         date: it.date,
@@ -164,7 +167,6 @@ export default function GroupDetail() {
 
         async function fetchMonthlyFees() {
             if (USE_MOCK_DATA) {
-                // Use mock data
                 console.log("📦 Using MOCK DATA for monthly fees");
                 const gid = Number(groupId);
                 const mockFee = getMonthlyFeesByGroupId(gid);
@@ -174,7 +176,6 @@ export default function GroupDetail() {
                 return;
             }
 
-            // Use real API
             console.log("🔗 Connecting to BACKEND API for monthly fees");
             try {
                 const token = localStorage.getItem("accessToken");
@@ -189,18 +190,16 @@ export default function GroupDetail() {
             } catch (err: any) {
                 const errorStatus = err?.response?.status;
                 const errorMessage = err?.message || "Unknown error";
-                
                 console.warn("⚠️ Backend API failed, falling back to mock data:", {
                     status: errorStatus,
                     message: errorMessage
                 });
-                
+
                 // Fallback to mock data if API fails
                 const gid = Number(groupId);
                 const mockFee = getMonthlyFeesByGroupId(gid);
                 if (mockFee) {
                     setGroupFee(mockFee);
-                    // Only show warning if it's a network/connection error (not 404 which might be expected)
                     if (!errorStatus || errorStatus >= 500) {
                         toast({
                             title: "⚠️ Backend không khả dụng",
@@ -219,7 +218,7 @@ export default function GroupDetail() {
 
     // EFFECT 1: Load group ID nếu chưa có
     useEffect(() => {
-        if (groupId) return; // Nếu đã có groupId param thì skip
+        if (groupId) return;
 
         async function loadGroupId() {
             try {
@@ -230,24 +229,19 @@ export default function GroupDetail() {
                 }
 
                 const token = localStorage.getItem("accessToken");
-                // Lấy danh sách group của user
-                const res = await axiosClient.get(`/groupMember/getGroupIdsByUserId`, {
+                const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
+                
+                const res = await axiosClient.get(endpoint, {
                     params: { userId },
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
 
                 const groupIds: number[] = res.data;
                 if (!groupIds || groupIds.length === 0) {
-                    toast({
-                        title: "Thông báo",
-                        description: "Bạn chưa tham gia nhóm nào",
-                        variant: "destructive"
-                    });
                     navigate("/co-owner/dashboard");
                     return;
                 }
 
-                // Điều hướng sang group đầu tiên
                 navigate(`/group/${groupIds[0]}`);
             } catch (err) {
                 console.error("Error loading group ID:", err);
@@ -271,32 +265,27 @@ export default function GroupDetail() {
                 console.log("=== FETCHING GROUP DETAIL ===");
                 console.log("GroupId:", gid);
 
-                // Nếu dùng mock data, load từ mockGroups
                 if (USE_MOCK_DATA) {
                     console.log("📦 Using MOCK DATA for group detail");
-                    // Try to find by string ID first, then by index (groupId as number - 1)
                     let mockGroup = getGroupById(groupId);
                     if (!mockGroup && !isNaN(gid) && gid > 0) {
-                        // If groupId is a number, use it as index (groupId 1 = groups[0])
                         const index = gid - 1;
                         if (index >= 0 && index < groups.length) {
                             mockGroup = groups[index];
                         }
                     }
-                    // Fallback to first group
                     if (!mockGroup) {
                         mockGroup = groups[0];
                     }
+
                     if (!mockGroup) {
                         setError("Không tìm thấy nhóm");
                         setLoading(false);
                         return;
                     }
 
-                    // Convert mock group to Group format
                     const mappedGroup: Group = {
                         id: mockGroup.id,
-                        fundId: 0,
                         name: mockGroup.name,
                         ownerId: mockGroup.ownerId,
                         fund: mockGroup.fund,
@@ -332,26 +321,33 @@ export default function GroupDetail() {
                     return;
                 }
 
-                // Use real API
                 const token = localStorage.getItem("accessToken");
 
-                // Helper: try multiple endpoints in case BE route differs between envs
+                // Improved fallback function with better logging
                 const getWithFallback = async <T,>(paths: string[]): Promise<T> => {
                     let lastError: any = null;
+                    
                     for (const path of paths) {
                         try {
+                            console.log(`🔍 Trying endpoint: ${path}`);
                             const res = await axiosClient.get<T>(path, {
                                 headers: token ? { Authorization: `Bearer ${token}` } : {}
                             });
+                            console.log(`✅ Success with endpoint: ${path}`);
                             return res.data as T;
                         } catch (err: any) {
                             lastError = err;
-                            if (err?.response?.status && err.response.status !== 404) {
-                                // If not 404, break early (e.g., 401/500)
+                            const status = err?.response?.status;
+                            console.warn(`❌ Failed endpoint ${path}:`, status || err.message);
+                            
+                            // Nếu không phải 404, có thể là lỗi khác (401, 403, 500) - nên dừng thử
+                            if (status && status !== 404) {
+                                console.error(`🛑 Stopping fallback attempts due to ${status} error`);
                                 break;
                             }
                         }
                     }
+                    
                     throw lastError || new Error("All endpoints failed");
                 };
 
@@ -360,103 +356,94 @@ export default function GroupDetail() {
                 let members: GroupMemberDetailRes[] = [];
                 try {
                     const membersResponse = await getWithFallback<any>([
-                        `/groupMember/group/${gid}`,
                         `/api/groupMember/group/${gid}`,
+                        `/groupMember/group/${gid}`,
                         `/api/group-members/group/${gid}`,
                         `/group-members/group/${gid}`,
                     ]);
-                    
-                    // Đảm bảo members là array
+
+                    // Cải thiện logic xử lý response
                     if (Array.isArray(membersResponse)) {
                         members = membersResponse;
-                    } else if (membersResponse && Array.isArray(membersResponse.data)) {
-                        // Nếu response có dạng { data: [...] }
+                    } else if (membersResponse?.data && Array.isArray(membersResponse.data)) {
                         members = membersResponse.data;
                     } else if (membersResponse && typeof membersResponse === 'object') {
-                        // Nếu response là object, thử lấy array đầu tiên
-                        const firstArrayKey = Object.keys(membersResponse).find(key => Array.isArray(membersResponse[key]));
-                        if (firstArrayKey) {
-                            members = membersResponse[firstArrayKey];
-                        } else {
-                            members = [];
+                        // Tìm array đầu tiên trong object
+                        const possibleArrayKeys = ['members', 'data', 'result', 'items'];
+                        for (const key of possibleArrayKeys) {
+                            if (Array.isArray(membersResponse[key])) {
+                                members = membersResponse[key];
+                                break;
+                            }
                         }
-                    } else {
-                        members = [];
+                        
+                        // Nếu vẫn không tìm thấy, tìm bất kỳ array nào
+                        if (members.length === 0) {
+                            const firstArrayKey = Object.keys(membersResponse).find(key => 
+                                Array.isArray(membersResponse[key])
+                            );
+                            if (firstArrayKey) {
+                                members = membersResponse[firstArrayKey];
+                            }
+                        }
                     }
-                    
-                    console.log("✅ Members loaded:", members);
-                    console.log("✅ Members type check:", Array.isArray(members), "Length:", members?.length);
+
+                    console.log("✅ Members loaded:", members.length, "members");
 
                     if (!Array.isArray(members) || members.length === 0) {
-                        setError("Nhóm không có thành viên");
-                        setLoading(false);
-                        return;
+                        throw new Error("No members found in response");
                     }
                 } catch (err: any) {
-                    console.error("❌ Error fetching members:", {
-                        status: err.response?.status,
-                        message: err.message,
-                        endpoint: `members endpoints tried for group ${gid}`
-                    });
-                    setError(`Không thể lấy danh sách thành viên (${err.response?.status || "Network Error"})`);
+                    console.error("❌ Error fetching members:", err);
+                    setError(`Không thể lấy danh sách thành viên: ${err.response?.status || err.message}`);
                     setLoading(false);
                     return;
                 }
 
-                // 2. Fetch CommonFund
-                console.log("Step 2: Fetching fund...");
-                let commonFund: any = null;
+                // 2. Fetch Group Info (optional - để lấy tên nhóm)
+                console.log("Step 2: Fetching group info...");
+                let groupName = "Nhóm";
                 try {
-                    const res = await axiosClient.get(`/api/fund-payment/common-fund/group/${gid}`, {
-                        headers: token ? { Authorization: `Bearer ${token}` } : {}
-                    });
-                    commonFund = res.data;
-                    console.log("✅ Fund loaded:", commonFund);
+                    const groupInfo = await getWithFallback<any>([
+                        `/api/group/${gid}`,           // Match với @GetMapping("/group/{groupId}")
+                        `/group/${gid}`,
+                        `/api/groups/${gid}`,
+                        `/groups/${gid}`
+                    ]);
+                    
+                    // Xử lý nhiều format response khác nhau
+                    groupName = groupInfo?.data?.name || 
+                                groupInfo?.data?.groupName || 
+                                groupInfo?.name || 
+                                groupInfo?.groupName || 
+                                "Nhóm";
+                    
+                    console.log("✅ Group info loaded:", groupInfo);
                 } catch (err: any) {
-                    console.warn("⚠️ Fund not found, using defaults:", err.message);
-                    commonFund = {
-                        fundId: 0,
-                        balance: 0,
-                        group: { groupId: gid, groupName: "Nhóm" }
-                    };
+                    console.warn("⚠️ Group info not found, using default name:", err.message);
+                    // Không throw error vì đây là optional
                 }
 
-                // 3. Fetch FundDetails
-                console.log("Step 3: Fetching fund details...");
-                let fundDetails: any[] = [];
-                if (commonFund?.fundId) {
-                    try {
-                        const res = await axiosClient.get(`/api/fund-payment/fund-details/${commonFund.fundId}`, {
-                            headers: token ? { Authorization: `Bearer ${token}` } : {}
-                        });
-                        fundDetails = res.data || [];
-                        console.log("✅ Fund details loaded:", fundDetails);
-                    } catch (err: any) {
-                        console.warn("⚠️ Fund details not found:", err.message);
-                    }
-                }
-
-                // 4. Fetch Vehicles
-                console.log("Step 4: Fetching vehicles...");
+                // 3. Fetch Vehicles
+                console.log("Step 3: Fetching vehicles...");
                 let vehicles: any[] = [];
                 try {
                     const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`, {
                         headers: token ? { Authorization: `Bearer ${token}` } : {}
                     });
                     vehicles = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
-                    console.log("✅ Vehicles loaded:", vehicles);
+                    console.log("✅ Vehicles loaded:", vehicles.length, "vehicles");
                 } catch (err: any) {
                     console.warn("⚠️ Vehicles not found:", err.message);
                 }
 
                 // Map dữ liệu vào Group object
-                console.log("Step 5: Mapping data...");
+                console.log("Step 4: Mapping data...");
                 const mappedGroup: Group = {
                     id: gid.toString(),
-                    fundId: commonFund?.fundId || 0,
-                    name: commonFund?.group?.groupName || "Nhóm",
+                    name: groupName,
                     ownerId: (Array.isArray(members) ? members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId?.toString() : "") || "",
-                    fund: Number(commonFund?.balance || 0),
+                    fund: 0,
                     minTransfer: 10000,
                     users: members.map(m => ({
                         id: m.userId.toString(),
@@ -473,21 +460,17 @@ export default function GroupDetail() {
                         status: "available",
                         imageUrl: v.imageUrl
                     })),
-                    transactions: fundDetails.map(fd => ({
-                        id: fd.fundDetailId?.toString() || fd.id?.toString() || "",
-                        name: fd.transactionType || "Giao dịch",
-                        type: fd.transactionType?.toLowerCase().includes("deposit")
-                            ? "deposit"
-                            : fd.transactionType?.toLowerCase().includes("withdraw")
-                                ? "withdraw"
-                                : "transfer",
-                        amount: Number(fd.amount || 0),
-                        date: fd.createdAt || new Date().toISOString(),
-                        userId: fd.groupMember?.userId?.toString() || ""
-                    }))
+                    transactions: []
                 };
 
-                console.log("✅ Final group data:", mappedGroup);
+                console.log("=== GROUP DETAIL LOADED ===");
+                console.log("Group ID:", gid);
+                console.log("Group Name:", groupName);
+                console.log("Members:", members.length);
+                console.log("Vehicles:", vehicles.length);
+                console.log("Owner ID:", members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId);
+                console.log("===========================");
+
                 setGroup(mappedGroup);
             } catch (err: any) {
                 console.error("❌ Unexpected error:", err);
@@ -503,10 +486,8 @@ export default function GroupDetail() {
     // Handle pay quỹ tháng
     const handlePayFee = async (fundDetailId: number) => {
         setProcessingPayment(fundDetailId);
-
         try {
             if (USE_MOCK_DATA) {
-                // Simulate payment with mock data
                 console.log("📦 Simulating payment with MOCK DATA for fundDetailId:", fundDetailId);
                 const result = payFeeMock(fundDetailId);
                 if (result.success && result.updatedFee) {
@@ -514,7 +495,6 @@ export default function GroupDetail() {
                         title: "✅ Thanh toán thành công",
                         description: "Thanh toán quỹ tháng đã được thanh toán (mock data)"
                     });
-                    // Update fees state with the updated data
                     setGroupFee(result.updatedFee);
                 } else {
                     throw new Error("Không tìm thấy quỹ tháng cần thanh toán");
@@ -522,10 +502,8 @@ export default function GroupDetail() {
                 return;
             }
 
-            // Use real API
             console.log("🔗 Creating payment via BACKEND API for fundDetailId:", fundDetailId);
             const token = localStorage.getItem("accessToken");
-
             const response = await axiosClient.post<{ status: string; message: string; paymentUrl: string }>(
                 `/api/fund-fee/${fundDetailId}/create-payment`,
                 {},
@@ -537,7 +515,7 @@ export default function GroupDetail() {
             if (response.data.paymentUrl) {
                 toast({
                     title: "Đang chuyển đến VNPay",
-                        description: "Vui lòng thanh toán quỹ tháng"
+                    description: "Vui lòng thanh toán quỹ tháng"
                 });
                 window.location.href = response.data.paymentUrl;
             } else {
@@ -591,13 +569,11 @@ export default function GroupDetail() {
     const currentUser = group.users.find(u => u.id === userId);
     const myRole = currentUser?.role || "member";
 
-    // Helper để format monthYear (yyyy-MM) thành MM/yyyy
     const formatMonthYear = (monthYear: string) => {
         const [year, month] = monthYear.split("-");
         return `${month}/${year}`;
     };
 
-    // Helper để format dueDate
     const formatDueDate = (dueDate: string) => {
         const date = new Date(dueDate);
         return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -631,17 +607,7 @@ export default function GroupDetail() {
                                 {groupFee.fees.map((fee) => {
                                     const isPending = fee.status === "PENDING";
                                     const isCurrentUser = fee.userId.toString() === userId;
-                                    // Debug: log để kiểm tra
-                                    if (isPending) {
-                                        console.log("Fee debug:", {
-                                            feeUserId: fee.userId,
-                                            feeUserIdStr: fee.userId.toString(),
-                                            currentUserId: userId,
-                                            isCurrentUser,
-                                            status: fee.status
-                                        });
-                                    }
-                                    
+
                                     return (
                                         <Card key={fee.fundDetailId} className="border-2">
                                             <CardContent className="pt-6">
@@ -652,7 +618,6 @@ export default function GroupDetail() {
                                                         <p className="text-sm text-muted-foreground">Nhóm: {groupFee.groupName}</p>
                                                     </div>
                                                 </div>
-
                                                 <div className="space-y-2 mb-4">
                                                     <div className="flex justify-between">
                                                         <span className="text-sm text-muted-foreground">Tháng:</span>
@@ -695,7 +660,6 @@ export default function GroupDetail() {
                                                         <span className="text-sm font-medium">{fee.userName}</span>
                                                     </div>
                                                 </div>
-
                                                 <div className="flex gap-2 mt-4">
                                                     {isPending && (
                                                         <Button
@@ -716,7 +680,6 @@ export default function GroupDetail() {
                                     );
                                 })}
                             </div>
-
                             {groupFee && (
                                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                                     <div className="grid grid-cols-3 gap-4 text-center">
@@ -757,7 +720,8 @@ export default function GroupDetail() {
                                     <div className="flex-1">
                                         <p className="font-medium">{user.hovaTen}</p>
                                         <p className="text-sm text-muted-foreground">
-                                            {user.role === "admin" ? "👑 Admin" : "👤 Member"} • {user.ownershipPercentage}%
+                                            {user.role === "admin" ? "👑 Admin" : "👤 Member"} •
+                                            Quyền sở hữu: {user.ownershipPercentage?.toFixed(1) || 0}%
                                         </p>
                                     </div>
                                 </div>
@@ -765,282 +729,7 @@ export default function GroupDetail() {
                         </div>
                     </CardContent>
                 </Card>
-
-                {/* Danh sách xe */}
-                <Card>
-                    <CardContent className="pt-6">
-                        <h2 className="text-xl font-semibold mb-4">Xe trong nhóm ({group.vehicles.length})</h2>
-                        {group.vehicles.length > 0 ? (
-                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                                {group.vehicles.map(vehicle => (
-                                    <div key={vehicle.id} className="p-4 border rounded-lg">
-                                        <p className="font-medium text-lg">{vehicle.name}</p>
-                                        <p className="text-sm text-muted-foreground mt-1">{vehicle.info}</p>
-                                        <Badge className="mt-3">🚗 Sẵn sàng</Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-center text-muted-foreground py-8">Chưa có xe nào</p>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Lịch sử sử dụng xe */}
-                <Card>
-                    <CardContent className="pt-6">
-                        <h2 className="text-xl font-semibold mb-4">Lịch sử sử dụng xe</h2>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-muted border-b">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium">Ngày</th>
-                                    <th className="px-4 py-3 text-left font-medium">Xe</th>
-                                    <th className="px-4 py-3 text-left font-medium">Người dùng</th>
-                                    <th className="px-4 py-3 text-left font-medium">Giờ</th>
-                                    <th className="px-4 py-3 text-left font-medium">Trạng thái</th>
-                                    <th className="px-4 py-3 text-center font-medium">Chi tiết</th>
-                                </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                {vehicleUsages.map(usage => (
-                                    <tr key={usage.id} className="hover:bg-muted/50">
-                                        <td className="px-4 py-3">{usage.date}</td>
-                                        <td className="px-4 py-3">{usage.vehicle}</td>
-                                        <td className="px-4 py-3">{usage.user}</td>
-                                        <td className="px-4 py-3">
-                                            {usage.start} - {usage.end || "..."}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Badge
-                                                className={
-                                                    usage.status === "Chờ nhận xe"
-                                                        ? "bg-blue-100 text-blue-700 border-blue-200"
-                                                        : usage.status === "Đang sử dụng"
-                                                            ? "bg-orange-100 text-orange-700 border-orange-200"
-                                                            : "bg-emerald-100 text-emerald-700 border-emerald-200"
-                                                }
-                                            >
-                                                {usage.status}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={async () => {
-                                                    try {
-                                                        const detail = await fetchUsageHistoryDetail(usage.id);
-                                                        setSelectedHistory({
-                                                            ...usage,
-                                                            note: detail.checkOutNotes || detail.checkInNotes || "",
-                                                            checkIn: detail.checkInTime ? new Date(detail.checkInTime).toLocaleTimeString() : usage.checkIn,
-                                                            checkOut: detail.checkOutTime ? new Date(detail.checkOutTime).toLocaleTimeString() : usage.checkOut,
-                                                            distance: null,
-                                                        });
-                                                        setDetailOpen(true);
-                                                    } catch (e: any) {
-                                                        toast({ title: "Lỗi", description: "Không tải được chi tiết lịch sử", variant: "destructive" });
-                                                    }
-                                                }}
-                                            >
-                                                Xem
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-
             </section>
-
-            {/* Dialog chi tiết lịch sử xe */}
-            <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Chi tiết sử dụng xe</DialogTitle>
-                    </DialogHeader>
-                    {selectedHistory && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Ngày</p>
-                                    <p className="font-medium">{selectedHistory.date}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Xe</p>
-                                    <p className="font-medium">{selectedHistory.vehicle}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Người dùng</p>
-                                    <p className="font-medium">{selectedHistory.user}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Trạng thái</p>
-                                    <Badge
-                                        className={
-                                            selectedHistory.status === "Chờ nhận xe"
-                                                ? "bg-blue-100 text-blue-700 border-blue-200"
-                                                : selectedHistory.status === "Đang sử dụng"
-                                                    ? "bg-orange-100 text-orange-700 border-orange-200"
-                                                    : "bg-emerald-100 text-emerald-700 border-emerald-200"
-                                        }
-                                    >
-                                        {selectedHistory.status}
-                                    </Badge>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Check-in</p>
-                                    <p className="font-medium">{selectedHistory.checkIn}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Check-out</p>
-                                    <p className="font-medium">{selectedHistory.checkOut || "—"}</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <p className="text-xs text-muted-foreground">Quãng đường</p>
-                                    <p className="font-medium">
-                                        {selectedHistory.distance ? `${selectedHistory.distance} km` : "—"}
-                                    </p>
-                                </div>
-                                <div className="col-span-2">
-                                    <p className="text-xs text-muted-foreground">Ghi chú</p>
-                                    <p className="font-medium">{selectedHistory.note || "—"}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            {/* Dialog chi tiết thanh toán quỹ tháng */}
-            <Dialog 
-                open={feeDetailOpen} 
-                onOpenChange={(open) => {
-                    setFeeDetailOpen(open);
-                    if (!open) {
-                        setPaymentQRUrl(null); // Reset QR URL khi đóng dialog
-                        setLoadingQR(false); // Reset loading state
-                    }
-                }}
-            >
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Chi tiết thanh toán quỹ tháng</DialogTitle>
-                    </DialogHeader>
-                    {selectedFee && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Nhóm</p>
-                                    <p className="font-medium">{groupFee?.groupName || "—"}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Tháng</p>
-                                    <p className="font-medium">
-                                        {selectedFee.monthYear && formatMonthYear(selectedFee.monthYear)}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Số tiền</p>
-                                    <p className="font-medium text-lg text-primary">
-                                        {selectedFee.amount.toLocaleString("vi-VN")} VND
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Trạng thái</p>
-                                    <Badge
-                                        className={
-                                            selectedFee.status === "PENDING"
-                                                ? selectedFee.isOverdue
-                                                    ? "bg-red-100 text-red-700 border-red-200"
-                                                    : "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                                : "bg-green-100 text-green-700 border-green-200"
-                                        }
-                                    >
-                                        {selectedFee.status === "PENDING" ? (
-                                            selectedFee.isOverdue ? "⚠️ Quá hạn" : "⌛ Chưa thanh toán"
-                                        ) : (
-                                            "✅ Đã thanh toán"
-                                        )}
-                                    </Badge>
-                                </div>
-                                {selectedFee.dueDate && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Hạn thanh toán</p>
-                                        <p className="font-medium">{formatDueDate(selectedFee.dueDate)}</p>
-                                    </div>
-                                )}
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Thành viên</p>
-                                    <p className="font-medium">{selectedFee.userName}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Ngày tạo</p>
-                                    <p className="font-medium">
-                                        {new Date(selectedFee.createdAt).toLocaleDateString("vi-VN")}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* QR Code Thanh toán */}
-                            {selectedFee.status === "PENDING" && selectedFee.userId.toString() === userId && (
-                                <div className="border-t pt-4">
-                                    <p className="text-sm font-medium mb-3 text-center">Quét mã QR để thanh toán</p>
-                                    {loadingQR ? (
-                                        <div className="flex flex-col items-center justify-center py-8">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-2"></div>
-                                            <p className="text-sm text-muted-foreground">Đang tạo mã QR thanh toán...</p>
-                                        </div>
-                                    ) : paymentQRUrl ? (
-                                        <>
-                                            <div className="flex justify-center mb-3">
-                                                <div className="p-4 bg-white border-2 border-gray-200 rounded-lg">
-                                                    <QRCode
-                                                        value={paymentQRUrl}
-                                                        size={200}
-                                                        level="H"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-center text-muted-foreground mb-4">
-                                                Số tiền: <span className="font-semibold">{selectedFee.amount.toLocaleString("vi-VN")} VND</span>
-                                            </p>
-                                            <p className="text-xs text-center text-muted-foreground">
-                                                Quét mã QR bằng ứng dụng ngân hàng để thanh toán
-                                            </p>
-                                        </>
-                                    ) : (
-                                        <div className="text-center py-4 text-sm text-muted-foreground">
-                                            Không thể tạo mã QR. Vui lòng thử lại sau.
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {selectedFee.status === "PENDING" && selectedFee.userId.toString() === userId && (
-                                <div className="flex gap-2">
-                                    <Button
-                                        onClick={() => {
-                                            handlePayFee(selectedFee.fundDetailId);
-                                            setFeeDetailOpen(false);
-                                        }}
-                                        disabled={processingPayment === selectedFee.fundDetailId}
-                                        className="flex-1"
-                                    >
-                                        {processingPayment === selectedFee.fundDetailId
-                                            ? "⏳ Đang xử lý..."
-                                            : "Thanh toán VNPay"}
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
