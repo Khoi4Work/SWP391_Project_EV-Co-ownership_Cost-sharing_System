@@ -32,7 +32,7 @@ export default function VerifyOTP() {
     }, [userData]);
 
     // 🔹 Frontend tạo OTP và gửi tới backend để backend gửi mail
-    const SEND_OTP = import.meta.env.VITE_EMAIL_SENTOTP;
+    const SEND_OTP = import.meta.env.VITE_SEND_EMAIL_PATH;
     const sendOtpEmail = async () => {
         const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
         setOtp(randomOtp);
@@ -44,7 +44,10 @@ export default function VerifyOTP() {
         try {
             await axiosClient.post(SEND_OTP, {
                 email: userData.email,
-                otp: randomOtp,
+                content: randomOtp,
+                template:"",
+                subject:"",
+                name: userData.hovaTen,
 
             });
             setTime(30);
