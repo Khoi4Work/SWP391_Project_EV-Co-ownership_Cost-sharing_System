@@ -20,4 +20,6 @@ public interface IUserService {
 
     public List<Users> getAllUsersByStatus();
 
+    void unblockUser(int id);
+
 }

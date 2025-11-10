@@ -44,6 +44,12 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
 
+    @PutMapping("/users/{id}/unblock")
+    public ResponseEntity<String> unblockUser(@PathVariable int id) {
+        iUserService.unblockUser(id);
+        return ResponseEntity.ok("Đã mở khóa tài khoản thành công");
+    }
+
     @GetMapping("/get-by-id/{id}")
     public ResponseEntity<StaffResponse> getStaffById(@PathVariable Integer id) {
         StaffResponse staff = staffService.getStaffById(id);

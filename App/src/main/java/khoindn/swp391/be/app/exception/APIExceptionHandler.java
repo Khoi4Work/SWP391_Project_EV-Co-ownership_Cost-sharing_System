@@ -61,7 +61,7 @@ public class APIExceptionHandler {
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<Map<String, String>> handleDisabledException(DisabledException ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("message", "Tài khoản đã bị khóa");
+        error.put("message", "Tài khoản đã bị khóa, Vui lòng gửi email để nhận được sự hỗ trợ");
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
