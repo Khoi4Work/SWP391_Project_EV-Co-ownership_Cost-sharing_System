@@ -9,6 +9,7 @@ import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import axiosClient from "@/api/axiosClient";
 export default function VerifyOTP() {
+    const [isVerifying, setIsVerifying] = useState(false);
     const [otp, setOtp] = useState("");
     const [isResending, setIsResending] = useState(false);
     const [time, setTime] = useState(30);
@@ -87,23 +88,26 @@ export default function VerifyOTP() {
     const REGISTER = import.meta.env.VITE_AUTH_REGISTER;
     // 🔹 Chỉ gọi 1 lần API tạo tài khoản khi OTP đúng
     const handleVerify = async () => {
+        setIsVerifying(true);
         try {
             await axiosClient.post(REGISTER, userData);
             toast({
                 title: "Xác thực thành công",
                 description: "Tài khoản đã được tạo!",
             });
-            navigate("/login");
-        } catch (error) {
+            setTimeout(() => navigate("/login"), 1000);
+        } catch (error: any) {
             console.error("Error creating user:", error);
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data || "Vui lòng kiểm tra lại thông tin.";
             toast({
                 title: "Đăng ký thất bại",
-                description: "Không thể tạo tài khoản.",
+                description: errorMessage,
                 variant: "destructive",
             });
         }
         finally {
-            navigate("/login");
+            setIsVerifying(false);
         }
     };
 
@@ -168,12 +172,8 @@ export default function VerifyOTP() {
                                     )}
                                 </div>
 
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-gradient-primary hover:shadow-glow"
-                                    disabled={!!errors.otp || values.otp.length !== 6}
-                                >
-                                    Xác thực OTP
+                                <Button disabled={isVerifying || !!errors.otp || values.otp.length !== 6}>
+                                    {isVerifying ? "Đang xác thực..." : "Xác thực OTP"}
                                 </Button>
                             </Form>
                         )}
