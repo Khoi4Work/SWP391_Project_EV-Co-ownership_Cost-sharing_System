@@ -26,6 +26,11 @@ public class UserController {
         return ResponseEntity.ok(iUserService.getUserByEmail(email));
     }
 
+    @GetMapping("/get/all")
+    public ResponseEntity getAllUsers() {
+        return  ResponseEntity.ok(iUserService.getAllUsers());
+    }
+
 
     // Tạo mới user
     @PostMapping
