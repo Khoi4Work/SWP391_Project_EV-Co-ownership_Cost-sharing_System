@@ -4,6 +4,7 @@ import jdk.jfr.Name;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.thymeleaf.context.Context;
 
 @Data
 @AllArgsConstructor
@@ -11,7 +12,10 @@ import lombok.NoArgsConstructor;
 public class EmailDetailReq {
 
     private String email;
+    private  String name;
     private String subject;
+    private String content;
     private String url;
     private String template;
+    private Context context;
 }

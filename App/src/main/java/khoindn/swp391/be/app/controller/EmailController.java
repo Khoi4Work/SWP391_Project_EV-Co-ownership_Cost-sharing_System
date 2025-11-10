@@ -20,7 +20,7 @@ public class EmailController {
     @PostMapping("/send")
     public ResponseEntity sendEmail(@RequestBody EmailDetailReq contentSender) {
         System.out.println(contentSender);
-        iEmailService.sendEmail(contentSender);
+        iEmailService.sendOtpViaEmail(contentSender);
         return  ResponseEntity.ok().body("Send email successfully");
     }
 
