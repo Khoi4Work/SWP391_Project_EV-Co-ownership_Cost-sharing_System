@@ -186,6 +186,15 @@ export default function GroupDetail() {
 
                     const statusText = !hasIn ? "Chờ nhận xe" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
 
+                    console.log("🚗 Usage history item:", {
+                        scheduleId: it.scheduleId,
+                        hasCheckIn: rawHasIn,
+                        hasCheckOut: rawHasOut,
+                        checkInTime,
+                        checkOutTime,
+                        fullRaw: it
+                    });
+
                     return {
                         id: it.scheduleId,
                         date: it.date,
