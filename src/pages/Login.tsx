@@ -107,7 +107,7 @@ export default function Login() {
 
             // Kiểm tra quá hạn thanh toán (chỉ cho co-owner)
             if (role.toLowerCase() === "co-owner" || role.toLowerCase() === "user") {
-                let hasOverdueFee = false;
+                    let hasOverdueFee = false;
 
                 // Mock: Kiểm tra nếu user có flag hasOverdue
                 if (USE_MOCK && response.data.hasOverdue) {
@@ -147,19 +147,19 @@ export default function Login() {
                         // Nếu không kiểm tra được, vẫn cho đăng nhập (tránh block user do lỗi API)
                     }
                 }
-
-                if (hasOverdueFee) {
-                    // Xóa token và thông tin user nếu quá hạn
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("userId");
-                    localStorage.removeItem("hovaten");
-                    toast({
-                        title: "⚠️ Tài khoản bị khóa",
-                        description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán.",
-                        variant: "destructive",
-                    });
-                    return; // Không cho đăng nhập
-                }
+// //
+//                 if (hasOverdueFee) {
+//                     // Xóa token và thông tin user nếu quá hạn
+//                     localStorage.removeItem("accessToken");
+//                     localStorage.removeItem("userId");
+//                     localStorage.removeItem("hovaten");
+//                     toast({
+//                         title: "⚠️ Tài khoản bị khóa",
+//                         description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán.",
+//                         variant: "destructive",
+//                     });
+//                     return; // Không cho đăng nhập
+//                 }
             }
             console.log("Role:", role);
             console.log("Token:", token);
