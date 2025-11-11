@@ -55,6 +55,8 @@ public class ContractService implements IContractService {
     private AuthenticationService authenticationService;
     @Autowired
     private IEmailService iEmailService;
+    @Autowired
+    private IGroupRepository iGroupRepository;
 
 
     @Override
@@ -188,6 +190,7 @@ public class ContractService implements IContractService {
         Contract contract = new Contract();
         contract.setContractType(req.getContractType());
         contract.setStartDate(LocalDate.now());
+        contract.setEndDate(contract.getStartDate().plusYears(3));
         contract.setUrlContract(req.getDocumentUrl());
         if (supabaseService.isFileExist(req.getImageContract().getOriginalFilename())) {
             contract.setImageContract(supabaseService.getFileUrl(req.getImageContract().getOriginalFilename()));
@@ -241,12 +244,14 @@ public class ContractService implements IContractService {
             contractHistoryRes.setSignedAt(contract.getStartDate());
             contractHistoryRes.setVehicleName(vehicle.getBrand() + " " + vehicle.getModel());
             contractHistoryRes.setContractId(contract.getContractId());
-
-            if (iGroupMemberRepository.findGroupMembersByUsers(user) == null){
+            if (contract.getGroup() != null) {
+                Group group = iGroupRepository.findGroupByGroupId(contract.getGroup().getGroupId());
+                if (group != null) {
+                    GroupMember gm = iGroupMemberRepository.findByUsersAndGroup_GroupId(member.getUser(), contract.getGroup().getGroupId());
+                    contractHistoryRes.setOwnership(gm.getOwnershipPercentage());
+                }
+            } else {
                 contractHistoryRes.setOwnership(0);
-            }else{
-                GroupMember gm = iGroupMemberRepository.findGroupMembersByUsers(member.getUser());
-                contractHistoryRes.setOwnership(gm.getOwnershipPercentage());
             }
 
 
@@ -348,7 +353,6 @@ public class ContractService implements IContractService {
             System.out.println("DECISION IS APPROVED");
             contract.setStatus(StatusContract.WAITING_CONFIRMATION);
             contract.setStaff(staff);
-            contract.setEndDate(contract.getStartDate().plusYears(3));
             iContractRepository.save(contract);
             SendWaitingConfirmedContract(contractId);
         } else if (decision == 0) {

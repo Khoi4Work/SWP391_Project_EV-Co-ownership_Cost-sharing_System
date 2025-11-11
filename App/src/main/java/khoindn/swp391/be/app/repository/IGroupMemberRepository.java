@@ -19,10 +19,6 @@ public interface IGroupMemberRepository extends JpaRepository<GroupMember, Integ
 
     List<GroupMember> findAllByUsersId(int userId);
 
-    GroupMember findByGroupGroupIdAndUsersId(int groupId, int userId);
-
-    GroupMember findGroupMembersByUsers(Users users);
-
     List<GroupMember> findAllByGroup_GroupId(int groupGroupId);
 
     GroupMember findGroupMembersByUsers_IdAndGroup_GroupId(Integer usersId, int groupGroupId);
@@ -39,4 +35,14 @@ public interface IGroupMemberRepository extends JpaRepository<GroupMember, Integ
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select gm from GroupMember gm where gm.group.groupId = :groupId")
     List<GroupMember> lockAllByGroupId(@Param("groupId") int groupId);
+
+    GroupMember findGroupMemberByUsers(Users users);
+
+    GroupMember findByUsers(Users users);
+
+    GroupMember findByUsers_Id(Integer usersId);
+
+    GroupMember findByUsersAndGroup(Users users, Group group);
+
+    GroupMember findByUsersAndGroup_GroupId(Users users, int groupGroupId);
 }
