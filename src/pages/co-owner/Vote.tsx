@@ -4,52 +4,47 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import axiosClient from "@/api/axiosClient";
-interface DecisionVoteDetail {
+
+interface Service {
   id: number;
-  optionDecisionVote: string; // "PENDING", "APPROVED", "REJECTED", "ABSENT"
-  votedAt: string;
-  groupMember: {
-    users: {
-      id: number;
-      hovaTen: string;
-      email: string;
-    };
-    group: {
-      groupId: number;
-    }
-  };
+  serviceName: string;
+  price: number;
+  receiptImageUrl: string;
 }
 
-
-interface DecisionVote {
-  id: number;
-  decisionName: string;
-  description: string;
-  createdDate: string;
-  decisionVoteDetails: DecisionVoteDetail[];
+interface PaymentDetailResponse {
+  payerName: string;
+  services: Service[];
+  groupMemberCount: number;
 }
 
-export default function Vote() {
-  const { id } = useParams(); // lấy id từ URL
-  const [decision, setDecision] = useState<DecisionVoteDetail[]>([]);
+export default function PaymentConfirmation() {
+  const { id } = useParams(); // id của nhóm hoặc quyết định, tuỳ BE
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const userId = localStorage.getItem("userId");
-  // ✅ Giả lập currentUser (bạn có thể lấy từ context hoặc localStorage)
-  // 🧠 Lấy thông tin DecisionVote từ BE
-  useEffect(() => {
-    const fetchDecision = async () => {
-      try {
-        const res = await axiosClient.get(`/groupMember/decision/vote/detail/${id}`);
-        if (res.status !== 200) throw new Error("Không thể tải danh sách biểu quyết");
+  const [payerName, setPayerName] = useState("");
+  const [services, setServices] = useState<Service[]>([]);
+  const [groupMemberCount, setGroupMemberCount] = useState(1);
 
-        const details: DecisionVoteDetail[] = res.data;
-        setDecision(details); // 🟢 Lưu trực tiếp danh sách detail
+  const totalAmount = services.reduce((sum, s) => sum + s.price, 0);
+  const amountPerPerson = Math.floor(totalAmount / groupMemberCount);
+
+  useEffect(() => {
+    const fetchPaymentInfo = async () => {
+      try {
+        // ⚠️ Sửa URL theo API backend thật
+        const res = await axiosClient.get(`/groupMember/payment/detail/${id}`);
+        if (res.status !== 200) throw new Error("Không thể tải dữ liệu thanh toán");
+
+        const data: PaymentDetailResponse = res.data;
+        setPayerName(data.payerName);
+        setServices(data.services);
+        setGroupMemberCount(data.groupMemberCount);
       } catch (err) {
         console.error(err);
         toast({
           title: "Lỗi",
-          description: "Không thể tải thông tin biểu quyết.",
+          description: "Không thể tải thông tin thanh toán.",
           variant: "destructive",
         });
       } finally {
@@ -57,38 +52,23 @@ export default function Vote() {
       }
     };
 
-    fetchDecision();
+    fetchPaymentInfo();
   }, [id]);
 
-  // ⚙️ Hàm gửi kết quả vote
-  const handleVote = async (vote: boolean) => {
-    if (!decision) return;
-    setSubmitting(true);
-
+  const handleConfirmPayment = async () => {
     try {
-      const groupId = decision[0].groupMember.group.groupId
-      const body = {
-        groupId,
-        decisionId: Number(id),
-        userId: userId,
-        vote: vote ? 1 : 0,
-      };
-
-      await axiosClient.patch(`/groupMember/decision`, body);
-
+      setSubmitting(true);
+      // ⚠️ Gửi xác nhận thanh toán
+      await axiosClient.post(`/groupMember/payment/confirm/${id}`);
       toast({
-        title: "Đã gửi biểu quyết",
-        description: `Bạn đã ${vote ? "đồng ý ✅" : "không đồng ý ❌"} với quyết định này.`,
+        title: "Xác nhận thành công",
+        description: "Bạn đã xác nhận trả tiền cho các dịch vụ.",
       });
-
-      // Cập nhật lại danh sách vote
-      const updated = await axiosClient.get(`/groupMember/decision/${id}`);
-      setDecision(updated.data);
     } catch (err) {
       console.error(err);
       toast({
         title: "Lỗi",
-        description: "Không thể gửi biểu quyết, vui lòng thử lại.",
+        description: "Không thể xác nhận trả tiền.",
         variant: "destructive",
       });
     } finally {
@@ -96,53 +76,63 @@ export default function Vote() {
     }
   };
 
-  if (loading) return <p className="text-center py-10">Đang tải...</p>;
-  if (!decision || decision.length === 0)
-    return <p className="text-center py-10">Không có chi tiết biểu quyết.</p>;
+  if (loading) return <p className="text-center py-10">Đang tải dữ liệu...</p>;
 
   return (
     <div className="flex justify-center py-10">
-      <Card className="w-full max-w-lg shadow-md">
+      <Card className="w-full max-w-2xl shadow-md">
         <CardHeader>
-          <h2 className="text-xl font-bold text-center">Chi tiết biểu quyết #{id}</h2>
-          <p className="text-sm text-muted-foreground text-center mt-2">
-            Danh sách thành viên và lựa chọn của họ
-          </p>
+          <h2 className="text-xl font-bold text-center">
+            Thành viên {payerName} đã đăng ký các dịch vụ
+          </h2>
         </CardHeader>
 
         <CardContent>
-          <ul className="text-sm space-y-1">
-            {decision.map((d) => (
+          <ul className="space-y-3">
+            {services.map((s) => (
               <li
-                key={d.id}
-                className="flex justify-between border-b py-1 text-muted-foreground"
+                key={s.id}
+                className="flex justify-between items-center border-b pb-2"
               >
-                <span>{d.groupMember.users.hovaTen}</span>
-                <span>
-                  {d.optionDecisionVote === "PENDING" && "⏳ Chưa biểu quyết"}
-                  {d.optionDecisionVote === "APPROVED" && "✅ Đồng ý"}
-                  {d.optionDecisionVote === "REJECTED" && "❌ Không đồng ý"}
-                  {d.optionDecisionVote === "ABSENT" && "🚫 Vắng mặt"}
-                </span>
+                <div>
+                  <p className="font-medium">{s.serviceName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Giá: {s.price.toLocaleString("vi-VN")}₫
+                  </p>
+                </div>
+                <img
+                  src={s.receiptImageUrl}
+                  alt="Phiếu thanh toán"
+                  className="w-20 h-20 object-cover rounded"
+                />
               </li>
             ))}
           </ul>
+
+          <div className="mt-6 border-t pt-4 space-y-2">
+            <p className="text-sm">
+              Tổng chi phí:{" "}
+              <span className="font-bold">
+                {totalAmount.toLocaleString("vi-VN")}₫
+              </span>
+            </p>
+            <p className="text-sm">
+              Số thành viên:{" "}
+              <span className="font-bold">{groupMemberCount}</span>
+            </p>
+            <p className="text-lg font-bold text-primary">
+              Mỗi người trả: {amountPerPerson.toLocaleString("vi-VN")}₫
+            </p>
+          </div>
         </CardContent>
 
-        <CardFooter className="flex justify-center gap-4">
+        <CardFooter className="flex justify-center">
           <Button
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleConfirmPayment}
             disabled={submitting}
-            onClick={() => handleVote(true)}
-            className="bg-green-600 text-white hover:bg-green-700"
           >
-            Đồng ý ✅
-          </Button>
-          <Button
-            variant="destructive"
-            disabled={submitting}
-            onClick={() => handleVote(false)}
-          >
-            Không đồng ý ❌
+            {submitting ? "Đang xác nhận..." : "Xác nhận trả tiền"}
           </Button>
         </CardFooter>
       </Card>
