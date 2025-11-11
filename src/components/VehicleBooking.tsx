@@ -239,7 +239,7 @@ export default function VehicleBooking() {
             const endpointByStatus = (gid: number) => {
                 if (statusFilter === "BOOKED") return `/schedule/group/${gid}/booked`;
                 if (statusFilter === "CANCELED") return `/schedule/group/${gid}/canceled`;
-                return `/schedule/group/${gid}/override-trackers`;
+                return `/schedule/group/${gid}/overridden`;
             };
             const fetchPromises = groupIds.map(groupId => apiCall(endpointByStatus(groupId)));
             const allBookingsArrays = await Promise.all(fetchPromises);
