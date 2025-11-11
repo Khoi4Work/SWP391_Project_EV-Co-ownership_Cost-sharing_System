@@ -87,7 +87,7 @@ export default function ServiceDetail() {
         if (firstImage) {
           formData.append("billImage", firstImage);
         }
-
+        formData.append("idService", "1");
         // 🧩 Gọi API tạo DecisionVote (multipart/form-data)
         const res = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
