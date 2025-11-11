@@ -171,9 +171,11 @@ export default function VerifyOTP() {
                                     )}
                                 </div>
 
-                                <Button disabled={isVerifying || !!errors.otp || values.otp.length !== 6}>
-                                    {isVerifying ? "Đang xác thực..." : "Xác thực OTP"}
-                                </Button>
+                                <div style={{ textAlign: "center", marginTop: "1rem" }}>
+                                    <Button disabled={isVerifying || !!errors.otp || values.otp.length !== 6}>
+                                        {isVerifying ? "Đang xác thực..." : "Xác thực OTP"}
+                                    </Button>
+                                </div>
                             </Form>
                         )}
                     </Formik>
