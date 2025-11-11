@@ -15,6 +15,9 @@ import java.util.List;
 @NoArgsConstructor
 public class DecisionVoteReq {
 
+    @NotNull
+    private Integer idService;
+
     @NotEmpty
     @Size(min = 1, max = 50)
     private List<String> decisionNames; // maintenance, repair, upgrade,... or others

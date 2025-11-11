@@ -20,6 +20,7 @@ public class DecisionVoteDetail {
     private Long id;
 
     @Column(name = "optionVote")
+    @Enumerated(EnumType.STRING)
     private OptionDecisionVoteDetail optionDecisionVote = OptionDecisionVoteDetail.ABSENT;
 
     @Column(name = "voted_at")

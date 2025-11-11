@@ -17,10 +17,17 @@ public class EmailController {
     @Autowired
     private IEmailService  iEmailService;
 
+    @PostMapping("/send-otp")
+    public ResponseEntity sendOtpViaEmail(@RequestBody EmailDetailReq contentSender) {
+        System.out.println(contentSender);
+        iEmailService.sendOtpViaEmail(contentSender);
+        return  ResponseEntity.ok().body("Send email successfully");
+    }
+
     @PostMapping("/send")
     public ResponseEntity sendEmail(@RequestBody EmailDetailReq contentSender) {
         System.out.println(contentSender);
-        iEmailService.sendOtpViaEmail(contentSender);
+        iEmailService.sendEmail(contentSender);
         return  ResponseEntity.ok().body("Send email successfully");
     }
 

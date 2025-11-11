@@ -150,4 +150,9 @@ public class GroupMemberController {
         System.out.println("DECISION VOTE DETAIL"+iGroupMemberService.getAllDecisionVoteDetailByDecisionVote(decisionVote));
         return ResponseEntity.status(200).body(iGroupMemberService.getAllDecisionVoteDetailByDecisionVote(decisionVote));
     }
+
+    @GetMapping("/decision/{id}")
+    public ResponseEntity getDecision(@PathVariable long id) {
+        return ResponseEntity.status(200).body(iGroupMemberService.getDecisionVoteById(id));
+    }
 }

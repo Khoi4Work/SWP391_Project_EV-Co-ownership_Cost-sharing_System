@@ -151,10 +151,13 @@ public class GroupMemberService implements IGroupMemberService {
     public DecisionVoteRes createDecision(DecisionVoteReq request, GroupMember gm) {
         DecisionVoteRes res = new DecisionVoteRes();
 
+        MenuVehicleService mvs = iVehicleService.getMenuVehicleServices()
+
         // map request to decisionVote
         DecisionVote createdDecisionVote = modelMapper.map(request, DecisionVote.class);
         createdDecisionVote.setEndedAt(LocalDateTime.now().plusDays(1));
         createdDecisionVote.setCreatedBy(gm);
+        createdDecisionVote.setDecisionName(request.getDecisionNames());
         iDecisionVoteRepository.save(createdDecisionVote);
 
         res.setCreator(createdDecisionVote);

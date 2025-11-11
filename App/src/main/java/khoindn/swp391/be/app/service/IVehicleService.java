@@ -25,4 +25,6 @@ public interface IVehicleService {
     RequestVehicleService requestVehicleService(int groupId, int serviceId);
 
     List<RequestVehicleService> getAllRequestVehicleSerive();
+
+
 }
