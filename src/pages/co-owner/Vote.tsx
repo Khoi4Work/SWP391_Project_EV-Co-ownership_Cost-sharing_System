@@ -37,6 +37,9 @@ export default function PaymentConfirmation() {
 
         const data = res.data; // Mảng DecisionVoteDetail[]
         setDecisionDetails(data); // Lưu vào state để hiển thị
+        setPayerName(data.createdBy.user.hovaTen);
+        setServices(data.)
+
       } catch (err) {
         console.error(err);
         toast({
