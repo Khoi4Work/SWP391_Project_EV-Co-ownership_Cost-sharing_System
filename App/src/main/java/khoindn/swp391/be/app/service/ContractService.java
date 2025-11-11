@@ -7,6 +7,8 @@ import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
 import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
+import khoindn.swp391.be.app.model.Request.EmailDetailReq;
+import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.model.Response.ContractPendingRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -56,6 +58,8 @@ public class ContractService implements IContractService {
     @Autowired
     private ISupabaseService iSupabaseService;
     private AuthenticationService authenticationService;
+    @Autowired
+    private IEmailService iEmailService;
 
 
     @Override
@@ -75,9 +79,9 @@ public class ContractService implements IContractService {
         System.out.println("Update contract...");
 
         Users user = iUserRepository.findUsersById(req.getIdUser());
-        System.out.println("PUBLIC KEY: "+user.getPublicKey());
-        System.out.println("PRIVATE KEY: "+req.getContract_signature());
-        System.out.println("CONTRACT CONTENT: "+req.getContractContent());
+        System.out.println("PUBLIC KEY: " + user.getPublicKey());
+        System.out.println("PRIVATE KEY: " + req.getContract_signature());
+        System.out.println("CONTRACT CONTENT: " + req.getContractContent());
 
         cleanKey(req.getContract_signature());
         //Parse privateKey va publicKey sang byte
@@ -298,22 +302,13 @@ public class ContractService implements IContractService {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
                 String secureUrl = contract.getUrlContract() + contract.getContractId() + "?token=" + token;
-                try {
-                    MimeMessage message = javaMailSender.createMimeMessage();
-                    MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-                    Context context = new Context();
-                    context.setVariable("secureUrl", secureUrl);
-
-                    String content = templateEngine.process("contract", context);
-
-                    helper.setTo(signer.getUser().getEmail());
-                    helper.setSubject("[EcoShare System] Your contract is waiting for confirmation");
-                    helper.setText(content, true);
-                    javaMailSender.send(message);
-                } catch (MessagingException e) {
-                    throw new RuntimeException(e.getMessage());
-                }
+                EmailDetailReq req = new EmailDetailReq();
+                req.setEmail(signer.getUser().getEmail());
+                req.setSubject("[EcoShare System] Your contract is waiting for confirmation");
+                req.setUrl(secureUrl);
+                req.setTemplate("contract");
+                iEmailService.sendContractViaEmail(req);
             }
         }
     }
@@ -329,24 +324,14 @@ public class ContractService implements IContractService {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
-                String secureUrl = contract.getUrlContract()+ "?token=" + token;
-                // SEND MULTIPLE USERS
-                try {
-                    MimeMessage message = javaMailSender.createMimeMessage();
-                    MimeMessageHelper helper = new MimeMessageHelper(message, true);
+                String secureUrl = contract.getUrlContract() + "?token=" + token;
 
-                    Context context = new Context();
-                    context.setVariable("secureUrl", secureUrl);
-
-                    String content = templateEngine.process("contract_decline", context);
-
-                    helper.setTo(signer.getUser().getEmail());
-                    helper.setSubject("[EcoShare System] Your contract is declined!");
-                    helper.setText(content, true);
-                    javaMailSender.send(message);
-                } catch (MessagingException e) {
-                    throw new RuntimeException(e.getMessage());
-                }
+                EmailDetailReq req = new EmailDetailReq();
+                req.setEmail(signer.getUser().getEmail());
+                req.setSubject("[EcoShare System] Your contract has been declined");
+                req.setUrl(secureUrl);
+                req.setTemplate("contract_declined");
+                iEmailService.sendContractViaEmail(req);
             }
         }
     }
@@ -362,10 +347,11 @@ public class ContractService implements IContractService {
             System.out.println("DECISION IS APPROVED");
             contract.setStatus(StatusContract.WAITING_CONFIRMATION);
             contract.setStaff(staff);
+            contract.setEndDate(contract.getStartDate().plusYears(3));
             iContractRepository.save(contract);
             SendWaitingConfirmedContract(contractId);
         } else if (decision == 0) {
-            System.out.println("link declined contract: "+declinedContractLink);
+            System.out.println("link declined contract: " + declinedContractLink);
             contract.setStatus(StatusContract.DECLINED);
             contract.setEndDate(LocalDate.now());
             contract.setStaff(staff);
@@ -376,6 +362,7 @@ public class ContractService implements IContractService {
             throw new UndefinedChoiceException("Invalid decision value");
         }
     }
+
     public static String cleanKey(String key) {
         return key
                 .replaceAll("-----BEGIN (.*)-----", "")

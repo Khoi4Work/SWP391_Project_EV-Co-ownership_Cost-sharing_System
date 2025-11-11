@@ -59,10 +59,8 @@ public class EmailService implements IEmailService {
                 MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
                 helper.setTo(eachEmail);
-                helper.setSubject("[EcoShare System] E-Contract");
-                helper.setText(
-                        "<a href='" + emailReq.getContent() +
-                                "'>Nhấn vào đây để xem hợp đồng</a>", true);
+                helper.setSubject(emailReq.getSubject());
+                helper.setText(emailReq.getTemplate(), true);
 
                 javaMailSender.send(message);
             } catch (Exception e) {
@@ -85,4 +83,15 @@ public class EmailService implements IEmailService {
         sender.setSubject("[EcoShare System] Verify Account");
         sendEmail(sender);
     }
+
+    @Override
+    public void sendContractViaEmail(EmailDetailReq req) {
+        Context context = new Context();
+        context.setVariable("secureUrl", req.getUrl());
+        String template = templateEngine.process(req.getTemplate(), context);
+        req.setTemplate(template);
+        sendEmail(req);
+    }
+
+
 }
