@@ -385,17 +385,22 @@ export default function VehicleRegistration() {
       price: 0,
     },
     validationSchema: VehicleSchema,
-    onSubmit: (values) => {
-      if (vehicleFormik.errors.plateNo) {
+    onSubmit: async (values) => {
+      // validate toàn bộ form trước khi tiếp tục
+      const errors = await vehicleFormik.validateForm();
+
+      // kiểm tra lỗi biển số
+      if (errors.plateNo) {
         alert("Vui lòng nhập biển số xe hợp lệ trước khi tiếp tục.");
         return;
       }
 
-      // Ngoài ra có thể check trống luôn
-      if (!vehicleFormik.values.plateNo.trim()) {
+      // kiểm tra trống
+      if (!values.plateNo.trim()) {
         alert("Vui lòng nhập biển số xe trước khi tiếp tục.");
         return;
       }
+
       console.log("Dữ liệu: ", values);
       setSelectedVehicle(values); // lưu xe đã nhập
       setStep(2); // sang bước kế tiếp
@@ -780,7 +785,7 @@ export default function VehicleRegistration() {
                             );
 
                             // Chỉ set lỗi nếu chưa có lỗi cũ
-                            if (isDuplicate && vehicleFormik.errors.plateNo === "") {
+                            if (isDuplicate) {
                               vehicleFormik.setFieldError(
                                 "plateNo",
                                 "Biển số xe đã tồn tại trong hệ thống!"
