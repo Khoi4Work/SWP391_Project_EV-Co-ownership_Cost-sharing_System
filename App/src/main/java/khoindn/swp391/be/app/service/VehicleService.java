@@ -94,5 +94,10 @@ public class VehicleService implements IVehicleService {
         return iRequestVehicleServiceRepository.findAll();
     }
 
+    @Override
+    public List<Vehicle> getVehicles() {
+        return iVehicleRepository.findAll();
+    }
+
 
 }

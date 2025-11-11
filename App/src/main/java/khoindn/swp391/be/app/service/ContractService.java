@@ -1,14 +1,11 @@
 package khoindn.swp391.be.app.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
 import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.EmailDetailReq;
-import khoindn.swp391.be.app.model.Request.SendEmailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.model.Response.ContractPendingRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -18,9 +15,7 @@ import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.security.*;
@@ -225,29 +220,35 @@ public class ContractService implements IContractService {
     @Override
     public List<ContractHistoryRes> getHistoryContractsByUser(Users user) {
         List<ContractHistoryRes> historyRes = new ArrayList<>();
-        List<GroupMember> userGroup = iGroupMemberRepository.findAllByUsersId(user.getId());
-        for (GroupMember groupMember : userGroup) {
+
+        List<ContractSigner> userContract = iContractSignerRepository.findAllByUser_Id(user.getId());
+        for (ContractSigner member : userContract) {
 
             ContractHistoryRes contractHistoryRes = new ContractHistoryRes();
 
 
-            Contract contract = iContractRepository.findContractByGroup_GroupId(groupMember.getGroup().getGroupId());
+            Contract contract = iContractRepository.findContractByContractId(member.getContract().getContractId());
             if (contract == null) {
                 throw new IllegalArgumentException("Invalid idUsers value");
             }
-            Vehicle vehicle = iVehicleRepository.findVehicleByGroup(groupMember.getGroup());
+            Vehicle vehicle = iVehicleRepository.findVehicleByContract(contract);
             if (vehicle == null) {
                 throw new IllegalArgumentException("Invalid Group value");
             }
 
 
-            contractHistoryRes.setStatus(contract.getStatus().toString());
+            contractHistoryRes.setStatus(contract.getStatus().name());
             contractHistoryRes.setSignedAt(contract.getStartDate());
             contractHistoryRes.setVehicleName(vehicle.getBrand() + " " + vehicle.getModel());
             contractHistoryRes.setContractId(contract.getContractId());
 
+            if (iGroupMemberRepository.findGroupMembersByUsers(user) == null){
+                contractHistoryRes.setOwnership(0);
+            }else{
+                GroupMember gm = iGroupMemberRepository.findGroupMembersByUsers(member.getUser());
+                contractHistoryRes.setOwnership(gm.getOwnershipPercentage());
+            }
 
-            contractHistoryRes.setOwnership(groupMember.getOwnershipPercentage());
 
             historyRes.add(contractHistoryRes);
         }

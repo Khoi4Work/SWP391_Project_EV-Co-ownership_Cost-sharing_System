@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.repository;
 
+import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.Vehicle;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,8 @@ public interface IVehicleRepository extends JpaRepository<Vehicle, Integer> {
     Vehicle getVehiclesByGroup(Group group);
 
     Vehicle getVehiclesByContract_ContractId(Integer contractContractId);
+
+    Vehicle findVehicleByContract(Contract contract);
+
+    boolean findAllByPlateNo(String plateNo);
 }

@@ -35,4 +35,9 @@ public class VehicleController {
 
     }
 
+    @GetMapping("/all")
+    public ResponseEntity getAllVehicle() {
+        return ResponseEntity.status(200).body(iVehicleService.getVehicles());
+    }
+
 }

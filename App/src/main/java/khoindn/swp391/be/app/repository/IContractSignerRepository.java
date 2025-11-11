@@ -22,4 +22,6 @@ public interface IContractSignerRepository extends JpaRepository<ContractSigner,
     List<ContractSigner> findAllByContract_ContractId(int contractContractId);
 
     ContractSigner findContractSignerByUser(Users user);
+
+    List<ContractSigner> findAllByUser_Id(Integer userId);
 }
