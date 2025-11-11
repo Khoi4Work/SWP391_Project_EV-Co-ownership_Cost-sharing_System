@@ -455,6 +455,50 @@ export default function ScheduleCards() {
                     });
                 });
 
+                // Helper: Enrich items with booking detail if list lacks check-in/out info
+                const enrichWithDetails = async (items: ScheduleItem[]): Promise<ScheduleItem[]> => {
+                    // Only fetch details for items missing both hasCheckIn and times
+                    const target = items.filter(it => (!it.hasCheckIn && !it.hasCheckOut) && !it.checkInTime && !it.checkOutTime);
+                    if (target.length === 0) return items;
+                    try {
+                        const enrichedPairs = await Promise.all(target.map(async (it) => {
+                            try {
+                                const detailRes = await fetch(`${beBaseUrl}/booking/detail/${it.scheduleId}`, {
+                                    method: "GET",
+                                    headers: {
+                                        "Accept": "application/json",
+                                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                                    },
+                                    credentials: "include",
+                                });
+                                if (!detailRes.ok) return [it.scheduleId, null] as const;
+                                const d = await detailRes.json();
+                                const checkInTime = d?.checkIn?.checkInTime || d?.checkInTime || d?.checkinTime;
+                                const checkOutTime = d?.checkOut?.checkOutTime || d?.checkOutTime || d?.checkoutTime;
+                                const hasCheckIn = !!(d?.checkIn || checkInTime);
+                                const hasCheckOut = !!(d?.checkOut || checkOutTime);
+                                const updated: ScheduleItem = {
+                                    ...it,
+                                    hasCheckIn: hasCheckIn || it.hasCheckIn,
+                                    hasCheckOut: hasCheckOut || it.hasCheckOut,
+                                    checkInTime: checkInTime || it.checkInTime,
+                                    checkOutTime: checkOutTime || it.checkOutTime,
+                                };
+                                return [it.scheduleId, updated] as const;
+                            } catch {
+                                return [it.scheduleId, null] as const;
+                            }
+                        }));
+                        const idToUpdated = new Map<number, ScheduleItem>();
+                        for (const [id, updated] of enrichedPairs) {
+                            if (updated) idToUpdated.set(id, updated);
+                        }
+                        return items.map(it => idToUpdated.get(it.scheduleId) || it);
+                    } catch {
+                        return items;
+                    }
+                };
+
                 const normalized = (arr as any[])
                     .map(raw => {
                         const item = normalizeScheduleItem(raw);
@@ -483,13 +527,16 @@ export default function ScheduleCards() {
                     })
                     .filter((x): x is ScheduleItem => x !== null);
 
-                console.log("✅ Normalized items with vehicles:", normalized);
+                // Enrich items with booking details if needed
+                const enriched = await enrichWithDetails(normalized);
+
+                console.log("✅ Normalized items with vehicles:", enriched);
                 console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
                 // Debug: Log check-in/check-out status cho từng item
-                normalized.forEach(item => {
+                enriched.forEach(item => {
                     console.log(`📋 Schedule ${item.scheduleId}: hasCheckIn=${item.hasCheckIn}, hasCheckOut=${item.hasCheckOut}, checkInTime=${item.checkInTime}`);
                 });
-                setItems(normalized);
+                setItems(enriched);
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
         } finally {
