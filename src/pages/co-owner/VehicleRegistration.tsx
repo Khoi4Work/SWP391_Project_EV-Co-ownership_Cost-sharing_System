@@ -386,6 +386,16 @@ export default function VehicleRegistration() {
     },
     validationSchema: VehicleSchema,
     onSubmit: (values) => {
+      if (vehicleFormik.errors.plateNo) {
+        alert("Vui lòng nhập biển số xe hợp lệ trước khi tiếp tục.");
+        return;
+      }
+
+      // Ngoài ra có thể check trống luôn
+      if (!vehicleFormik.values.plateNo.trim()) {
+        alert("Vui lòng nhập biển số xe trước khi tiếp tục.");
+        return;
+      }
       console.log("Dữ liệu: ", values);
       setSelectedVehicle(values); // lưu xe đã nhập
       setStep(2); // sang bước kế tiếp
@@ -756,7 +766,9 @@ export default function VehicleRegistration() {
                             vehicleFormik.setFieldValue("plateNo", newValue);
 
                             // Reset lỗi khi đang gõ
-                            vehicleFormik.setFieldError("plateNo", "");
+                            if (vehicleFormik.errors.plateNo) {
+                              vehicleFormik.setFieldError("plateNo", "");
+                            }
                           }}
                           onBlur={(e) => {
                             const plate = e.target.value.trim().toUpperCase();
@@ -767,12 +779,13 @@ export default function VehicleRegistration() {
                               (v) => v.plateNo.toUpperCase() === plate
                             );
 
-                            if (isDuplicate) {
+                            // Chỉ set lỗi nếu chưa có lỗi cũ
+                            if (isDuplicate && vehicleFormik.errors.plateNo === "") {
                               vehicleFormik.setFieldError(
                                 "plateNo",
                                 "Biển số xe đã tồn tại trong hệ thống!"
                               );
-                            } else {
+                            } else if (!isDuplicate && vehicleFormik.errors.plateNo) {
                               vehicleFormik.setFieldError("plateNo", "");
                             }
                           }}
@@ -783,7 +796,9 @@ export default function VehicleRegistration() {
 
                         {/* Hiển thị lỗi trực tiếp */}
                         {vehicleFormik.errors.plateNo && (
-                          <p className="text-red-500 text-sm mt-1">{vehicleFormik.errors.plateNo}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {vehicleFormik.errors.plateNo}
+                          </p>
                         )}
                       </>
                     ) : field.id === "color" ? (
