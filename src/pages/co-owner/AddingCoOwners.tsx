@@ -155,7 +155,7 @@ export default function CoOwnerForm({
                     {...field}
                     type="number"
                     min={15}
-                    max={90}
+                    max={85}
                     className="flex-1"
                     onBlur={(e) => {
                       updateCoOwner(coOwner.id, "ownership", Number(e.target.value));

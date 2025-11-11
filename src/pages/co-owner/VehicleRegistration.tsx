@@ -129,11 +129,11 @@ export default function VehicleRegistration() {
           variant: "destructive"
         })
       };
-      toast({
-        title: "Thành công",
-        description: `Tự động điền thông tin thành công`,
-        variant: "success", // hoặc bỏ variant nếu bạn dùng toast mặc định là success
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: `Tự động điền thông tin thành công`,
+      //   variant: "success", // hoặc bỏ variant nếu bạn dùng toast mặc định là success
+      // });
       return {
         id: user.id,
         name: user.hovaTen,       // map hovaTen -> name
@@ -750,35 +750,46 @@ export default function VehicleRegistration() {
                     </Label>
 
                     {field.id === "plateNo" ? (
-                      <Input
-                        id={field.id}
-                        name={field.id}
-                        value={vehicleFormik.values.plateNo}
-                        onChange={(e) => {
-                          const newValue = e.target.value.trim().toUpperCase();
-                          vehicleFormik.setFieldValue("plateNo", newValue);
+                      <>
+                        <Input
+                          id={field.id}
+                          name={field.id}
+                          value={vehicleFormik.values.plateNo}
+                          onChange={(e) => {
+                            const newValue = e.target.value.trim().toUpperCase();
+                            vehicleFormik.setFieldValue("plateNo", newValue);
+                            vehicleFormik.setFieldError("plateNo", ""); // reset lỗi khi đang gõ
+                          }}
+                          onBlur={(e) => {
+                            const plate = e.target.value.trim().toUpperCase();
+                            if (!plate) return;
 
-                          // ⚡ Kiểm tra trùng lặp biển số trong danh sách vehicles
-                          const isDuplicate = vehicles.some(
-                            (v) => v.plateNo.toUpperCase() === newValue
-                          );
-
-                          if (isDuplicate) {
-                            vehicleFormik.setFieldError(
-                              "plateNo",
-                              "Biển số xe đã tồn tại trong hệ thống!"
+                            const isDuplicate = vehicles.some(
+                              (v) => v.plateNo.toUpperCase() === plate
                             );
-                          } else {
-                            vehicleFormik.setFieldError("plateNo", undefined);
-                          }
-                        }}
-                        placeholder={field.placeholder}
-                        className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""
-                          }`}
-                      />
+
+                            if (isDuplicate) {
+                              vehicleFormik.setFieldError(
+                                "plateNo",
+                                "Biển số xe đã tồn tại trong hệ thống!"
+                              );
+                            } else {
+                              vehicleFormik.setFieldError("plateNo", "");
+                            }
+                          }}
+                          placeholder={field.placeholder}
+                          className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""
+                            }`}
+                        />
+                        <ErrorMessage
+                          name="plateNo"
+                          component="div"
+                          className="text-red-500 text-sm mt-1"
+                        />
+                      </>
                     ) : field.id === "color" ? (
                       <div className="flex items-center space-x-3">
-                        {/* Color picker (hiển thị ô chọn màu) */}
+                        {/* Color picker */}
                         <input
                           type="color"
                           id={field.id}
@@ -788,7 +799,7 @@ export default function VehicleRegistration() {
                           className="w-12 h-10 border rounded cursor-pointer"
                         />
 
-                        {/* Text input (cho phép gõ mã màu thủ công) */}
+                        {/* Text input màu */}
                         <Input
                           id={`${field.id}-text`}
                           name={field.id}
@@ -799,7 +810,6 @@ export default function VehicleRegistration() {
                         />
                       </div>
                     ) : field.id === "price" ? (
-                      // 🔹 Nếu là trường "price", định dạng có dấu phẩy
                       <Input
                         id={field.id}
                         name={field.id}
@@ -807,7 +817,7 @@ export default function VehicleRegistration() {
                           .toString()
                           .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/,/g, ""); // bỏ dấu phẩy để lấy số thật
+                          let value = e.target.value.replace(/,/g, "");
                           if (!isNaN(Number(value))) {
                             vehicleFormik.setFieldValue("price", value);
                           }
@@ -816,7 +826,6 @@ export default function VehicleRegistration() {
                         className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
                       />
                     ) : (
-                      // 🔹 Các trường còn lại
                       <Input
                         id={field.id}
                         name={field.id}
