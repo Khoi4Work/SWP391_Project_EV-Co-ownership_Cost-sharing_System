@@ -268,6 +268,7 @@ export default function MyGroups() {
                             </CardDescription>
                             <CardDescription>
                               Ngày tạo: {createdAt} | Sở hữu: {ownership}%
+                              Ngày kết thúc: { }
                             </CardDescription>
                           </div>
                         </div>

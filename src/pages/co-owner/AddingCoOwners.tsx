@@ -158,7 +158,7 @@ export default function CoOwnerForm({
 
           {/* ✅ Address (giữ lại) */}
           <div className="space-y-2 md:col-span-2">
-            <Label>Địa chỉ *</Label>
+            <Label>Địa chỉ</Label>
             <Field as={Textarea} name="address" placeholder="Nhập địa chỉ" />
             <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
           </div>

@@ -917,7 +917,7 @@ export default function VehicleRegistration() {
 
                 {/* ✅ Chỉ giữ lại Address */}
                 <div className="space-y-2">
-                  <Label htmlFor="address">Địa chỉ *</Label>
+                  <Label htmlFor="address">Địa chỉ</Label>
                   <Field
                     as={Textarea}
                     id="address"
