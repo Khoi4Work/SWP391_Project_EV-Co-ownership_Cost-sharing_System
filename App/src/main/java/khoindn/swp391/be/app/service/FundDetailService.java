@@ -145,9 +145,9 @@ public class FundDetailService implements IFundDetailService {
         String currentMonthYear = YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         List<FundDetail> fees = fundDetailRepository.findByGroupMember_Group_GroupIdAndMonthYear(groupId, currentMonthYear);
 
-        if (fees.isEmpty()) {
-            throw new RuntimeException("No fees found for this group");
-        }
+//        if (fees.isEmpty()) {
+//            throw new RuntimeException("No fees found for this group");
+//        }
 
         String groupName = fees.get(0).getGroupMember().getGroup().getGroupName();
 
