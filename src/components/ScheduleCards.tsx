@@ -730,16 +730,37 @@ export default function ScheduleCards() {
                 return;
             }
             // Parse response nếu có body
+            let checkInTimeFromResponse: string | undefined = undefined;
             try {
                 const checkInResult = await res.json();
                 console.log("✅ Check-in response:", checkInResult);
+                // Lấy checkInTime từ response nếu có
+                checkInTimeFromResponse = checkInResult?.checkInTime ?? 
+                    checkInResult?.checkIn?.checkInTime ?? 
+                    checkInResult?.time ??
+                    new Date().toISOString(); // Fallback: dùng thời gian hiện tại
             } catch (e) {
-                // Response có thể không có body, không sao
+                // Response có thể không có body, dùng thời gian hiện tại
+                checkInTimeFromResponse = new Date().toISOString();
                 console.log("✅ Check-in thành công (no response body)");
             }
+            
+            // Optimistic update: cập nhật state ngay lập tức
+            setItems(prevItems => prevItems.map(item => {
+                if (item.scheduleId === activeId) {
+                    return {
+                        ...item,
+                        hasCheckIn: true,
+                        checkInTime: checkInTimeFromResponse || new Date().toISOString()
+                    };
+                }
+                return item;
+            }));
+            
             alert("Check-in thành công");
             setOpenCheckIn(false);
-            // Đợi một chút để BE cập nhật dữ liệu, sau đó fetch lại
+            
+            // Fetch lại sau một chút để sync với BE
             setTimeout(() => {
                 fetchSchedules();
             }, 500);
@@ -810,16 +831,37 @@ export default function ScheduleCards() {
                 return;
             }
             // Parse response nếu có body
+            let checkOutTimeFromResponse: string | undefined = undefined;
             try {
                 const checkOutResult = await res.json();
                 console.log("✅ Check-out response:", checkOutResult);
+                // Lấy checkOutTime từ response nếu có
+                checkOutTimeFromResponse = checkOutResult?.checkOutTime ?? 
+                    checkOutResult?.checkOut?.checkOutTime ?? 
+                    checkOutResult?.time ??
+                    new Date().toISOString(); // Fallback: dùng thời gian hiện tại
             } catch (e) {
-                // Response có thể không có body, không sao
+                // Response có thể không có body, dùng thời gian hiện tại
+                checkOutTimeFromResponse = new Date().toISOString();
                 console.log("✅ Check-out thành công (no response body)");
             }
+            
+            // Optimistic update: cập nhật state ngay lập tức
+            setItems(prevItems => prevItems.map(item => {
+                if (item.scheduleId === activeId) {
+                    return {
+                        ...item,
+                        hasCheckOut: true,
+                        checkOutTime: checkOutTimeFromResponse || new Date().toISOString()
+                    };
+                }
+                return item;
+            }));
+            
             alert("Check-out thành công");
             setOpenCheckOut(false);
-            // Đợi một chút để BE cập nhật dữ liệu, sau đó fetch lại
+            
+            // Fetch lại sau một chút để sync với BE
             setTimeout(() => {
                 fetchSchedules();
             }, 500);
