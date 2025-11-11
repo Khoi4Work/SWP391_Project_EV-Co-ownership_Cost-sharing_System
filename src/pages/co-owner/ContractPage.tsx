@@ -138,27 +138,18 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
 
             const { blob, fileUrl } = pdfResult;
             const key = "contractId_" + user.id;
-            const idContract = localStorage.getItem(key);
-            if (!idContract) {
-                toast({
-                    title: "Lỗi",
-                    description: "Không tìm thấy contract ID!",
-                    variant: "destructive",
-                });
-                return;
-            }
 
             const accessToken = localStorage.getItem("accessToken");
 
             // ✅ 2. Tạo FormData gửi BE
             const formData = new FormData();
-            console.log(idContract)
+            console.log(id)
             formData.append("idContract", id.toString());
             formData.append("idUser", user.id.toString());
             formData.append("idChoice", status.toString());
             formData.append("contract_signature", savedPrivateKey.trim());
 
-            const pdfFile = new File([blob], `HopDong_${idContract}.pdf`, {
+            const pdfFile = new File([blob], `HopDong_${id}.pdf`, {
                 type: "application/pdf",
             });
             formData.append("contractContent", pdfFile);
@@ -240,7 +231,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
 
             // optional: validate ownership sum >= 100? (BE có thể check)
             const groupPayload = {
-                contractId: Number(contract.contractId ?? contract.id ?? idContract),
+                contractId: Number(contract.contractId ?? contract.id ?? id),
                 documentUrl: contract.urlConfirmedContract ?? contract.documentUrl ?? fileUrl,
                 members,
             };
