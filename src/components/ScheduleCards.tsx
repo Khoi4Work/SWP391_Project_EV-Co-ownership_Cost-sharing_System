@@ -67,7 +67,6 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = false; // dùng BE thật để test
 
 
 function formatDateTime(iso?: string) {
@@ -364,10 +363,6 @@ export default function ScheduleCards() {
     // Kiểm tra quá hạn thanh toán
     const checkOverdueFee = async (groupId: number) => {
         try {
-            if (USE_MOCK) {
-                setHasOverdueFee(false);
-                return;
-            }
             const token = localStorage.getItem("accessToken");
             const res = await fetch(`${beBaseUrl}/api/fund-fee/group/${groupId}/current-month`, {
                 headers: {
@@ -398,42 +393,14 @@ export default function ScheduleCards() {
         setError(null);
         try {
             const groupId = Number(localStorage.getItem("groupId")) || 1;
-            if (USE_MOCK) {
-                // đọc mock schedules từ localStorage (được tạo bởi VehicleBooking)
-                const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
-                const vehiclesMock = [
-                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8" },
-                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric" },
-                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3" },
-                ];
-                const mapped: ScheduleItem[] = raw
-                    .filter((r: any) => r.groupId === groupId)
-                    .map((r: any) => {
-                        const v = vehiclesMock.find(x => x.vehicleId === r.vehicleId);
-                        return {
-                            scheduleId: r.scheduleId,
-                            startTime: r.startTime,
-                            endTime: r.endTime,
-                            vehicleName: v ? `${v.brand} ${v.model}` : `Xe ${r.vehicleId}`,
-                            vehiclePlate: v?.plateNo,
-                            userName: r.userName || "Bạn",
-                            userId: r.userId, // chỉ gán userId nếu có trong booking
-                            hasCheckIn: Boolean(r.checkInTime),
-                            hasCheckOut: Boolean(r.checkOutTime),
-                            checkInTime: r.checkInTime,
-                            checkOutTime: r.checkOutTime,
-                        } as ScheduleItem;
-                    });
-                setItems(mapped);
-            } else {
-                const token = localStorage.getItem("accessToken");
-                const headers = {
-                    "Accept": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                };
+            const token = localStorage.getItem("accessToken");
+            const headers = {
+                "Accept": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            };
 
-                // Fetch schedules và vehicles song song
-                const [schedulesRes, vehiclesRes] = await Promise.all([
+            // Fetch schedules và vehicles song song
+            const [schedulesRes, vehiclesRes] = await Promise.all([
                     fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
                         headers,
                         credentials: "include",
@@ -523,7 +490,6 @@ export default function ScheduleCards() {
                     console.log(`📋 Schedule ${item.scheduleId}: hasCheckIn=${item.hasCheckIn}, hasCheckOut=${item.hasCheckOut}, checkInTime=${item.checkInTime}`);
                 });
                 setItems(normalized);
-            }
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
         } finally {
@@ -555,53 +521,17 @@ export default function ScheduleCards() {
         setDetailError(null);
         setDetailLoading(true);
         try {
-            if (USE_MOCK) {
-                const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
-                const r = raw.find((x: any) => x.scheduleId === id);
-                if (!r) throw new Error("Không tìm thấy lịch trong mock");
-                const vehiclesMock = [
-                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8" },
-                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric" },
-                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3" },
-                ];
-                const v = vehiclesMock.find((x) => x.vehicleId === r.vehicleId);
-                const d: ScheduleDetailResponse = {
-                    scheduleId: r.scheduleId,
-                    startTime: r.startTime,
-                    endTime: r.endTime,
-                    vehicleName: v ? `${v.brand} ${v.model}` : `Xe ${r.vehicleId}`,
-                    vehiclePlate: v?.plateNo,
-                    userName: r.userName || "Bạn",
-                    scheduleStatus: r.status,
-                    checkIn: r.checkInTime ? {
-                        checkInId: r.scheduleId,
-                        checkInTime: r.checkInTime,
-                        condition: "GOOD",
-                        notes: r.checkInNotes || "",
-                        images: r.checkInImages || "",
-                    } : null,
-                    checkOut: r.checkOutTime ? {
-                        checkOutId: r.scheduleId,
-                        checkOutTime: r.checkOutTime,
-                        condition: "GOOD",
-                        notes: r.checkOutNotes || "",
-                        images: r.checkOutImages || "",
-                    } : null,
-                };
-                setDetail(d);
-            } else {
-                const token = localStorage.getItem("accessToken");
-                const res = await fetch(`${beBaseUrl}/booking/detail/${id}`, {
-                    method: "GET",
-                    headers: {
-                        "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
-                    credentials: "include",
-                });
-                const data = await res.json();
-                setDetail(data as ScheduleDetailResponse);
-            }
+            const token = localStorage.getItem("accessToken");
+            const res = await fetch(`${beBaseUrl}/booking/detail/${id}`, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                credentials: "include",
+            });
+            const data = await res.json();
+            setDetail(data as ScheduleDetailResponse);
         } catch (e: any) {
             setDetailError(e.message || "Không thể tải chi tiết");
         } finally {
@@ -687,118 +617,94 @@ export default function ScheduleCards() {
             }
         }
 
-        if (USE_MOCK) {
-            const key = "mockSchedules";
-            const list = JSON.parse(localStorage.getItem(key) || "[]");
-            const idx = list.findIndex((b: any) => b.scheduleId === activeId);
-            if (idx !== -1) {
-                // Kiểm tra lại userId trong mock data
-                if (list[idx].userId !== currentUserId) {
-                    alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
-                    setOpenCheckIn(false);
-                    return;
-                }
-                list[idx].checkInTime = new Date().toISOString();
-                list[idx].hasCheckIn = true; // Đảm bảo set flag
-                localStorage.setItem(key, JSON.stringify(list));
-                console.log("✅ Mock check-in updated:", list[idx]);
-                alert("Check-in thành công (mock)");
-            }
-            setOpenCheckIn(false);
-            // Fetch lại ngay lập tức cho mock
-            fetchSchedules();
+        const payload = {
+            userId: currentUserId,
+            condition: checkInForm.condition,
+            notes: checkInForm.notes,
+            images: checkInForm.images,
+        };
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${beBaseUrl}/booking/checkIn/${activeId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            alert(`Check-in thất bại: ${text}`);
             return;
-        } else {
-            const payload = {
-                userId: currentUserId,
-                condition: checkInForm.condition,
-                notes: checkInForm.notes,
-                images: checkInForm.images,
-            };
-            const token = localStorage.getItem("accessToken");
-            const res = await fetch(`${beBaseUrl}/booking/checkIn/${activeId}`, {
-                method: "POST",
+        }
+        // Parse response nếu có body
+        let checkInTimeFromResponse: string | undefined = undefined;
+        try {
+            const checkInResult = await res.json();
+            console.log("✅ Check-in response:", checkInResult);
+            // Lấy checkInTime từ response nếu có
+            checkInTimeFromResponse = checkInResult?.checkInTime ?? 
+                checkInResult?.checkIn?.checkInTime ?? 
+                checkInResult?.time ??
+                new Date().toISOString(); // Fallback: dùng thời gian hiện tại
+        } catch (e) {
+            // Response có thể không có body, dùng thời gian hiện tại
+            checkInTimeFromResponse = new Date().toISOString();
+            console.log("✅ Check-in thành công (no response body)");
+        }
+        
+        // Optimistic update: cập nhật state ngay lập tức
+        setItems(prevItems => prevItems.map(item => {
+            if (item.scheduleId === activeId) {
+                return {
+                    ...item,
+                    hasCheckIn: true,
+                    checkInTime: checkInTimeFromResponse || new Date().toISOString()
+                };
+            }
+            return item;
+        }));
+        
+        alert("Check-in thành công");
+        setOpenCheckIn(false);
+        
+        // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
+        try {
+            const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
+                method: "GET",
                 headers: {
-                    "Content-Type": "application/json",
+                    "Accept": "application/json",
                     ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
-                body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                const text = await res.text();
-                alert(`Check-in thất bại: ${text}`);
-                return;
-            }
-            // Parse response nếu có body
-            let checkInTimeFromResponse: string | undefined = undefined;
-            try {
-                const checkInResult = await res.json();
-                console.log("✅ Check-in response:", checkInResult);
-                // Lấy checkInTime từ response nếu có
-                checkInTimeFromResponse = checkInResult?.checkInTime ?? 
-                    checkInResult?.checkIn?.checkInTime ?? 
-                    checkInResult?.time ??
-                    new Date().toISOString(); // Fallback: dùng thời gian hiện tại
-            } catch (e) {
-                // Response có thể không có body, dùng thời gian hiện tại
-                checkInTimeFromResponse = new Date().toISOString();
-                console.log("✅ Check-in thành công (no response body)");
-            }
-            
-            // Optimistic update: cập nhật state ngay lập tức
-            setItems(prevItems => prevItems.map(item => {
-                if (item.scheduleId === activeId) {
-                    return {
-                        ...item,
-                        hasCheckIn: true,
-                        checkInTime: checkInTimeFromResponse || new Date().toISOString()
-                    };
-                }
-                return item;
-            }));
-            
-            alert("Check-in thành công");
-            setOpenCheckIn(false);
-            
-            // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
-            try {
-                const token = localStorage.getItem("accessToken");
-                const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
-                    method: "GET",
-                    headers: {
-                        "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
-                    credentials: "include",
-                });
-                if (detailRes.ok) {
-                    const detailData = await detailRes.json();
-                    console.log("✅ Fetched detail after check-in:", detailData);
-                    
-                    // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
-                    setItems(prevItems => prevItems.map(item => {
-                        if (item.scheduleId === activeId) {
-                            const normalized = normalizeScheduleItem(detailData);
-                            if (normalized) {
-                                // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
-                                return {
-                                    ...normalized,
-                                    vehicleName: normalized.vehicleName || item.vehicleName,
-                                    vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
-                                };
-                            }
+            if (detailRes.ok) {
+                const detailData = await detailRes.json();
+                console.log("✅ Fetched detail after check-in:", detailData);
+                
+                // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
+                setItems(prevItems => prevItems.map(item => {
+                    if (item.scheduleId === activeId) {
+                        const normalized = normalizeScheduleItem(detailData);
+                        if (normalized) {
+                            // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
+                            return {
+                                ...normalized,
+                                vehicleName: normalized.vehicleName || item.vehicleName,
+                                vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
+                            };
                         }
-                        return item;
-                    }));
-                }
-            } catch (e) {
-                console.warn("⚠️ Không thể fetch detail sau check-in:", e);
-                // Nếu không fetch được detail, vẫn fetch lại list sau một chút
-                setTimeout(() => {
-                    fetchSchedules();
-                }, 1000);
+                    }
+                    return item;
+                }));
             }
+        } catch (e) {
+            console.warn("⚠️ Không thể fetch detail sau check-in:", e);
+            // Nếu không fetch được detail, vẫn fetch lại list sau một chút
+            setTimeout(() => {
+                fetchSchedules();
+            }, 1000);
         }
     };
 
@@ -822,118 +728,94 @@ export default function ScheduleCards() {
             }
         }
 
-        if (USE_MOCK) {
-            const key = "mockSchedules";
-            const list = JSON.parse(localStorage.getItem(key) || "[]");
-            const idx = list.findIndex((b: any) => b.scheduleId === activeId);
-            if (idx !== -1) {
-                // Kiểm tra lại userId trong mock data
-                if (list[idx].userId !== currentUserId) {
-                    alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
-                    setOpenCheckOut(false);
-                    return;
-                }
-                list[idx].checkOutTime = new Date().toISOString();
-                list[idx].hasCheckOut = true; // Đảm bảo set flag
-                localStorage.setItem(key, JSON.stringify(list));
-                console.log("✅ Mock check-out updated:", list[idx]);
-                alert("Check-out thành công (mock)");
-            }
-            setOpenCheckOut(false);
-            // Fetch lại ngay lập tức cho mock
-            fetchSchedules();
+        const payload = {
+            userId: currentUserId,
+            condition: checkOutForm.condition,
+            notes: checkOutForm.notes,
+            images: checkOutForm.images,
+        } as any;
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${beBaseUrl}/booking/checkOut/${activeId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            alert(`Check-out thất bại: ${text}`);
             return;
-        } else {
-            const payload = {
-                userId: currentUserId,
-                condition: checkOutForm.condition,
-                notes: checkOutForm.notes,
-                images: checkOutForm.images,
-            } as any;
-            const token = localStorage.getItem("accessToken");
-            const res = await fetch(`${beBaseUrl}/booking/checkOut/${activeId}`, {
-                method: "POST",
+        }
+        // Parse response nếu có body
+        let checkOutTimeFromResponse: string | undefined = undefined;
+        try {
+            const checkOutResult = await res.json();
+            console.log("✅ Check-out response:", checkOutResult);
+            // Lấy checkOutTime từ response nếu có
+            checkOutTimeFromResponse = checkOutResult?.checkOutTime ?? 
+                checkOutResult?.checkOut?.checkOutTime ?? 
+                checkOutResult?.time ??
+                new Date().toISOString(); // Fallback: dùng thời gian hiện tại
+        } catch (e) {
+            // Response có thể không có body, dùng thời gian hiện tại
+            checkOutTimeFromResponse = new Date().toISOString();
+            console.log("✅ Check-out thành công (no response body)");
+        }
+        
+        // Optimistic update: cập nhật state ngay lập tức
+        setItems(prevItems => prevItems.map(item => {
+            if (item.scheduleId === activeId) {
+                return {
+                    ...item,
+                    hasCheckOut: true,
+                    checkOutTime: checkOutTimeFromResponse || new Date().toISOString()
+                };
+            }
+            return item;
+        }));
+        
+        alert("Check-out thành công");
+        setOpenCheckOut(false);
+        
+        // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
+        try {
+            const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
+                method: "GET",
                 headers: {
-                    "Content-Type": "application/json",
+                    "Accept": "application/json",
                     ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
-                body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                const text = await res.text();
-                alert(`Check-out thất bại: ${text}`);
-                return;
-            }
-            // Parse response nếu có body
-            let checkOutTimeFromResponse: string | undefined = undefined;
-            try {
-                const checkOutResult = await res.json();
-                console.log("✅ Check-out response:", checkOutResult);
-                // Lấy checkOutTime từ response nếu có
-                checkOutTimeFromResponse = checkOutResult?.checkOutTime ?? 
-                    checkOutResult?.checkOut?.checkOutTime ?? 
-                    checkOutResult?.time ??
-                    new Date().toISOString(); // Fallback: dùng thời gian hiện tại
-            } catch (e) {
-                // Response có thể không có body, dùng thời gian hiện tại
-                checkOutTimeFromResponse = new Date().toISOString();
-                console.log("✅ Check-out thành công (no response body)");
-            }
-            
-            // Optimistic update: cập nhật state ngay lập tức
-            setItems(prevItems => prevItems.map(item => {
-                if (item.scheduleId === activeId) {
-                    return {
-                        ...item,
-                        hasCheckOut: true,
-                        checkOutTime: checkOutTimeFromResponse || new Date().toISOString()
-                    };
-                }
-                return item;
-            }));
-            
-            alert("Check-out thành công");
-            setOpenCheckOut(false);
-            
-            // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
-            try {
-                const token = localStorage.getItem("accessToken");
-                const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
-                    method: "GET",
-                    headers: {
-                        "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
-                    credentials: "include",
-                });
-                if (detailRes.ok) {
-                    const detailData = await detailRes.json();
-                    console.log("✅ Fetched detail after check-out:", detailData);
-                    
-                    // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
-                    setItems(prevItems => prevItems.map(item => {
-                        if (item.scheduleId === activeId) {
-                            const normalized = normalizeScheduleItem(detailData);
-                            if (normalized) {
-                                // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
-                                return {
-                                    ...normalized,
-                                    vehicleName: normalized.vehicleName || item.vehicleName,
-                                    vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
-                                };
-                            }
+            if (detailRes.ok) {
+                const detailData = await detailRes.json();
+                console.log("✅ Fetched detail after check-out:", detailData);
+                
+                // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
+                setItems(prevItems => prevItems.map(item => {
+                    if (item.scheduleId === activeId) {
+                        const normalized = normalizeScheduleItem(detailData);
+                        if (normalized) {
+                            // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
+                            return {
+                                ...normalized,
+                                vehicleName: normalized.vehicleName || item.vehicleName,
+                                vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
+                            };
                         }
-                        return item;
-                    }));
-                }
-            } catch (e) {
-                console.warn("⚠️ Không thể fetch detail sau check-out:", e);
-                // Nếu không fetch được detail, vẫn fetch lại list sau một chút
-                setTimeout(() => {
-                    fetchSchedules();
-                }, 1000);
+                    }
+                    return item;
+                }));
             }
+        } catch (e) {
+            console.warn("⚠️ Không thể fetch detail sau check-out:", e);
+            // Nếu không fetch được detail, vẫn fetch lại list sau một chút
+            setTimeout(() => {
+                fetchSchedules();
+            }, 1000);
         }
     };
 

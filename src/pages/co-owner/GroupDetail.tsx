@@ -7,12 +7,6 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
 import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHistory";
-import { 
-    groups,
-    getGroupById,
-    getMonthlyFeesByGroupId,
-    payMonthlyFee as payFeeMock
-} from "@/mock/mockData";
 import QRCode from "react-qr-code";
 
 // Interface cho GroupMember response từ BE
@@ -102,8 +96,6 @@ interface GroupFeeResponse {
 const API_BASE_URL = "http://localhost:8080";
 const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
 
-// 🔧 CONFIG: Chuyển đổi giữa mock data và backend thật
-const USE_MOCK_DATA = false;
 
 export default function GroupDetail() {
     const { groupId } = useParams<{ groupId: string }>();
@@ -134,10 +126,64 @@ export default function GroupDetail() {
         // Gọi API cần userId và groupId
         fetchUsageHistoryList(userIdNum, gId)
             .then(list => {
+                const normalizeBoolean = (value: any): boolean | undefined => {
+                    if (value === null || value === undefined) return undefined;
+                    if (typeof value === "boolean") return value;
+                    if (typeof value === "number") return value !== 0;
+                    if (typeof value === "string") {
+                        const trimmed = value.trim().toLowerCase();
+                        if (["true", "1", "yes", "y"].includes(trimmed)) return true;
+                        if (["false", "0", "no", "n"].includes(trimmed)) return false;
+                    }
+                    if (typeof value === "object") return undefined;
+                    return Boolean(value);
+                };
+
                 const mapped: VehicleUsage[] = list.map((it: any) => {
                     const [start, end] = (it.timeRange || " - ").split(" - ");
-                    const hasIn = Boolean(it.hasCheckIn);
-                    const hasOut = Boolean(it.hasCheckOut);
+
+                    const checkInTime =
+                        it.checkInTime ??
+                        it.checkinTime ??
+                        it.check_in_time ??
+                        it.checkIn?.checkInTime ??
+                        it.checkIn?.time ??
+                        it.checkIn?.createdAt ??
+                        it.check_in?.check_in_time ??
+                        it.check_in?.time ??
+                        it.check_in?.created_at;
+
+                    const checkOutTime =
+                        it.checkOutTime ??
+                        it.checkoutTime ??
+                        it.check_out_time ??
+                        it.checkOut?.checkOutTime ??
+                        it.checkOut?.time ??
+                        it.checkOut?.createdAt ??
+                        it.check_out?.check_out_time ??
+                        it.check_out?.time ??
+                        it.check_out?.created_at;
+
+                    const rawHasIn =
+                        normalizeBoolean(
+                            it.hasCheckIn ??
+                            it.hasCheckin ??
+                            it.has_check_in ??
+                            it.checkInFlag ??
+                            it.check_in_flag
+                        );
+                    const rawHasOut =
+                        normalizeBoolean(
+                            it.hasCheckOut ??
+                            it.hasCheckout ??
+                            it.has_check_out ??
+                            it.checkOutFlag ??
+                            it.check_out_flag
+                        );
+
+                    const hasIn = rawHasIn ?? (checkInTime != null && checkInTime !== "");
+                    const hasOut = rawHasOut ?? (checkOutTime != null && checkOutTime !== "");
+
                     const statusText = !hasIn ? "Chờ nhận xe" : !hasOut ? "Đang sử dụng" : "Hoàn thành";
 
                     return {
@@ -149,8 +195,8 @@ export default function GroupDetail() {
                         end: end || "",
                         status: statusText as any,
                         note: "",
-                        checkIn: start || "",
-                        checkOut: hasOut ? (end || null) : null,
+                        checkIn: checkInTime || start || "",
+                        checkOut: hasOut ? (checkOutTime || end || null) : null,
                         distance: null,
                     };
                 });
@@ -161,22 +207,11 @@ export default function GroupDetail() {
             });
     }, [groupId]);
 
-    // Load thanh toán quỹ tháng từ BE hoặc mock data
+    // Load thanh toán quỹ tháng từ BE
     useEffect(() => {
         if (!groupId) return;
 
         async function fetchMonthlyFees() {
-            if (USE_MOCK_DATA) {
-                console.log("📦 Using MOCK DATA for monthly fees");
-                const gid = Number(groupId);
-                const mockFee = getMonthlyFeesByGroupId(gid);
-                if (mockFee) {
-                    setGroupFee(mockFee);
-                }
-                return;
-            }
-
-            console.log("🔗 Connecting to BACKEND API for monthly fees");
             try {
                 const token = localStorage.getItem("accessToken");
                 const res = await axiosClient.get<GroupFeeResponse>(
@@ -188,28 +223,7 @@ export default function GroupDetail() {
                 setGroupFee(res.data);
                 console.log("✅ Loaded monthly fees from backend");
             } catch (err: any) {
-                const errorStatus = err?.response?.status;
-                const errorMessage = err?.message || "Unknown error";
-                console.warn("⚠️ Backend API failed, falling back to mock data:", {
-                    status: errorStatus,
-                    message: errorMessage
-                });
-
-                // Fallback to mock data if API fails
-                const gid = Number(groupId);
-                const mockFee = getMonthlyFeesByGroupId(gid);
-                if (mockFee) {
-                    setGroupFee(mockFee);
-                    if (!errorStatus || errorStatus >= 500) {
-                        toast({
-                            title: "⚠️ Backend không khả dụng",
-                            description: "Đang sử dụng mock data để hiển thị. Kiểm tra xem backend có đang chạy không.",
-                            variant: "destructive"
-                        });
-                    }
-                } else {
-                    console.error("❌ No mock data available for fallback");
-                }
+                console.error("❌ Error loading monthly fees:", err);
             }
         }
 
@@ -264,62 +278,6 @@ export default function GroupDetail() {
                 const gid = Number(groupId);
                 console.log("=== FETCHING GROUP DETAIL ===");
                 console.log("GroupId:", gid);
-
-                if (USE_MOCK_DATA) {
-                    console.log("📦 Using MOCK DATA for group detail");
-                    let mockGroup = getGroupById(groupId);
-                    if (!mockGroup && !isNaN(gid) && gid > 0) {
-                        const index = gid - 1;
-                        if (index >= 0 && index < groups.length) {
-                            mockGroup = groups[index];
-                        }
-                    }
-                    if (!mockGroup) {
-                        mockGroup = groups[0];
-                    }
-
-                    if (!mockGroup) {
-                        setError("Không tìm thấy nhóm");
-                        setLoading(false);
-                        return;
-                    }
-
-                    const mappedGroup: Group = {
-                        id: mockGroup.id,
-                        name: mockGroup.name,
-                        ownerId: mockGroup.ownerId,
-                        fund: mockGroup.fund,
-                        minTransfer: mockGroup.minTransfer,
-                        users: mockGroup.users.map(u => ({
-                            id: u.id,
-                            hovaTen: u.name,
-                            email: u.email || "",
-                            avatar: u.avatar || "",
-                            role: u.role,
-                            ownershipPercentage: u.role === "admin" ? 50 : 25
-                        })),
-                        vehicles: mockGroup.vehicles.map(v => ({
-                            id: v.id,
-                            name: v.name,
-                            info: v.info || "",
-                            status: v.status,
-                            imageUrl: v.imageUrl
-                        })),
-                        transactions: mockGroup.transactions.map(t => ({
-                            id: t.id,
-                            name: t.name,
-                            type: t.type === "in" ? "deposit" : "withdraw" as any,
-                            amount: t.amount,
-                            date: t.date,
-                            userId: t.userId
-                        }))
-                    };
-
-                    console.log("✅ Mock group data loaded:", mappedGroup);
-                    setGroup(mappedGroup);
-                    setLoading(false);
-                    return;
-                }
 
                 const token = localStorage.getItem("accessToken");
 
@@ -487,22 +445,6 @@ export default function GroupDetail() {
     const handlePayFee = async (fundDetailId: number) => {
         setProcessingPayment(fundDetailId);
         try {
-            if (USE_MOCK_DATA) {
-                console.log("📦 Simulating payment with MOCK DATA for fundDetailId:", fundDetailId);
-                const result = payFeeMock(fundDetailId);
-                if (result.success && result.updatedFee) {
-                    toast({
-                        title: "✅ Thanh toán thành công",
-                        description: "Thanh toán quỹ tháng đã được thanh toán (mock data)"
-                    });
-                    setGroupFee(result.updatedFee);
-                } else {
-                    throw new Error("Không tìm thấy quỹ tháng cần thanh toán");
-                }
-                return;
-            }
-
-            console.log("🔗 Creating payment via BACKEND API for fundDetailId:", fundDetailId);
             const token = localStorage.getItem("accessToken");
             const response = await axiosClient.post<{ status: string; message: string; paymentUrl: string }>(
                 `/api/fund-fee/${fundDetailId}/create-payment`,
