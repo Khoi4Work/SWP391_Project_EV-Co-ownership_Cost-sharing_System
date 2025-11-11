@@ -111,17 +111,37 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
     const userId = raw.userId ?? raw.renterId ?? raw.bookedById ?? raw.user?.id ?? raw.user?.userId;
     const userName = raw.userName ?? raw.renterName ?? raw.bookedByName ?? raw.user?.fullName ?? raw.user?.name;
 
-    const checkInObj = raw.checkIn ?? raw.checkin ?? raw.check_in;
-    const checkOutObj = raw.checkOut ?? raw.checkout ?? raw.check_out;
-    const checkInTime = raw.checkInTime ?? checkInObj?.checkInTime ?? checkInObj?.time ?? checkInObj?.createdAt;
-    const checkOutTime = raw.checkOutTime ?? checkOutObj?.checkOutTime ?? checkOutObj?.time ?? checkOutObj?.createdAt;
+    // Tìm checkIn object với nhiều tên field khác nhau
+    const checkInObj = raw.checkIn ?? raw.checkin ?? raw.check_in ?? raw.checkInDetail;
+    const checkOutObj = raw.checkOut ?? raw.checkout ?? raw.check_out ?? raw.checkOutDetail;
+    
+    // Tìm checkInTime từ nhiều nguồn
+    const checkInTime = raw.checkInTime ?? 
+        checkInObj?.checkInTime ?? 
+        checkInObj?.time ?? 
+        checkInObj?.createdAt ??
+        checkInObj?.checkInDate;
+    
+    // Tìm checkOutTime từ nhiều nguồn
+    const checkOutTime = raw.checkOutTime ?? 
+        checkOutObj?.checkOutTime ?? 
+        checkOutObj?.time ?? 
+        checkOutObj?.createdAt ??
+        checkOutObj?.checkOutDate;
 
+    // Xác định hasCheckIn: ưu tiên flag từ BE, nếu không có thì check object hoặc time
     const hasCheckIn = (raw.hasCheckIn !== undefined && raw.hasCheckIn !== null)
         ? Boolean(raw.hasCheckIn)
-        : ((checkInTime != null) || (checkInObj != null));
+        : (checkInObj != null && typeof checkInObj === 'object') // Có object checkIn
+        ? true
+        : (checkInTime != null && checkInTime !== ""); // Có thời gian checkIn
+    
+    // Xác định hasCheckOut tương tự
     const hasCheckOut = (raw.hasCheckOut !== undefined && raw.hasCheckOut !== null)
         ? Boolean(raw.hasCheckOut)
-        : ((checkOutTime != null) || (checkOutObj != null));
+        : (checkOutObj != null && typeof checkOutObj === 'object') // Có object checkOut
+        ? true
+        : (checkOutTime != null && checkOutTime !== ""); // Có thời gian checkOut
 
     if (scheduleId == null || !startTime || !endTime) return null;
 
@@ -437,7 +457,7 @@ export default function ScheduleCards() {
 
                 const schedulesData = await schedulesRes.json();
                 console.log("📦 Raw schedules from BE:", schedulesData);
-
+                
                 // Parse vehicles nếu có
                 let vehicles: any[] = [];
                 if (vehiclesRes && vehiclesRes.ok) {
@@ -450,7 +470,23 @@ export default function ScheduleCards() {
                     }
                 }
 
+                // Parse schedules array
                 const arr = Array.isArray(schedulesData) ? schedulesData : (schedulesData?.items || schedulesData?.data || []);
+                
+                // Log chi tiết từng schedule để debug check-in/check-out
+                arr.forEach((raw: any, idx: number) => {
+                    console.log(`🔍 Schedule ${idx}:`, {
+                        scheduleId: raw.scheduleId ?? raw.id,
+                        checkIn: raw.checkIn,
+                        checkInTime: raw.checkInTime,
+                        hasCheckIn: raw.hasCheckIn,
+                        checkOut: raw.checkOut,
+                        checkOutTime: raw.checkOutTime,
+                        hasCheckOut: raw.hasCheckOut,
+                        raw: raw // Log toàn bộ để xem cấu trúc
+                    });
+                });
+
                 const normalized = (arr as any[])
                     .map(raw => {
                         const item = normalizeScheduleItem(raw);
@@ -481,6 +517,10 @@ export default function ScheduleCards() {
 
                 console.log("✅ Normalized items with vehicles:", normalized);
                 console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
+                // Debug: Log check-in/check-out status cho từng item
+                normalized.forEach(item => {
+                    console.log(`📋 Schedule ${item.scheduleId}: hasCheckIn=${item.hasCheckIn}, hasCheckOut=${item.hasCheckOut}, checkInTime=${item.checkInTime}`);
+                });
                 setItems(normalized);
             }
         } catch (e: any) {
@@ -658,10 +698,13 @@ export default function ScheduleCards() {
                     return;
                 }
                 list[idx].checkInTime = new Date().toISOString();
+                list[idx].hasCheckIn = true; // Đảm bảo set flag
                 localStorage.setItem(key, JSON.stringify(list));
+                console.log("✅ Mock check-in updated:", list[idx]);
                 alert("Check-in thành công (mock)");
             }
             setOpenCheckIn(false);
+            // Fetch lại ngay lập tức cho mock
             fetchSchedules();
             return;
         } else {
@@ -686,9 +729,20 @@ export default function ScheduleCards() {
                 alert(`Check-in thất bại: ${text}`);
                 return;
             }
+            // Parse response nếu có body
+            try {
+                const checkInResult = await res.json();
+                console.log("✅ Check-in response:", checkInResult);
+            } catch (e) {
+                // Response có thể không có body, không sao
+                console.log("✅ Check-in thành công (no response body)");
+            }
             alert("Check-in thành công");
             setOpenCheckIn(false);
-            fetchSchedules();
+            // Đợi một chút để BE cập nhật dữ liệu, sau đó fetch lại
+            setTimeout(() => {
+                fetchSchedules();
+            }, 500);
         }
     };
 
@@ -724,10 +778,13 @@ export default function ScheduleCards() {
                     return;
                 }
                 list[idx].checkOutTime = new Date().toISOString();
+                list[idx].hasCheckOut = true; // Đảm bảo set flag
                 localStorage.setItem(key, JSON.stringify(list));
+                console.log("✅ Mock check-out updated:", list[idx]);
                 alert("Check-out thành công (mock)");
             }
             setOpenCheckOut(false);
+            // Fetch lại ngay lập tức cho mock
             fetchSchedules();
             return;
         } else {
@@ -752,9 +809,20 @@ export default function ScheduleCards() {
                 alert(`Check-out thất bại: ${text}`);
                 return;
             }
+            // Parse response nếu có body
+            try {
+                const checkOutResult = await res.json();
+                console.log("✅ Check-out response:", checkOutResult);
+            } catch (e) {
+                // Response có thể không có body, không sao
+                console.log("✅ Check-out thành công (no response body)");
+            }
             alert("Check-out thành công");
             setOpenCheckOut(false);
-            fetchSchedules();
+            // Đợi một chút để BE cập nhật dữ liệu, sau đó fetch lại
+            setTimeout(() => {
+                fetchSchedules();
+            }, 500);
         }
     };
 
