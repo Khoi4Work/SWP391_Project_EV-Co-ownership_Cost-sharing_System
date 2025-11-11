@@ -732,7 +732,6 @@ export default function VehicleRegistration() {
               className="space-y-6"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Trường nhập chung */}
                 {[
                   { id: "plateNo", label: "Biển số xe(VD: 51H-123.45)", placeholder: "Nhập biển số xe" },
                   { id: "brand", label: "Hãng xe(Vd: Vinfast)", placeholder: "Nhập hãng xe" },
@@ -742,10 +741,7 @@ export default function VehicleRegistration() {
                   { id: "price", label: "Giá xe (VNĐ)", placeholder: "Nhập giá xe" },
                 ].map((field) => (
                   <div key={field.id} className="flex flex-col">
-                    <Label
-                      htmlFor={field.id}
-                      className="font-medium text-gray-700 mb-1"
-                    >
+                    <Label htmlFor={field.id} className="font-medium text-gray-700 mb-1">
                       {field.label}
                     </Label>
 
@@ -756,30 +752,21 @@ export default function VehicleRegistration() {
                           name={field.id}
                           value={vehicleFormik.values.plateNo}
                           onChange={(e) => {
-                            const newValue = e.target.value.trim().toUpperCase();
-                            vehicleFormik.setFieldValue("plateNo", newValue);
-                            vehicleFormik.setFieldError("plateNo", ""); // reset lỗi khi đang gõ
+                            const val = e.target.value.trim().toUpperCase();
+                            vehicleFormik.setFieldValue("plateNo", val);
+                            vehicleFormik.setFieldError("plateNo", "");
                           }}
                           onBlur={(e) => {
                             const plate = e.target.value.trim().toUpperCase();
                             if (!plate) return;
-
-                            const isDuplicate = vehicles.some(
-                              (v) => v.plateNo.toUpperCase() === plate
+                            const isDuplicate = vehicles.some((v) => v.plateNo.toUpperCase() === plate);
+                            vehicleFormik.setFieldError(
+                              "plateNo",
+                              isDuplicate ? "Biển số xe đã tồn tại trong hệ thống!" : ""
                             );
-
-                            if (isDuplicate) {
-                              vehicleFormik.setFieldError(
-                                "plateNo",
-                                "Biển số xe đã tồn tại trong hệ thống!"
-                              );
-                            } else {
-                              vehicleFormik.setFieldError("plateNo", "");
-                            }
                           }}
                           placeholder={field.placeholder}
-                          className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""
-                            }`}
+                          className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""}`}
                         />
                         <ErrorMessage
                           name="plateNo"
@@ -789,7 +776,6 @@ export default function VehicleRegistration() {
                       </>
                     ) : field.id === "color" ? (
                       <div className="flex items-center space-x-3">
-                        {/* Color picker */}
                         <input
                           type="color"
                           id={field.id}
@@ -798,8 +784,6 @@ export default function VehicleRegistration() {
                           onChange={vehicleFormik.handleChange}
                           className="w-12 h-10 border rounded cursor-pointer"
                         />
-
-                        {/* Text input màu */}
                         <Input
                           id={`${field.id}-text`}
                           name={field.id}
@@ -813,14 +797,10 @@ export default function VehicleRegistration() {
                       <Input
                         id={field.id}
                         name={field.id}
-                        value={vehicleFormik.values.price
-                          .toString()
-                          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                        value={vehicleFormik.values.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/,/g, "");
-                          if (!isNaN(Number(value))) {
-                            vehicleFormik.setFieldValue("price", value);
-                          }
+                          const val = e.target.value.replace(/,/g, "");
+                          if (!isNaN(Number(val))) vehicleFormik.setFieldValue("price", val);
                         }}
                         placeholder={field.placeholder}
                         className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
@@ -836,11 +816,8 @@ export default function VehicleRegistration() {
                       />
                     )}
 
-                    {/* Hiển thị lỗi nếu có */}
                     {showErrors && vehicleFormik.errors[field.id] && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {vehicleFormik.errors[field.id]}
-                      </p>
+                      <p className="text-red-500 text-sm mt-1">{vehicleFormik.errors[field.id]}</p>
                     )}
                   </div>
                 ))}
@@ -859,8 +836,6 @@ export default function VehicleRegistration() {
           </CardContent>
         </Card>
       )}
-
-
       {/* Step 2: Owner Information */}
       {step === 2 && (
         <Card className="shadow-elegant">
