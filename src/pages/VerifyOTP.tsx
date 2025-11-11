@@ -45,8 +45,8 @@ export default function VerifyOTP() {
             await axiosClient.post(SEND_OTP, {
                 email: userData.email,
                 content: randomOtp,
-                template:"",
-                subject:"",
+                template: "",
+                subject: "",
                 name: userData.hovaTen,
 
             });
@@ -103,11 +103,7 @@ export default function VerifyOTP() {
             console.error("Error creating user:", error);
             const errorMessage = error.response?.data?.message ||
                 error.response?.data || "Vui lòng kiểm tra lại thông tin.";
-            toast({
-                title: "Đăng ký thất bại",
-                description: errorMessage,
-                variant: "destructive",
-            });
+            navigate("/register", { state: { registorError: errorMessage } })
         }
         finally {
             setIsVerifying(false);
