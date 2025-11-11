@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Car, Clock, User } from "lucide-react";
+import { Car, Clock, User, AlertCircle } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "./ui/input";
@@ -333,11 +333,45 @@ export default function ScheduleCards() {
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
     const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
+    const [hasOverdueFee, setHasOverdueFee] = useState(false);
+    const { toast } = useToast();
 
     // Detail states
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
     const [detail, setDetail] = useState<ScheduleDetailResponse | null>(null);
+
+    // Kiểm tra quá hạn thanh toán
+    const checkOverdueFee = async (groupId: number) => {
+        try {
+            if (USE_MOCK) {
+                setHasOverdueFee(false);
+                return;
+            }
+            const token = localStorage.getItem("accessToken");
+            const res = await fetch(`${beBaseUrl}/api/fund-fee/group/${groupId}/current-month`, {
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                credentials: "include",
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const userOverdueFee = data?.fees?.find((fee: any) => 
+                    fee.userId === currentUserId && 
+                    fee.status === "PENDING" && 
+                    fee.isOverdue === true
+                );
+                setHasOverdueFee(!!userOverdueFee);
+            } else {
+                setHasOverdueFee(false);
+            }
+        } catch (error: any) {
+            console.error("Error checking overdue fee:", error);
+            setHasOverdueFee(false);
+        }
+    };
 
     const fetchSchedules = async () => {
         setLoading(true);
@@ -373,29 +407,79 @@ export default function ScheduleCards() {
                 setItems(mapped);
             } else {
                 const token = localStorage.getItem("accessToken");
-                const res = await fetch(`${beBaseUrl}/booking/schedules/group/${groupId}/booked`, {
-                    headers: {
-                        "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
-                    credentials: "include",
-                });
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(text || `HTTP ${res.status}`);
+                const headers = {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                };
+
+                // Fetch schedules và vehicles song song
+                const [schedulesRes, vehiclesRes] = await Promise.all([
+                    fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
+                        headers,
+                        credentials: "include",
+                    }),
+                    fetch(`${beBaseUrl}/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`, {
+                        headers,
+                        credentials: "include",
+                    }).catch(() => null) // Nếu lỗi thì bỏ qua, vehicles có thể null
+                ]);
+
+                if (!schedulesRes.ok) {
+                    const text = await schedulesRes.text();
+                    throw new Error(text || `HTTP ${schedulesRes.status}`);
                 }
-                const ct = res.headers.get("content-type") || "";
+
+                const ct = schedulesRes.headers.get("content-type") || "";
                 if (!ct.includes("application/json")) {
-                    const text = await res.text();
+                    const text = await schedulesRes.text();
                     throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
                 }
-                const data = await res.json();
-                console.log("📦 Raw data from BE:", data);
-                const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
+
+                const schedulesData = await schedulesRes.json();
+                console.log("📦 Raw schedules from BE:", schedulesData);
+
+                // Parse vehicles nếu có
+                let vehicles: any[] = [];
+                if (vehiclesRes && vehiclesRes.ok) {
+                    try {
+                        const vehiclesData = await vehiclesRes.json();
+                        vehicles = Array.isArray(vehiclesData) ? vehiclesData : (vehiclesData?.data || []);
+                        console.log("🚗 Vehicles from BE:", vehicles);
+                    } catch (e) {
+                        console.warn("Không thể parse vehicles:", e);
+                    }
+                }
+
+                const arr = Array.isArray(schedulesData) ? schedulesData : (schedulesData?.items || schedulesData?.data || []);
                 const normalized = (arr as any[])
-                    .map(normalizeScheduleItem)
+                    .map(raw => {
+                        const item = normalizeScheduleItem(raw);
+                        if (!item) return null;
+
+                        // Map vehicleId với thông tin xe
+                        const vehicle = vehicles.find(v => 
+                            v.vehicleId === raw.vehicleId || 
+                            v.id === raw.vehicleId ||
+                            v.vehicle?.vehicleId === raw.vehicleId
+                        );
+
+                        if (vehicle) {
+                            const brand = vehicle.brand || vehicle.vehicle?.brand || "";
+                            const model = vehicle.model || vehicle.vehicle?.model || "";
+                            const plateNo = vehicle.plateNo || vehicle.licensePlate || vehicle.vehicle?.plateNo || vehicle.vehicle?.licensePlate || "";
+
+                            return {
+                                ...item,
+                                vehicleName: brand && model ? `${brand} ${model}` : (item.vehicleName || `Xe ${raw.vehicleId}`),
+                                vehiclePlate: plateNo || item.vehiclePlate,
+                            } as ScheduleItem;
+                        }
+
+                        return item;
+                    })
                     .filter((x): x is ScheduleItem => x !== null);
-                console.log("✅ Normalized items:", normalized);
+
+                console.log("✅ Normalized items with vehicles:", normalized);
                 console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
                 setItems(normalized);
             }
@@ -415,6 +499,12 @@ export default function ScheduleCards() {
             window.removeEventListener('schedules-updated', onUpdated as any);
             window.removeEventListener('storage', onUpdated);
         };
+    }, []);
+
+    // Kiểm tra quá hạn thanh toán khi component mount
+    useEffect(() => {
+        const groupId = Number(localStorage.getItem("groupId")) || 1;
+        checkOverdueFee(groupId);
     }, []);
 
     const openDetailDialog = async (id: number) => {
@@ -479,6 +569,16 @@ export default function ScheduleCards() {
     };
 
     const openCheckInDialog = (id: number) => {
+        // Kiểm tra quá hạn thanh toán
+        if (hasOverdueFee) {
+            toast({
+                title: "⚠️ Không thể check-in",
+                description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
         if (!booking) {
@@ -498,6 +598,16 @@ export default function ScheduleCards() {
     };
 
     const openCheckOutDialog = (id: number) => {
+        // Kiểm tra quá hạn thanh toán
+        if (hasOverdueFee) {
+            toast({
+                title: "⚠️ Không thể check-out",
+                description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
         if (!booking) {
@@ -654,6 +764,21 @@ export default function ScheduleCards() {
                 <CardTitle>Danh sách đặt lịch</CardTitle>
             </CardHeader>
             <CardContent>
+                {/* Cảnh báo quá hạn thanh toán */}
+                {hasOverdueFee && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-start space-x-2">
+                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-medium text-red-900">⚠️ Tài khoản quá hạn thanh toán</p>
+                                <p className="text-sm text-red-700 mt-1">
+                                    Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="text-muted-foreground">Đang tải...</div>
                 ) : error ? (

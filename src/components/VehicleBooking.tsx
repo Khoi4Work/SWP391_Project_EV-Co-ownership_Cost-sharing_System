@@ -58,6 +58,7 @@ export default function VehicleBooking() {
     const [loadingVehicles, setLoadingVehicles] = useState(false);
     const [vehiclesError, setVehiclesError] = useState<string | null>(null);
     const [existingBookings, setExistingBookings] = useState<BookingSlot[]>([]);
+    const [statusFilter, setStatusFilter] = useState<"BOOKED" | "CANCELED" | "OVERRIDE_TRACKER">("BOOKED");
     const [loadingBookings, setLoadingBookings] = useState(false);
     const [overrideInfo, setOverrideInfo] = useState<OverrideInfo | null>(null);
     const [loadingOverrideInfo, setLoadingOverrideInfo] = useState(false);
@@ -291,7 +292,14 @@ export default function VehicleBooking() {
             let formattedBookings: BookingSlot[] = [];
             if (USE_MOCK) {
                 const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
-                const filtered = raw.filter((r: any) => groupIds.includes(r.groupId));
+                const filtered = raw.filter((r: any) => groupIds.includes(r.groupId))
+                    .filter((r: any) => {
+                        const s = String(r.status || "").toUpperCase();
+                        if (statusFilter === "BOOKED") return s === "BOOKED";
+                        if (statusFilter === "CANCELED") return s === "CANCELED";
+                        if (statusFilter === "OVERRIDE_TRACKER") return s === "OVERRIDE_TRACKER" || s === "OVERRIDDEN";
+                        return true;
+                    });
                 formattedBookings = filtered.map((item: any) => {
                     const start = new Date(item.startTime);
                     const end = new Date(item.endTime);
@@ -322,7 +330,13 @@ export default function VehicleBooking() {
                     };
                 });
             } else {
-                const fetchPromises = groupIds.map(groupId => apiCall(`/schedule/group/${groupId}`));
+                // gọi theo status như BE cung cấp
+                const endpointByStatus = (gid: number) => {
+                    if (statusFilter === "BOOKED") return `/schedule/group/${gid}/booked`;
+                    if (statusFilter === "CANCELED") return `/schedule/group/${gid}/canceled`;
+                    return `/schedule/group/${gid}/override-trackers`;
+                };
+                const fetchPromises = groupIds.map(groupId => apiCall(endpointByStatus(groupId)));
                 const allBookingsArrays = await Promise.all(fetchPromises);
                 const data = allBookingsArrays.flat();
                 if (!Array.isArray(data)) throw new Error("API trả về không phải array");
@@ -595,7 +609,8 @@ export default function VehicleBooking() {
 
     useEffect(() => {
         if (vehicles && vehicles.length > 0) loadBookings();
-    }, [vehicles]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [vehicles, statusFilter]);
 
     useEffect(() => {
         const calculateDays = (date: string) => {
@@ -1036,17 +1051,31 @@ export default function VehicleBooking() {
                     <div>
                         <h4 className="font-semibold mb-3 flex items-center space-x-2">
                             <Clock className="h-4 w-4"/>
-                            <span>Lịch đã đặt</span>
+                            <span>Lịch theo trạng thái</span>
                         </h4>
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-2">
+                                <Button variant={statusFilter === "BOOKED" ? "default" : "outline"} size="sm"
+                                        onClick={() => setStatusFilter("BOOKED")}>
+                                    BOOKED
+                                </Button>
+                                <Button variant={statusFilter === "CANCELED" ? "default" : "outline"} size="sm"
+                                        onClick={() => setStatusFilter("CANCELED")}>
+                                    CANCELED
+                                </Button>
+                                <Button variant={statusFilter === "OVERRIDE_TRACKER" ? "default" : "outline"} size="sm"
+                                        onClick={() => setStatusFilter("OVERRIDE_TRACKER")}>
+                                    OVERRIDDEN
+                                </Button>
+                            </div>
+                        </div>
                         <div ref={bookingsListRef} className="space-y-3">
                             {loadingBookings ? (
                                 <div className="text-center py-4 text-muted-foreground">Đang tải...</div>
                             ) : existingBookings.length === 0 ? (
                                 <div className="text-center py-4 text-muted-foreground">Chưa có lịch đặt nào</div>
                             ) : (
-                                existingBookings
-                                    .filter(booking => booking.status !== "overridden")
-                                    .map((booking) => {
+                                existingBookings.map((booking) => {
                                         const highestOwnershipInGroup = getHighestOwnershipByGroup(booking.groupId);
                                         const isHighestOwnerInGroup = booking.ownershipPercentage === highestOwnershipInGroup;
 
@@ -1055,7 +1084,7 @@ export default function VehicleBooking() {
                                                  className={`flex items-center justify-between p-3 border rounded-lg transition-all ${
                                                      editForm.bookingId === booking.scheduleId ? 'bg-primary/10 border-primary/50' :
                                                          newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' :
-                                                             booking.status === "canceled" ? 'bg-gray-100 opacity-50' :
+                                                             String(booking.status).toLowerCase() === "canceled" ? 'bg-gray-100 opacity-50' :
                                                                  'bg-accent/20'
                                                  }`}>
                                                 <div className="flex-1">
@@ -1075,10 +1104,10 @@ export default function VehicleBooking() {
                                                             </Badge>
                                                         )}
                                                         <Badge
-                                                            variant={booking.status === "BOOKED" ? "outline" : "default"}
-                                                            className={booking.status === "canceled"
+                                                            variant={String(booking.status).toUpperCase() === "BOOKED" ? "outline" : "default"}
+                                                            className={String(booking.status).toLowerCase() === "canceled"
                                                                 ? "bg-red-100 text-red-700 border-red-300 font-semibold"
-                                                                : booking.status === "BOOKED"
+                                                                : String(booking.status).toUpperCase() === "BOOKED"
                                                                     ? "bg-green-100 text-green-700 border-green-300 font-semibold"
                                                                     : ""}>
                                                             {booking.status}
@@ -1091,7 +1120,7 @@ export default function VehicleBooking() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    {booking.userId === currentUserId && (booking.status === "BOOKED" || booking.status === "booked") && (
+                                                    {booking.userId === currentUserId && (String(booking.status).toUpperCase() === "BOOKED") && (
                                                         <>
                                                             <Button size="sm" variant="outline"
                                                                     onClick={() => handleEditBooking(booking.scheduleId)}
