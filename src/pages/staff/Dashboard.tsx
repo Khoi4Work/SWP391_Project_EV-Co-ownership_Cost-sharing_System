@@ -55,6 +55,7 @@ export default function StaffDashboard() {
                 if (res.status === 200 && Array.isArray(res.data)) {
                     // Lưu toàn bộ danh sách ContractPendingRes vào state
                     setServices(res.data);
+                    console.log("endDate", res.data[0].contract.endDate);
                 } else if (res.status === 204) {
                     // Không có hợp đồng chờ duyệt
                     setServices([]);
@@ -168,7 +169,7 @@ export default function StaffDashboard() {
         try {
             const formData = new FormData();
             formData.append("declinedContractLink", "");
-            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`,formData);
+            const res = await axiosClient.patch(`${PATCH_CONTRACT}${contractId}/1`, formData);
             if (res.status === 200) {
                 toast({
                     title: "Thành công",
