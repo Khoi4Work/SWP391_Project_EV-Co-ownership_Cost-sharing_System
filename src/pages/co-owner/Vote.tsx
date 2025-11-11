@@ -25,26 +25,23 @@ export default function PaymentConfirmation() {
   const [payerName, setPayerName] = useState("");
   const [services, setServices] = useState<Service[]>([]);
   const [groupMemberCount, setGroupMemberCount] = useState(1);
-
+  const [decisionDetails, setDecisionDetails] = useState([]);
   const totalAmount = services.reduce((sum, s) => sum + s.price, 0);
   const amountPerPerson = Math.floor(totalAmount / groupMemberCount);
 
   useEffect(() => {
-    const fetchPaymentInfo = async () => {
+    const fetchDecisionVoteDetail = async () => {
       try {
-        // ⚠️ Sửa URL theo API backend thật
-        const res = await axiosClient.get(`/groupMember/payment/detail/${id}`);
-        if (res.status !== 200) throw new Error("Không thể tải dữ liệu thanh toán");
+        const res = await axiosClient.get(`/decision/vote/detail/${id}`);
+        if (res.status !== 200) throw new Error("Không thể tải chi tiết bỏ phiếu");
 
-        const data: PaymentDetailResponse = res.data;
-        setPayerName(data.payerName);
-        setServices(data.services);
-        setGroupMemberCount(data.groupMemberCount);
+        const data = res.data; // Mảng DecisionVoteDetail[]
+        setDecisionDetails(data); // Lưu vào state để hiển thị
       } catch (err) {
         console.error(err);
         toast({
           title: "Lỗi",
-          description: "Không thể tải thông tin thanh toán.",
+          description: "Không thể tải thông tin chi tiết bỏ phiếu.",
           variant: "destructive",
         });
       } finally {
@@ -52,8 +49,9 @@ export default function PaymentConfirmation() {
       }
     };
 
-    fetchPaymentInfo();
+    fetchDecisionVoteDetail();
   }, [id]);
+
 
   const handleConfirmPayment = async () => {
     try {
