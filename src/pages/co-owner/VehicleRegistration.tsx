@@ -748,31 +748,43 @@ export default function VehicleRegistration() {
                     {field.id === "plateNo" ? (
                       <>
                         <Input
-                          id={field.id}
-                          name={field.id}
+                          id="plateNo"
+                          name="plateNo"
                           value={vehicleFormik.values.plateNo}
                           onChange={(e) => {
-                            const val = e.target.value.trim().toUpperCase();
-                            vehicleFormik.setFieldValue("plateNo", val);
+                            const newValue = e.target.value.trim().toUpperCase();
+                            vehicleFormik.setFieldValue("plateNo", newValue);
+
+                            // Reset lỗi khi đang gõ
                             vehicleFormik.setFieldError("plateNo", "");
                           }}
                           onBlur={(e) => {
                             const plate = e.target.value.trim().toUpperCase();
                             if (!plate) return;
-                            const isDuplicate = vehicles.some((v) => v.plateNo.toUpperCase() === plate);
-                            vehicleFormik.setFieldError(
-                              "plateNo",
-                              isDuplicate ? "Biển số xe đã tồn tại trong hệ thống!" : ""
+
+                            // Kiểm tra trùng lặp với danh sách vehicles
+                            const isDuplicate = vehicles.some(
+                              (v) => v.plateNo.toUpperCase() === plate
                             );
+
+                            if (isDuplicate) {
+                              vehicleFormik.setFieldError(
+                                "plateNo",
+                                "Biển số xe đã tồn tại trong hệ thống!"
+                              );
+                            } else {
+                              vehicleFormik.setFieldError("plateNo", "");
+                            }
                           }}
-                          placeholder={field.placeholder}
-                          className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""}`}
+                          placeholder="Nhập biển số xe"
+                          className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""
+                            }`}
                         />
-                        <ErrorMessage
-                          name="plateNo"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
+
+                        {/* Hiển thị lỗi trực tiếp */}
+                        {vehicleFormik.errors.plateNo && (
+                          <p className="text-red-500 text-sm mt-1">{vehicleFormik.errors.plateNo}</p>
+                        )}
                       </>
                     ) : field.id === "color" ? (
                       <div className="flex items-center space-x-3">
