@@ -185,7 +185,7 @@ public class FundDetailService implements IFundDetailService {
                 .collect(Collectors.toList());
         overdueFees.forEach(fee -> {
             fee.setIsOverdue(true);
-            fee.getGroupMember().getUsers().setStatus(StatusUser.BLOCK);
+//            fee.getGroupMember().getUsers().setStatus(StatusUser.BLOCK);
             fundDetailRepository.save(fee);
 
 

@@ -62,7 +62,7 @@ public class FundDetailController {
         fundDetailRepository.findById(feeId).ifPresentOrElse(
                 fee -> {
                     fee.setIsOverdue(true);
-                    fee.getGroupMember().getUsers().setStatus(StatusUser.BLOCK);
+//                    fee.getGroupMember().getUsers().setStatus(StatusUser.BLOCK);
                     fundDetailRepository.save(fee);
                     System.out.println("Fee " + feeId + " marked as overdue");
                 },

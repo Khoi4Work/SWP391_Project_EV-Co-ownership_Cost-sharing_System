@@ -18,8 +18,9 @@ public interface IUserService {
 
     public List<Users> getAllUsers();
 
-    public List<Users> getAllUsersByStatus();
+//    public List<Users> getAllUsersByStatus();
 
-    void unblockUser(int id);
+//
+//    void unblockUser(int id);
 
 }
