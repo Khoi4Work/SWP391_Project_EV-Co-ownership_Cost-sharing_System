@@ -54,6 +54,7 @@ export default function VehicleRegistration() {
     ownership: 0,
   });
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
+  const [emailMessage, setEmailMessage] = useState(""); // 👈 state hiển thị thông báo
   const [step, setStep] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -64,6 +65,7 @@ export default function VehicleRegistration() {
   const [fileType, setFileType] = useState("");
   const navigate = useNavigate();
   const [contractFile, setContractFile] = useState<File | null>(null);
+  const [vehicles, setVehicles] = useState([]);
   const { toast } = useToast();
   const handleFileImport = (data) => {
     const { file, uploadType } = data;
@@ -74,7 +76,6 @@ export default function VehicleRegistration() {
       description: `Loại file: ${uploadType}`,
     });
   };
-  const [vehicles, setVehicles] = useState([]);
   const handleConfirmFile = () => {
     if (!contractFile) return;
 
@@ -178,11 +179,10 @@ export default function VehicleRegistration() {
     enableReinitialize: true,
     validationSchema: Yup.object({
       email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-      address: Yup.string().required("Vui lòng nhập địa chỉ"),
       ownership: Yup.number()
         .required("Vui lòng nhập tỷ lệ sở hữu")
         .min(15, "Tỷ lệ sỡ hữu chính >= 15%")
-        .max(90, "Tỷ lệ sỡ hữu chính <= 90%"),
+        .max(85, "Tỷ lệ sỡ hữu chính <= 85%"),
     }),
     onSubmit: (values) => {
       setOwnerInfo(values);
@@ -213,7 +213,6 @@ export default function VehicleRegistration() {
       case 2:
         return (
           ownerInfo.email &&
-          ownerInfo.address &&
           ownerInfo.ownership > 0 &&
           selectedVehicle !== null
         );
@@ -750,8 +749,34 @@ export default function VehicleRegistration() {
                       {field.label}
                     </Label>
 
-                    {/* 🔹 Nếu là trường "color", hiển thị color picker */}
-                    {field.id === "color" ? (
+                    {field.id === "plateNo" ? (
+                      <Input
+                        id={field.id}
+                        name={field.id}
+                        value={vehicleFormik.values.plateNo}
+                        onChange={(e) => {
+                          const newValue = e.target.value.trim().toUpperCase();
+                          vehicleFormik.setFieldValue("plateNo", newValue);
+
+                          // ⚡ Kiểm tra trùng lặp biển số trong danh sách vehicles
+                          const isDuplicate = vehicles.some(
+                            (v) => v.plateNo.toUpperCase() === newValue
+                          );
+
+                          if (isDuplicate) {
+                            vehicleFormik.setFieldError(
+                              "plateNo",
+                              "Biển số xe đã tồn tại trong hệ thống!"
+                            );
+                          } else {
+                            vehicleFormik.setFieldError("plateNo", undefined);
+                          }
+                        }}
+                        placeholder={field.placeholder}
+                        className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""
+                          }`}
+                      />
+                    ) : field.id === "color" ? (
                       <div className="flex items-center space-x-3">
                         {/* Color picker (hiển thị ô chọn màu) */}
                         <input
@@ -859,7 +884,7 @@ export default function VehicleRegistration() {
                             field.onBlur(e);
                             const user = await fetchUserByEmail(e.target.value);
                             if (user) {
-                              formik.setValues(prev => ({
+                              formik.setValues((prev: any) => ({
                                 ...prev,
                                 id: user.id || prev.id,
                                 name: user.name || prev.name,
@@ -868,6 +893,9 @@ export default function VehicleRegistration() {
                                 address: user.address || prev.address,
                                 email: user.email || prev.email,
                               }));
+                              setEmailMessage("✅ Tự động điền thông tin thành công"); // 👈 hiện thông báo màu xanh
+                            } else {
+                              setEmailMessage("");
                             }
                           }}
                         />
@@ -887,7 +915,7 @@ export default function VehicleRegistration() {
                         name="ownership"
                         type="number"
                         min={15}
-                        max={90}
+                        max={85}
                         className="flex-1"
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           let num = parseInt(e.target.value || "", 10);
