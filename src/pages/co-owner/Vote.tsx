@@ -39,6 +39,7 @@ export default function PaymentConfirmation() {
         setDecisionDetails(data); // Lưu vào state để hiển thị
         setPayerName(data.createdBy.user.hovaTen);
 
+
       } catch (err) {
         console.error(err);
         toast({
