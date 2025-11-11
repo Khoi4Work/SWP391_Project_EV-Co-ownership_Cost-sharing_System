@@ -90,7 +90,7 @@ export default function VehicleBooking() {
 
     // ===== REFS & CONSTANTS =====
     const bookingsListRef = useRef<HTMLDivElement | null>(null);
-    const USE_MOCK = true; // dùng DB ảo, tắt BE thật
+    const USE_MOCK = false; // dùng DB ảo, tắt BE thật
     const beBaseUrl = "http://localhost:8080";
     const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
     const currentUserId = Number(localStorage.getItem("userId")) || 2;

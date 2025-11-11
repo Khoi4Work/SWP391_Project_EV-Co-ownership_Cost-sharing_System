@@ -67,7 +67,7 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = true; // dùng BE thật để test
+const USE_MOCK = false; // dùng BE thật để test
 
 
 function formatDateTime(iso?: string) {
@@ -407,30 +407,79 @@ export default function ScheduleCards() {
                 setItems(mapped);
             } else {
                 const token = localStorage.getItem("accessToken");
-                // sử dụng endpoint chuẩn theo BE: /schedule/group/{groupId}/booked
-                const res = await fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
-                    headers: {
-                        "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
-                    credentials: "include",
-                });
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(text || `HTTP ${res.status}`);
+                const headers = {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                };
+
+                // Fetch schedules và vehicles song song
+                const [schedulesRes, vehiclesRes] = await Promise.all([
+                    fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
+                        headers,
+                        credentials: "include",
+                    }),
+                    fetch(`${beBaseUrl}/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`, {
+                        headers,
+                        credentials: "include",
+                    }).catch(() => null) // Nếu lỗi thì bỏ qua, vehicles có thể null
+                ]);
+
+                if (!schedulesRes.ok) {
+                    const text = await schedulesRes.text();
+                    throw new Error(text || `HTTP ${schedulesRes.status}`);
                 }
-                const ct = res.headers.get("content-type") || "";
+
+                const ct = schedulesRes.headers.get("content-type") || "";
                 if (!ct.includes("application/json")) {
-                    const text = await res.text();
+                    const text = await schedulesRes.text();
                     throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
                 }
-                const data = await res.json();
-                console.log("📦 Raw data from BE:", data);
-                const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
+
+                const schedulesData = await schedulesRes.json();
+                console.log("📦 Raw schedules from BE:", schedulesData);
+
+                // Parse vehicles nếu có
+                let vehicles: any[] = [];
+                if (vehiclesRes && vehiclesRes.ok) {
+                    try {
+                        const vehiclesData = await vehiclesRes.json();
+                        vehicles = Array.isArray(vehiclesData) ? vehiclesData : (vehiclesData?.data || []);
+                        console.log("🚗 Vehicles from BE:", vehicles);
+                    } catch (e) {
+                        console.warn("Không thể parse vehicles:", e);
+                    }
+                }
+
+                const arr = Array.isArray(schedulesData) ? schedulesData : (schedulesData?.items || schedulesData?.data || []);
                 const normalized = (arr as any[])
-                    .map(normalizeScheduleItem)
+                    .map(raw => {
+                        const item = normalizeScheduleItem(raw);
+                        if (!item) return null;
+
+                        // Map vehicleId với thông tin xe
+                        const vehicle = vehicles.find(v => 
+                            v.vehicleId === raw.vehicleId || 
+                            v.id === raw.vehicleId ||
+                            v.vehicle?.vehicleId === raw.vehicleId
+                        );
+
+                        if (vehicle) {
+                            const brand = vehicle.brand || vehicle.vehicle?.brand || "";
+                            const model = vehicle.model || vehicle.vehicle?.model || "";
+                            const plateNo = vehicle.plateNo || vehicle.licensePlate || vehicle.vehicle?.plateNo || vehicle.vehicle?.licensePlate || "";
+
+                            return {
+                                ...item,
+                                vehicleName: brand && model ? `${brand} ${model}` : (item.vehicleName || `Xe ${raw.vehicleId}`),
+                                vehiclePlate: plateNo || item.vehiclePlate,
+                            } as ScheduleItem;
+                        }
+
+                        return item;
+                    })
                     .filter((x): x is ScheduleItem => x !== null);
-                console.log("✅ Normalized items:", normalized);
+
+                console.log("✅ Normalized items with vehicles:", normalized);
                 console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
                 setItems(normalized);
             }
