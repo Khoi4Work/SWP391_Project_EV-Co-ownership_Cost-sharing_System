@@ -475,7 +475,7 @@ export default function ScheduleCards() {
                 
                 // Log chi tiết từng schedule để debug check-in/check-out
                 arr.forEach((raw: any, idx: number) => {
-                    console.log(`🔍 Schedule ${idx}:`, {
+                    console.log(`🔍 Schedule ${idx} (scheduleId: ${raw.scheduleId ?? raw.id}):`, {
                         scheduleId: raw.scheduleId ?? raw.id,
                         checkIn: raw.checkIn,
                         checkInTime: raw.checkInTime,
@@ -483,7 +483,8 @@ export default function ScheduleCards() {
                         checkOut: raw.checkOut,
                         checkOutTime: raw.checkOutTime,
                         hasCheckOut: raw.hasCheckOut,
-                        raw: raw // Log toàn bộ để xem cấu trúc
+                        // Log toàn bộ raw object để xem cấu trúc
+                        fullRaw: JSON.stringify(raw, null, 2)
                     });
                 });
 
@@ -760,10 +761,44 @@ export default function ScheduleCards() {
             alert("Check-in thành công");
             setOpenCheckIn(false);
             
-            // Fetch lại sau một chút để sync với BE
-            setTimeout(() => {
-                fetchSchedules();
-            }, 500);
+            // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
+            try {
+                const token = localStorage.getItem("accessToken");
+                const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json",
+                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    },
+                    credentials: "include",
+                });
+                if (detailRes.ok) {
+                    const detailData = await detailRes.json();
+                    console.log("✅ Fetched detail after check-in:", detailData);
+                    
+                    // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
+                    setItems(prevItems => prevItems.map(item => {
+                        if (item.scheduleId === activeId) {
+                            const normalized = normalizeScheduleItem(detailData);
+                            if (normalized) {
+                                // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
+                                return {
+                                    ...normalized,
+                                    vehicleName: normalized.vehicleName || item.vehicleName,
+                                    vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
+                                };
+                            }
+                        }
+                        return item;
+                    }));
+                }
+            } catch (e) {
+                console.warn("⚠️ Không thể fetch detail sau check-in:", e);
+                // Nếu không fetch được detail, vẫn fetch lại list sau một chút
+                setTimeout(() => {
+                    fetchSchedules();
+                }, 1000);
+            }
         }
     };
 
@@ -861,10 +896,44 @@ export default function ScheduleCards() {
             alert("Check-out thành công");
             setOpenCheckOut(false);
             
-            // Fetch lại sau một chút để sync với BE
-            setTimeout(() => {
-                fetchSchedules();
-            }, 500);
+            // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
+            try {
+                const token = localStorage.getItem("accessToken");
+                const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json",
+                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    },
+                    credentials: "include",
+                });
+                if (detailRes.ok) {
+                    const detailData = await detailRes.json();
+                    console.log("✅ Fetched detail after check-out:", detailData);
+                    
+                    // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
+                    setItems(prevItems => prevItems.map(item => {
+                        if (item.scheduleId === activeId) {
+                            const normalized = normalizeScheduleItem(detailData);
+                            if (normalized) {
+                                // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
+                                return {
+                                    ...normalized,
+                                    vehicleName: normalized.vehicleName || item.vehicleName,
+                                    vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
+                                };
+                            }
+                        }
+                        return item;
+                    }));
+                }
+            } catch (e) {
+                console.warn("⚠️ Không thể fetch detail sau check-out:", e);
+                // Nếu không fetch được detail, vẫn fetch lại list sau một chút
+                setTimeout(() => {
+                    fetchSchedules();
+                }, 1000);
+            }
         }
     };
 
