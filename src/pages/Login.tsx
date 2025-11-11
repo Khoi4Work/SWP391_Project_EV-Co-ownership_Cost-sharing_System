@@ -9,11 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Car, ArrowLeft } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 
-const USE_MOCK = false; // Bật DB ảo cho login
+const USE_MOCK = true; // Bật DB ảo cho login
 
 const MOCK_USERS = [
     { email: "coowner@test.com", password: "123", id: 2, hovaten: "Nguyễn Văn A", role: { roleName: "co-owner" }, token: "mock-token-coowner" },
     { email: "coowner2@test.com", password: "123", id: 4, hovaten: "Trần Thị B", role: { roleName: "co-owner" }, token: "mock-token-coowner-2" },
+    // User có quá hạn thanh toán để test
+    { email: "overdue@test.com", password: "123", id: 5, hovaten: "Người Dùng Quá Hạn", role: { roleName: "co-owner" }, token: "mock-token-overdue", hasOverdue: true },
     { email: "staff@test.com", password: "123", id: 3, hovaten: "Nhân viên Test", role: { roleName: "staff" }, token: "mock-token-staff" },
     { email: "admin@test.com", password: "123", id: 1, hovaten: "Admin Test", role: { roleName: "admin" }, token: "mock-token-admin" },
 ];
@@ -98,9 +100,67 @@ export default function Login() {
             const hovaten = response.data.hovaTen;
             const role = response.data.role.roleName;
 
+            // Lưu token tạm thời để có thể gọi API kiểm tra quá hạn
             localStorage.setItem("accessToken", token);
             localStorage.setItem("userId", userId.toString());
             localStorage.setItem("hovaten", hovaten);
+
+            // Kiểm tra quá hạn thanh toán (chỉ cho co-owner)
+            if (role.toLowerCase() === "co-owner" || role.toLowerCase() === "user") {
+                let hasOverdueFee = false;
+
+                // Mock: Kiểm tra nếu user có flag hasOverdue
+                if (USE_MOCK && response.data.hasOverdue) {
+                    hasOverdueFee = true;
+                } else if (!USE_MOCK) {
+                    // Chỉ check với BE thật khi không dùng mock
+                    try {
+                        // Lấy danh sách groupIds của user
+                        const groupIdsRes = await axiosClient.get("/groupMember/getGroupIdsByUserId", {
+                            params: { userId },
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        const groupIds: number[] = Array.isArray(groupIdsRes.data) ? groupIdsRes.data : [];
+
+                        // Kiểm tra quá hạn thanh toán trong tất cả các nhóm
+                        for (const groupId of groupIds) {
+                            try {
+                                const feeRes = await axiosClient.get(`/api/fund-fee/group/${groupId}/current-month`, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                });
+                                const fees = feeRes.data?.fees || [];
+                                const userOverdueFee = fees.find((fee: any) => 
+                                    fee.userId === userId && 
+                                    fee.status === "PENDING" && 
+                                    fee.isOverdue === true
+                                );
+                                if (userOverdueFee) {
+                                    hasOverdueFee = true;
+                                    break;
+                                }
+                            } catch (feeErr) {
+                                console.warn(`Không thể kiểm tra quá hạn cho group ${groupId}:`, feeErr);
+                            }
+                        }
+                    } catch (overdueErr: any) {
+                        console.warn("Không thể kiểm tra quá hạn thanh toán:", overdueErr);
+                        // Nếu không kiểm tra được, vẫn cho đăng nhập (tránh block user do lỗi API)
+                    }
+                }
+
+                if (hasOverdueFee) {
+                    // Xóa token và thông tin user nếu quá hạn
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("userId");
+                    localStorage.removeItem("hovaten");
+                    toast({
+                        title: "⚠️ Tài khoản bị khóa",
+                        description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán.",
+                        variant: "destructive",
+                    });
+                    return; // Không cho đăng nhập
+                }
+            }
             console.log("Role:", role);
             console.log("Token:", token);
             console.log("User ID:", userId);

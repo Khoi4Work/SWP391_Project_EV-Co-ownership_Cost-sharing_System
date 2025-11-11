@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Car, Clock, User } from "lucide-react";
+import { Car, Clock, User, AlertCircle } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "./ui/input";
@@ -67,7 +67,7 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = false; // dùng BE thật để test
+const USE_MOCK = true; // dùng BE thật để test
 
 
 function formatDateTime(iso?: string) {
@@ -333,11 +333,45 @@ export default function ScheduleCards() {
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
     const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
+    const [hasOverdueFee, setHasOverdueFee] = useState(false);
+    const { toast } = useToast();
 
     // Detail states
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
     const [detail, setDetail] = useState<ScheduleDetailResponse | null>(null);
+
+    // Kiểm tra quá hạn thanh toán
+    const checkOverdueFee = async (groupId: number) => {
+        try {
+            if (USE_MOCK) {
+                setHasOverdueFee(false);
+                return;
+            }
+            const token = localStorage.getItem("accessToken");
+            const res = await fetch(`${beBaseUrl}/api/fund-fee/group/${groupId}/current-month`, {
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                credentials: "include",
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const userOverdueFee = data?.fees?.find((fee: any) => 
+                    fee.userId === currentUserId && 
+                    fee.status === "PENDING" && 
+                    fee.isOverdue === true
+                );
+                setHasOverdueFee(!!userOverdueFee);
+            } else {
+                setHasOverdueFee(false);
+            }
+        } catch (error: any) {
+            console.error("Error checking overdue fee:", error);
+            setHasOverdueFee(false);
+        }
+    };
 
     const fetchSchedules = async () => {
         setLoading(true);
@@ -418,6 +452,12 @@ export default function ScheduleCards() {
         };
     }, []);
 
+    // Kiểm tra quá hạn thanh toán khi component mount
+    useEffect(() => {
+        const groupId = Number(localStorage.getItem("groupId")) || 1;
+        checkOverdueFee(groupId);
+    }, []);
+
     const openDetailDialog = async (id: number) => {
         setActiveId(id);
         setOpenDetail(true);
@@ -480,6 +520,16 @@ export default function ScheduleCards() {
     };
 
     const openCheckInDialog = (id: number) => {
+        // Kiểm tra quá hạn thanh toán
+        if (hasOverdueFee) {
+            toast({
+                title: "⚠️ Không thể check-in",
+                description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
         if (!booking) {
@@ -499,6 +549,16 @@ export default function ScheduleCards() {
     };
 
     const openCheckOutDialog = (id: number) => {
+        // Kiểm tra quá hạn thanh toán
+        if (hasOverdueFee) {
+            toast({
+                title: "⚠️ Không thể check-out",
+                description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
         if (!booking) {
@@ -655,6 +715,21 @@ export default function ScheduleCards() {
                 <CardTitle>Danh sách đặt lịch</CardTitle>
             </CardHeader>
             <CardContent>
+                {/* Cảnh báo quá hạn thanh toán */}
+                {hasOverdueFee && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-start space-x-2">
+                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="font-medium text-red-900">⚠️ Tài khoản quá hạn thanh toán</p>
+                                <p className="text-sm text-red-700 mt-1">
+                                    Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="text-muted-foreground">Đang tải...</div>
                 ) : error ? (
