@@ -80,10 +80,10 @@ export default function CoOwnerDashboard() {
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <Link to="/co-owner/vehicle-registration">
+                        <Link to="/co-owner/group-registration">
                             <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                                 <Plus className="h-4 w-4 mr-2" />
-                                Đăng ký hợp đồng
+                                Đăng ký nhóm
                             </Button>
                         </Link>
                         <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">

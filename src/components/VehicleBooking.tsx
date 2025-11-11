@@ -185,7 +185,7 @@ export default function VehicleBooking() {
         return method === "DELETE" ? null : res.json();
     };
 
-    const loadGroupId = async (showError = false) => {
+    const loadGroupId = async () => {
         try {
             const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
             const groupIds: number[] = await apiCall(`${endpoint}?userId=${currentUserId}`);
@@ -193,9 +193,7 @@ export default function VehicleBooking() {
             localStorage.setItem("groupIds", JSON.stringify(groupIds));
             localStorage.setItem("groupId", groupIds[0].toString());
         } catch (error: any) {
-            if (showError) {
-                showToast("Lỗi", "Không thể lấy thông tin nhóm", "destructive");
-            }
+            console.log(error);
         }
     };
 
@@ -455,7 +453,7 @@ export default function VehicleBooking() {
     // ===== EFFECTS =====
     useEffect(() => {
         const initData = async () => {
-            await loadGroupId(false);
+            await loadGroupId();
             await loadVehicles();
 
             const groupIdsStr = localStorage.getItem("groupIds");
