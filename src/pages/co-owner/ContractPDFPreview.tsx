@@ -74,9 +74,9 @@ const ContractView = forwardRef<HTMLDivElement, ContractViewProps>(
               style={{
                 position: "absolute",
                 left: 0,
-                top: "50%",
+                top: "40%",
                 transform: "translateY(-50%)",
-                height: "50px",
+                height: "35px",
                 objectFit: "contain",
               }}
             />

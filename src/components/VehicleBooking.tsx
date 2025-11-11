@@ -1,10 +1,10 @@
-import {useEffect, useRef, useState} from "react";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Calendar, Clock, Car, Edit, X, Check, AlertCircle} from "lucide-react";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import { useEffect, useRef, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, Car, Edit, X, Check, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // ===== INTERFACES =====
 interface OverrideInfo {
@@ -99,13 +99,13 @@ export default function VehicleBooking() {
     // ===== HELPER FUNCTIONS =====
     const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
         const id = Date.now();
-        setToasts(prev => [...prev, {id, title, description, variant}]);
+        setToasts(prev => [...prev, { id, title, description, variant }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
     };
 
     const getHeaders = () => ({
         "Content-Type": "application/json",
-        ...(token ? {"Authorization": `Bearer ${token}`} : {})
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
     });
 
     const toLocalDateTime = (date: string, hhmm: string) => `${date}T${hhmm}:00`;
@@ -117,7 +117,7 @@ export default function VehicleBooking() {
 
     const parseRange = (range: string) => {
         const [start, end] = range.split('-');
-        return {start: toMinutes(start), end: toMinutes(end)};
+        return { start: toMinutes(start), end: toMinutes(end) };
     };
 
     const isSameMonth = (dateA: string, dateB: string) => {
@@ -179,7 +179,7 @@ export default function VehicleBooking() {
             method,
             headers: getHeaders(),
             credentials: "include",
-            ...(body && {body: JSON.stringify(body)})
+            ...(body && { body: JSON.stringify(body) })
         });
         if (!res.ok) throw new Error(await res.text());
         return method === "DELETE" ? null : res.json();
@@ -189,11 +189,11 @@ export default function VehicleBooking() {
         try {
             const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
             const groupIds: number[] = await apiCall(`${endpoint}?userId=${currentUserId}`);
-        
+
             localStorage.setItem("groupIds", JSON.stringify(groupIds));
             localStorage.setItem("groupId", groupIds[0].toString());
         } catch (error: any) {
-            showToast("Lỗi", "Không thể lấy thông tin nhóm", "destructive");
+            console.log(error);
         }
     };
 
@@ -310,9 +310,9 @@ export default function VehicleBooking() {
             });
             if (res.ok) {
                 const data = await res.json();
-                const userOverdueFee = data?.fees?.find((fee: any) => 
-                    fee.userId === currentUserId && 
-                    fee.status === "PENDING" && 
+                const userOverdueFee = data?.fees?.find((fee: any) =>
+                    fee.userId === currentUserId &&
+                    fee.status === "PENDING" &&
                     fee.isOverdue === true
                 );
                 setHasOverdueFee(!!userOverdueFee);
@@ -333,7 +333,7 @@ export default function VehicleBooking() {
         if (!form.startTime || !form.endTime) return;
 
         const timeRange = `${form.startTime}-${form.endTime}`;
-        setForm(prev => ({...prev, time: timeRange, showTimeSelector: false}));
+        setForm(prev => ({ ...prev, time: timeRange, showTimeSelector: false }));
         showToast("Đã chọn thời gian", `Thời gian ${timeRange}`);
     };
 
@@ -370,8 +370,8 @@ export default function VehicleBooking() {
             const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
             showToast("Đặt lịch thành công", `Đã đặt ${selectedVehicle?.brand} ${selectedVehicle?.model} vào ${bookingForm.date} từ ${bookingForm.time}.`);
 
-            setBookingForm({vehicle: "", date: "", time: "", startTime: "", endTime: "", showTimeSelector: false});
-            bookingsListRef.current?.scrollIntoView({behavior: 'smooth', block: 'start'});
+            setBookingForm({ vehicle: "", date: "", time: "", startTime: "", endTime: "", showTimeSelector: false });
+            bookingsListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (e: any) {
             handleScheduleError(e.message);
         }
@@ -537,11 +537,11 @@ export default function VehicleBooking() {
             : 0;
 
         return (
-            <Dialog open={open} onOpenChange={(val) => setForm(prev => ({...prev, showTimeSelector: val}))}>
+            <Dialog open={open} onOpenChange={(val) => setForm(prev => ({ ...prev, showTimeSelector: val }))}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center space-x-2">
-                            <Clock className="h-5 w-5"/>
+                            <Clock className="h-5 w-5" />
                             <span>Chọn khung giờ sử dụng</span>
                         </DialogTitle>
                         <div className="text-muted-foreground text-sm mt-1">
@@ -553,7 +553,7 @@ export default function VehicleBooking() {
                         {overrideInfo && overrideInfo.overridesRemaining === 1 && (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                 <div className="flex items-start space-x-2">
-                                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5"/>
+                                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
                                     <div className="text-sm text-red-800">
                                         <p className="font-medium">Cảnh báo: Bạn chỉ còn 1 lượt override trong tháng</p>
                                     </div>
@@ -592,9 +592,8 @@ export default function VehicleBooking() {
                                                     <span className="font-semibold text-blue-700">{b.time}</span>
                                                     <span className="text-gray-700">{b.brand} {b.model}</span>
                                                     <span className="text-gray-500">Người đặt: {b.bookedBy}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${
-                                                        isHighestOwner ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
-                                                    }`}>
+                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${isHighestOwner ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                                                        }`}>
                                                         {b.ownershipPercentage.toFixed(1)}%
                                                     </span>
                                                     <span className="text-gray-500">Trạng thái: {b.status}</span>
@@ -613,14 +612,14 @@ export default function VehicleBooking() {
                             <div>
                                 <label className="text-sm font-medium mb-2 block">Giờ bắt đầu</label>
                                 <Select value={form.startTime}
-                                        onValueChange={(val) => setForm(prev => ({...prev, startTime: val}))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn giờ bắt đầu"/></SelectTrigger>
+                                    onValueChange={(val) => setForm(prev => ({ ...prev, startTime: val }))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn giờ bắt đầu" /></SelectTrigger>
                                     <SelectContent>
                                         {timeSlots.map(time => {
                                             const shouldDisable = isTimeSlotDisabled(time, isEdit, false);
                                             return (
                                                 <SelectItem key={time} value={time} disabled={shouldDisable}
-                                                            className={shouldDisable ? "opacity-50 cursor-not-allowed line-through" : ""}>
+                                                    className={shouldDisable ? "opacity-50 cursor-not-allowed line-through" : ""}>
                                                     {time}
                                                     {shouldDisable}
                                                 </SelectItem>
@@ -632,14 +631,14 @@ export default function VehicleBooking() {
                             <div>
                                 <label className="text-sm font-medium mb-2 block">Giờ kết thúc</label>
                                 <Select value={form.endTime}
-                                        onValueChange={(val) => setForm(prev => ({...prev, endTime: val}))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn giờ kết thúc"/></SelectTrigger>
+                                    onValueChange={(val) => setForm(prev => ({ ...prev, endTime: val }))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn giờ kết thúc" /></SelectTrigger>
                                     <SelectContent>
                                         {timeSlots.map(time => {
                                             const shouldDisable = isTimeSlotDisabled(time, isEdit, true);
                                             return (
                                                 <SelectItem key={time} value={time} disabled={shouldDisable}
-                                                            className={shouldDisable ? "opacity-50 cursor-not-allowed line-through" : ""}>
+                                                    className={shouldDisable ? "opacity-50 cursor-not-allowed line-through" : ""}>
                                                     {time}
                                                     {shouldDisable}
                                                 </SelectItem>
@@ -652,8 +651,8 @@ export default function VehicleBooking() {
 
                         <div className="flex space-x-2">
                             <Button onClick={() => handleTimeSelection(isEdit)}
-                                    disabled={!form.startTime || !form.endTime}>
-                                <Check className="h-4 w-4 mr-2"/>Chọn
+                                disabled={!form.startTime || !form.endTime}>
+                                <Check className="h-4 w-4 mr-2" />Chọn
                             </Button>
                             <Button variant="outline" onClick={() => setForm(prev => ({
                                 ...prev,
@@ -661,7 +660,7 @@ export default function VehicleBooking() {
                                 startTime: "",
                                 endTime: ""
                             }))}>
-                                <X className="h-4 w-4 mr-2"/>Hủy
+                                <X className="h-4 w-4 mr-2" />Hủy
                             </Button>
                         </div>
                     </div>
@@ -677,17 +676,17 @@ export default function VehicleBooking() {
             <div className="fixed top-4 right-4 z-50 space-y-2">
                 {toasts.map(toast => (
                     <div key={toast.id}
-                         className={`p-4 rounded-lg shadow-lg border min-w-[300px] ${toast.variant === 'destructive' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-white border-gray-200'}`}>
+                        className={`p-4 rounded-lg shadow-lg border min-w-[300px] ${toast.variant === 'destructive' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-white border-gray-200'}`}>
                         <div className="flex items-start gap-3">
                             <AlertCircle
-                                className={`h-5 w-5 mt-0.5 ${toast.variant === 'destructive' ? 'text-red-600' : 'text-blue-600'}`}/>
+                                className={`h-5 w-5 mt-0.5 ${toast.variant === 'destructive' ? 'text-red-600' : 'text-blue-600'}`} />
                             <div className="flex-1">
                                 <div className="font-semibold">{toast.title}</div>
                                 <div className="text-sm mt-1 opacity-90">{toast.description}</div>
                             </div>
                             <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-                                    className="text-gray-400 hover:text-gray-600">
-                                <X className="h-4 w-4"/>
+                                className="text-gray-400 hover:text-gray-600">
+                                <X className="h-4 w-4" />
                             </button>
                         </div>
                     </div>
@@ -697,7 +696,7 @@ export default function VehicleBooking() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
-                        <Calendar className="h-5 w-5"/>
+                        <Calendar className="h-5 w-5" />
                         <span>Đặt lịch sử dụng xe</span>
                     </CardTitle>
                     <CardDescription>Lên lịch sử dụng xe điện trong nhóm đồng sở hữu</CardDescription>
@@ -708,12 +707,12 @@ export default function VehicleBooking() {
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn xe</label>
                             <Select value={bookingForm.vehicle}
-                                    onValueChange={(val) => setBookingForm(prev => ({...prev, vehicle: val}))}>
+                                onValueChange={(val) => setBookingForm(prev => ({ ...prev, vehicle: val }))}>
                                 <SelectTrigger>
                                     <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}>
                                         {bookingForm.vehicle && vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle) && (
                                             <div className="flex items-center space-x-2">
-                                                <Car className="h-4 w-4"/>
+                                                <Car className="h-4 w-4" />
                                                 <span>{vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle)?.brand} {vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle)?.model} {vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle)?.groupName}</span>
                                             </div>
                                         )}
@@ -728,7 +727,7 @@ export default function VehicleBooking() {
                                     {!vehiclesError && vehicles.map((vehicle) => (
                                         <SelectItem key={vehicle.vehicleId} value={String(vehicle.vehicleId)}>
                                             <div className="flex items-center space-x-2">
-                                                <Car className="h-4 w-4"/>
+                                                <Car className="h-4 w-4" />
                                                 <span>{vehicle.brand} {vehicle.model} {vehicle.groupName}</span>
                                             </div>
                                         </SelectItem>
@@ -742,13 +741,13 @@ export default function VehicleBooking() {
                                 type="date"
                                 className="w-full px-3 py-2 border border-input rounded-md bg-background"
                                 value={bookingForm.date}
-                                onChange={(e) => setBookingForm(prev => ({...prev, date: e.target.value, time: ""}))}
+                                onChange={(e) => setBookingForm(prev => ({ ...prev, date: e.target.value, time: "" }))}
                                 onBlur={(e) => {
                                     const selectedValue = e.target.value;
                                     const today = new Date().toISOString().split('T')[0];
                                     if (selectedValue && selectedValue < today) {
                                         showToast("Ngày không hợp lệ", "Không thể chọn ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.", "destructive");
-                                        setBookingForm(prev => ({...prev, date: ""}));
+                                        setBookingForm(prev => ({ ...prev, date: "" }));
                                     }
                                 }}
                                 min={new Date().toISOString().split('T')[0]}
@@ -757,9 +756,9 @@ export default function VehicleBooking() {
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn giờ</label>
                             <Button variant="outline" className="w-full justify-start text-left font-normal"
-                                    onClick={() => setBookingForm(prev => ({...prev, showTimeSelector: true}))}
-                                    disabled={!bookingForm.vehicle || !bookingForm.date}>
-                                <Clock className="h-4 w-4 mr-2"/>
+                                onClick={() => setBookingForm(prev => ({ ...prev, showTimeSelector: true }))}
+                                disabled={!bookingForm.vehicle || !bookingForm.date}>
+                                <Clock className="h-4 w-4 mr-2" />
                                 {bookingForm.time ? bookingForm.time : "Chọn khung giờ"}
                             </Button>
                         </div>
@@ -769,7 +768,7 @@ export default function VehicleBooking() {
                     {hasOverdueFee && (
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <div className="flex items-start space-x-2">
-                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5"/>
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
                                 <div className="flex-1">
                                     <p className="font-medium text-red-900">⚠️ Quỹ tháng quá hạn thanh toán</p>
                                     <p className="text-sm text-red-700 mt-1">
@@ -785,7 +784,7 @@ export default function VehicleBooking() {
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
-                                    <AlertCircle className="h-5 w-5 text-blue-600"/>
+                                    <AlertCircle className="h-5 w-5 text-blue-600" />
                                     <span className="font-medium text-blue-900">Thông tin Override</span>
                                 </div>
                                 <Badge variant={overrideInfo.overridesRemaining > 0 ? "default" : "destructive"}>
@@ -806,11 +805,11 @@ export default function VehicleBooking() {
                     )}
 
                     <Button onClick={handleBooking} className="w-full"
-                            disabled={!bookingForm.vehicle || !bookingForm.date || !bookingForm.time || daysUsedThisMonth > 3 || hasOverdueFee}>
-                        {hasOverdueFee 
-                            ? "⚠️ Không thể đặt lịch (Quá hạn thanh toán)" 
-                            : daysUsedThisMonth > 3 
-                                ? "Đã hết lượt đặt lịch tháng này" 
+                        disabled={!bookingForm.vehicle || !bookingForm.date || !bookingForm.time || daysUsedThisMonth > 3 || hasOverdueFee}>
+                        {hasOverdueFee
+                            ? "⚠️ Không thể đặt lịch (Quá hạn thanh toán)"
+                            : daysUsedThisMonth > 3
+                                ? "Đã hết lượt đặt lịch tháng này"
                                 : "Đặt lịch"}
                     </Button>
 
@@ -831,8 +830,8 @@ export default function VehicleBooking() {
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Chọn xe</label>
                                     <Select value={editForm.vehicle}
-                                            onValueChange={(val) => setEditForm(prev => ({...prev, vehicle: val}))}>
-                                        <SelectTrigger><SelectValue placeholder="Chọn xe"/></SelectTrigger>
+                                        onValueChange={(val) => setEditForm(prev => ({ ...prev, vehicle: val }))}>
+                                        <SelectTrigger><SelectValue placeholder="Chọn xe" /></SelectTrigger>
                                         <SelectContent>
                                             {vehicles.map((vehicle) => (
                                                 <SelectItem key={vehicle.vehicleId} value={String(vehicle.vehicleId)}>
@@ -859,7 +858,7 @@ export default function VehicleBooking() {
                                             const today = new Date().toISOString().split("T")[0];
                                             if (selectedValue && selectedValue < today) {
                                                 showToast("Ngày không hợp lệ", "Không thể chọn ngày trong quá khứ. Vui lòng chọn từ hôm nay trở đi.", "destructive");
-                                                setEditForm(prev => ({...prev, date: ""}));
+                                                setEditForm(prev => ({ ...prev, date: "" }));
                                             }
                                         }}
                                         min={new Date().toISOString().split("T")[0]}
@@ -869,9 +868,9 @@ export default function VehicleBooking() {
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Chọn giờ</label>
                                     <Button variant="outline" className="w-full justify-start"
-                                            onClick={() => setEditForm(prev => ({...prev, showTimeSelector: true}))}
-                                            disabled={!editForm.vehicle || !editForm.date}>
-                                        <Clock className="mr-2 h-4 w-4"/>
+                                        onClick={() => setEditForm(prev => ({ ...prev, showTimeSelector: true }))}
+                                        disabled={!editForm.vehicle || !editForm.date}>
+                                        <Clock className="mr-2 h-4 w-4" />
                                         {editForm.time ? editForm.time : "Chọn khung giờ"}
                                     </Button>
                                 </div>
@@ -879,16 +878,16 @@ export default function VehicleBooking() {
                                 <div className="flex justify-end gap-2 pt-4">
                                     <Button variant="outline" onClick={handleCancelEdit}>Hủy chỉnh sửa</Button>
                                     <Button onClick={handleUpdateBooking}
-                                            disabled={(() => {
-                                                if (!editForm.date || !editForm.vehicle || !editForm.time) return true;
-                                                const currentBooking = existingBookings.find(b => b.scheduleId === editForm.bookingId);
-                                                const originalDate = currentBooking?.date;
-                                                if (originalDate === editForm.date) return false;
-                                                const daysSet = getUserBookedUniqueDaysInMonth(editForm.date);
-                                                const alreadyCounted = daysSet.has(editForm.date);
-                                                const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
-                                                return prospectiveDaysCount > 3;
-                                            })()}>
+                                        disabled={(() => {
+                                            if (!editForm.date || !editForm.vehicle || !editForm.time) return true;
+                                            const currentBooking = existingBookings.find(b => b.scheduleId === editForm.bookingId);
+                                            const originalDate = currentBooking?.date;
+                                            if (originalDate === editForm.date) return false;
+                                            const daysSet = getUserBookedUniqueDaysInMonth(editForm.date);
+                                            const alreadyCounted = daysSet.has(editForm.date);
+                                            const prospectiveDaysCount = alreadyCounted ? daysSet.size : daysSet.size + 1;
+                                            return prospectiveDaysCount > 3;
+                                        })()}>
                                         {(() => {
                                             if (!editForm.date) return "Cập nhật";
                                             const currentBooking = existingBookings.find(b => b.scheduleId === editForm.bookingId);
@@ -911,21 +910,21 @@ export default function VehicleBooking() {
                     {/* Bookings List */}
                     <div>
                         <h4 className="font-semibold mb-3 flex items-center space-x-2">
-                            <Clock className="h-4 w-4"/>
+                            <Clock className="h-4 w-4" />
                             <span>Lịch theo trạng thái</span>
                         </h4>
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
                             <div className="flex items-center gap-2">
                                 <Button variant={statusFilter === "BOOKED" ? "default" : "outline"} size="sm"
-                                        onClick={() => setStatusFilter("BOOKED")}>
+                                    onClick={() => setStatusFilter("BOOKED")}>
                                     BOOKED
                                 </Button>
                                 <Button variant={statusFilter === "CANCELED" ? "default" : "outline"} size="sm"
-                                        onClick={() => setStatusFilter("CANCELED")}>
+                                    onClick={() => setStatusFilter("CANCELED")}>
                                     CANCELED
                                 </Button>
                                 <Button variant={statusFilter === "OVERRIDE_TRACKER" ? "default" : "outline"} size="sm"
-                                        onClick={() => setStatusFilter("OVERRIDE_TRACKER")}>
+                                    onClick={() => setStatusFilter("OVERRIDE_TRACKER")}>
                                     OVERRIDDEN
                                 </Button>
                             </div>
@@ -937,67 +936,66 @@ export default function VehicleBooking() {
                                 <div className="text-center py-4 text-muted-foreground">Chưa có lịch đặt nào</div>
                             ) : (
                                 existingBookings.map((booking) => {
-                                        const highestOwnershipInGroup = getHighestOwnershipByGroup(booking.groupId);
-                                        const isHighestOwnerInGroup = booking.ownershipPercentage === highestOwnershipInGroup;
+                                    const highestOwnershipInGroup = getHighestOwnershipByGroup(booking.groupId);
+                                    const isHighestOwnerInGroup = booking.ownershipPercentage === highestOwnershipInGroup;
 
-                                        return (
-                                            <div key={booking.scheduleId}
-                                                 className={`flex items-center justify-between p-3 border rounded-lg transition-all ${
-                                                     editForm.bookingId === booking.scheduleId ? 'bg-primary/10 border-primary/50' :
-                                                         newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' :
-                                                             String(booking.status).toLowerCase() === "canceled" ? 'bg-gray-100 opacity-50' :
-                                                                 'bg-accent/20'
-                                                 }`}>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="flex items-center space-x-2">
-                                                            <Car className="h-4 w-4"/>
-                                                            <span
-                                                                className="font-medium">{booking.brand} {booking.model}</span>
-                                                        </div>
-                                                        <Badge variant="secondary">{booking.bookedBy}</Badge>
-                                                        {booking.ownershipPercentage !== undefined && (
-                                                            <Badge variant="outline"
-                                                                   className={isHighestOwnerInGroup
-                                                                       ? "bg-blue-50 text-blue-700 border-blue-300 font-semibold"
-                                                                       : "bg-green-50 text-green-700 border-green-300"}>
-                                                                {booking.ownershipPercentage.toFixed(1)}%
-                                                            </Badge>
-                                                        )}
-                                                        <Badge
-                                                            variant={String(booking.status).toUpperCase() === "BOOKED" ? "outline" : "default"}
-                                                            className={String(booking.status).toLowerCase() === "canceled"
-                                                                ? "bg-red-100 text-red-700 border-red-300 font-semibold"
-                                                                : String(booking.status).toUpperCase() === "BOOKED"
-                                                                    ? "bg-green-100 text-green-700 border-green-300 font-semibold"
-                                                                    : ""}>
-                                                            {booking.status}
+                                    return (
+                                        <div key={booking.scheduleId}
+                                            className={`flex items-center justify-between p-3 border rounded-lg transition-all ${editForm.bookingId === booking.scheduleId ? 'bg-primary/10 border-primary/50' :
+                                                newlyCreatedBooking === booking.scheduleId ? 'bg-green-100 border-green-300 shadow-lg' :
+                                                    String(booking.status).toLowerCase() === "canceled" ? 'bg-gray-100 opacity-50' :
+                                                        'bg-accent/20'
+                                                }`}>
+                                            <div className="flex-1">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Car className="h-4 w-4" />
+                                                        <span
+                                                            className="font-medium">{booking.brand} {booking.model}</span>
+                                                    </div>
+                                                    <Badge variant="secondary">{booking.bookedBy}</Badge>
+                                                    {booking.ownershipPercentage !== undefined && (
+                                                        <Badge variant="outline"
+                                                            className={isHighestOwnerInGroup
+                                                                ? "bg-blue-50 text-blue-700 border-blue-300 font-semibold"
+                                                                : "bg-green-50 text-green-700 border-green-300"}>
+                                                            {booking.ownershipPercentage.toFixed(1)}%
                                                         </Badge>
-                                                        {newlyCreatedBooking === booking.scheduleId &&
-                                                            <Badge className="bg-green-100 text-green-800">Mới</Badge>}
-                                                    </div>
-                                                    <div className="text-sm text-muted-foreground mt-1">
-                                                        {booking.date} • {booking.time}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    {booking.userId === currentUserId && (String(booking.status).toUpperCase() === "BOOKED") && (
-                                                        <>
-                                                            <Button size="sm" variant="outline"
-                                                                    onClick={() => handleEditBooking(booking.scheduleId)}
-                                                                    disabled={editForm.bookingId === booking.scheduleId}>
-                                                                <Edit className="h-4 w-4 mr-1"/>Sửa
-                                                            </Button>
-                                                            <Button size="sm" variant="outline"
-                                                                    onClick={() => handleCancelBooking(booking.scheduleId)}>
-                                                                <X className="h-4 w-4 mr-1"/>Hủy
-                                                            </Button>
-                                                        </>
                                                     )}
+                                                    <Badge
+                                                        variant={String(booking.status).toUpperCase() === "BOOKED" ? "outline" : "default"}
+                                                        className={String(booking.status).toLowerCase() === "canceled"
+                                                            ? "bg-red-100 text-red-700 border-red-300 font-semibold"
+                                                            : String(booking.status).toUpperCase() === "BOOKED"
+                                                                ? "bg-green-100 text-green-700 border-green-300 font-semibold"
+                                                                : ""}>
+                                                        {booking.status}
+                                                    </Badge>
+                                                    {newlyCreatedBooking === booking.scheduleId &&
+                                                        <Badge className="bg-green-100 text-green-800">Mới</Badge>}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground mt-1">
+                                                    {booking.date} • {booking.time}
                                                 </div>
                                             </div>
-                                        );
-                                    })
+                                            <div className="flex items-center space-x-2">
+                                                {booking.userId === currentUserId && (String(booking.status).toUpperCase() === "BOOKED") && (
+                                                    <>
+                                                        <Button size="sm" variant="outline"
+                                                            onClick={() => handleEditBooking(booking.scheduleId)}
+                                                            disabled={editForm.bookingId === booking.scheduleId}>
+                                                            <Edit className="h-4 w-4 mr-1" />Sửa
+                                                        </Button>
+                                                        <Button size="sm" variant="outline"
+                                                            onClick={() => handleCancelBooking(booking.scheduleId)}>
+                                                            <X className="h-4 w-4 mr-1" />Hủy
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
                     </div>

@@ -62,7 +62,7 @@ const App = () => {
                         <Route path="/contract/preview.pdf/:contractId" element={<PDFContract />} />
                         {/* Co-owner routes */}
                         <Route path="/co-owner/dashboard" element={<CoOwnerDashboard />} />
-                        <Route path="/co-owner/vehicle-registration" element={<VehicleRegistration />} />
+                        <Route path="/co-owner/group-registration" element={<VehicleRegistration />} />
                         <Route path="/co-owner/groups" element={<MyGroups />} />
                         <Route path="/co-owner/groups/:groupId" element={<GroupDetail />} />
                         <Route path="/co-owner/groups/:groupId/usage-history" element={<UsageHistory />} />
