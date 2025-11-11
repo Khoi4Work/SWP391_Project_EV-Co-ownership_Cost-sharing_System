@@ -186,6 +186,7 @@ export default function VehicleRegistration() {
     }),
     onSubmit: (values) => {
       setOwnerInfo(values);
+      localStorage.setItem("ownerInfo", JSON.stringify(values));
       setStep(3);
     },
   });

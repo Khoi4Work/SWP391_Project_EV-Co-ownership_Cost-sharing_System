@@ -104,6 +104,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
     }, [id]);
 
     const handleConfirm = async () => {
+        console.log("ownerInfo", ownerInfo)
         const members = [
             {
                 email: ownerInfo.email,
@@ -228,7 +229,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
                     roleInGroup: "CO_OWNER",
                 })),
             ];
-
+            console.log(members);
             // optional: validate ownership sum >= 100? (BE có thể check)
             const groupPayload = {
                 contractId: Number(contract.contractId ?? contract.id ?? id),

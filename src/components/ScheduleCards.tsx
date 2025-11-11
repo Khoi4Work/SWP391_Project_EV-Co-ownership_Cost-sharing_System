@@ -113,18 +113,18 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
     // Tìm checkIn object với nhiều tên field khác nhau
     const checkInObj = raw.checkIn ?? raw.checkin ?? raw.check_in ?? raw.checkInDetail;
     const checkOutObj = raw.checkOut ?? raw.checkout ?? raw.check_out ?? raw.checkOutDetail;
-    
+
     // Tìm checkInTime từ nhiều nguồn
-    const checkInTime = raw.checkInTime ?? 
-        checkInObj?.checkInTime ?? 
-        checkInObj?.time ?? 
+    const checkInTime = raw.checkInTime ??
+        checkInObj?.checkInTime ??
+        checkInObj?.time ??
         checkInObj?.createdAt ??
         checkInObj?.checkInDate;
-    
+
     // Tìm checkOutTime từ nhiều nguồn
-    const checkOutTime = raw.checkOutTime ?? 
-        checkOutObj?.checkOutTime ?? 
-        checkOutObj?.time ?? 
+    const checkOutTime = raw.checkOutTime ??
+        checkOutObj?.checkOutTime ??
+        checkOutObj?.time ??
         checkOutObj?.createdAt ??
         checkOutObj?.checkOutDate;
 
@@ -132,15 +132,15 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
     const hasCheckIn = (raw.hasCheckIn !== undefined && raw.hasCheckIn !== null)
         ? Boolean(raw.hasCheckIn)
         : (checkInObj != null && typeof checkInObj === 'object') // Có object checkIn
-        ? true
-        : (checkInTime != null && checkInTime !== ""); // Có thời gian checkIn
-    
+            ? true
+            : (checkInTime != null && checkInTime !== ""); // Có thời gian checkIn
+
     // Xác định hasCheckOut tương tự
     const hasCheckOut = (raw.hasCheckOut !== undefined && raw.hasCheckOut !== null)
         ? Boolean(raw.hasCheckOut)
         : (checkOutObj != null && typeof checkOutObj === 'object') // Có object checkOut
-        ? true
-        : (checkOutTime != null && checkOutTime !== ""); // Có thời gian checkOut
+            ? true
+            : (checkOutTime != null && checkOutTime !== ""); // Có thời gian checkOut
 
     if (scheduleId == null || !startTime || !endTime) return null;
 
@@ -373,9 +373,9 @@ export default function ScheduleCards() {
             });
             if (res.ok) {
                 const data = await res.json();
-                const userOverdueFee = data?.fees?.find((fee: any) => 
-                    fee.userId === currentUserId && 
-                    fee.status === "PENDING" && 
+                const userOverdueFee = data?.fees?.find((fee: any) =>
+                    fee.userId === currentUserId &&
+                    fee.status === "PENDING" &&
                     fee.isOverdue === true
                 );
                 setHasOverdueFee(!!userOverdueFee);
@@ -401,142 +401,142 @@ export default function ScheduleCards() {
 
             // Fetch schedules và vehicles song song
             const [schedulesRes, vehiclesRes] = await Promise.all([
-                    fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
-                        headers,
-                        credentials: "include",
-                    }),
-                    fetch(`${beBaseUrl}/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`, {
-                        headers,
-                        credentials: "include",
-                    }).catch(() => null) // Nếu lỗi thì bỏ qua, vehicles có thể null
-                ]);
+                fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
+                    headers,
+                    credentials: "include",
+                }),
+                fetch(`${beBaseUrl}/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`, {
+                    headers,
+                    credentials: "include",
+                }).catch(() => null) // Nếu lỗi thì bỏ qua, vehicles có thể null
+            ]);
 
-                if (!schedulesRes.ok) {
-                    const text = await schedulesRes.text();
-                    throw new Error(text || `HTTP ${schedulesRes.status}`);
+            if (!schedulesRes.ok) {
+                const text = await schedulesRes.text();
+                throw new Error(text || `HTTP ${schedulesRes.status}`);
+            }
+
+            const ct = schedulesRes.headers.get("content-type") || "";
+            if (!ct.includes("application/json")) {
+                const text = await schedulesRes.text();
+                throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
+            }
+
+            const schedulesData = await schedulesRes.json();
+            console.log("📦 Raw schedules from BE:", schedulesData);
+
+            // Parse vehicles nếu có
+            let vehicles: any[] = [];
+            if (vehiclesRes && vehiclesRes.ok) {
+                try {
+                    const vehiclesData = await vehiclesRes.json();
+                    vehicles = Array.isArray(vehiclesData) ? vehiclesData : (vehiclesData?.data || []);
+                    console.log("🚗 Vehicles from BE:", vehicles);
+                } catch (e) {
+                    console.warn("Không thể parse vehicles:", e);
                 }
+            }
 
-                const ct = schedulesRes.headers.get("content-type") || "";
-                if (!ct.includes("application/json")) {
-                    const text = await schedulesRes.text();
-                    throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
-                }
+            // Parse schedules array
+            const arr = Array.isArray(schedulesData) ? schedulesData : (schedulesData?.items || schedulesData?.data || []);
 
-                const schedulesData = await schedulesRes.json();
-                console.log("📦 Raw schedules from BE:", schedulesData);
-                
-                // Parse vehicles nếu có
-                let vehicles: any[] = [];
-                if (vehiclesRes && vehiclesRes.ok) {
-                    try {
-                        const vehiclesData = await vehiclesRes.json();
-                        vehicles = Array.isArray(vehiclesData) ? vehiclesData : (vehiclesData?.data || []);
-                        console.log("🚗 Vehicles from BE:", vehicles);
-                    } catch (e) {
-                        console.warn("Không thể parse vehicles:", e);
-                    }
-                }
-
-                // Parse schedules array
-                const arr = Array.isArray(schedulesData) ? schedulesData : (schedulesData?.items || schedulesData?.data || []);
-                
-                // Log chi tiết từng schedule để debug check-in/check-out
-                arr.forEach((raw: any, idx: number) => {
-                    console.log(`🔍 Schedule ${idx} (scheduleId: ${raw.scheduleId ?? raw.id}):`, {
-                        scheduleId: raw.scheduleId ?? raw.id,
-                        checkIn: raw.checkIn,
-                        checkInTime: raw.checkInTime,
-                        hasCheckIn: raw.hasCheckIn,
-                        checkOut: raw.checkOut,
-                        checkOutTime: raw.checkOutTime,
-                        hasCheckOut: raw.hasCheckOut,
-                        // Log toàn bộ raw object để xem cấu trúc
-                        fullRaw: JSON.stringify(raw, null, 2)
-                    });
+            // Log chi tiết từng schedule để debug check-in/check-out
+            arr.forEach((raw: any, idx: number) => {
+                console.log(`🔍 Schedule ${idx} (scheduleId: ${raw.scheduleId ?? raw.id}):`, {
+                    scheduleId: raw.scheduleId ?? raw.id,
+                    checkIn: raw.checkIn,
+                    checkInTime: raw.checkInTime,
+                    hasCheckIn: raw.hasCheckIn,
+                    checkOut: raw.checkOut,
+                    checkOutTime: raw.checkOutTime,
+                    hasCheckOut: raw.hasCheckOut,
+                    // Log toàn bộ raw object để xem cấu trúc
+                    fullRaw: JSON.stringify(raw, null, 2)
                 });
+            });
 
-                // Helper: Enrich items with booking detail if list lacks check-in/out info
-                const enrichWithDetails = async (items: ScheduleItem[]): Promise<ScheduleItem[]> => {
-                    // Only fetch details for items missing both hasCheckIn and times
-                    const target = items.filter(it => (!it.hasCheckIn && !it.hasCheckOut) && !it.checkInTime && !it.checkOutTime);
-                    if (target.length === 0) return items;
-                    try {
-                        const enrichedPairs = await Promise.all(target.map(async (it) => {
-                            try {
-                                const detailRes = await fetch(`${beBaseUrl}/booking/detail/${it.scheduleId}`, {
-                                    method: "GET",
-                                    headers: {
-                                        "Accept": "application/json",
-                                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                                    },
-                                    credentials: "include",
-                                });
-                                if (!detailRes.ok) return [it.scheduleId, null] as const;
-                                const d = await detailRes.json();
-                                const checkInTime = d?.checkIn?.checkInTime || d?.checkInTime || d?.checkinTime;
-                                const checkOutTime = d?.checkOut?.checkOutTime || d?.checkOutTime || d?.checkoutTime;
-                                const hasCheckIn = !!(d?.checkIn || checkInTime);
-                                const hasCheckOut = !!(d?.checkOut || checkOutTime);
-                                const updated: ScheduleItem = {
-                                    ...it,
-                                    hasCheckIn: hasCheckIn || it.hasCheckIn,
-                                    hasCheckOut: hasCheckOut || it.hasCheckOut,
-                                    checkInTime: checkInTime || it.checkInTime,
-                                    checkOutTime: checkOutTime || it.checkOutTime,
-                                };
-                                return [it.scheduleId, updated] as const;
-                            } catch {
-                                return [it.scheduleId, null] as const;
-                            }
-                        }));
-                        const idToUpdated = new Map<number, ScheduleItem>();
-                        for (const [id, updated] of enrichedPairs) {
-                            if (updated) idToUpdated.set(id, updated);
+            // Helper: Enrich items with booking detail if list lacks check-in/out info
+            const enrichWithDetails = async (items: ScheduleItem[]): Promise<ScheduleItem[]> => {
+                // Only fetch details for items missing both hasCheckIn and times
+                const target = items.filter(it => (!it.hasCheckIn && !it.hasCheckOut) && !it.checkInTime && !it.checkOutTime);
+                if (target.length === 0) return items;
+                try {
+                    const enrichedPairs = await Promise.all(target.map(async (it) => {
+                        try {
+                            const detailRes = await fetch(`${beBaseUrl}/booking/detail/${it.scheduleId}`, {
+                                method: "GET",
+                                headers: {
+                                    "Accept": "application/json",
+                                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                                },
+                                credentials: "include",
+                            });
+                            if (!detailRes.ok) return [it.scheduleId, null] as const;
+                            const d = await detailRes.json();
+                            const checkInTime = d?.checkIn?.checkInTime || d?.checkInTime || d?.checkinTime;
+                            const checkOutTime = d?.checkOut?.checkOutTime || d?.checkOutTime || d?.checkoutTime;
+                            const hasCheckIn = !!(d?.checkIn || checkInTime);
+                            const hasCheckOut = !!(d?.checkOut || checkOutTime);
+                            const updated: ScheduleItem = {
+                                ...it,
+                                hasCheckIn: hasCheckIn || it.hasCheckIn,
+                                hasCheckOut: hasCheckOut || it.hasCheckOut,
+                                checkInTime: checkInTime || it.checkInTime,
+                                checkOutTime: checkOutTime || it.checkOutTime,
+                            };
+                            return [it.scheduleId, updated] as const;
+                        } catch {
+                            return [it.scheduleId, null] as const;
                         }
-                        return items.map(it => idToUpdated.get(it.scheduleId) || it);
-                    } catch {
-                        return items;
+                    }));
+                    const idToUpdated = new Map<number, ScheduleItem>();
+                    for (const [id, updated] of enrichedPairs) {
+                        if (updated) idToUpdated.set(id, updated);
                     }
-                };
+                    return items.map(it => idToUpdated.get(it.scheduleId) || it);
+                } catch {
+                    return items;
+                }
+            };
 
-                const normalized = (arr as any[])
-                    .map(raw => {
-                        const item = normalizeScheduleItem(raw);
-                        if (!item) return null;
+            const normalized = (arr as any[])
+                .map(raw => {
+                    const item = normalizeScheduleItem(raw);
+                    if (!item) return null;
 
-                        // Map vehicleId với thông tin xe
-                        const vehicle = vehicles.find(v => 
-                            v.vehicleId === raw.vehicleId || 
-                            v.id === raw.vehicleId ||
-                            v.vehicle?.vehicleId === raw.vehicleId
-                        );
+                    // Map vehicleId với thông tin xe
+                    const vehicle = vehicles.find(v =>
+                        v.vehicleId === raw.vehicleId ||
+                        v.id === raw.vehicleId ||
+                        v.vehicle?.vehicleId === raw.vehicleId
+                    );
 
-                        if (vehicle) {
-                            const brand = vehicle.brand || vehicle.vehicle?.brand || "";
-                            const model = vehicle.model || vehicle.vehicle?.model || "";
-                            const plateNo = vehicle.plateNo || vehicle.licensePlate || vehicle.vehicle?.plateNo || vehicle.vehicle?.licensePlate || "";
+                    if (vehicle) {
+                        const brand = vehicle.brand || vehicle.vehicle?.brand || "";
+                        const model = vehicle.model || vehicle.vehicle?.model || "";
+                        const plateNo = vehicle.plateNo || vehicle.licensePlate || vehicle.vehicle?.plateNo || vehicle.vehicle?.licensePlate || "";
 
-                            return {
-                                ...item,
-                                vehicleName: brand && model ? `${brand} ${model}` : (item.vehicleName || `Xe ${raw.vehicleId}`),
-                                vehiclePlate: plateNo || item.vehiclePlate,
-                            } as ScheduleItem;
-                        }
+                        return {
+                            ...item,
+                            vehicleName: brand && model ? `${brand} ${model}` : (item.vehicleName || `Xe ${raw.vehicleId}`),
+                            vehiclePlate: plateNo || item.vehiclePlate,
+                        } as ScheduleItem;
+                    }
 
-                        return item;
-                    })
-                    .filter((x): x is ScheduleItem => x !== null);
+                    return item;
+                })
+                .filter((x): x is ScheduleItem => x !== null);
 
-                // Enrich items with booking details if needed
-                const enriched = await enrichWithDetails(normalized);
+            // Enrich items with booking details if needed
+            const enriched = await enrichWithDetails(normalized);
 
-                console.log("✅ Normalized items with vehicles:", enriched);
-                console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
-                // Debug: Log check-in/check-out status cho từng item
-                enriched.forEach(item => {
-                    console.log(`📋 Schedule ${item.scheduleId}: hasCheckIn=${item.hasCheckIn}, hasCheckOut=${item.hasCheckOut}, checkInTime=${item.checkInTime}`);
-                });
-                setItems(enriched);
+            console.log("✅ Normalized items with vehicles:", enriched);
+            console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
+            // Debug: Log check-in/check-out status cho từng item
+            enriched.forEach(item => {
+                console.log(`📋 Schedule ${item.scheduleId}: hasCheckIn=${item.hasCheckIn}, hasCheckOut=${item.hasCheckOut}, checkInTime=${item.checkInTime}`);
+            });
+            setItems(enriched);
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
         } finally {
@@ -691,8 +691,8 @@ export default function ScheduleCards() {
             const checkInResult = await res.json();
             console.log("✅ Check-in response:", checkInResult);
             // Lấy checkInTime từ response nếu có
-            checkInTimeFromResponse = checkInResult?.checkInTime ?? 
-                checkInResult?.checkIn?.checkInTime ?? 
+            checkInTimeFromResponse = checkInResult?.checkInTime ??
+                checkInResult?.checkIn?.checkInTime ??
                 checkInResult?.time ??
                 new Date().toISOString(); // Fallback: dùng thời gian hiện tại
         } catch (e) {
@@ -700,7 +700,7 @@ export default function ScheduleCards() {
             checkInTimeFromResponse = new Date().toISOString();
             console.log("✅ Check-in thành công (no response body)");
         }
-        
+
         // Optimistic update: cập nhật state ngay lập tức
         setItems(prevItems => prevItems.map(item => {
             if (item.scheduleId === activeId) {
@@ -712,10 +712,10 @@ export default function ScheduleCards() {
             }
             return item;
         }));
-        
+
         alert("Check-in thành công");
         setOpenCheckIn(false);
-        
+
         // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
         try {
             const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
@@ -729,7 +729,7 @@ export default function ScheduleCards() {
             if (detailRes.ok) {
                 const detailData = await detailRes.json();
                 console.log("✅ Fetched detail after check-in:", detailData);
-                
+
                 // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
                 setItems(prevItems => prevItems.map(item => {
                     if (item.scheduleId === activeId) {
@@ -802,8 +802,8 @@ export default function ScheduleCards() {
             const checkOutResult = await res.json();
             console.log("✅ Check-out response:", checkOutResult);
             // Lấy checkOutTime từ response nếu có
-            checkOutTimeFromResponse = checkOutResult?.checkOutTime ?? 
-                checkOutResult?.checkOut?.checkOutTime ?? 
+            checkOutTimeFromResponse = checkOutResult?.checkOutTime ??
+                checkOutResult?.checkOut?.checkOutTime ??
                 checkOutResult?.time ??
                 new Date().toISOString(); // Fallback: dùng thời gian hiện tại
         } catch (e) {
@@ -811,7 +811,7 @@ export default function ScheduleCards() {
             checkOutTimeFromResponse = new Date().toISOString();
             console.log("✅ Check-out thành công (no response body)");
         }
-        
+
         // Optimistic update: cập nhật state ngay lập tức
         setItems(prevItems => prevItems.map(item => {
             if (item.scheduleId === activeId) {
@@ -823,10 +823,10 @@ export default function ScheduleCards() {
             }
             return item;
         }));
-        
+
         alert("Check-out thành công");
         setOpenCheckOut(false);
-        
+
         // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
         try {
             const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
@@ -840,7 +840,7 @@ export default function ScheduleCards() {
             if (detailRes.ok) {
                 const detailData = await detailRes.json();
                 console.log("✅ Fetched detail after check-out:", detailData);
-                
+
                 // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
                 setItems(prevItems => prevItems.map(item => {
                     if (item.scheduleId === activeId) {
