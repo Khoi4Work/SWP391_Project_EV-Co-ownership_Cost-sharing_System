@@ -277,4 +277,9 @@ public class APIExceptionHandler {
     public ResponseEntity handleCommonFundNotFoundException(CommonFundNotFoundException ex) {
         return ResponseEntity.status(404).body(ex.getMessage()); // 404 Not Found
     }
+
+    @ExceptionHandler(UserAlreadyHasActiveCheckInException.class)
+    public ResponseEntity handleUserAlreadyHasActiveCheckInException(UserAlreadyHasActiveCheckInException ex) {
+        return ResponseEntity.status(409).body(ex.getMessage());
+    }
 }

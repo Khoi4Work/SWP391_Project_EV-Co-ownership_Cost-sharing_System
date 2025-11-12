@@ -1,9 +1,6 @@
 package khoindn.swp391.be.app.service;
 
-import khoindn.swp391.be.app.exception.exceptions.AlreadyCheckedInException;
-import khoindn.swp391.be.app.exception.exceptions.InvalidScheduleStatusException;
-import khoindn.swp391.be.app.exception.exceptions.ScheduleNotFoundException;
-import khoindn.swp391.be.app.exception.exceptions.UnauthorizedAccessException;
+import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.CheckInRequest;
 import khoindn.swp391.be.app.model.Response.CheckInResponse;
 import khoindn.swp391.be.app.pojo.CheckIn;
@@ -11,6 +8,7 @@ import khoindn.swp391.be.app.pojo.Schedule;
 import khoindn.swp391.be.app.pojo.Vehicle;
 import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 import khoindn.swp391.be.app.repository.ICheckInRepository;
+import khoindn.swp391.be.app.repository.ICheckOutRepository;
 import khoindn.swp391.be.app.repository.IScheduleRepository;
 import khoindn.swp391.be.app.repository.IVehicleRepository;
 import org.modelmapper.ModelMapper;
@@ -18,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Service
@@ -31,7 +30,8 @@ public class CheckInService implements ICheckInService {
     IVehicleRepository iVehicleRepository;
     @Autowired
     ModelMapper modelMapper;
-
+    @Autowired
+    ICheckOutRepository iCheckOutRepository;
 
     @Override
     public CheckInResponse processCheckIn(int scheduleId, CheckInRequest req) {
@@ -47,6 +47,20 @@ public class CheckInService implements ICheckInService {
             throw new AlreadyCheckedInException(
                     "Schedule này đã được check-in rồi. Không thể check-in lần nữa."
             );
+        }
+        List<CheckIn> userCheckIn = iCheckInRepository.findBySchedule_GroupMember_Users_Id(req.getUserId());
+        for (CheckIn existingCheckin : userCheckIn) {
+            int existingScheduleId = existingCheckin.getSchedule().getScheduleId();
+            boolean hasCheckOut = iCheckOutRepository.existsBySchedule_ScheduleId(existingScheduleId);
+            if(!hasCheckOut){
+                throw new UserAlreadyHasActiveCheckInException(
+                        String.format(
+                                "Bạn đang sử dụng xe khác (Schedule ID: %d). " +
+                                        "Vui lòng check-out trước khi check-in xe mới!",
+                                existingScheduleId
+                        )
+                );
+            }
         }
         // check idUsers to use check in or check out
         int scheduleOwnerId = schedule.getGroupMember().getUsers().getId();
