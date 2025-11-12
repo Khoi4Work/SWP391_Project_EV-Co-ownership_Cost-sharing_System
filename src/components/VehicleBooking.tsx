@@ -60,12 +60,12 @@ export default function VehicleBooking() {
     const [existingBookings, setExistingBookings] = useState<BookingSlot[]>([]);
     const [statusFilter, setStatusFilter] = useState<"BOOKED" | "CANCELED" | "OVERRIDE_TRACKER">("BOOKED");
     const [loadingBookings, setLoadingBookings] = useState(false);
-    const [overrideInfo, setOverrideInfo] = useState<OverrideInfo | null>(null);
+    const [overrideByGroup, setOverrideByGroup] = useState<Map<number, OverrideInfo>>(new Map());
     const [loadingOverrideInfo, setLoadingOverrideInfo] = useState(false);
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
     const [daysUsedThisMonth, setDaysUsedThisMonth] = useState(0);
     const [newlyCreatedBooking, setNewlyCreatedBooking] = useState<number | null>(null);
-    const [hasOverdueFee, setHasOverdueFee] = useState(false);
+    const [overdueByGroup, setOverdueByGroup] = useState<Map<number, boolean>>(new Map());
 
     // Booking Form State
     const [bookingForm, setBookingForm] = useState({
@@ -286,14 +286,19 @@ export default function VehicleBooking() {
     };
 
     const loadOverrideInfo = async (groupId: number) => {
-        setLoadingOverrideInfo(true);
         try {
-            const data: OverrideInfo = await apiCall(`/schedule/override-count?userId=${currentUserId}&groupId=${groupId}`);
-            setOverrideInfo(data);
+            const data: OverrideInfo = await apiCall(
+                `/schedule/override-count?userId=${currentUserId}&groupId=${groupId}`
+            );
+
+            // ✅ Lưu theo groupId
+            setOverrideByGroup(prev => {
+                const newMap = new Map(prev);
+                newMap.set(groupId, data);
+                return newMap;
+            });
         } catch (error: any) {
             console.error("Error loading override info:", error);
-        } finally {
-            setLoadingOverrideInfo(false);
         }
     };
 
@@ -308,6 +313,7 @@ export default function VehicleBooking() {
                 },
                 credentials: "include",
             });
+
             if (res.ok) {
                 const data = await res.json();
                 const userOverdueFee = data?.fees?.find((fee: any) =>
@@ -315,15 +321,30 @@ export default function VehicleBooking() {
                     fee.status === "PENDING" &&
                     fee.isOverdue === true
                 );
-                setHasOverdueFee(!!userOverdueFee);
+
+                // ✅ SỬA: Lưu theo groupId
+                setOverdueByGroup(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(groupId, !!userOverdueFee);
+                    return newMap;
+                });
             } else {
-                setHasOverdueFee(false);
+                setOverdueByGroup(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(groupId, false);
+                    return newMap;
+                });
             }
         } catch (error: any) {
             console.error("Error checking overdue fee:", error);
-            setHasOverdueFee(false);
+            setOverdueByGroup(prev => {
+                const newMap = new Map(prev);
+                newMap.set(groupId, false);
+                return newMap;
+            });
         }
     };
+
 
     // ===== EVENT HANDLERS =====
     const handleTimeSelection = (isEdit: boolean = false) => {
@@ -338,11 +359,27 @@ export default function VehicleBooking() {
     };
 
     const handleBooking = async () => {
-        // Kiểm tra quá hạn thanh toán
-        if (hasOverdueFee) {
-            showToast("⚠️ Không thể đặt lịch", "Bạn có quỹ tháng quá hạn thanh toán. Vui lòng thanh toán trước khi đặt lịch sử dụng xe.", "destructive");
+        // ✅ SỬA: Lấy groupId của xe đang chọn
+        const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
+        const currentGroupId = selectedVehicle?.groupId;
+
+        if (!currentGroupId) {
+            showToast("Lỗi", "Không tìm thấy thông tin nhóm", "destructive");
             return;
         }
+
+        // ✅ SỬA: Kiểm tra overdue CHỈ của nhóm này
+        const hasOverdueInThisGroup = overdueByGroup.get(currentGroupId) || false;
+
+        if (hasOverdueInThisGroup) {
+            showToast(
+                "Không thể đặt lịch",
+                "Bạn có quỹ tháng quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi đặt lịch sử dụng xe.",
+                "destructive"
+            );
+            return;
+        }
+
 
         if (daysUsedThisMonth > 3) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
@@ -459,9 +496,11 @@ export default function VehicleBooking() {
             const groupIdsStr = localStorage.getItem("groupIds");
             if (groupIdsStr) {
                 const groupIds: number[] = JSON.parse(groupIdsStr);
-                if (groupIds.length > 0) {
-                    await loadOverrideInfo(groupIds[0]);
-                    await checkOverdueFee(groupIds[0]);
+
+                // ✅ Load override cho TẤT CẢ nhóm
+                for (const gid of groupIds) {
+                    await loadOverrideInfo(gid);
+                    await checkOverdueFee(gid);
                 }
             }
         };
@@ -501,23 +540,33 @@ export default function VehicleBooking() {
     }, [bookingForm.date, editForm.date, existingBookings, editForm.bookingId]);
 
     // ===== TIME SLOT CHECKER =====
-    const isTimeSlotDisabled = (time: string, isEdit: boolean, isEndTime: boolean = false) => {
+    const isTimeSlotDisabled = (time: string, isEdit: boolean, isEndTime: boolean = false): boolean => {
         const form = isEdit ? editForm : bookingForm;
-        const filteredBookings = existingBookings.filter(
-            b => String(b.vehicleId) === String(form.vehicle) &&
-                b.date === form.date &&
-                (b.status == null || String(b.status).toUpperCase() === "BOOKED") &&
-                (isEdit ? b.scheduleId !== editForm.bookingId : true)
+
+        // Lấy override info theo groupId của xe
+        const selectedVehicle = vehicles.find(v => String(v.vehicleId) === form.vehicle);
+        const currentGroupId = selectedVehicle?.groupId;
+        const overrideInfo = currentGroupId ? overrideByGroup.get(currentGroupId) : null;
+
+        const filteredBookings = existingBookings.filter(b =>
+            String(b.vehicleId) === String(form.vehicle) &&
+            b.date === form.date &&
+            (!b.status || String(b.status).toUpperCase() === "BOOKED") &&
+            (isEdit ? b.scheduleId !== editForm.bookingId : true)
         );
 
         const isBookedByOthers = filteredBookings.some(b => {
-            const [bookedStart, bookedEnd] = b.time.split('-');
+            const [bookedStart, bookedEnd] = b.time.split("-");
             return (isEndTime ? bookedEnd === time : bookedStart === time) && b.userId !== currentUserId;
         });
 
-        const noOverrideLeft = overrideInfo && overrideInfo.overridesRemaining === 0;
-        return (isEndTime && form.startTime && time <= form.startTime) || (isBookedByOthers && noOverrideLeft);
+        const noOverrideLeft = overrideInfo ? overrideInfo.overridesRemaining === 0 : false;
+
+        const isInvalidTime = isEndTime ? (form.startTime >= time) : !form.startTime;
+
+        return isInvalidTime || (isBookedByOthers && noOverrideLeft);
     };
+
 
     // ===== RENDER TIME SELECTOR DIALOG =====
     const renderTimeSelector = (isEdit: boolean) => {
@@ -550,16 +599,29 @@ export default function VehicleBooking() {
                     </DialogHeader>
 
                     <div className="space-y-6">
-                        {overrideInfo && overrideInfo.overridesRemaining === 1 && (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                <div className="flex items-start space-x-2">
-                                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                                    <div className="text-sm text-red-800">
-                                        <p className="font-medium">Cảnh báo: Bạn chỉ còn 1 lượt override trong tháng</p>
+                        {(() => {
+                            // ✅ Lấy overrideInfo từ xe đang chọn
+                            const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
+                            const currentGroupId = selectedVehicle?.groupId;
+                            const overrideInfo = currentGroupId ? overrideByGroup.get(currentGroupId) : null;
+
+                            // Check nếu không có override info hoặc không phải 1 lượt
+                            if (!overrideInfo || overrideInfo.overridesRemaining !== 1) {
+                                return null;
+                            }
+
+                            return (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
+                                    <div className="flex items-start space-x-2">
+                                        <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                                        <div className="text-sm text-yellow-800">
+                                            <p className="font-medium">Cảnh báo: Bạn chỉ còn 1 lượt override trong tháng</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
+
 
                         {form.vehicle && form.date && (
                             <div className="mb-2">
@@ -571,7 +633,9 @@ export default function VehicleBooking() {
                                         filteredBookings.map(b => {
                                             const isHighestOwner = b.ownershipPercentage === highestOwnership;
                                             const isOthersBooking = b.userId !== currentUserId;
-                                            const noOverrideLeft = overrideInfo && overrideInfo.overridesRemaining === 0;
+                                            const currentGroupId = b.groupId;
+                                            const overrideInfo = currentGroupId ? overrideByGroup.get(currentGroupId) : null;
+                                            const noOverrideLeft = overrideInfo ? overrideInfo.overridesRemaining === 0 : false;
                                             const shouldDim = isOthersBooking && noOverrideLeft;
 
                                             return (
@@ -765,53 +829,88 @@ export default function VehicleBooking() {
                     </div>
 
                     {/* Cảnh báo quá hạn thanh toán */}
-                    {hasOverdueFee && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                            <div className="flex items-start space-x-2">
-                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                                <div className="flex-1">
-                                    <p className="font-medium text-red-900">⚠️ Quỹ tháng quá hạn thanh toán</p>
-                                    <p className="text-sm text-red-700 mt-1">
-                                        Bạn có quỹ tháng quá hạn thanh toán. Vui lòng thanh toán trước khi đặt lịch sử dụng xe.
-                                    </p>
+                    {/* Cảnh báo quá hạn thanh toán */}
+                    {(() => {
+                        const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
+                        const currentGroupId = selectedVehicle?.groupId;
+                        const hasOverdueInThisGroup = currentGroupId ? (overdueByGroup.get(currentGroupId) || false) : false;
+
+                        return hasOverdueInThisGroup && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div className="flex items-start space-x-2">
+                                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="font-medium text-red-900">
+                                            Quỹ tháng quá hạn thanh toán
+                                        </p>
+                                        <p className="text-sm text-red-700 mt-1">
+                                            Bạn có quỹ tháng quá hạn thanh toán trong nhóm này.
+                                            Vui lòng thanh toán trước khi đặt lịch sử dụng xe.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
+
 
                     {/* Override Info */}
-                    {overrideInfo && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                    <AlertCircle className="h-5 w-5 text-blue-600" />
-                                    <span className="font-medium text-blue-900">Thông tin Override</span>
-                                </div>
-                                <Badge variant={overrideInfo.overridesRemaining > 0 ? "default" : "destructive"}>
-                                    {overrideInfo.overridesRemaining}/{overrideInfo.maxOverridesPerMonth} lượt còn lại
-                                </Badge>
-                            </div>
-                            <div className="mt-2 text-sm text-blue-800">
-                                <p>Đã sử dụng: <span className="font-semibold">{overrideInfo.overridesUsed}</span> lượt
-                                    trong tháng {overrideInfo.currentMonth}</p>
-                                <p className="text-xs text-blue-600 mt-1">Reset vào: {overrideInfo.nextResetDate}</p>
-                            </div>
-                            {overrideInfo.overridesRemaining === 0 && (
-                                <div className="mt-2 text-xs text-red-600 font-medium">
-                                    ⚠️ Bạn đã hết lượt override trong tháng này. Chỉ có thể đặt khung giờ trống.
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {(() => {
+                        const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
+                        const currentGroupId = selectedVehicle?.groupId;
+                        const overrideInfo = currentGroupId ? overrideByGroup.get(currentGroupId) : null;
 
-                    <Button onClick={handleBooking} className="w-full"
-                        disabled={!bookingForm.vehicle || !bookingForm.date || !bookingForm.time || daysUsedThisMonth > 3 || hasOverdueFee}>
-                        {hasOverdueFee
-                            ? "⚠️ Không thể đặt lịch (Quá hạn thanh toán)"
-                            : daysUsedThisMonth > 3
-                                ? "Đã hết lượt đặt lịch tháng này"
-                                : "Đặt lịch"}
-                    </Button>
+                        return overrideInfo && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <AlertCircle className="h-5 w-5 text-blue-600" />
+                                        <span className="font-medium text-blue-900">Thông tin Override</span>
+                                    </div>
+                                    <Badge variant={overrideInfo.overridesRemaining > 0 ? "default" : "destructive"}>
+                                        {overrideInfo.overridesRemaining}/{overrideInfo.maxOverridesPerMonth} lượt còn lại
+                                    </Badge>
+                                </div>
+                                <div className="mt-2 text-sm text-blue-800">
+                                    <p>Đã sử dụng <span className="font-semibold">{overrideInfo.overridesUsed}</span> lượt trong tháng {overrideInfo.currentMonth}</p>
+                                    <p className="text-xs text-blue-600 mt-1">Reset vào {overrideInfo.nextResetDate}</p>
+                                </div>
+                                {overrideInfo.overridesRemaining === 0 && (
+                                    <div className="mt-2 text-xs text-red-600 font-medium">
+                                        Bạn đã hết lượt override trong tháng này. Chỉ có thể đặt khung giờ trống.
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
+
+                    {(() => {
+                        const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
+                        const currentGroupId = selectedVehicle?.groupId;
+                        const hasOverdueInThisGroup = currentGroupId ? (overdueByGroup.get(currentGroupId) || false) : false;
+
+                        return (
+                            <Button
+                                onClick={handleBooking}
+                                className="w-full"
+                                disabled={
+                                    !bookingForm.vehicle ||
+                                    !bookingForm.date ||
+                                    !bookingForm.time ||
+                                    daysUsedThisMonth > 3 ||
+                                    hasOverdueInThisGroup
+                                }
+                            >
+                                {hasOverdueInThisGroup
+                                    ? "Không thể đặt lịch (Quá hạn trong nhóm này)"
+                                    : daysUsedThisMonth > 3
+                                        ? "Đã hết lượt đặt lịch tháng này"
+                                        : "Đặt lịch"
+                                }
+                            </Button>
+                        );
+                    })()}
+
 
                     {/* Time Selector Dialog */}
                     {renderTimeSelector(false)}
