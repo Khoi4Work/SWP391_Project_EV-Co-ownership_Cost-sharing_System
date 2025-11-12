@@ -18,6 +18,7 @@ type ScheduleItem = {
     vehiclePlate?: string;
     userName?: string;
     userId?: number; // Thêm userId để kiểm tra quyền check in/out
+    groupId?: number;
     hasCheckIn: boolean;
     hasCheckOut: boolean;
     checkInTime?: string; // ISO
@@ -50,6 +51,7 @@ type ScheduleDetailResponse = {
     startTime: string;
     endTime: string;
     scheduleStatus?: string;
+    groupId?: number;
     checkIn?: CheckInDetailResponse | null;
     checkOut?: CheckOutDetailResponse | null;
 };
@@ -101,6 +103,7 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
     const scheduleId = raw.scheduleId ?? raw.id ?? raw.scheduleID;
     const startTime = raw.startTime ?? raw.start ?? raw.start_time;
     const endTime = raw.endTime ?? raw.end ?? raw.end_time;
+    const groupId = raw.groupId ?? raw.groupID ?? raw.group?.id ?? raw.group?.groupId ?? raw.group_id;
 
     const vehicleBrand = raw.vehicle?.brand ?? raw.brand;
     const vehicleModel = raw.vehicle?.model ?? raw.model;
@@ -152,6 +155,7 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
         vehiclePlate,
         userName,
         userId: userId != null ? Number(userId) : undefined,
+        groupId: groupId != null ? Number(groupId) : undefined,
         hasCheckIn,
         hasCheckOut,
         checkInTime: checkInTime ? String(checkInTime) : undefined,
@@ -381,6 +385,17 @@ export default function ScheduleCards() {
     const [detailError, setDetailError] = useState<string | null>(null);
     const [detail, setDetail] = useState<ScheduleDetailResponse | null>(null);
 
+    const getStoredGroupId = () => {
+        const stored = localStorage.getItem("groupId");
+        const parsed = stored != null ? Number(stored) : NaN;
+        return Number.isNaN(parsed) ? null : parsed;
+    };
+
+    const getOverdueStatus = (groupId?: number | null) => {
+        if (groupId == null || Number.isNaN(groupId)) return false;
+        return overdueByGroup.get(groupId) ?? false;
+    };
+
     // Kiểm tra quá hạn thanh toán
     const checkOverdueFee = async (groupId: number) => {
         try {
@@ -573,6 +588,17 @@ export default function ScheduleCards() {
                 console.log(`📋 Schedule ${item.scheduleId}: hasCheckIn=${item.hasCheckIn}, hasCheckOut=${item.hasCheckOut}, checkInTime=${item.checkInTime}`);
             });
             setItems(enriched);
+
+            // Đảm bảo đã tải trạng thái quá hạn cho các group liên quan
+            const groupsNeedingCheck = new Set<number>();
+            enriched.forEach(item => {
+                if (item.groupId != null && !overdueByGroup.has(item.groupId)) {
+                    groupsNeedingCheck.add(item.groupId);
+                }
+            });
+            for (const gid of groupsNeedingCheck) {
+                await checkOverdueFee(gid);
+            }
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
         } finally {
@@ -608,6 +634,19 @@ export default function ScheduleCards() {
 
 
     const openDetailDialog = async (id: number) => {
+        const targetItem = items.find(item => item.scheduleId === id);
+        const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+        const groupId = targetItem?.groupId ?? fallbackGroupId;
+
+        if (getOverdueStatus(groupId)) {
+            toast({
+                title: "Không thể xem chi tiết",
+                description: "Tài khoản của bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi xem thông tin chi tiết.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setActiveId(id);
         setOpenDetail(true);
         setDetail(null);
@@ -651,8 +690,9 @@ export default function ScheduleCards() {
 
         // ✅ SỬA: Lấy groupId từ booking (cần thêm field groupId vào ScheduleItem)
         // Nếu BE không trả groupId, dùng localStorage fallback
-        const groupId = Number(localStorage.getItem("groupId"));
-        const hasOverdueInThisGroup = overdueByGroup.get(groupId) || false;
+        const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+        const groupId = booking.groupId ?? fallbackGroupId;
+        const hasOverdueInThisGroup = getOverdueStatus(groupId);
 
         if (hasOverdueInThisGroup) {
             toast({
@@ -685,7 +725,9 @@ export default function ScheduleCards() {
             return;
         }
 
-      const hasOverdueInThisGroup = overdueByGroup.get(currentGroupId) || false;
+        const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+        const groupId = booking.groupId ?? fallbackGroupId;
+        const hasOverdueInThisGroup = getOverdueStatus(groupId);
 
 
         if (hasOverdueInThisGroup) {
@@ -1010,6 +1052,10 @@ export default function ScheduleCards() {
                                 console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}", nameMatches=${nameMatches}`);
                             }
 
+                            const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+                            const itemGroupId = it.groupId ?? fallbackGroupId;
+                            const hasOverdueForItem = getOverdueStatus(itemGroupId);
+
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
                                     <div className="flex items-center justify-between">
@@ -1031,24 +1077,44 @@ export default function ScheduleCards() {
                                         {isMyBooking ? (
                                             <>
                                                 {!it.hasCheckIn && (
-                                                    <Button size="sm" onClick={() => openCheckInDialog(it.scheduleId)}>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => openCheckInDialog(it.scheduleId)}
+                                                        disabled={hasOverdueForItem}
+                                                        title={hasOverdueForItem ? "Không thể check-in do quá hạn thanh toán trong nhóm này" : undefined}
+                                                    >
                                                         Check-in
                                                     </Button>
                                                 )}
                                                 {it.hasCheckIn && !it.hasCheckOut && (
-                                                    <Button size="sm" variant="outline"
-                                                        onClick={() => openCheckOutDialog(it.scheduleId)}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => openCheckOutDialog(it.scheduleId)}
+                                                        disabled={hasOverdueForItem}
+                                                        title={hasOverdueForItem ? "Không thể check-out do quá hạn thanh toán trong nhóm này" : undefined}
+                                                    >
                                                         Check-out
                                                     </Button>
                                                 )}
-                                                <Button size="sm" variant="ghost"
-                                                    onClick={() => openDetailDialog(it.scheduleId)}>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => openDetailDialog(it.scheduleId)}
+                                                    disabled={hasOverdueForItem}
+                                                    title={hasOverdueForItem ? "Không thể xem chi tiết do quá hạn thanh toán trong nhóm này" : undefined}
+                                                >
                                                     Xem chi tiết
                                                 </Button>
                                             </>
                                         ) : (
-                                            <Button size="sm" variant="ghost"
-                                                onClick={() => openDetailDialog(it.scheduleId)}>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => openDetailDialog(it.scheduleId)}
+                                                disabled={hasOverdueForItem}
+                                                title={hasOverdueForItem ? "Không thể xem chi tiết do quá hạn thanh toán trong nhóm này" : undefined}
+                                            >
                                                 Xem chi tiết
                                             </Button>
                                         )}

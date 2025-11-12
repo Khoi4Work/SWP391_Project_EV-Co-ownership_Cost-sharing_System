@@ -108,6 +108,11 @@ export default function VehicleBooking() {
         ...(token ? { "Authorization": `Bearer ${token}` } : {})
     });
 
+    const getOverdueStatus = (groupId?: number | null) => {
+        if (groupId == null || Number.isNaN(groupId)) return false;
+        return overdueByGroup.get(groupId) ?? false;
+    };
+
     const toLocalDateTime = (date: string, hhmm: string) => `${date}T${hhmm}:00`;
 
     const toMinutes = (hhmm: string) => {
@@ -386,7 +391,7 @@ export default function VehicleBooking() {
         }
 
         // ✅ SỬA: Kiểm tra overdue CHỈ của nhóm này
-        const hasOverdueInThisGroup = overdueByGroup.get(currentGroupId) || false;
+        const hasOverdueInThisGroup = getOverdueStatus(currentGroupId);
 
         if (hasOverdueInThisGroup) {
             showToast(
@@ -445,6 +450,14 @@ export default function VehicleBooking() {
     const handleEditBooking = (scheduleId: number) => {
         const booking = existingBookings.find(b => b.scheduleId === scheduleId);
         if (booking) {
+            if (getOverdueStatus(booking.groupId)) {
+                showToast(
+                    "Không thể chỉnh sửa",
+                    "Bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi chỉnh sửa lịch.",
+                    "destructive"
+                );
+                return;
+            }
             const [startTime, endTime] = booking.time.split('-');
             setBookingForm({
                 vehicle: "",
@@ -483,11 +496,25 @@ export default function VehicleBooking() {
             const [start, end] = editForm.time.split("-");
             validateTimeRange(editForm.date, start, end);
 
-            const currentGroupId = localStorage.getItem("groupId");
+            const selectedVehicle = vehicles.find(v => String(v.vehicleId) === editForm.vehicle);
+            const bookingContext = existingBookings.find(b => b.scheduleId === editForm.bookingId);
+            const targetGroupId = selectedVehicle?.groupId ?? bookingContext?.groupId ?? Number(localStorage.getItem("groupId"));
+
+            if (getOverdueStatus(targetGroupId)) {
+                showToast(
+                    "Không thể cập nhật",
+                    "Bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi chỉnh sửa lịch.",
+                    "destructive"
+                );
+                return;
+            }
+
+            const groupIdForApiRaw = targetGroupId != null ? targetGroupId : Number(localStorage.getItem("groupId"));
+            const groupIdForApi = Number.isNaN(groupIdForApiRaw) ? undefined : groupIdForApiRaw;
             await apiCall(`/schedule/update/${editForm.bookingId}`, "PUT", {
                 startTime: toLocalDateTime(editForm.date, start),
                 endTime: toLocalDateTime(editForm.date, end),
-                groupId: currentGroupId,
+                groupId: groupIdForApi,
                 userId: currentUserId,
                 vehicleId: Number(editForm.vehicle),
             });
@@ -1140,7 +1167,8 @@ export default function VehicleBooking() {
                                                     <>
                                                         <Button size="sm" variant="outline"
                                                             onClick={() => handleEditBooking(booking.scheduleId)}
-                                                            disabled={editForm.bookingId === booking.scheduleId}>
+                                                            disabled={editForm.bookingId === booking.scheduleId || getOverdueStatus(booking.groupId)}
+                                                            title={getOverdueStatus(booking.groupId) ? "Không thể chỉnh sửa do quá hạn thanh toán trong nhóm này" : undefined}>
                                                             <Edit className="h-4 w-4 mr-1" />Sửa
                                                         </Button>
                                                         <Button size="sm" variant="outline"
