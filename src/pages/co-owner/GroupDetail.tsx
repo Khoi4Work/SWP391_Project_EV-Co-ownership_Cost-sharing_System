@@ -466,7 +466,7 @@ export default function GroupDetail() {
             if (response.data.paymentUrl) {
                 toast({
                     title: "Đang chuyển đến VNPay",
-                    description: "Vui lòng thanh toán quỹ tháng"
+                    description: "Vui lòng thanh toán phí dịch vụ"
                 });
                 window.location.href = response.data.paymentUrl;
             } else {
@@ -552,7 +552,7 @@ export default function GroupDetail() {
                     <Card>
                         <CardContent className="pt-6">
                             <h2 className="text-xl font-semibold mb-4">
-                                Thanh toán quỹ tháng ({groupFee.monthYear && formatMonthYear(groupFee.monthYear)})
+                                Thanh toán phí dịch vụ ({groupFee.monthYear && formatMonthYear(groupFee.monthYear)})
                             </h2>
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {groupFee.fees.map((fee) => {
@@ -565,7 +565,7 @@ export default function GroupDetail() {
                                                 <div className="flex items-start gap-2 mb-4">
                                                     <span className="text-2xl">💰</span>
                                                     <div className="flex-1">
-                                                        <h3 className="font-semibold text-lg">Thanh toán quỹ tháng</h3>
+                                                        <h3 className="font-semibold text-lg">Thanh toán phí dịch vụ</h3>
                                                         <p className="text-sm text-muted-foreground">Nhóm: {groupFee.groupName}</p>
                                                     </div>
                                                 </div>

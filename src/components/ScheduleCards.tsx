@@ -679,7 +679,7 @@ export default function ScheduleCards() {
             return;
         }
 
-        const isMine = booking.userId !== null
+        const isMine = booking.userId != null
             ? booking.userId === currentUserId
             : booking.userName === currentUserName || booking.userName === "Bạn";
 
@@ -716,7 +716,7 @@ export default function ScheduleCards() {
             return;
         }
 
-        const isMine = booking.userId !== null
+        const isMine = booking.userId != null
             ? booking.userId === currentUserId
             : booking.userName === currentUserName || booking.userName === "Bạn";
 
