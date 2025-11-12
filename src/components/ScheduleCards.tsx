@@ -184,6 +184,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 });
         }
     }, [open]);
+
     const CREATE_DECISION = import.meta.env.VITE_PATCH_CREATE_DECISION_PATH;
     const idGroup = Number(localStorage.getItem("groupId"));
     const handleRegister = async () => {
@@ -352,9 +353,23 @@ export default function ScheduleCards() {
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
     const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
-    const [hasOverdueFee, setHasOverdueFee] = useState(false);
+    const [overdueByGroup, setOverdueByGroup] = useState<Map<number, boolean>>(new Map());
+    const [currentGroupId, setCurrentGroupId] = useState<number | null>(null)
     const { toast } = useToast();
 
+    useEffect(() => {
+        const handleGroupChange = (event: any) => {
+            const newGroupId = event.detail.groupId;
+            console.log("🔄 [ScheduleCards] Group changed to:", newGroupId);
+            setCurrentGroupId(newGroupId);
+        };
+
+        window.addEventListener('group-changed', handleGroupChange);
+
+        return () => {
+            window.removeEventListener('group-changed', handleGroupChange);
+        };
+    }, []);
     // Detail states
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
@@ -371,6 +386,7 @@ export default function ScheduleCards() {
                 },
                 credentials: "include",
             });
+
             if (res.ok) {
                 const data = await res.json();
                 const userOverdueFee = data?.fees?.find((fee: any) =>
@@ -378,13 +394,27 @@ export default function ScheduleCards() {
                     fee.status === "PENDING" &&
                     fee.isOverdue === true
                 );
-                setHasOverdueFee(!!userOverdueFee);
+
+                // ✅ SỬA: Lưu theo groupId
+                setOverdueByGroup(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(groupId, !!userOverdueFee);
+                    return newMap;
+                });
             } else {
-                setHasOverdueFee(false);
+                setOverdueByGroup(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(groupId, false);
+                    return newMap;
+                });
             }
         } catch (error: any) {
             console.error("Error checking overdue fee:", error);
-            setHasOverdueFee(false);
+            setOverdueByGroup(prev => {
+                const newMap = new Map(prev);
+                newMap.set(groupId, false);
+                return newMap;
+            });
         }
     };
 
@@ -557,9 +587,20 @@ export default function ScheduleCards() {
 
     // Kiểm tra quá hạn thanh toán khi component mount
     useEffect(() => {
-        const groupId = Number(localStorage.getItem("groupId")) || 1;
-        checkOverdueFee(groupId);
+        // ✅ Load overdue cho TẤT CẢ nhóm
+        const groupIdsStr = localStorage.getItem("groupIds");
+        if (groupIdsStr) {
+            const groupIds: number[] = JSON.parse(groupIdsStr);
+            for (const gid of groupIds) {
+                checkOverdueFee(gid);
+            }
+        } else {
+            // Fallback: load cho groupId hiện tại
+            const groupId = Number(localStorage.getItem("groupId")) || 1;
+            checkOverdueFee(groupId);
+        }
     }, []);
+
 
     const openDetailDialog = async (id: number) => {
         setActiveId(id);
@@ -587,62 +628,75 @@ export default function ScheduleCards() {
     };
 
     const openCheckInDialog = (id: number) => {
-        // Kiểm tra quá hạn thanh toán
-        if (hasOverdueFee) {
+        // Chỉ mở dialog nếu là lịch của tôi
+        const booking = items.find(item => item.scheduleId === id);
+        if (!booking) {
+            alert("Không tìm thấy lịch thuê xe");
+            return;
+        }
+
+        const isMine = booking.userId !== null
+            ? booking.userId === currentUserId
+            : booking.userName === currentUserName || booking.userName === "Bạn";
+
+        if (!isMine) {
+            alert("Bạn chỉ có thể check-in những xe mà bạn đăng ký");
+            return;
+        }
+
+        // ✅ SỬA: Lấy groupId từ booking (cần thêm field groupId vào ScheduleItem)
+        // Nếu BE không trả groupId, dùng localStorage fallback
+        const groupId = Number(localStorage.getItem("groupId")) || 1;
+        const hasOverdueInThisGroup = overdueByGroup.get(groupId) || false;
+
+        if (hasOverdueInThisGroup) {
             toast({
-                title: "⚠️ Không thể check-in",
-                description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.",
+                title: "Không thể check-in",
+                description: "Tài khoản của bạn quá hạn thanh toán trong nhóm này. Vui lòng liên hệ admin thanh toán trước khi sử dụng dịch vụ.",
                 variant: "destructive",
             });
             return;
         }
 
-        // Chỉ mở dialog nếu là lịch của tôi
-        const booking = items.find(item => item.scheduleId === id);
-        if (!booking) {
-            alert("Không tìm thấy lịch đặt xe");
-            return;
-        }
-        const isMine = booking.userId != null
-            ? booking.userId === currentUserId
-            : (booking.userName === currentUserName || booking.userName === "Bạn");
-        if (!isMine) {
-            alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
-            return;
-        }
         setActiveId(id);
         setCheckInForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckIn(true);
     };
 
     const openCheckOutDialog = (id: number) => {
-        // Kiểm tra quá hạn thanh toán
-        if (hasOverdueFee) {
+        // Chỉ mở dialog nếu là lịch của tôi
+        const booking = items.find(item => item.scheduleId === id);
+        if (!booking) {
+            alert("Không tìm thấy lịch thuê xe");
+            return;
+        }
+
+        const isMine = booking.userId !== null
+            ? booking.userId === currentUserId
+            : booking.userName === currentUserName || booking.userName === "Bạn";
+
+        if (!isMine) {
+            alert("Bạn chỉ có thể check-out những xe mà bạn đăng ký");
+            return;
+        }
+
+      const hasOverdueInThisGroup = overdueByGroup.get(currentGroupId) || false;
+
+
+        if (hasOverdueInThisGroup) {
             toast({
-                title: "⚠️ Không thể check-out",
-                description: "Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.",
+                title: "Không thể check-out",
+                description: "Tài khoản của bạn quá hạn thanh toán trong nhóm này. Vui lòng liên hệ admin thanh toán trước khi sử dụng dịch vụ.",
                 variant: "destructive",
             });
             return;
         }
 
-        // Chỉ mở dialog nếu là lịch của tôi
-        const booking = items.find(item => item.scheduleId === id);
-        if (!booking) {
-            alert("Không tìm thấy lịch đặt xe");
-            return;
-        }
-        const isMine = booking.userId != null
-            ? booking.userId === currentUserId
-            : (booking.userName === currentUserName || booking.userName === "Bạn");
-        if (!isMine) {
-            alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
-            return;
-        }
         setActiveId(id);
         setCheckOutForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckOut(true);
     };
+
 
     const submitCheckIn = async () => {
         if (activeId == null) return;
@@ -873,19 +927,45 @@ export default function ScheduleCards() {
             </CardHeader>
             <CardContent>
                 {/* Cảnh báo quá hạn thanh toán */}
-                {hasOverdueFee && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                        <div className="flex items-start space-x-2">
-                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="font-medium text-red-900">⚠️ Tài khoản quá hạn thanh toán</p>
-                                <p className="text-sm text-red-700 mt-1">
-                                    Tài khoản của bạn đã quá hạn thanh toán. Vui lòng liên hệ admin để thanh toán trước khi sử dụng dịch vụ.
-                                </p>
+                {/* Cảnh báo quá hạn thanh toán */}
+                {(() => {
+                    // ✅ Kiểm tra overdueByGroup đã load chưa
+                    if (overdueByGroup.size === 0) {
+                        return null; // Chưa load data overdue → không hiện warning
+                    }
+
+                    // ✅ Kiểm tra groupId có trong Map chưa
+                    if (!overdueByGroup.has(currentGroupId)) {
+                        return null; // Chưa có data cho groupId này → không hiện warning
+                    }
+
+                    const hasOverdueInThisGroup = overdueByGroup.get(currentGroupId) || false;
+
+                    if (!hasOverdueInThisGroup) {
+                        return null; // Không overdue → không hiện warning
+                    }
+
+                    return (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-start space-x-2">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="font-medium text-red-900">
+                                        Tài khoản quá hạn thanh toán
+                                    </p>
+                                    <p className="text-sm text-red-700 mt-1">
+                                        Tài khoản của bạn quá hạn thanh toán trong nhóm này.
+                                        Vui lòng liên hệ admin thanh toán trước khi sử dụng dịch vụ.
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
+
+
+
+
 
                 {loading ? (
                     <div className="text-muted-foreground">Đang tải...</div>

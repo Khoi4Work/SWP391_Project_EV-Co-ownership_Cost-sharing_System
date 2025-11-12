@@ -562,10 +562,14 @@ export default function VehicleBooking() {
 
         const noOverrideLeft = overrideInfo ? overrideInfo.overridesRemaining === 0 : false;
 
-        const isInvalidTime = isEndTime ? (form.startTime >= time) : !form.startTime;
-
-        return isInvalidTime || (isBookedByOthers && noOverrideLeft);
-    };
+        if (isEndTime) {
+            // End time: disable nếu <= startTime
+            return form.startTime ? form.startTime >= time : false;
+        } else {
+            // Start time: disable nếu booked by others + no override
+            return isBookedByOthers && noOverrideLeft;
+        }
+    }
 
 
     // ===== RENDER TIME SELECTOR DIALOG =====
@@ -770,8 +774,21 @@ export default function VehicleBooking() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="text-sm font-medium mb-2 block">Chọn xe</label>
-                            <Select value={bookingForm.vehicle}
-                                onValueChange={(val) => setBookingForm(prev => ({ ...prev, vehicle: val }))}>
+                            <Select
+                                value={bookingForm.vehicle}
+                                onValueChange={(val) => {
+                                    setBookingForm(prev => ({...prev, vehicle: val}));
+
+                                    const selectedVehicle = vehicles.find(v => String(v.vehicleId) === val);
+                                    if (selectedVehicle?.groupId) {
+                                        localStorage.setItem("groupId", String(selectedVehicle.groupId));
+                                        window.dispatchEvent(new CustomEvent('group-changed', {
+                                            detail: { groupId: selectedVehicle.groupId }
+                                        }));
+                                    }
+                                }}
+                            >
+
                                 <SelectTrigger>
                                     <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}>
                                         {bookingForm.vehicle && vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle) && (
@@ -829,13 +846,26 @@ export default function VehicleBooking() {
                     </div>
 
                     {/* Cảnh báo quá hạn thanh toán */}
-                    {/* Cảnh báo quá hạn thanh toán */}
                     {(() => {
+                        // ✅ Kiểm tra đã chọn xe chưa
+                        if (!bookingForm.vehicle) {
+                            return null;  // Chưa chọn xe → không hiện warning
+                        }
+
                         const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
                         const currentGroupId = selectedVehicle?.groupId;
-                        const hasOverdueInThisGroup = currentGroupId ? (overdueByGroup.get(currentGroupId) || false) : false;
 
-                        return hasOverdueInThisGroup && (
+                        if (!currentGroupId) {
+                            return null;  // Không tìm thấy groupId → không hiện warning
+                        }
+
+                        const hasOverdueInThisGroup = overdueByGroup.get(currentGroupId) || false;
+
+                        if (!hasOverdueInThisGroup) {
+                            return null;  // Không overdue → không hiện warning
+                        }
+
+                        return (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                 <div className="flex items-start space-x-2">
                                     <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
@@ -852,6 +882,7 @@ export default function VehicleBooking() {
                             </div>
                         );
                     })()}
+
 
 
                     {/* Override Info */}
