@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,8 @@ function formatDateTime(iso?: string) {
         hour12: false
     })}`;
 }
+
+const normalizeText = (value?: string | null) => value?.toString().trim().toLowerCase() || "";
 
 async function fileListToBase64(files: FileList | null): Promise<string[]> {
     if (!files || files.length === 0) return [];
@@ -357,6 +359,34 @@ export default function ScheduleCards() {
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
     const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
+    const normalizedCurrentUserName = useMemo(() => normalizeText(currentUserName), [currentUserName]);
+    const currentUserEmail = useMemo(
+        () => normalizeText(localStorage.getItem("userEmail") || localStorage.getItem("email") || ""),
+        []
+    );
+    const isBookingOfCurrentUser = useCallback((booking?: ScheduleItem | null) => {
+        if (!booking) return false;
+        if (booking.userId != null) {
+            return booking.userId === currentUserId;
+        }
+
+        const bookingName = normalizeText(booking.userName);
+        if (bookingName === "bạn") return true;
+
+        if (bookingName && normalizedCurrentUserName) {
+            if (bookingName === normalizedCurrentUserName) return true;
+            if (bookingName.includes(normalizedCurrentUserName) || normalizedCurrentUserName.includes(bookingName)) {
+                return true;
+            }
+        }
+
+        const bookingEmail = normalizeText((booking as any)?.userEmail);
+        if (bookingEmail && currentUserEmail) {
+            return bookingEmail === currentUserEmail;
+        }
+
+        return false;
+    }, [currentUserEmail, currentUserId, normalizedCurrentUserName]);
     const [overdueByGroup, setOverdueByGroup] = useState<Map<number, boolean>>(new Map());
     const [currentGroupId, setCurrentGroupId] = useState<number | null>(null)
     const { toast } = useToast();
@@ -679,9 +709,7 @@ export default function ScheduleCards() {
             return;
         }
 
-        const isMine = booking.userId != null
-            ? booking.userId === currentUserId
-            : booking.userName === currentUserName || booking.userName === "Bạn";
+        const isMine = isBookingOfCurrentUser(booking);
 
         if (!isMine) {
             alert("Bạn chỉ có thể check-in những xe mà bạn đăng ký");
@@ -716,9 +744,7 @@ export default function ScheduleCards() {
             return;
         }
 
-        const isMine = booking.userId != null
-            ? booking.userId === currentUserId
-            : booking.userName === currentUserName || booking.userName === "Bạn";
+        const isMine = isBookingOfCurrentUser(booking);
 
         if (!isMine) {
             alert("Bạn chỉ có thể check-out những xe mà bạn đăng ký");
@@ -755,9 +781,7 @@ export default function ScheduleCards() {
             return;
         }
         {
-            const isMine = booking.userId != null
-                ? booking.userId === currentUserId
-                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            const isMine = isBookingOfCurrentUser(booking);
             if (!isMine) {
                 alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
                 setOpenCheckIn(false);
@@ -866,9 +890,7 @@ export default function ScheduleCards() {
             return;
         }
         {
-            const isMine = booking.userId != null
-                ? booking.userId === currentUserId
-                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            const isMine = isBookingOfCurrentUser(booking);
             if (!isMine) {
                 alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
                 setOpenCheckOut(false);
@@ -1027,29 +1049,11 @@ export default function ScheduleCards() {
                                 : it.hasCheckIn && !it.hasCheckOut ? { text: "Đang sử dụng", style: "bg-orange-500" }
                                     : { text: "Đã trả xe", style: "bg-green-600" };
 
-                            // Only show check-in/out buttons if the booking belongs to current user
-                            // Fallback theo userName khi BE không trả userId
-                            const normalizeName = (name?: string) => name?.trim().toLowerCase() || "";
-                            const bookingName = normalizeName(it.userName);
-                            const currentName = normalizeName(currentUserName);
-
-                            // So sánh linh hoạt: chính xác hoặc một trong hai chứa tên kia
-                            const nameMatches = bookingName === currentName ||
-                                bookingName === "bạn" ||
-                                (bookingName && currentName && (
-                                    bookingName.includes(currentName) ||
-                                    currentName.includes(bookingName)
-                                ));
-
-                            const isMyBooking = (
-                                it.userId != null && it.userId !== undefined
-                                    ? it.userId === currentUserId
-                                    : nameMatches
-                            );
+                            const isMyBooking = isBookingOfCurrentUser(it);
 
                             // Debug log để kiểm tra
                             if (it.scheduleId) {
-                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}", nameMatches=${nameMatches}`);
+                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}"`);
                             }
 
                             const fallbackGroupId = currentGroupId ?? getStoredGroupId();

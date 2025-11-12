@@ -437,6 +437,15 @@ export default function VehicleBooking() {
     };
 
     const handleCancelBooking = async (scheduleId: number) => {
+        const booking = existingBookings.find(b => b.scheduleId === scheduleId);
+        if (booking && getOverdueStatus(booking.groupId)) {
+            showToast(
+                "Không thể hủy lịch",
+                "Bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi hủy lịch.",
+                "destructive"
+            );
+            return;
+        }
         try {
             await apiCall(`/schedule/delete/${scheduleId}`, "DELETE");
             await loadBookings();
@@ -1172,7 +1181,9 @@ export default function VehicleBooking() {
                                                             <Edit className="h-4 w-4 mr-1" />Sửa
                                                         </Button>
                                                         <Button size="sm" variant="outline"
-                                                            onClick={() => handleCancelBooking(booking.scheduleId)}>
+                                                            onClick={() => handleCancelBooking(booking.scheduleId)}
+                                                            disabled={getOverdueStatus(booking.groupId)}
+                                                            title={getOverdueStatus(booking.groupId) ? "Không thể hủy do quá hạn thanh toán trong nhóm này" : undefined}>
                                                             <X className="h-4 w-4 mr-1" />Hủy
                                                         </Button>
                                                     </>
