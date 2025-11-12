@@ -228,39 +228,55 @@ export default function VehicleBooking() {
         }
     };
 
-    const loadBookings = async () => {
+    const loadBookings = async (targetGroupId?: number) => {
         setLoadingBookings(true);
         try {
-            const groupIdsStr = localStorage.getItem('groupIds');
-            if (!groupIdsStr) throw new Error("Không tìm thấy groupIds trong localStorage");
+            let groupIdsToLoad: number[] = [];
 
-            const groupIds: number[] = JSON.parse(groupIdsStr);
-            // gọi theo status như BE cung cấp
+            if (targetGroupId) {
+                groupIdsToLoad = [targetGroupId];
+            } else {
+                const groupIdsStr = localStorage.getItem("groupIds");
+                if (!groupIdsStr) throw new Error("Không tìm thấy groupIds trong localStorage");
+                groupIdsToLoad = JSON.parse(groupIdsStr);
+            }
+
+            // ✅ Function tạo endpoint theo status
             const endpointByStatus = (gid: number) => {
                 if (statusFilter === "BOOKED") return `/schedule/group/${gid}/booked`;
                 if (statusFilter === "CANCELED") return `/schedule/group/${gid}/canceled`;
                 return `/schedule/group/${gid}/overridden`;
             };
-            const fetchPromises = groupIds.map(groupId => apiCall(endpointByStatus(groupId)));
+
+            const fetchPromises = groupIdsToLoad.map(groupId =>
+                apiCall(endpointByStatus(groupId))
+            );
+
             const allBookingsArrays = await Promise.all(fetchPromises);
             const data = allBookingsArrays.flat();
+
             if (!Array.isArray(data)) throw new Error("API trả về không phải array");
+
             const formattedBookings = data
                 .map((item: any) => {
+                    // ✅ Parse trực tiếp
                     if (!item.startTime || !item.endTime || !item.vehicleId) return null;
-                    const startTime = new Date(item.startTime).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
+
+                    const startTime = new Date(item.startTime).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
                         hour12: false
                     });
-                    const endTime = new Date(item.endTime).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
+                    const endTime = new Date(item.endTime).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
                         hour12: false
                     });
-                    const date = new Date(item.startTime).toISOString().split('T')[0];
+                    const date = new Date(item.startTime).toISOString().split("T")[0];
+
                     const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
                     if (!vehicle) return null;
+
                     return {
                         scheduleId: item.scheduleId,
                         time: `${startTime}-${endTime}`,
@@ -271,8 +287,8 @@ export default function VehicleBooking() {
                         bookedBy: item.userName,
                         userId: item.userId,
                         groupId: item.groupId,
-                        status: item.status,
-                        ownershipPercentage: item.ownershipPercentage
+                        status: item.status || "BOOKED",
+                        ownershipPercentage: item.ownershipPercentage || 0,
                     };
                 })
                 .filter((item): item is BookingSlot => item !== null);
@@ -284,6 +300,7 @@ export default function VehicleBooking() {
             setLoadingBookings(false);
         }
     };
+
 
     const loadOverrideInfo = async (groupId: number) => {
         try {
@@ -496,16 +513,17 @@ export default function VehicleBooking() {
             const groupIdsStr = localStorage.getItem("groupIds");
             if (groupIdsStr) {
                 const groupIds: number[] = JSON.parse(groupIdsStr);
-
-                // ✅ Load override cho TẤT CẢ nhóm
                 for (const gid of groupIds) {
                     await loadOverrideInfo(gid);
                     await checkOverdueFee(gid);
                 }
             }
+
+
         };
         initData();
     }, []);
+
 
     useEffect(() => {
         if (vehicles && vehicles.length > 0) loadBookings();
@@ -776,7 +794,7 @@ export default function VehicleBooking() {
                             <label className="text-sm font-medium mb-2 block">Chọn xe</label>
                             <Select
                                 value={bookingForm.vehicle}
-                                onValueChange={(val) => {
+                                onValueChange={async (val) => {
                                     setBookingForm(prev => ({...prev, vehicle: val}));
 
                                     const selectedVehicle = vehicles.find(v => String(v.vehicleId) === val);
@@ -785,11 +803,15 @@ export default function VehicleBooking() {
                                         window.dispatchEvent(new CustomEvent('group-changed', {
                                             detail: { groupId: selectedVehicle.groupId }
                                         }));
+
+                                        await loadBookings(selectedVehicle.groupId);
+                                        await loadOverrideInfo(selectedVehicle.groupId);
                                     }
                                 }}
                             >
 
-                                <SelectTrigger>
+
+                            <SelectTrigger>
                                     <SelectValue placeholder={loadingVehicles ? "Đang tải..." : "Chọn xe"}>
                                         {bookingForm.vehicle && vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle) && (
                                             <div className="flex items-center space-x-2">
@@ -1060,10 +1082,15 @@ export default function VehicleBooking() {
                             </div>
                         </div>
                         <div ref={bookingsListRef} className="space-y-3">
-                            {loadingBookings ? (
-                                <div className="text-center py-4 text-muted-foreground">Đang tải...</div>
+                            {!bookingForm.vehicle ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <Car className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                                    <p className="font-medium">Vui lòng chọn xe để xem lịch đặt</p>
+                                </div>
+                            ) : loadingBookings ? (
+                                <div className="text-center py-4">Đang tải lịch...</div>
                             ) : existingBookings.length === 0 ? (
-                                <div className="text-center py-4 text-muted-foreground">Chưa có lịch đặt nào</div>
+                                <div className="text-center py-4 text-gray-500">Chưa có lịch đặt nào cho xe này</div>
                             ) : (
                                 existingBookings.map((booking) => {
                                     const highestOwnershipInGroup = getHighestOwnershipByGroup(booking.groupId);

@@ -370,6 +370,12 @@ export default function ScheduleCards() {
             window.removeEventListener('group-changed', handleGroupChange);
         };
     }, []);
+    useEffect(() => {
+        if (currentGroupId !== null) {
+            console.log("🔄 [ScheduleCards] Reloading schedules for group:", currentGroupId);
+            fetchSchedules();
+        }
+    }, [currentGroupId]);
     // Detail states
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
@@ -422,7 +428,7 @@ export default function ScheduleCards() {
         setLoading(true);
         setError(null);
         try {
-            const groupId = Number(localStorage.getItem("groupId")) || 1;
+            const groupId = currentGroupId || Number(localStorage.getItem("groupId")) ;
             const token = localStorage.getItem("accessToken");
             const headers = {
                 "Accept": "application/json",
@@ -575,7 +581,6 @@ export default function ScheduleCards() {
     };
 
     useEffect(() => {
-        fetchSchedules();
         const onUpdated = () => fetchSchedules();
         window.addEventListener('schedules-updated', onUpdated as any);
         window.addEventListener('storage', onUpdated);
@@ -596,7 +601,7 @@ export default function ScheduleCards() {
             }
         } else {
             // Fallback: load cho groupId hiện tại
-            const groupId = Number(localStorage.getItem("groupId")) || 1;
+            const groupId = Number(localStorage.getItem("groupId")) ;
             checkOverdueFee(groupId);
         }
     }, []);
@@ -646,7 +651,7 @@ export default function ScheduleCards() {
 
         // ✅ SỬA: Lấy groupId từ booking (cần thêm field groupId vào ScheduleItem)
         // Nếu BE không trả groupId, dùng localStorage fallback
-        const groupId = Number(localStorage.getItem("groupId")) || 1;
+        const groupId = Number(localStorage.getItem("groupId"));
         const hasOverdueInThisGroup = overdueByGroup.get(groupId) || false;
 
         if (hasOverdueInThisGroup) {
