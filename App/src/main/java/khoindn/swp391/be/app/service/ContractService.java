@@ -357,7 +357,7 @@ public class ContractService implements IContractService {
             SendWaitingConfirmedContract(contractId);
         } else if (decision == 0) {
             System.out.println("link declined contract: " + declinedContractLink);
-            contract.setStatus(StatusContract.DECLINED);
+            contract.setStatus(StatusContract.REJECTED);
             contract.setEndDate(LocalDate.now());
             contract.setStaff(staff);
             contract.setUrlContract(declinedContractLink);

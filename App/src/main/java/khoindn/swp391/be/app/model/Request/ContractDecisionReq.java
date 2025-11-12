@@ -21,7 +21,7 @@ public class ContractDecisionReq {
     @Max(value = 1, message = "Choice must be 0 (Declined) or 1 (Signed)")
     private int idChoice;
 
-    @NotBlank
+
     private String contract_signature;
 
     @NotNull
