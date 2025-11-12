@@ -179,16 +179,26 @@ export default function VehicleBooking() {
 
     // ===== API FUNCTIONS =====
     const apiCall = async (endpoint: string, method: string = "GET", body?: any) => {
-        // gọi BE thật
         const res = await fetch(`${beBaseUrl}${endpoint}`, {
             method,
             headers: getHeaders(),
             credentials: "include",
-            ...(body && { body: JSON.stringify(body) })
+            ...(body ? { body: JSON.stringify(body) } : {})
         });
+
         if (!res.ok) throw new Error(await res.text());
-        return method === "DELETE" ? null : res.json();
+
+        if (method === "DELETE" || res.status === 204) {
+            return null;
+        }
+
+        try {
+            return await res.json();
+        } catch (e) {
+            return null;
+        }
     };
+
 
     const loadGroupId = async () => {
         try {
@@ -381,7 +391,7 @@ export default function VehicleBooking() {
     };
 
     const handleBooking = async () => {
-        // ✅ SỬA: Lấy groupId của xe đang chọn
+        // ✅ Lấy groupId của xe đang chọn
         const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
         const currentGroupId = selectedVehicle?.groupId;
 
@@ -390,7 +400,7 @@ export default function VehicleBooking() {
             return;
         }
 
-        // ✅ SỬA: Kiểm tra overdue CHỈ của nhóm này
+        // ✅ Kiểm tra overdue CHỈ của nhóm này
         const hasOverdueInThisGroup = getOverdueStatus(currentGroupId);
 
         if (hasOverdueInThisGroup) {
@@ -402,17 +412,15 @@ export default function VehicleBooking() {
             return;
         }
 
-
         if (daysUsedThisMonth > 3) {
             showToast("Vượt giới hạn trong tháng", "Bạn chỉ được đăng ký tối đa 14 ngày sử dụng trong 1 tháng.", "destructive");
             return;
         }
 
         try {
-            const currentGroupId = localStorage.getItem("groupId");
             const [start, end] = bookingForm.time.split("-");
 
-            await apiCall("/schedule/register", "POST", {
+            await apiCall('/schedule/register', "POST", {
                 startTime: toLocalDateTime(bookingForm.date, start),
                 endTime: toLocalDateTime(bookingForm.date, end),
                 status: "BOOKED",
@@ -421,40 +429,57 @@ export default function VehicleBooking() {
                 vehicleId: Number(bookingForm.vehicle),
             });
 
-            await loadBookings();
+            // ✅ Reload lịch của nhóm này
+            await loadBookings(currentGroupId);
+            await loadOverrideInfo(currentGroupId);
+
             window.dispatchEvent(new CustomEvent('schedules-updated'));
-            const groupId = Number(localStorage.getItem("groupId"));
-            await loadOverrideInfo(groupId);
 
-            const selectedVehicle = vehicles.find(v => String(v.vehicleId) === bookingForm.vehicle);
-            showToast("Đặt lịch thành công", `Đã đặt ${selectedVehicle?.brand} ${selectedVehicle?.model} vào ${bookingForm.date} từ ${bookingForm.time}.`);
+            showToast(
+                "Đặt lịch thành công",
+                `Đã đặt ${selectedVehicle?.brand} ${selectedVehicle?.model} vào ${bookingForm.date} từ ${bookingForm.time}.`
+            );
 
-            setBookingForm({ vehicle: "", date: "", time: "", startTime: "", endTime: "", showTimeSelector: false });
+            // ✅ SỬA: GIỮ LẠI xe đã chọn, chỉ reset date/time
+            setBookingForm({
+                vehicle: bookingForm.vehicle,  // ← Giữ xe đã chọn
+                date: "",
+                time: "",
+                startTime: "",
+                endTime: "",
+                showTimeSelector: false
+            });
+
             bookingsListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (e: any) {
             handleScheduleError(e.message);
         }
     };
 
+
     const handleCancelBooking = async (scheduleId: number) => {
         const booking = existingBookings.find(b => b.scheduleId === scheduleId);
+
         if (booking && getOverdueStatus(booking.groupId)) {
-            showToast(
-                "Không thể hủy lịch",
-                "Bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi hủy lịch.",
-                "destructive"
-            );
+            showToast("Không thể hủy lịch", "Bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi hủy lịch.", "destructive");
             return;
         }
+
         try {
             await apiCall(`/schedule/delete/${scheduleId}`, "DELETE");
-            await loadBookings();
+
+            if (booking?.groupId) {
+                await loadBookings(booking.groupId);
+            }
+
             window.dispatchEvent(new CustomEvent('schedules-updated'));
-            showToast("Đã hủy lịch", "Lịch đặt xe đã được hủy thành công");
+            showToast("Đã hủy lịch", "Lịch thuê xe đã được hủy thành công");
         } catch (e: any) {
             showToast("Lỗi hủy lịch", "Không thể hủy lịch. Vui lòng thử lại.", "destructive");
         }
     };
+
+
 
     const handleEditBooking = (scheduleId: number) => {
         const booking = existingBookings.find(b => b.scheduleId === scheduleId);
@@ -468,14 +493,14 @@ export default function VehicleBooking() {
                 return;
             }
             const [startTime, endTime] = booking.time.split('-');
-            setBookingForm({
-                vehicle: "",
+            setBookingForm(prev => ({
+                ...prev,
                 date: "",
                 time: "",
                 startTime: "",
                 endTime: "",
                 showTimeSelector: false
-            });
+            }));
             setEditForm({
                 bookingId: scheduleId,
                 vehicle: String(booking.vehicleId),
@@ -496,9 +521,10 @@ export default function VehicleBooking() {
             time: "",
             startTime: "",
             endTime: "",
-            showTimeSelector: false
+            showTimeSelector: false,
         });
     };
+
 
     const handleUpdateBooking = async () => {
         try {
@@ -510,16 +536,13 @@ export default function VehicleBooking() {
             const targetGroupId = selectedVehicle?.groupId ?? bookingContext?.groupId ?? Number(localStorage.getItem("groupId"));
 
             if (getOverdueStatus(targetGroupId)) {
-                showToast(
-                    "Không thể cập nhật",
-                    "Bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi chỉnh sửa lịch.",
-                    "destructive"
-                );
+                showToast("Không thể cập nhật", "Bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi chỉnh sửa lịch.", "destructive");
                 return;
             }
 
-            const groupIdForApiRaw = targetGroupId != null ? targetGroupId : Number(localStorage.getItem("groupId"));
+            const groupIdForApiRaw = targetGroupId !== null ? targetGroupId : Number(localStorage.getItem("groupId"));
             const groupIdForApi = Number.isNaN(groupIdForApiRaw) ? undefined : groupIdForApiRaw;
+
             await apiCall(`/schedule/update/${editForm.bookingId}`, "PUT", {
                 startTime: toLocalDateTime(editForm.date, start),
                 endTime: toLocalDateTime(editForm.date, end),
@@ -528,17 +551,19 @@ export default function VehicleBooking() {
                 vehicleId: Number(editForm.vehicle),
             });
 
-            await loadBookings();
-            window.dispatchEvent(new CustomEvent('schedules-updated'));
-            const groupId = Number(localStorage.getItem("groupId"));
-            await loadOverrideInfo(groupId);
+            if (targetGroupId) {
+                await loadBookings(targetGroupId);
+                await loadOverrideInfo(targetGroupId);
+            }
 
+            window.dispatchEvent(new CustomEvent('schedules-updated'));
             showToast("Cập nhật thành công", "Lịch đặt xe đã được cập nhật thành công");
             handleCancelEdit();
         } catch (e: any) {
             handleScheduleError(e.message);
         }
     };
+
 
     // ===== EFFECTS =====
     useEffect(() => {
