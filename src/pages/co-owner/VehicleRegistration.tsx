@@ -388,18 +388,27 @@ export default function VehicleRegistration() {
     },
     validationSchema: VehicleSchema,
     onSubmit: async (values) => {
-      // validate toàn bộ form trước khi tiếp tục
+      // Validate toàn bộ form trước khi tiếp tục
       const errors = await vehicleFormik.validateForm();
 
-      // kiểm tra lỗi biển số
-      if (errors.plateNo) {
-        alert("Vui lòng nhập biển số xe hợp lệ trước khi tiếp tục.");
+      // Kiểm tra lỗi nếu có
+      if (Object.keys(errors).length > 0) {
+        alert("Vui lòng sửa các lỗi trước khi tiếp tục.");
         return;
       }
 
-      // kiểm tra trống
+      // Kiểm tra trống biển số
       if (!values.plateNo.trim()) {
         alert("Vui lòng nhập biển số xe trước khi tiếp tục.");
+        return;
+      }
+
+      // Kiểm tra biển số xe có bị trùng trong hệ thống không
+      const isDuplicate = vehicles.some(
+        (vehicle) => vehicle.plateNo.toUpperCase() === values.plateNo.trim().toUpperCase()
+      );
+      if (isDuplicate) {
+        alert("Biển số xe đã tồn tại trong hệ thống. Vui lòng chọn biển số khác.");
         return;
       }
 
@@ -772,7 +781,7 @@ export default function VehicleRegistration() {
                             const newValue = e.target.value.trim().toUpperCase();
                             vehicleFormik.setFieldValue("plateNo", newValue);
 
-                            // Reset lỗi khi đang gõ
+                            // Khi người dùng đang gõ, không set lỗi mới, chỉ xóa lỗi cũ nếu có
                             if (vehicleFormik.errors.plateNo) {
                               vehicleFormik.setFieldError("plateNo", "");
                             }
@@ -786,13 +795,16 @@ export default function VehicleRegistration() {
                               (v) => v.plateNo.toUpperCase() === plate
                             );
 
-                            // Chỉ set lỗi nếu chưa có lỗi cũ
-                            if (isDuplicate) {
+                            // ✅ Chỉ set lỗi nếu chưa có lỗi hiện tại
+                            if (isDuplicate && !vehicleFormik.errors.plateNo) {
                               vehicleFormik.setFieldError(
                                 "plateNo",
                                 "Biển số xe đã tồn tại trong hệ thống!"
                               );
-                            } else if (!isDuplicate && vehicleFormik.errors.plateNo) {
+                            }
+
+                            // ✅ Nếu không trùng, xóa lỗi (nếu có)
+                            if (!isDuplicate && vehicleFormik.errors.plateNo) {
                               vehicleFormik.setFieldError("plateNo", "");
                             }
                           }}
@@ -801,7 +813,7 @@ export default function VehicleRegistration() {
                             }`}
                         />
 
-                        {/* Hiển thị lỗi trực tiếp */}
+                        {/* Hiển thị lỗi duy nhất */}
                         {vehicleFormik.errors.plateNo && (
                           <p className="text-red-500 text-sm mt-1">
                             {vehicleFormik.errors.plateNo}
