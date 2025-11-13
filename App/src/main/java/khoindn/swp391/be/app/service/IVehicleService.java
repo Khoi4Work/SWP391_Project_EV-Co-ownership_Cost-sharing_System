@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.pojo.MenuVehicleService;
 import khoindn.swp391.be.app.pojo.RequestVehicleService;
 import khoindn.swp391.be.app.pojo.Vehicle;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -25,4 +26,7 @@ public interface IVehicleService {
     RequestVehicleService requestVehicleService(int groupId, int serviceId);
 
     List<RequestVehicleService> getAllRequestVehicleSerive();
+
+
+    List<Vehicle> getVehicles();
 }

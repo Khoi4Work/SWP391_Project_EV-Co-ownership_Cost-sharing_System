@@ -31,6 +31,9 @@ public class RequestVehicleService {
     @JoinColumn(name = "vehicle_id")
     private Vehicle vehicle;
 
+    @OneToOne
+    private DecisionVote decisionVote;
+
     @ManyToOne
     @JoinColumn(name = "group_member_id")
     private GroupMember groupMember;

@@ -23,7 +23,7 @@ public class Vehicle {
     @Column(name = "vehicle_id")
     private int vehicleId;
 
-    @Column(name = "plate_no", length = 32, nullable = false)
+    @Column(name = "plate_no", length = 32, nullable = false, unique = true)
     private String plateNo;
 
     @Column(name = "brand", length = 32)

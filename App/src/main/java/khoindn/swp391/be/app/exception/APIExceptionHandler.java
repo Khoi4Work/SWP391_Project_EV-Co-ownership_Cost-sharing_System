@@ -61,7 +61,7 @@ public class APIExceptionHandler {
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<Map<String, String>> handleDisabledException(DisabledException ex) {
         Map<String, String> error = new HashMap<>();
-        error.put("message", "Tài khoản đã bị khóa");
+        error.put("message", "Tài khoản đã bị khóa, Vui lòng gửi email để nhận được sự hỗ trợ");
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
@@ -69,15 +69,6 @@ public class APIExceptionHandler {
     // ==========================
     // Common Runtime Exceptions
     // ==========================
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity handleNoSuchElementException(NoSuchElementException ex) {
-        return ResponseEntity.status(404).body("This user does not exist in this group!"); // 404
-    }
-
-    @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity handleNullPointerException(NullPointerException ex) {
-        return ResponseEntity.status(404).body("This car does not register to any group!"); // 404
-    }
 
     @ExceptionHandler(ContractNotExistedException.class)
     public ResponseEntity handleContractNotExisted(ContractNotExistedException ex) {
@@ -285,5 +276,10 @@ public class APIExceptionHandler {
     @ExceptionHandler(CommonFundNotFoundException.class)
     public ResponseEntity handleCommonFundNotFoundException(CommonFundNotFoundException ex) {
         return ResponseEntity.status(404).body(ex.getMessage()); // 404 Not Found
+    }
+
+    @ExceptionHandler(UserAlreadyHasActiveCheckInException.class)
+    public ResponseEntity handleUserAlreadyHasActiveCheckInException(UserAlreadyHasActiveCheckInException ex) {
+        return ResponseEntity.status(409).body(ex.getMessage());
     }
 }

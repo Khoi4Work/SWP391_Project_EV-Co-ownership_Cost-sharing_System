@@ -80,6 +80,7 @@ public class GroupService implements IGroupService {
         List<ResponseVehicleRegisteration> owners = new ArrayList<>();
 
         for (CoOwner_Info member : request.getMembers()) {
+            System.out.println("user ID: " + member.getCoOwnerId());
             Users user = iUserRepository.findUsersById(member.getCoOwnerId());
             if (user == null) {
                 throw new RuntimeException("User not found !!");

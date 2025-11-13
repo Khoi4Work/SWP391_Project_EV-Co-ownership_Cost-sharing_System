@@ -21,9 +21,13 @@ public class Contract {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer contractId;
+
     private String contractType;
+
     private LocalDate startDate;
+
     private LocalDate endDate;
+
     @Enumerated(EnumType.STRING)
     private StatusContract status = StatusContract.PENDING_REVIEW;
     @Column(name = "content_string", length = 5000)

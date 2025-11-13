@@ -225,12 +225,12 @@ public class ScheduleService implements IScheduleService {
     }
 
     @Override
-    public List<ScheduleRes> findOverrideTrackersByGroupId(int groupId) {
+    public List<ScheduleRes> findOverridenByGroupId(int groupId) {
         Group group = iGroupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
 
         List<Schedule> schedules = iScheduleRepository
-                .findByGroupMember_Group_GroupIdAndStatus(groupId, StatusSchedule.OVERRIDE_TRACKER);
+                .findByGroupMember_Group_GroupIdAndStatus(groupId, StatusSchedule.OVERRIDDEN);
 
         return mapSchedulesToResponse(schedules);
     }

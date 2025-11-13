@@ -28,7 +28,7 @@ public interface IScheduleService {
 
     List<ScheduleRes> findBookedSchedulesByGroupId(int groupId);
 
-    List<ScheduleRes> findOverrideTrackersByGroupId(int groupId);
+    List<ScheduleRes> findOverridenByGroupId(int groupId);
 
     List<ScheduleRes> findCanceledSchedulesByGroupId(int groupId);
 

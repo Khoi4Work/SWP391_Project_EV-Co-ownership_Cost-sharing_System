@@ -7,4 +7,6 @@ public interface IEmailService {
 
     public void sendEmail(EmailDetailReq sender);
     public void SendBulkEmail(SendBulkEmailReq emailReq);
+    void sendOtpViaEmail(EmailDetailReq sender);
+    void sendContractViaEmail(EmailDetailReq req);
 }

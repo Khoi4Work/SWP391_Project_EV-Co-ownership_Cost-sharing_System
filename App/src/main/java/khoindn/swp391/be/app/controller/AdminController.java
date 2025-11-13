@@ -38,11 +38,17 @@ public class AdminController {
         return ResponseEntity.ok(staffList);
     }
 
-    @GetMapping("/getUserStatusBlock")
-    public ResponseEntity<List<Users>> getUserStatusBlock() {
-        List<Users> users = iUserService.getAllUsersByStatus();
-        return ResponseEntity.ok(users);
-    }
+//    @GetMapping("/getUserStatusBlock")
+//    public ResponseEntity<List<Users>> getUserStatusBlock() {
+//        List<Users> users = iUserService.getAllUsersByStatus();
+//        return ResponseEntity.ok(users);
+//    }
+
+//    @PutMapping("/users/{id}/unblock")
+//    public ResponseEntity<String> unblockUser(@PathVariable int id) {
+//        iUserService.unblockUser(id);
+//        return ResponseEntity.ok("Đã mở khóa tài khoản thành công");
+//    }
 
     @GetMapping("/get-by-id/{id}")
     public ResponseEntity<StaffResponse> getStaffById(@PathVariable Integer id) {

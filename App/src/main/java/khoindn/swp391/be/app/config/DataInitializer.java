@@ -77,7 +77,7 @@ public class DataInitializer implements CommandLineRunner {
 //            RegisterUserReq ur1 = modelMapper.map(u1, RegisterUserReq.class);
 //            ur1.setRoleId(role.getRoleId());
 //            authenticationService.register(ur1);
-
+//
 //            Users u2 = new Users();
 //            u2.setHovaTen("NguyenKhoi");
 //            u2.setEmail("khoimapu2k5@gmail.com");

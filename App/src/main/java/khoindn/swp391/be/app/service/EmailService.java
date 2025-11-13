@@ -1,15 +1,19 @@
 package khoindn.swp391.be.app.service;
+
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.model.Request.EmailDetailReq;
 import khoindn.swp391.be.app.model.Request.SendBulkEmailReq;
+import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.repository.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.File;
 
@@ -19,6 +23,10 @@ public class EmailService implements IEmailService {
 
     @Autowired
     private JavaMailSender javaMailSender;
+    @Autowired
+    private IUserRepository iUserRepository;
+    @Autowired
+    private SpringTemplateEngine templateEngine;
 
     @Override
     public void sendEmail(EmailDetailReq contentSender) {
@@ -51,10 +59,8 @@ public class EmailService implements IEmailService {
                 MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
                 helper.setTo(eachEmail);
-                helper.setSubject("[EcoShare System] E-Contract");
-                helper.setText(
-                        "<a href='" + emailReq.getContent() +
-                                "'>Nhấn vào đây để xem hợp đồng</a>", true);
+                helper.setSubject(emailReq.getSubject());
+                helper.setText(emailReq.getTemplate(), true);
 
                 javaMailSender.send(message);
             } catch (Exception e) {
@@ -62,4 +68,30 @@ public class EmailService implements IEmailService {
             }
         }
     }
+
+    @Override
+    public void sendOtpViaEmail(EmailDetailReq sender) {
+        Context context = new Context();
+        context.setVariable("loginUrl", "http://localhost:8081/login");
+        context.setVariable("name", sender.getName());
+        context.setVariable("appName", "EcoShare");
+        context.setVariable("email", sender.getEmail());
+        context.setVariable("otp", sender.getContent());
+        String template = templateEngine.process("otp", context);
+        sender.setTemplate(template);
+        sender.setContext(context);
+        sender.setSubject("[EcoShare System] Verify Account");
+        sendEmail(sender);
+    }
+
+    @Override
+    public void sendContractViaEmail(EmailDetailReq req) {
+        Context context = new Context();
+        context.setVariable("secureUrl", req.getUrl());
+        String template = templateEngine.process(req.getTemplate(), context);
+        req.setTemplate(template);
+        sendEmail(req);
+    }
+
+
 }

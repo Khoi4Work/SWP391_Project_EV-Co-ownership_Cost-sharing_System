@@ -53,8 +53,8 @@ public class Users implements UserDetails {
     @Column(name = "publicKey", length = 3000)
     private String publicKey;
 
-    @Enumerated(EnumType.STRING)
-    private StatusUser status = StatusUser.ACTIVE;
+//    @Enumerated(EnumType.STRING)
+//    private StatusUser status = StatusUser.ACTIVE;
 
     //relationships
     @ManyToOne
@@ -85,8 +85,8 @@ public class Users implements UserDetails {
         return this.email;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return this.status == StatusUser.ACTIVE;
-    }
+//    @Override
+//    public boolean isEnabled() {
+//        return this.status == StatusUser.ACTIVE;
+//    }
 }
