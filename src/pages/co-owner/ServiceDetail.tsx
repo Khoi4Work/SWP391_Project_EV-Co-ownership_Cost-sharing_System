@@ -105,6 +105,11 @@ export default function ServiceDetail() {
         const creatorName = creator?.createdBy?.users?.hovaTen || "Một thành viên";
         const groupNameFromRes = creator?.createdBy?.group?.groupName || "Nhóm";
         const decisionName = creator?.decisionName || "Dịch vụ";
+        const decisionId = res.data.creator.id;
+        console.log("decisionId:", decisionId);
+        localStorage.setItem("decisionId", decisionId);
+        localStorage.setItem("creatorName", creatorName);
+        localStorage.setItem("totalAmount", totalAmount.toString());
 
         // 2️⃣ Lấy danh sách email từ decisionVoteDetails
         const emailList =

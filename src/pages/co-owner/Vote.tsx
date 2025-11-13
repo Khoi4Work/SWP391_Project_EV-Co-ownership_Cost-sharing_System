@@ -34,10 +34,14 @@ export default function PaymentConfirmation() {
       try {
         const res = await axiosClient.get(`/decision/vote/detail/${id}`);
         if (res.status !== 200) throw new Error("Không thể tải chi tiết bỏ phiếu");
-
+        const totalAmount = localStorage.getItem("totalAmount");
+        console.log("Total Amount from localStorage:", totalAmount);
+        setServices(res.data.services || []);
         const data = res.data; // Mảng DecisionVoteDetail[]
         setDecisionDetails(data); // Lưu vào state để hiển thị
-        setPayerName(data.createdBy.user.hovaTen);
+        const name = localStorage.getItem("creatorName");
+        console.log("Name from localStorage:", name);
+        setPayerName(name || "Thành viên");
 
 
       } catch (err) {
