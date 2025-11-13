@@ -204,26 +204,24 @@ export function generateContractHTML(data: any, stamps: Record<number, string>):
   <h2 style="border-bottom: 1px solid #ccc; padding-bottom: 0.3rem;">5. Xác nhận</h2>
   <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 1rem;">
   ${[ownerMember, ...coOwnerMembers]
-      .map((signer: any) => {
+      .map((signer: any, idx) => {
         const signerData = contracts.find(s => s.user.id === signer.users.id);
-        if (!signerData || !signerData.signature) return null; // loại bỏ những signer chưa ký
-        return { signer, signerData };
-      })
-      .filter(Boolean) // loại bỏ null
-      .map(({ signer, signerData }, idx) => `
+        const hasSigned = signerData?.signature;
+        return `
       <div style="border: 1px solid #cfd8dc; background: #f9fafb; border-radius: 8px; padding: 1rem; text-align: center; width: 150px; display: flex;flex-direction: column; align-items: center;justify-content: center;">
-       <img src="${stamps[signerData.id]}" alt="Dấu mộc" style="width: 80px; height: 80px; margin: 0 auto 0.5rem auto;display: block;" />
-         <p style="font-size: 0.875rem; font-weight: 600; margin: 0 0 0.5rem 0;">
+        ${hasSigned ? `<img src="${stamps[signerData.id]}" alt="Dấu mộc" style="width: 80px; height: 80px; margin: 0 auto 0.5rem auto;display: block;" />` : `<div style="width: 80px; height: 80px; margin: 0 auto 0.5rem auto; display:flex; align-items:center; justify-content:center; color:#999; border:1px dashed #ccc;">Chưa ký</div>`}
+        <p style="font-size: 0.875rem; font-weight: 600; margin: 0 0 0.5rem 0;">
           ${idx === 0 ? "Bên A" : "Bên B"}
         </p>
-          <p style="font-size: 0.75rem; color: #555; margin: 0 0 0.25rem 0;">
-          Ngày ký: ${signerData.signedAt ? new Date(signerData.signedAt).toLocaleDateString() : "-"}
+        <p style="font-size: 0.75rem; color: #555; margin: 0 0 0.25rem 0;">
+          Ngày ký: ${hasSigned ? new Date(signerData.signedAt).toLocaleDateString() : "-"}
         </p>
-         <p style="font-size: 0.875rem; font-weight: 500; margin: 0.25rem 0 0 0;">
+        <p style="font-size: 0.875rem; font-weight: 500; margin: 0.25rem 0 0 0;">
           Người ký: ${signer.users.hovaTen}
         </p>
       </div>
-  `).join('')}
+      `;
+      }).join('')}
 </div>
 </section>
 
@@ -396,18 +394,18 @@ export default function Contracts() {
   }, []);
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "default";
-      case "expired": return "destructive";
-      case "pending": return "secondary";
+      case "CONFIRMED": return "default";
+      case "DECLINED": return "destructive";
+      case "PENDING_REVIEW": return "secondary";
       default: return "outline";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "active": return "Hiệu lực";
-      case "expired": return "Hết hạn";
-      case "pending": return "Chờ ký";
+      case "CONFIRMED": return "Hiệu lực";
+      case "DECLINED": return "Hết hạn";
+      case "PENDING_REVIEW": return "Chờ ký";
       default: return "Không xác định";
     }
   };
@@ -475,7 +473,6 @@ export default function Contracts() {
               Tất cả hợp đồng đồng sở hữu mà bạn đã tham gia
             </CardDescription>
           </CardHeader>
-
           <CardContent>
             <div className="space-y-4">
               {contracts.length > 0 ? (
@@ -495,13 +492,11 @@ export default function Contracts() {
                             {getStatusText(contract.status)}
                           </Badge>
                         </div>
-
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-4">
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4" />
                             <span>Ngày ký: {contract.signedAt}</span>
                           </div>
-
                           <div className="flex items-center space-x-2">
                             <Users className="h-4 w-4" />
                             <span>Sở hữu: {contract.ownership}%</span>
@@ -521,11 +516,12 @@ export default function Contracts() {
 
                       {/* Nút hành động */}
                       <div className="flex flex-col space-y-2 ml-4">
-                        <Button size="sm" className="flex items-center space-x-2">
-                          <Download className="h-4 w-4" />
-                          <span>Tải xuống</span>
-                        </Button>
-
+                        <a href="/path/to/file.pdf" download>
+                          <Button size="sm" className="flex items-center space-x-2">
+                            <Download className="h-4 w-4" />
+                            <span>Tải xuống</span>
+                          </Button>
+                        </a>
                         <Button
                           size="sm"
                           variant="outline"

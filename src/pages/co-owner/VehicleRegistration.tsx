@@ -54,6 +54,8 @@ export default function VehicleRegistration() {
     ownership: 0,
   });
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
+  const [emailMessage, setEmailMessage] = useState(""); // 👈 state hiển thị thông báo
+  const [isFileConfirmed, setIsFileConfirmed] = useState(false);
   const [step, setStep] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -64,6 +66,7 @@ export default function VehicleRegistration() {
   const [fileType, setFileType] = useState("");
   const navigate = useNavigate();
   const [contractFile, setContractFile] = useState<File | null>(null);
+  const [vehicles, setVehicles] = useState([]);
   const { toast } = useToast();
   const handleFileImport = (data) => {
     const { file, uploadType } = data;
@@ -74,7 +77,6 @@ export default function VehicleRegistration() {
       description: `Loại file: ${uploadType}`,
     });
   };
-  const [vehicles, setVehicles] = useState([]);
   const handleConfirmFile = () => {
     if (!contractFile) return;
 
@@ -87,6 +89,7 @@ export default function VehicleRegistration() {
       });
       return;
     }
+    setIsFileConfirmed(true);
     setStep(1); // qua bước nhập thông tin xe
   };
   const handleNextFromStep3 = () => {
@@ -128,11 +131,11 @@ export default function VehicleRegistration() {
           variant: "destructive"
         })
       };
-      toast({
-        title: "Thành công",
-        description: `Tự động điền thông tin thành công`,
-        variant: "success", // hoặc bỏ variant nếu bạn dùng toast mặc định là success
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: `Tự động điền thông tin thành công`,
+      //   variant: "success", // hoặc bỏ variant nếu bạn dùng toast mặc định là success
+      // });
       return {
         id: user.id,
         name: user.hovaTen,       // map hovaTen -> name
@@ -164,6 +167,7 @@ export default function VehicleRegistration() {
           image: v.imageUrl || "/default-car.jpg",
           price: `${v.price?.toLocaleString()} VND`,
         }));
+        console.log("Fetched vehicles:", mappedVehicles);
         setVehicles(mappedVehicles);
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe:", error);
@@ -178,14 +182,14 @@ export default function VehicleRegistration() {
     enableReinitialize: true,
     validationSchema: Yup.object({
       email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-      address: Yup.string().required("Vui lòng nhập địa chỉ"),
       ownership: Yup.number()
         .required("Vui lòng nhập tỷ lệ sở hữu")
         .min(15, "Tỷ lệ sỡ hữu chính >= 15%")
-        .max(90, "Tỷ lệ sỡ hữu chính <= 90%"),
+        .max(85, "Tỷ lệ sỡ hữu chính <= 85%"),
     }),
     onSubmit: (values) => {
       setOwnerInfo(values);
+      localStorage.setItem("ownerInfo", JSON.stringify(values));
       setStep(3);
     },
   });
@@ -205,14 +209,12 @@ export default function VehicleRegistration() {
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
       case 0:
-        // Step 0 có thể là bước khởi tạo. Ví dụ, kiểm tra xem form có được mở chưa
-        return true; // Nếu bước này không cần điều kiện đặc biệt
+        return isFileConfirmed; // Nếu bước này không cần điều kiện đặc biệt
       case 1:
         return selectedVehicle !== null; // Xe đã được chọn chưa
       case 2:
         return (
           ownerInfo.email &&
-          ownerInfo.address &&
           ownerInfo.ownership > 0 &&
           selectedVehicle !== null
         );
@@ -385,7 +387,22 @@ export default function VehicleRegistration() {
       price: 0,
     },
     validationSchema: VehicleSchema,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
+      // validate toàn bộ form trước khi tiếp tục
+      const errors = await vehicleFormik.validateForm();
+
+      // kiểm tra lỗi biển số
+      if (errors.plateNo) {
+        alert("Vui lòng nhập biển số xe hợp lệ trước khi tiếp tục.");
+        return;
+      }
+
+      // kiểm tra trống
+      if (!values.plateNo.trim()) {
+        alert("Vui lòng nhập biển số xe trước khi tiếp tục.");
+        return;
+      }
+
       console.log("Dữ liệu: ", values);
       setSelectedVehicle(values); // lưu xe đã nhập
       setStep(2); // sang bước kế tiếp
@@ -732,7 +749,6 @@ export default function VehicleRegistration() {
               className="space-y-6"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Trường nhập chung */}
                 {[
                   { id: "plateNo", label: "Biển số xe(VD: 51H-123.45)", placeholder: "Nhập biển số xe" },
                   { id: "brand", label: "Hãng xe(Vd: Vinfast)", placeholder: "Nhập hãng xe" },
@@ -742,17 +758,58 @@ export default function VehicleRegistration() {
                   { id: "price", label: "Giá xe (VNĐ)", placeholder: "Nhập giá xe" },
                 ].map((field) => (
                   <div key={field.id} className="flex flex-col">
-                    <Label
-                      htmlFor={field.id}
-                      className="font-medium text-gray-700 mb-1"
-                    >
+                    <Label htmlFor={field.id} className="font-medium text-gray-700 mb-1">
                       {field.label}
                     </Label>
 
-                    {/* 🔹 Nếu là trường "color", hiển thị color picker */}
-                    {field.id === "color" ? (
+                    {field.id === "plateNo" ? (
+                      <>
+                        <Input
+                          id="plateNo"
+                          name="plateNo"
+                          value={vehicleFormik.values.plateNo}
+                          onChange={(e) => {
+                            const newValue = e.target.value.trim().toUpperCase();
+                            vehicleFormik.setFieldValue("plateNo", newValue);
+
+                            // Reset lỗi khi đang gõ
+                            if (vehicleFormik.errors.plateNo) {
+                              vehicleFormik.setFieldError("plateNo", "");
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const plate = e.target.value.trim().toUpperCase();
+                            if (!plate) return;
+
+                            // Kiểm tra trùng lặp với danh sách vehicles
+                            const isDuplicate = vehicles.some(
+                              (v) => v.plateNo.toUpperCase() === plate
+                            );
+
+                            // Chỉ set lỗi nếu chưa có lỗi cũ
+                            if (isDuplicate) {
+                              vehicleFormik.setFieldError(
+                                "plateNo",
+                                "Biển số xe đã tồn tại trong hệ thống!"
+                              );
+                            } else if (!isDuplicate && vehicleFormik.errors.plateNo) {
+                              vehicleFormik.setFieldError("plateNo", "");
+                            }
+                          }}
+                          placeholder="Nhập biển số xe"
+                          className={`border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md ${vehicleFormik.errors.plateNo ? "border-red-500" : ""
+                            }`}
+                        />
+
+                        {/* Hiển thị lỗi trực tiếp */}
+                        {vehicleFormik.errors.plateNo && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {vehicleFormik.errors.plateNo}
+                          </p>
+                        )}
+                      </>
+                    ) : field.id === "color" ? (
                       <div className="flex items-center space-x-3">
-                        {/* Color picker (hiển thị ô chọn màu) */}
                         <input
                           type="color"
                           id={field.id}
@@ -761,8 +818,6 @@ export default function VehicleRegistration() {
                           onChange={vehicleFormik.handleChange}
                           className="w-12 h-10 border rounded cursor-pointer"
                         />
-
-                        {/* Text input (cho phép gõ mã màu thủ công) */}
                         <Input
                           id={`${field.id}-text`}
                           name={field.id}
@@ -773,24 +828,18 @@ export default function VehicleRegistration() {
                         />
                       </div>
                     ) : field.id === "price" ? (
-                      // 🔹 Nếu là trường "price", định dạng có dấu phẩy
                       <Input
                         id={field.id}
                         name={field.id}
-                        value={vehicleFormik.values.price
-                          .toString()
-                          .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                        value={vehicleFormik.values.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/,/g, ""); // bỏ dấu phẩy để lấy số thật
-                          if (!isNaN(Number(value))) {
-                            vehicleFormik.setFieldValue("price", value);
-                          }
+                          const val = e.target.value.replace(/,/g, "");
+                          if (!isNaN(Number(val))) vehicleFormik.setFieldValue("price", val);
                         }}
                         placeholder={field.placeholder}
                         className="border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all rounded-md"
                       />
                     ) : (
-                      // 🔹 Các trường còn lại
                       <Input
                         id={field.id}
                         name={field.id}
@@ -801,11 +850,8 @@ export default function VehicleRegistration() {
                       />
                     )}
 
-                    {/* Hiển thị lỗi nếu có */}
                     {showErrors && vehicleFormik.errors[field.id] && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {vehicleFormik.errors[field.id]}
-                      </p>
+                      <p className="text-red-500 text-sm mt-1">{vehicleFormik.errors[field.id]}</p>
                     )}
                   </div>
                 ))}
@@ -824,8 +870,6 @@ export default function VehicleRegistration() {
           </CardContent>
         </Card>
       )}
-
-
       {/* Step 2: Owner Information */}
       {step === 2 && (
         <Card className="shadow-elegant">
@@ -847,33 +891,37 @@ export default function VehicleRegistration() {
                   {/* ✅ Chỉ giữ lại Email */}
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
-                    <Field name="email">
-                      {({ field }: any) => (
-                        <Input
-                          {...field}
-                          id="email"
-                          type="email"
-                          placeholder="Nhập email"
-                          onBlur={async (e) => {
-                            field.onBlur(e);
-                            const user = await fetchUserByEmail(e.target.value);
-                            if (user) {
-                              formik.setValues(prev => ({
-                                ...prev,
-                                id: user.id || prev.id,
-                                name: user.name || prev.name,
-                                phone: user.phone || prev.phone,
-                                idNumber: user.idNumber || prev.idNumber,
-                                address: user.address || prev.address,
-                                email: user.email || prev.email,
-                              }));
-                            }
-                          }}
-                        />
-                      )}
-                    </Field>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Nhập email"
+                      value={formik.values.email}
+                      onChange={formik.handleChange}
+                      onBlur={async (e) => {
+                        formik.handleBlur(e); // 👈 bắt buộc gọi
+                        const user = await fetchUserByEmail(e.target.value);
+                        if (user) {
+                          formik.setValues((prev: any) => ({
+                            ...prev,
+                            id: user.id || prev.id,
+                            name: user.name || prev.name,
+                            phone: user.phone || prev.phone,
+                            idNumber: user.idNumber || prev.idNumber,
+                            address: user.address || prev.address,
+                            email: user.email || prev.email,
+                          }));
+                          setEmailMessage("✅ Tự động điền thông tin thành công");
+                          setTimeout(() => {
+                            setEmailMessage("");
+                          }, 1000);
+                        } else {
+                          setEmailMessage("");
+                        }
+                      }}
+                    />
                     <ErrorMessage name="email" component="div"
                       className="text-red-500 text-sm" />
+                    <div className="text-sm text-green-500 mt-1">{emailMessage}</div> {/* 👈 thêm dòng này */}
                   </div>
 
                   {/* ✅ Chỉ giữ lại Ownership */}
@@ -886,7 +934,7 @@ export default function VehicleRegistration() {
                         name="ownership"
                         type="number"
                         min={15}
-                        max={90}
+                        max={85}
                         className="flex-1"
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           let num = parseInt(e.target.value || "", 10);
@@ -916,7 +964,7 @@ export default function VehicleRegistration() {
 
                 {/* ✅ Chỉ giữ lại Address */}
                 <div className="space-y-2">
-                  <Label htmlFor="address">Địa chỉ *</Label>
+                  <Label htmlFor="address">Địa chỉ</Label>
                   <Field
                     as={Textarea}
                     id="address"

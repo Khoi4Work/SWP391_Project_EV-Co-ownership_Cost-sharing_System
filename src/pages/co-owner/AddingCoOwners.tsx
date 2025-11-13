@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 interface CoOwner {
   id: number;
   name: string;
@@ -47,16 +48,16 @@ export default function CoOwnerForm({
   mainOwneremail
 }: Props) {
   const { toast } = useToast();
+  const [successMessage, setSuccessMessage] = useState("");
   const formik = useFormik<CoOwner>({
     initialValues: coOwner,
     enableReinitialize: true,
     validationSchema: Yup.object({
       email: Yup.string().email("Email không hợp lệ").required("Vui lòng nhập email"),
-      address: Yup.string().required("Vui lòng nhập địa chỉ"),
       ownership: Yup.number()
         .required("Vui lòng nhập tỷ lệ sở hữu")
         .min(15, "Tỷ lệ sở hữu tối thiểu là 15%")
-        .max(90, "Tỷ lệ sở hữu, tối đa là 90%")
+        .max(100 - mainOwnership, `Tỷ lệ sở hữu tối đa là ${100 - mainOwnership}%`)
         .test(
           "max-main-owner",
           `Tỷ lệ đồng sở hữu phải nhỏ hơn hoặc bằng ${mainOwnership}%`,
@@ -86,6 +87,7 @@ export default function CoOwnerForm({
           {/* ✅ Email (giữ lại) */}
           <div className="space-y-2 md:col-span-2">
             <Label>Email *</Label>
+
             <Field name="email">
               {({ field }: any) => (
                 <Input
@@ -96,6 +98,9 @@ export default function CoOwnerForm({
                     const emailValue = e.target.value.trim();
                     if (!emailValue) return;
 
+                    // Xóa thông báo cũ
+                    setSuccessMessage("");
+
                     // ⚠️ Kiểm tra trùng với chủ sở hữu chính
                     if (emailValue.toLowerCase() === mainOwneremail.toLowerCase()) {
                       toast({
@@ -103,8 +108,8 @@ export default function CoOwnerForm({
                         description: "Địa chỉ email này đã được nhập cho chủ sở hữu chính.",
                         variant: "destructive",
                       });
-                      formik.setFieldValue("email", ""); // reset email trong form
-                      updateCoOwner(coOwner.id, "email", ""); // reset trong state cha
+                      formik.setFieldValue("email", "");
+                      updateCoOwner(coOwner.id, "email", "");
                       return;
                     }
 
@@ -121,14 +126,25 @@ export default function CoOwnerForm({
                       updateCoOwner(coOwner.id, "name", user.name);
                       updateCoOwner(coOwner.id, "phone", user.phone);
                       updateCoOwner(coOwner.id, "idNumber", user.idNumber);
+
+                      // ✅ Hiển thị thông báo thành công
+                      setSuccessMessage("Tự động điền thông tin thành công 🎉");
                     }
                   }}
                 />
               )}
             </Field>
-            <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
-          </div>
 
+            {/* ❌ Hiển thị lỗi nếu có */}
+            <ErrorMessage name="email" component="div" className="text-red-500 text-sm" />
+
+            {/* ✅ Hiển thị thông báo thành công */}
+            {successMessage && (
+              <div className="text-green-600 text-sm font-medium mt-1">
+                {successMessage}
+              </div>
+            )}
+          </div>
           {/* ✅ Ownership (giữ lại) */}
           <div className="space-y-2 md:col-span-2">
             <Label>Tỷ lệ sở hữu (%) *</Label>
@@ -139,7 +155,7 @@ export default function CoOwnerForm({
                     {...field}
                     type="number"
                     min={15}
-                    max={90}
+                    max={85}
                     className="flex-1"
                     onBlur={(e) => {
                       updateCoOwner(coOwner.id, "ownership", Number(e.target.value));
@@ -158,7 +174,7 @@ export default function CoOwnerForm({
 
           {/* ✅ Address (giữ lại) */}
           <div className="space-y-2 md:col-span-2">
-            <Label>Địa chỉ *</Label>
+            <Label>Địa chỉ</Label>
             <Field as={Textarea} name="address" placeholder="Nhập địa chỉ" />
             <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
           </div>

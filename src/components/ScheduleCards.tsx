@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Car, Clock, User } from "lucide-react";
+import { Car, Clock, User, AlertCircle } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "./ui/input";
@@ -18,6 +18,7 @@ type ScheduleItem = {
     vehiclePlate?: string;
     userName?: string;
     userId?: number; // Thêm userId để kiểm tra quyền check in/out
+    groupId?: number;
     hasCheckIn: boolean;
     hasCheckOut: boolean;
     checkInTime?: string; // ISO
@@ -50,6 +51,7 @@ type ScheduleDetailResponse = {
     startTime: string;
     endTime: string;
     scheduleStatus?: string;
+    groupId?: number;
     checkIn?: CheckInDetailResponse | null;
     checkOut?: CheckOutDetailResponse | null;
 };
@@ -67,7 +69,6 @@ type CheckOutForm = {
 };
 
 const beBaseUrl = "http://localhost:8080";
-const USE_MOCK = false; // dùng BE thật để test
 
 
 function formatDateTime(iso?: string) {
@@ -80,6 +81,8 @@ function formatDateTime(iso?: string) {
         hour12: false
     })}`;
 }
+
+const normalizeText = (value?: string | null) => value?.toString().trim().toLowerCase() || "";
 
 async function fileListToBase64(files: FileList | null): Promise<string[]> {
     if (!files || files.length === 0) return [];
@@ -102,6 +105,7 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
     const scheduleId = raw.scheduleId ?? raw.id ?? raw.scheduleID;
     const startTime = raw.startTime ?? raw.start ?? raw.start_time;
     const endTime = raw.endTime ?? raw.end ?? raw.end_time;
+    const groupId = raw.groupId ?? raw.groupID ?? raw.group?.id ?? raw.group?.groupId ?? raw.group_id;
 
     const vehicleBrand = raw.vehicle?.brand ?? raw.brand;
     const vehicleModel = raw.vehicle?.model ?? raw.model;
@@ -111,17 +115,37 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
     const userId = raw.userId ?? raw.renterId ?? raw.bookedById ?? raw.user?.id ?? raw.user?.userId;
     const userName = raw.userName ?? raw.renterName ?? raw.bookedByName ?? raw.user?.fullName ?? raw.user?.name;
 
-    const checkInObj = raw.checkIn ?? raw.checkin ?? raw.check_in;
-    const checkOutObj = raw.checkOut ?? raw.checkout ?? raw.check_out;
-    const checkInTime = raw.checkInTime ?? checkInObj?.checkInTime ?? checkInObj?.time ?? checkInObj?.createdAt;
-    const checkOutTime = raw.checkOutTime ?? checkOutObj?.checkOutTime ?? checkOutObj?.time ?? checkOutObj?.createdAt;
+    // Tìm checkIn object với nhiều tên field khác nhau
+    const checkInObj = raw.checkIn ?? raw.checkin ?? raw.check_in ?? raw.checkInDetail;
+    const checkOutObj = raw.checkOut ?? raw.checkout ?? raw.check_out ?? raw.checkOutDetail;
 
+    // Tìm checkInTime từ nhiều nguồn
+    const checkInTime = raw.checkInTime ??
+        checkInObj?.checkInTime ??
+        checkInObj?.time ??
+        checkInObj?.createdAt ??
+        checkInObj?.checkInDate;
+
+    // Tìm checkOutTime từ nhiều nguồn
+    const checkOutTime = raw.checkOutTime ??
+        checkOutObj?.checkOutTime ??
+        checkOutObj?.time ??
+        checkOutObj?.createdAt ??
+        checkOutObj?.checkOutDate;
+
+    // Xác định hasCheckIn: ưu tiên flag từ BE, nếu không có thì check object hoặc time
     const hasCheckIn = (raw.hasCheckIn !== undefined && raw.hasCheckIn !== null)
         ? Boolean(raw.hasCheckIn)
-        : ((checkInTime != null) || (checkInObj != null));
+        : (checkInObj != null && typeof checkInObj === 'object') // Có object checkIn
+            ? true
+            : (checkInTime != null && checkInTime !== ""); // Có thời gian checkIn
+
+    // Xác định hasCheckOut tương tự
     const hasCheckOut = (raw.hasCheckOut !== undefined && raw.hasCheckOut !== null)
         ? Boolean(raw.hasCheckOut)
-        : ((checkOutTime != null) || (checkOutObj != null));
+        : (checkOutObj != null && typeof checkOutObj === 'object') // Có object checkOut
+            ? true
+            : (checkOutTime != null && checkOutTime !== ""); // Có thời gian checkOut
 
     if (scheduleId == null || !startTime || !endTime) return null;
 
@@ -133,6 +157,7 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
         vehiclePlate,
         userName,
         userId: userId != null ? Number(userId) : undefined,
+        groupId: groupId != null ? Number(groupId) : undefined,
         hasCheckIn,
         hasCheckOut,
         checkInTime: checkInTime ? String(checkInTime) : undefined,
@@ -165,6 +190,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 });
         }
     }, [open]);
+
     const CREATE_DECISION = import.meta.env.VITE_PATCH_CREATE_DECISION_PATH;
     const idGroup = Number(localStorage.getItem("groupId"));
     const handleRegister = async () => {
@@ -333,71 +359,275 @@ export default function ScheduleCards() {
     const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
     const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
+    const normalizedCurrentUserName = useMemo(() => normalizeText(currentUserName), [currentUserName]);
+    const currentUserEmail = useMemo(
+        () => normalizeText(localStorage.getItem("userEmail") || localStorage.getItem("email") || ""),
+        []
+    );
+    const isBookingOfCurrentUser = useCallback((booking?: ScheduleItem | null) => {
+        if (!booking) return false;
+        if (booking.userId != null) {
+            return booking.userId === currentUserId;
+        }
 
+        const bookingName = normalizeText(booking.userName);
+        if (bookingName === "bạn") return true;
+
+        if (bookingName && normalizedCurrentUserName) {
+            if (bookingName === normalizedCurrentUserName) return true;
+            if (bookingName.includes(normalizedCurrentUserName) || normalizedCurrentUserName.includes(bookingName)) {
+                return true;
+            }
+        }
+
+        const bookingEmail = normalizeText((booking as any)?.userEmail);
+        if (bookingEmail && currentUserEmail) {
+            return bookingEmail === currentUserEmail;
+        }
+
+        return false;
+    }, [currentUserEmail, currentUserId, normalizedCurrentUserName]);
+    const [overdueByGroup, setOverdueByGroup] = useState<Map<number, boolean>>(new Map());
+    const [currentGroupId, setCurrentGroupId] = useState<number | null>(null)
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const handleGroupChange = (event: any) => {
+            const newGroupId = event.detail.groupId;
+            console.log("🔄 [ScheduleCards] Group changed to:", newGroupId);
+            setCurrentGroupId(newGroupId);
+        };
+
+        window.addEventListener('group-changed', handleGroupChange);
+
+        return () => {
+            window.removeEventListener('group-changed', handleGroupChange);
+        };
+    }, []);
+    useEffect(() => {
+        if (currentGroupId !== null) {
+            console.log("🔄 [ScheduleCards] Reloading schedules for group:", currentGroupId);
+            fetchSchedules();
+        }
+    }, [currentGroupId]);
     // Detail states
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState<string | null>(null);
     const [detail, setDetail] = useState<ScheduleDetailResponse | null>(null);
 
+    const getStoredGroupId = () => {
+        const stored = localStorage.getItem("groupId");
+        const parsed = stored != null ? Number(stored) : NaN;
+        return Number.isNaN(parsed) ? null : parsed;
+    };
+
+    const getOverdueStatus = (groupId?: number | null) => {
+        if (groupId == null || Number.isNaN(groupId)) return false;
+        return overdueByGroup.get(groupId) ?? false;
+    };
+
+    // Kiểm tra quá hạn thanh toán
+    const checkOverdueFee = async (groupId: number) => {
+        try {
+            const token = localStorage.getItem("accessToken");
+            const res = await fetch(`${beBaseUrl}/api/fund-fee/group/${groupId}/current-month`, {
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                credentials: "include",
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const userOverdueFee = data?.fees?.find((fee: any) =>
+                    fee.userId === currentUserId &&
+                    fee.status === "PENDING" &&
+                    fee.isOverdue === true
+                );
+
+                // ✅ SỬA: Lưu theo groupId
+                setOverdueByGroup(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(groupId, !!userOverdueFee);
+                    return newMap;
+                });
+            } else {
+                setOverdueByGroup(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(groupId, false);
+                    return newMap;
+                });
+            }
+        } catch (error: any) {
+            console.error("Error checking overdue fee:", error);
+            setOverdueByGroup(prev => {
+                const newMap = new Map(prev);
+                newMap.set(groupId, false);
+                return newMap;
+            });
+        }
+    };
+
     const fetchSchedules = async () => {
         setLoading(true);
         setError(null);
         try {
-            const groupId = Number(localStorage.getItem("groupId")) || 1;
-            if (USE_MOCK) {
-                // đọc mock schedules từ localStorage (được tạo bởi VehicleBooking)
-                const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
-                const vehiclesMock = [
-                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8" },
-                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric" },
-                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3" },
-                ];
-                const mapped: ScheduleItem[] = raw
-                    .filter((r: any) => r.groupId === groupId)
-                    .map((r: any) => {
-                        const v = vehiclesMock.find(x => x.vehicleId === r.vehicleId);
-                        return {
-                            scheduleId: r.scheduleId,
-                            startTime: r.startTime,
-                            endTime: r.endTime,
-                            vehicleName: v ? `${v.brand} ${v.model}` : `Xe ${r.vehicleId}`,
-                            vehiclePlate: v?.plateNo,
-                            userName: r.userName || "Bạn",
-                            userId: r.userId, // chỉ gán userId nếu có trong booking
-                            hasCheckIn: Boolean(r.checkInTime),
-                            hasCheckOut: Boolean(r.checkOutTime),
-                            checkInTime: r.checkInTime,
-                            checkOutTime: r.checkOutTime,
-                        } as ScheduleItem;
-                    });
-                setItems(mapped);
-            } else {
-                const token = localStorage.getItem("accessToken");
-                const res = await fetch(`${beBaseUrl}/booking/schedules/group/${groupId}/booked`, {
-                    headers: {
-                        "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
+            const groupId = currentGroupId || Number(localStorage.getItem("groupId")) ;
+            const token = localStorage.getItem("accessToken");
+            const headers = {
+                "Accept": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            };
+
+            // Fetch schedules và vehicles song song
+            const [schedulesRes, vehiclesRes] = await Promise.all([
+                fetch(`${beBaseUrl}/schedule/group/${groupId}/booked`, {
+                    headers,
                     credentials: "include",
+                }),
+                fetch(`${beBaseUrl}/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`, {
+                    headers,
+                    credentials: "include",
+                }).catch(() => null) // Nếu lỗi thì bỏ qua, vehicles có thể null
+            ]);
+
+            if (!schedulesRes.ok) {
+                const text = await schedulesRes.text();
+                throw new Error(text || `HTTP ${schedulesRes.status}`);
+            }
+
+            const ct = schedulesRes.headers.get("content-type") || "";
+            if (!ct.includes("application/json")) {
+                const text = await schedulesRes.text();
+                throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
+            }
+
+            const schedulesData = await schedulesRes.json();
+            console.log("📦 Raw schedules from BE:", schedulesData);
+
+            // Parse vehicles nếu có
+            let vehicles: any[] = [];
+            if (vehiclesRes && vehiclesRes.ok) {
+                try {
+                    const vehiclesData = await vehiclesRes.json();
+                    vehicles = Array.isArray(vehiclesData) ? vehiclesData : (vehiclesData?.data || []);
+                    console.log("🚗 Vehicles from BE:", vehicles);
+                } catch (e) {
+                    console.warn("Không thể parse vehicles:", e);
+                }
+            }
+
+            // Parse schedules array
+            const arr = Array.isArray(schedulesData) ? schedulesData : (schedulesData?.items || schedulesData?.data || []);
+
+            // Log chi tiết từng schedule để debug check-in/check-out
+            arr.forEach((raw: any, idx: number) => {
+                console.log(`🔍 Schedule ${idx} (scheduleId: ${raw.scheduleId ?? raw.id}):`, {
+                    scheduleId: raw.scheduleId ?? raw.id,
+                    checkIn: raw.checkIn,
+                    checkInTime: raw.checkInTime,
+                    hasCheckIn: raw.hasCheckIn,
+                    checkOut: raw.checkOut,
+                    checkOutTime: raw.checkOutTime,
+                    hasCheckOut: raw.hasCheckOut,
+                    // Log toàn bộ raw object để xem cấu trúc
+                    fullRaw: JSON.stringify(raw, null, 2)
                 });
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(text || `HTTP ${res.status}`);
+            });
+
+            // Helper: Enrich items with booking detail if list lacks check-in/out info
+            const enrichWithDetails = async (items: ScheduleItem[]): Promise<ScheduleItem[]> => {
+                // Only fetch details for items missing both hasCheckIn and times
+                const target = items.filter(it => (!it.hasCheckIn && !it.hasCheckOut) && !it.checkInTime && !it.checkOutTime);
+                if (target.length === 0) return items;
+                try {
+                    const enrichedPairs = await Promise.all(target.map(async (it) => {
+                        try {
+                            const detailRes = await fetch(`${beBaseUrl}/booking/detail/${it.scheduleId}`, {
+                                method: "GET",
+                                headers: {
+                                    "Accept": "application/json",
+                                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                                },
+                                credentials: "include",
+                            });
+                            if (!detailRes.ok) return [it.scheduleId, null] as const;
+                            const d = await detailRes.json();
+                            const checkInTime = d?.checkIn?.checkInTime || d?.checkInTime || d?.checkinTime;
+                            const checkOutTime = d?.checkOut?.checkOutTime || d?.checkOutTime || d?.checkoutTime;
+                            const hasCheckIn = !!(d?.checkIn || checkInTime);
+                            const hasCheckOut = !!(d?.checkOut || checkOutTime);
+                            const updated: ScheduleItem = {
+                                ...it,
+                                hasCheckIn: hasCheckIn || it.hasCheckIn,
+                                hasCheckOut: hasCheckOut || it.hasCheckOut,
+                                checkInTime: checkInTime || it.checkInTime,
+                                checkOutTime: checkOutTime || it.checkOutTime,
+                            };
+                            return [it.scheduleId, updated] as const;
+                        } catch {
+                            return [it.scheduleId, null] as const;
+                        }
+                    }));
+                    const idToUpdated = new Map<number, ScheduleItem>();
+                    for (const [id, updated] of enrichedPairs) {
+                        if (updated) idToUpdated.set(id, updated);
+                    }
+                    return items.map(it => idToUpdated.get(it.scheduleId) || it);
+                } catch {
+                    return items;
                 }
-                const ct = res.headers.get("content-type") || "";
-                if (!ct.includes("application/json")) {
-                    const text = await res.text();
-                    throw new Error(`Không nhận được JSON từ server: ${text.slice(0, 120)}`);
+            };
+
+            const normalized = (arr as any[])
+                .map(raw => {
+                    const item = normalizeScheduleItem(raw);
+                    if (!item) return null;
+
+                    // Map vehicleId với thông tin xe
+                    const vehicle = vehicles.find(v =>
+                        v.vehicleId === raw.vehicleId ||
+                        v.id === raw.vehicleId ||
+                        v.vehicle?.vehicleId === raw.vehicleId
+                    );
+
+                    if (vehicle) {
+                        const brand = vehicle.brand || vehicle.vehicle?.brand || "";
+                        const model = vehicle.model || vehicle.vehicle?.model || "";
+                        const plateNo = vehicle.plateNo || vehicle.licensePlate || vehicle.vehicle?.plateNo || vehicle.vehicle?.licensePlate || "";
+
+                        return {
+                            ...item,
+                            vehicleName: brand && model ? `${brand} ${model}` : (item.vehicleName || `Xe ${raw.vehicleId}`),
+                            vehiclePlate: plateNo || item.vehiclePlate,
+                        } as ScheduleItem;
+                    }
+
+                    return item;
+                })
+                .filter((x): x is ScheduleItem => x !== null);
+
+            // Enrich items with booking details if needed
+            const enriched = await enrichWithDetails(normalized);
+
+            console.log("✅ Normalized items with vehicles:", enriched);
+            console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
+            // Debug: Log check-in/check-out status cho từng item
+            enriched.forEach(item => {
+                console.log(`📋 Schedule ${item.scheduleId}: hasCheckIn=${item.hasCheckIn}, hasCheckOut=${item.hasCheckOut}, checkInTime=${item.checkInTime}`);
+            });
+            setItems(enriched);
+
+            // Đảm bảo đã tải trạng thái quá hạn cho các group liên quan
+            const groupsNeedingCheck = new Set<number>();
+            enriched.forEach(item => {
+                if (item.groupId != null && !overdueByGroup.has(item.groupId)) {
+                    groupsNeedingCheck.add(item.groupId);
                 }
-                const data = await res.json();
-                console.log("📦 Raw data from BE:", data);
-                const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
-                const normalized = (arr as any[])
-                    .map(normalizeScheduleItem)
-                    .filter((x): x is ScheduleItem => x !== null);
-                console.log("✅ Normalized items:", normalized);
-                console.log("👤 Current user - ID:", currentUserId, "Name:", currentUserName);
-                setItems(normalized);
+            });
+            for (const gid of groupsNeedingCheck) {
+                await checkOverdueFee(gid);
             }
         } catch (e: any) {
             setError(e.message || "Không thể tải danh sách lịch");
@@ -407,7 +637,6 @@ export default function ScheduleCards() {
     };
 
     useEffect(() => {
-        fetchSchedules();
         const onUpdated = () => fetchSchedules();
         window.addEventListener('schedules-updated', onUpdated as any);
         window.addEventListener('storage', onUpdated);
@@ -417,60 +646,54 @@ export default function ScheduleCards() {
         };
     }, []);
 
+    // Kiểm tra quá hạn thanh toán khi component mount
+    useEffect(() => {
+        // ✅ Load overdue cho TẤT CẢ nhóm
+        const groupIdsStr = localStorage.getItem("groupIds");
+        if (groupIdsStr) {
+            const groupIds: number[] = JSON.parse(groupIdsStr);
+            for (const gid of groupIds) {
+                checkOverdueFee(gid);
+            }
+        } else {
+            // Fallback: load cho groupId hiện tại
+            const groupId = Number(localStorage.getItem("groupId")) ;
+            checkOverdueFee(groupId);
+        }
+    }, []);
+
+
     const openDetailDialog = async (id: number) => {
+        const targetItem = items.find(item => item.scheduleId === id);
+        const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+        const groupId = targetItem?.groupId ?? fallbackGroupId;
+
+        if (getOverdueStatus(groupId)) {
+            toast({
+                title: "Không thể xem chi tiết",
+                description: "Tài khoản của bạn đang quá hạn thanh toán trong nhóm này. Vui lòng thanh toán trước khi xem thông tin chi tiết.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setActiveId(id);
         setOpenDetail(true);
         setDetail(null);
         setDetailError(null);
         setDetailLoading(true);
         try {
-            if (USE_MOCK) {
-                const raw = JSON.parse(localStorage.getItem("mockSchedules") || "[]");
-                const r = raw.find((x: any) => x.scheduleId === id);
-                if (!r) throw new Error("Không tìm thấy lịch trong mock");
-                const vehiclesMock = [
-                    { vehicleId: 101, plateNo: "51A-123.45", brand: "VinFast", model: "VF8" },
-                    { vehicleId: 102, plateNo: "51A-678.90", brand: "Hyundai", model: "Kona Electric" },
-                    { vehicleId: 201, plateNo: "30H-000.11", brand: "Tesla", model: "Model 3" },
-                ];
-                const v = vehiclesMock.find((x) => x.vehicleId === r.vehicleId);
-                const d: ScheduleDetailResponse = {
-                    scheduleId: r.scheduleId,
-                    startTime: r.startTime,
-                    endTime: r.endTime,
-                    vehicleName: v ? `${v.brand} ${v.model}` : `Xe ${r.vehicleId}`,
-                    vehiclePlate: v?.plateNo,
-                    userName: r.userName || "Bạn",
-                    scheduleStatus: r.status,
-                    checkIn: r.checkInTime ? {
-                        checkInId: r.scheduleId,
-                        checkInTime: r.checkInTime,
-                        condition: "GOOD",
-                        notes: r.checkInNotes || "",
-                        images: r.checkInImages || "",
-                    } : null,
-                    checkOut: r.checkOutTime ? {
-                        checkOutId: r.scheduleId,
-                        checkOutTime: r.checkOutTime,
-                        condition: "GOOD",
-                        notes: r.checkOutNotes || "",
-                        images: r.checkOutImages || "",
-                    } : null,
-                };
-                setDetail(d);
-            } else {
-                const token = localStorage.getItem("accessToken");
-                const res = await fetch(`${beBaseUrl}/booking/detail/${id}`, {
-                    method: "GET",
-                    headers: {
-                        "Accept": "application/json",
-                        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-                    },
-                    credentials: "include",
-                });
-                const data = await res.json();
-                setDetail(data as ScheduleDetailResponse);
-            }
+            const token = localStorage.getItem("accessToken");
+            const res = await fetch(`${beBaseUrl}/booking/detail/${id}`, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                },
+                credentials: "include",
+            });
+            const data = await res.json();
+            setDetail(data as ScheduleDetailResponse);
         } catch (e: any) {
             setDetailError(e.message || "Không thể tải chi tiết");
         } finally {
@@ -482,16 +705,32 @@ export default function ScheduleCards() {
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
         if (!booking) {
-            alert("Không tìm thấy lịch đặt xe");
+            alert("Không tìm thấy lịch thuê xe");
             return;
         }
-        const isMine = booking.userId != null
-            ? booking.userId === currentUserId
-            : (booking.userName === currentUserName || booking.userName === "Bạn");
+
+        const isMine = isBookingOfCurrentUser(booking);
+
         if (!isMine) {
-            alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
+            alert("Bạn chỉ có thể check-in những xe mà bạn đăng ký");
             return;
         }
+
+        // ✅ SỬA: Lấy groupId từ booking (cần thêm field groupId vào ScheduleItem)
+        // Nếu BE không trả groupId, dùng localStorage fallback
+        const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+        const groupId = booking.groupId ?? fallbackGroupId;
+        const hasOverdueInThisGroup = getOverdueStatus(groupId);
+
+        if (hasOverdueInThisGroup) {
+            toast({
+                title: "Không thể check-in",
+                description: "Tài khoản của bạn quá hạn thanh toán trong nhóm này. Vui lòng liên hệ admin thanh toán trước khi sử dụng dịch vụ.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setActiveId(id);
         setCheckInForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckIn(true);
@@ -501,20 +740,36 @@ export default function ScheduleCards() {
         // Chỉ mở dialog nếu là lịch của tôi
         const booking = items.find(item => item.scheduleId === id);
         if (!booking) {
-            alert("Không tìm thấy lịch đặt xe");
+            alert("Không tìm thấy lịch thuê xe");
             return;
         }
-        const isMine = booking.userId != null
-            ? booking.userId === currentUserId
-            : (booking.userName === currentUserName || booking.userName === "Bạn");
+
+        const isMine = isBookingOfCurrentUser(booking);
+
         if (!isMine) {
-            alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
+            alert("Bạn chỉ có thể check-out những xe mà bạn đăng ký");
             return;
         }
+
+        const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+        const groupId = booking.groupId ?? fallbackGroupId;
+        const hasOverdueInThisGroup = getOverdueStatus(groupId);
+
+
+        if (hasOverdueInThisGroup) {
+            toast({
+                title: "Không thể check-out",
+                description: "Tài khoản của bạn quá hạn thanh toán trong nhóm này. Vui lòng liên hệ admin thanh toán trước khi sử dụng dịch vụ.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setActiveId(id);
         setCheckOutForm({ condition: "GOOD", notes: "", images: [] });
         setOpenCheckOut(true);
     };
+
 
     const submitCheckIn = async () => {
         if (activeId == null) return;
@@ -526,9 +781,7 @@ export default function ScheduleCards() {
             return;
         }
         {
-            const isMine = booking.userId != null
-                ? booking.userId === currentUserId
-                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            const isMine = isBookingOfCurrentUser(booking);
             if (!isMine) {
                 alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
                 setOpenCheckIn(false);
@@ -536,49 +789,94 @@ export default function ScheduleCards() {
             }
         }
 
-        if (USE_MOCK) {
-            const key = "mockSchedules";
-            const list = JSON.parse(localStorage.getItem(key) || "[]");
-            const idx = list.findIndex((b: any) => b.scheduleId === activeId);
-            if (idx !== -1) {
-                // Kiểm tra lại userId trong mock data
-                if (list[idx].userId !== currentUserId) {
-                    alert("Bạn chỉ có thể check-in những xe mà bạn đã đăng ký");
-                    setOpenCheckIn(false);
-                    return;
-                }
-                list[idx].checkInTime = new Date().toISOString();
-                localStorage.setItem(key, JSON.stringify(list));
-                alert("Check-in thành công (mock)");
-            }
-            setOpenCheckIn(false);
-            fetchSchedules();
+        const payload = {
+            userId: currentUserId,
+            condition: checkInForm.condition,
+            notes: checkInForm.notes,
+            images: checkInForm.images,
+        };
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${beBaseUrl}/booking/checkIn/${activeId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            alert(`Check-in thất bại: ${text}`);
             return;
-        } else {
-            const payload = {
-                userId: currentUserId,
-                condition: checkInForm.condition,
-                notes: checkInForm.notes,
-                images: checkInForm.images,
-            };
-            const token = localStorage.getItem("accessToken");
-            const res = await fetch(`${beBaseUrl}/booking/checkIn/${activeId}`, {
-                method: "POST",
+        }
+        // Parse response nếu có body
+        let checkInTimeFromResponse: string | undefined = undefined;
+        try {
+            const checkInResult = await res.json();
+            console.log("✅ Check-in response:", checkInResult);
+            // Lấy checkInTime từ response nếu có
+            checkInTimeFromResponse = checkInResult?.checkInTime ??
+                checkInResult?.checkIn?.checkInTime ??
+                checkInResult?.time ??
+                new Date().toISOString(); // Fallback: dùng thời gian hiện tại
+        } catch (e) {
+            // Response có thể không có body, dùng thời gian hiện tại
+            checkInTimeFromResponse = new Date().toISOString();
+            console.log("✅ Check-in thành công (no response body)");
+        }
+
+        // Optimistic update: cập nhật state ngay lập tức
+        setItems(prevItems => prevItems.map(item => {
+            if (item.scheduleId === activeId) {
+                return {
+                    ...item,
+                    hasCheckIn: true,
+                    checkInTime: checkInTimeFromResponse || new Date().toISOString()
+                };
+            }
+            return item;
+        }));
+
+        alert("Check-in thành công");
+        setOpenCheckIn(false);
+
+        // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
+        try {
+            const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
+                method: "GET",
                 headers: {
-                    "Content-Type": "application/json",
+                    "Accept": "application/json",
                     ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
-                body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                const text = await res.text();
-                alert(`Check-in thất bại: ${text}`);
-                return;
+            if (detailRes.ok) {
+                const detailData = await detailRes.json();
+                console.log("✅ Fetched detail after check-in:", detailData);
+
+                // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
+                setItems(prevItems => prevItems.map(item => {
+                    if (item.scheduleId === activeId) {
+                        const normalized = normalizeScheduleItem(detailData);
+                        if (normalized) {
+                            // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
+                            return {
+                                ...normalized,
+                                vehicleName: normalized.vehicleName || item.vehicleName,
+                                vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
+                            };
+                        }
+                    }
+                    return item;
+                }));
             }
-            alert("Check-in thành công");
-            setOpenCheckIn(false);
-            fetchSchedules();
+        } catch (e) {
+            console.warn("⚠️ Không thể fetch detail sau check-in:", e);
+            // Nếu không fetch được detail, vẫn fetch lại list sau một chút
+            setTimeout(() => {
+                fetchSchedules();
+            }, 1000);
         }
     };
 
@@ -592,9 +890,7 @@ export default function ScheduleCards() {
             return;
         }
         {
-            const isMine = booking.userId != null
-                ? booking.userId === currentUserId
-                : (booking.userName === currentUserName || booking.userName === "Bạn");
+            const isMine = isBookingOfCurrentUser(booking);
             if (!isMine) {
                 alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
                 setOpenCheckOut(false);
@@ -602,49 +898,94 @@ export default function ScheduleCards() {
             }
         }
 
-        if (USE_MOCK) {
-            const key = "mockSchedules";
-            const list = JSON.parse(localStorage.getItem(key) || "[]");
-            const idx = list.findIndex((b: any) => b.scheduleId === activeId);
-            if (idx !== -1) {
-                // Kiểm tra lại userId trong mock data
-                if (list[idx].userId !== currentUserId) {
-                    alert("Bạn chỉ có thể check-out những xe mà bạn đã đăng ký");
-                    setOpenCheckOut(false);
-                    return;
-                }
-                list[idx].checkOutTime = new Date().toISOString();
-                localStorage.setItem(key, JSON.stringify(list));
-                alert("Check-out thành công (mock)");
-            }
-            setOpenCheckOut(false);
-            fetchSchedules();
+        const payload = {
+            userId: currentUserId,
+            condition: checkOutForm.condition,
+            notes: checkOutForm.notes,
+            images: checkOutForm.images,
+        } as any;
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch(`${beBaseUrl}/booking/checkOut/${activeId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            credentials: "include",
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            alert(`Check-out thất bại: ${text}`);
             return;
-        } else {
-            const payload = {
-                userId: currentUserId,
-                condition: checkOutForm.condition,
-                notes: checkOutForm.notes,
-                images: checkOutForm.images,
-            } as any;
-            const token = localStorage.getItem("accessToken");
-            const res = await fetch(`${beBaseUrl}/booking/checkOut/${activeId}`, {
-                method: "POST",
+        }
+        // Parse response nếu có body
+        let checkOutTimeFromResponse: string | undefined = undefined;
+        try {
+            const checkOutResult = await res.json();
+            console.log("✅ Check-out response:", checkOutResult);
+            // Lấy checkOutTime từ response nếu có
+            checkOutTimeFromResponse = checkOutResult?.checkOutTime ??
+                checkOutResult?.checkOut?.checkOutTime ??
+                checkOutResult?.time ??
+                new Date().toISOString(); // Fallback: dùng thời gian hiện tại
+        } catch (e) {
+            // Response có thể không có body, dùng thời gian hiện tại
+            checkOutTimeFromResponse = new Date().toISOString();
+            console.log("✅ Check-out thành công (no response body)");
+        }
+
+        // Optimistic update: cập nhật state ngay lập tức
+        setItems(prevItems => prevItems.map(item => {
+            if (item.scheduleId === activeId) {
+                return {
+                    ...item,
+                    hasCheckOut: true,
+                    checkOutTime: checkOutTimeFromResponse || new Date().toISOString()
+                };
+            }
+            return item;
+        }));
+
+        alert("Check-out thành công");
+        setOpenCheckOut(false);
+
+        // Fetch detail của schedule này để lấy thông tin mới nhất từ BE
+        try {
+            const detailRes = await fetch(`${beBaseUrl}/booking/detail/${activeId}`, {
+                method: "GET",
                 headers: {
-                    "Content-Type": "application/json",
+                    "Accept": "application/json",
                     ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
                 credentials: "include",
-                body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                const text = await res.text();
-                alert(`Check-out thất bại: ${text}`);
-                return;
+            if (detailRes.ok) {
+                const detailData = await detailRes.json();
+                console.log("✅ Fetched detail after check-out:", detailData);
+
+                // Cập nhật state với dữ liệu từ detail, giữ lại thông tin vehicle từ item cũ
+                setItems(prevItems => prevItems.map(item => {
+                    if (item.scheduleId === activeId) {
+                        const normalized = normalizeScheduleItem(detailData);
+                        if (normalized) {
+                            // Merge với item cũ để giữ lại vehicleName, vehiclePlate nếu detail không có
+                            return {
+                                ...normalized,
+                                vehicleName: normalized.vehicleName || item.vehicleName,
+                                vehiclePlate: normalized.vehiclePlate || item.vehiclePlate,
+                            };
+                        }
+                    }
+                    return item;
+                }));
             }
-            alert("Check-out thành công");
-            setOpenCheckOut(false);
-            fetchSchedules();
+        } catch (e) {
+            console.warn("⚠️ Không thể fetch detail sau check-out:", e);
+            // Nếu không fetch được detail, vẫn fetch lại list sau một chút
+            setTimeout(() => {
+                fetchSchedules();
+            }, 1000);
         }
     };
 
@@ -654,6 +995,47 @@ export default function ScheduleCards() {
                 <CardTitle>Danh sách đặt lịch</CardTitle>
             </CardHeader>
             <CardContent>
+                {/* Cảnh báo quá hạn thanh toán */}
+                {/* Cảnh báo quá hạn thanh toán */}
+                {(() => {
+                    // ✅ Kiểm tra overdueByGroup đã load chưa
+                    if (overdueByGroup.size === 0) {
+                        return null; // Chưa load data overdue → không hiện warning
+                    }
+
+                    // ✅ Kiểm tra groupId có trong Map chưa
+                    if (!overdueByGroup.has(currentGroupId)) {
+                        return null; // Chưa có data cho groupId này → không hiện warning
+                    }
+
+                    const hasOverdueInThisGroup = overdueByGroup.get(currentGroupId) || false;
+
+                    if (!hasOverdueInThisGroup) {
+                        return null; // Không overdue → không hiện warning
+                    }
+
+                    return (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-start space-x-2">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="font-medium text-red-900">
+                                        Tài khoản quá hạn thanh toán
+                                    </p>
+                                    <p className="text-sm text-red-700 mt-1">
+                                        Tài khoản của bạn quá hạn thanh toán trong nhóm này.
+                                        Vui lòng liên hệ admin thanh toán trước khi sử dụng dịch vụ.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
+
+
+
+
                 {loading ? (
                     <div className="text-muted-foreground">Đang tải...</div>
                 ) : error ? (
@@ -667,30 +1049,16 @@ export default function ScheduleCards() {
                                 : it.hasCheckIn && !it.hasCheckOut ? { text: "Đang sử dụng", style: "bg-orange-500" }
                                     : { text: "Đã trả xe", style: "bg-green-600" };
 
-                            // Only show check-in/out buttons if the booking belongs to current user
-                            // Fallback theo userName khi BE không trả userId
-                            const normalizeName = (name?: string) => name?.trim().toLowerCase() || "";
-                            const bookingName = normalizeName(it.userName);
-                            const currentName = normalizeName(currentUserName);
-
-                            // So sánh linh hoạt: chính xác hoặc một trong hai chứa tên kia
-                            const nameMatches = bookingName === currentName ||
-                                bookingName === "bạn" ||
-                                (bookingName && currentName && (
-                                    bookingName.includes(currentName) ||
-                                    currentName.includes(bookingName)
-                                ));
-
-                            const isMyBooking = (
-                                it.userId != null && it.userId !== undefined
-                                    ? it.userId === currentUserId
-                                    : nameMatches
-                            );
+                            const isMyBooking = isBookingOfCurrentUser(it);
 
                             // Debug log để kiểm tra
                             if (it.scheduleId) {
-                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}", nameMatches=${nameMatches}`);
+                                console.log(`🔍 Schedule ${it.scheduleId}: userId=${it.userId}, userName="${it.userName}", isMyBooking=${isMyBooking}, currentUserId=${currentUserId}, currentUserName="${currentUserName}"`);
                             }
+
+                            const fallbackGroupId = currentGroupId ?? getStoredGroupId();
+                            const itemGroupId = it.groupId ?? fallbackGroupId;
+                            const hasOverdueForItem = getOverdueStatus(itemGroupId);
 
                             return (
                                 <div key={it.scheduleId} className="p-4 border rounded-lg bg-background">
@@ -713,24 +1081,44 @@ export default function ScheduleCards() {
                                         {isMyBooking ? (
                                             <>
                                                 {!it.hasCheckIn && (
-                                                    <Button size="sm" onClick={() => openCheckInDialog(it.scheduleId)}>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => openCheckInDialog(it.scheduleId)}
+                                                        disabled={hasOverdueForItem}
+                                                        title={hasOverdueForItem ? "Không thể check-in do quá hạn thanh toán trong nhóm này" : undefined}
+                                                    >
                                                         Check-in
                                                     </Button>
                                                 )}
                                                 {it.hasCheckIn && !it.hasCheckOut && (
-                                                    <Button size="sm" variant="outline"
-                                                        onClick={() => openCheckOutDialog(it.scheduleId)}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => openCheckOutDialog(it.scheduleId)}
+                                                        disabled={hasOverdueForItem}
+                                                        title={hasOverdueForItem ? "Không thể check-out do quá hạn thanh toán trong nhóm này" : undefined}
+                                                    >
                                                         Check-out
                                                     </Button>
                                                 )}
-                                                <Button size="sm" variant="ghost"
-                                                    onClick={() => openDetailDialog(it.scheduleId)}>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => openDetailDialog(it.scheduleId)}
+                                                    disabled={hasOverdueForItem}
+                                                    title={hasOverdueForItem ? "Không thể xem chi tiết do quá hạn thanh toán trong nhóm này" : undefined}
+                                                >
                                                     Xem chi tiết
                                                 </Button>
                                             </>
                                         ) : (
-                                            <Button size="sm" variant="ghost"
-                                                onClick={() => openDetailDialog(it.scheduleId)}>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => openDetailDialog(it.scheduleId)}
+                                                disabled={hasOverdueForItem}
+                                                title={hasOverdueForItem ? "Không thể xem chi tiết do quá hạn thanh toán trong nhóm này" : undefined}
+                                            >
                                                 Xem chi tiết
                                             </Button>
                                         )}

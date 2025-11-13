@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -9,14 +9,16 @@ import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import axiosClient from "@/api/axiosClient";
 export default function VerifyOTP() {
+    const [isVerifying, setIsVerifying] = useState(false);
     const [otp, setOtp] = useState("");
     const [isResending, setIsResending] = useState(false);
-    const [time, setTime] = useState(30);
+    const [time, setTime] = useState(60);
     const [expired, setExpired] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const { toast } = useToast();
     const userData = location.state?.userObject;
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
     useEffect(() => {
         if (!userData) {
             toast({
@@ -31,7 +33,25 @@ export default function VerifyOTP() {
     }, [userData]);
 
     // 🔹 Frontend tạo OTP và gửi tới backend để backend gửi mail
-    const SEND_OTP = import.meta.env.VITE_EMAIL_SENTOTP;
+    const SEND_OTP = import.meta.env.VITE_SEND_EMAIL_OTP_PATH;
+    const startTimer = () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+            setTime((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timerRef.current!);
+                    setExpired(true);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
     const sendOtpEmail = async () => {
         const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
         setOtp(randomOtp);
@@ -43,11 +63,15 @@ export default function VerifyOTP() {
         try {
             await axiosClient.post(SEND_OTP, {
                 email: userData.email,
-                otp: randomOtp,
+                content: randomOtp,
+                template: "",
+                subject: "",
+                name: userData.hovaTen,
 
             });
-            setTime(30);
             setExpired(false);
+            setTime(60);
+            startTimer();
             toast({
                 title: "Đã gửi mã OTP",
                 description: `Vui lòng kiểm tra email: ${userData.email}`,
@@ -63,12 +87,6 @@ export default function VerifyOTP() {
     };
 
     // ⏰ Đếm ngược thời gian
-    useEffect(() => {
-        if (time <= 0) return;
-        const timer = setTimeout(() => setTime((t) => t - 1), 1000);
-        return () => clearTimeout(timer);
-    }, [time]);
-
     useEffect(() => {
         if (time === 0) setExpired(true);
     }, [time]);
@@ -87,23 +105,23 @@ export default function VerifyOTP() {
     const REGISTER = import.meta.env.VITE_AUTH_REGISTER;
     // 🔹 Chỉ gọi 1 lần API tạo tài khoản khi OTP đúng
     const handleVerify = async () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setIsVerifying(true);
         try {
             await axiosClient.post(REGISTER, userData);
             toast({
                 title: "Xác thực thành công",
                 description: "Tài khoản đã được tạo!",
             });
-            navigate("/login");
-        } catch (error) {
+            setTimeout(() => navigate("/login"), 1000);
+        } catch (error: any) {
             console.error("Error creating user:", error);
-            toast({
-                title: "Đăng ký thất bại",
-                description: "Không thể tạo tài khoản.",
-                variant: "destructive",
-            });
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data || "Vui lòng kiểm tra lại thông tin.";
+            navigate("/register", { state: { registorError: errorMessage } })
         }
         finally {
-            navigate("/login");
+            setIsVerifying(false);
         }
     };
 
@@ -132,6 +150,7 @@ export default function VerifyOTP() {
                                 });
                                 return;
                             }
+                            if (timerRef.current) clearInterval(timerRef.current);
                             if (values.otp === otp) {
                                 await handleVerify(); // ✅ chỉ gọi 1 lần API tạo tài khoản
                             } else {
@@ -140,6 +159,7 @@ export default function VerifyOTP() {
                                     description: "Vui lòng kiểm tra lại mã",
                                     variant: "destructive",
                                 });
+                                startTimer();
                             }
                         }}
                     >
@@ -168,13 +188,11 @@ export default function VerifyOTP() {
                                     )}
                                 </div>
 
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-gradient-primary hover:shadow-glow"
-                                    disabled={!!errors.otp || values.otp.length !== 6}
-                                >
-                                    Xác thực OTP
-                                </Button>
+                                <div style={{ textAlign: "center", marginTop: "1rem" }}>
+                                    <Button disabled={isVerifying || !!errors.otp || values.otp.length !== 6}>
+                                        {isVerifying ? "Đang xác thực..." : "Xác thực OTP"}
+                                    </Button>
+                                </div>
                             </Form>
                         )}
                     </Formik>

@@ -224,87 +224,104 @@ export default function MyGroups() {
             aria-label="Danh sách nhóm"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
+            {groups.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center space-y-4">
+                <p className="text-lg text-muted-foreground">
+                  Bạn đang không ở trong nhóm nào. Xin vui lòng tạo nhóm bằng nút "Đăng ký nhóm" ở màn hình chính hoặc bấm vào nút dưới đây.
+                </p>
+                <Button
+                  variant="default"
+                  onClick={() => navigate("/co-owner/group-registration")}
+                >
+                  Tạo nhóm
+                </Button>
+              </div>
+            ) : (
+              groups.map((g) => {
+                const myRole = g.roleInGroup || "member";
+                const status = g.status || "active";
+                const ownership = g.ownershipPercentage ?? 0;
+                const groupName = g.group?.groupName || "Không có tên nhóm";
+                const createdAt = g.group?.createdAt
+                  ? new Date(g.group.createdAt).toLocaleDateString("vi-VN")
+                  : "-";
 
-            {groups.map((g) => {
-              const myRole = g.roleInGroup || "member";
-              const status = g.status || "active";
-              const ownership = g.ownershipPercentage ?? 0;
-              const groupName = g.group?.groupName || "Không có tên nhóm";
-              const createdAt = g.group?.createdAt ? new Date(g.group.createdAt).toLocaleDateString("vi-VN") : "-";
+                // Lấy các member khác (trừ chính user hiện tại)
+                const otherMembers = g.members
+                  ?.filter((m) => m.users.id !== currentUserId)
+                  .map((m) => ({
+                    id: m.users.id,
+                    name: m.users.hovaTen,
+                    avatar: m.users.avatar ?? "",
+                  })) || [];
 
-              // Lấy các member khác (trừ chính user hiện tại)
-              const otherMembers = g.members
-                ?.filter((m) => m.users.id !== currentUserId)
-                .map((m) => ({
-                  id: m.users.id,
-                  name: m.users.hovaTen,
-                  avatar: m.users.avatar ?? "",
-                })) || [];
-
-              return (
-                <Card key={g.group.groupId} className="relative hover:shadow-elegant transition">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-primary" />
-                        <div>
-                          <CardTitle className="text-base">{groupName}</CardTitle>
-                          <CardDescription>
-                            Vai trò: <Badge className="ml-1">{myRole.toUpperCase()}</Badge> | Trạng thái: {status}
-                          </CardDescription>
-                          <CardDescription>
-                            Ngày tạo: {createdAt} | Sở hữu: {ownership}%
-                          </CardDescription>
+                return (
+                  <Card key={g.group.groupId} className="relative hover:shadow-elegant transition">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <Users className="h-5 w-5 text-primary" />
+                          <div>
+                            <CardTitle className="text-base">{groupName}</CardTitle>
+                            <CardDescription>
+                              Vai trò: <Badge className="ml-1">{myRole.toUpperCase()}</Badge> | Trạng thái: {status}
+                            </CardDescription>
+                            <CardDescription>
+                              Ngày tạo: {createdAt} | Sở hữu: {ownership}%
+                              Ngày kết thúc: { }
+                            </CardDescription>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
 
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex -space-x-2">
-                        {otherMembers.slice(0, 5).map((m) => (
-                          <Avatar key={m.id} className="border">
-                            <AvatarImage src={m.avatar} alt={`Avatar ${m.name}`} loading="lazy" />
-                            <AvatarFallback>{m.name?.charAt(0) || "?"}</AvatarFallback>
-                          </Avatar>
-                        ))}
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex -space-x-2">
+                          {otherMembers.slice(0, 5).map((m) => (
+                            <Avatar key={m.id} className="border">
+                              <AvatarImage src={m.avatar} alt={`Avatar ${m.name}`} loading="lazy" />
+                              <AvatarFallback>{m.name?.charAt(0) || "?"}</AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+
+                        <p className="text-sm text-muted-foreground">
+                          Thành viên: {otherMembers.map((m) => m.name).slice(0, 3).join(", ")}
+                          {otherMembers.length > 3 ? ` và +${otherMembers.length - 3} nữa` : ""}
+                        </p>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <span>Phần trăm sở hữu của bạn:</span>
+                          <span className="font-semibold">{ownership}%</span>
+                        </div>
+
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => navigate(`/co-owner/groups/${g.group.groupId}`)}
+                          >
+                            Xem chi tiết
+                          </Button>
+
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRequestLeave(g.group.groupId)}
+                            className="px-3"
+                          >
+                            <LogOut className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-
-                      <p className="text-sm text-muted-foreground">
-                        Thành viên: {otherMembers.map((m) => m.name).slice(0, 3).join(", ")}
-                        {otherMembers.length > 3 ? ` và +${otherMembers.length - 3} nữa` : ""}
-                      </p>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Phần trăm sở hữu của bạn:</span>
-                        <span className="font-semibold">{ownership}%</span>
-                      </div>
-
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => navigate(`/co-owner/groups/${g.group.groupId}`)}
-                        >
-                          Xem chi tiết
-                        </Button>
-
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleRequestLeave(g.group.groupId)}
-                          className="px-3"
-                        >
-                          <LogOut className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
           </section>
+
         </main>
       </div>
 

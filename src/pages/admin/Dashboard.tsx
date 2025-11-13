@@ -65,6 +65,8 @@ export default function AdminDashboard() {
     const [createdStaff, setCreatedStaff] = useState<any>(null);
     const [showContractDetailModal, setShowContractDetailModal] = useState(false);
     const [selectedContract, setSelectedContract] = useState<any>(null);
+    const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+    const [loadingBlockedUsers, setLoadingBlockedUsers] = useState(false);
     const { toast } = useToast();
     const CREATE_STAFF = import.meta.env.VITE_POST_CREATE_STAFF_PATH;
     const displayedStaff = searchTerm.trim()
@@ -143,6 +145,51 @@ export default function AdminDashboard() {
 
         fetchStaffList();
     }, []);
+
+    // Fetch blocked users
+    useEffect(() => {
+        const fetchBlockedUsers = async () => {
+            setLoadingBlockedUsers(true);
+            try {
+                const res = await axiosClient.get("/api/admin/staff/getUserStatusBlock");
+                setBlockedUsers(Array.isArray(res.data) ? res.data : []);
+            } catch (err: any) {
+                console.error("Lỗi khi lấy danh sách users bị block:", err);
+                toast({
+                    title: "Lỗi",
+                    description: "Không thể tải danh sách tài khoản bị khóa",
+                    variant: "destructive"
+                });
+                setBlockedUsers([]);
+            } finally {
+                setLoadingBlockedUsers(false);
+            }
+        };
+
+        fetchBlockedUsers();
+    }, []);
+
+    // Handle unblock user
+    const handleUnblockUser = async (userId: number) => {
+        try {
+            const res = await axiosClient.put(`/api/admin/staff/users/${userId}/unblock`);
+            if (res.status === 200) {
+                toast({
+                    title: "Thành công",
+                    description: "Đã mở khóa tài khoản thành công",
+                });
+                // Cập nhật lại danh sách
+                setBlockedUsers(prev => prev.filter(user => user.id !== userId));
+            }
+        } catch (err: any) {
+            console.error("Lỗi khi mở khóa user:", err);
+            toast({
+                title: "Lỗi",
+                description: err.response?.data?.message || "Không thể mở khóa tài khoản",
+                variant: "destructive"
+            });
+        }
+    };
     useEffect(() => {
         if (!searchTerm.trim()) {
             setFilteredStaff(staffList);
@@ -535,6 +582,60 @@ export default function AdminDashboard() {
                                         </p>
                                     )}
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Blocked Users Section */}
+                        <Card className="shadow-elegant mt-6">
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <Lock className="h-5 w-5" />
+                                    <span>Tài khoản bị khóa</span>
+                                </CardTitle>
+                                <CardDescription>
+                                    Danh sách các tài khoản người dùng bị khóa
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {loadingBlockedUsers ? (
+                                    <div className="text-center py-4 text-muted-foreground">Đang tải...</div>
+                                ) : blockedUsers.length > 0 ? (
+                                    blockedUsers.map((user: any) => (
+                                        <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-red-50/50">
+                                            <div className="flex-1">
+                                                <div className="flex items-center space-x-3">
+                                                    <h3 className="font-semibold">{user.hovaTen}</h3>
+                                                    <Badge variant="destructive">Bị khóa</Badge>
+                                                </div>
+                                                <div className="text-sm text-muted-foreground mt-1">
+                                                    <span>{user.email}</span>
+                                                    <span className="mx-2">•</span>
+                                                    <span>CCCD: {user.cccd}</span>
+                                                    <span className="mx-2">•</span>
+                                                    <span>📞 {user.phone}</span>
+                                                    {user.gplx && (
+                                                        <>
+                                                            <span className="mx-2">•</span>
+                                                            <span>GPLX: {user.gplx}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                className="text-green-600 border-green-600 hover:bg-green-600 hover:text-white"
+                                                onClick={() => handleUnblockUser(user.id)}
+                                            >
+                                                <Lock className="h-4 w-4 mr-2" />
+                                                Mở khóa
+                                            </Button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground mt-4 text-center">
+                                        Không có tài khoản nào bị khóa.
+                                    </p>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>

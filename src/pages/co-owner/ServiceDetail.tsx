@@ -70,50 +70,91 @@ export default function ServiceDetail() {
         // 🧩 Tạo FormData (multipart)
         const formData = new FormData();
 
-        // Gửi list decision name
+        // Gửi danh sách decisionNames
         values.services.forEach((service, index) => {
           formData.append(`decisionNames[${index}]`, service.serviceName);
         });
 
-        // Mô tả tổng
-        const totalAmount = values.services.reduce((sum, s) => {
-          const num = Number(s.price.replace(/,/g, "")) || 0;
-          return sum + num;
-        }, 0);
-
-        formData.append("description", `Tổng số tiền phải trả: ${totalAmount.toLocaleString("vi-VN")} VNĐ`);
+        // Gửi tổng mô tả
+        formData.append(
+          "description",
+          `Tổng số tiền phải trả: ${totalAmount.toLocaleString("vi-VN")} VNĐ`
+        );
         formData.append("price", totalAmount.toString());
 
-        // Ảnh đầu tiên làm bill (nếu backend yêu cầu 1 ảnh)
+        // Ảnh bill (chỉ lấy ảnh đầu tiên)
         const firstImage = values.services[0]?.image;
         if (firstImage) {
           formData.append("billImage", firstImage);
         }
+        formData.append("idService", "1");
+        // 🧩 Gọi API tạo DecisionVote (multipart/form-data)
+        const res = await axiosClient.post(`${CREATE_DECISION}${idGroup}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
-        const res = await axiosClient.post(
-          `${CREATE_DECISION}${idGroup}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
+        if (res.status !== 201 && res.status !== 200) {
+          throw new Error("Không thể tạo quyết định mới");
+        }
+
+        console.log("✅ Full decisionVote:", res.data);
+        const voters = res.data.voters;
+        const creator = res.data.creator;
+
+        // 1️⃣ Creator name & group name
+        const creatorName = creator?.createdBy?.users?.hovaTen || "Một thành viên";
+        const groupNameFromRes = creator?.createdBy?.group?.groupName || "Nhóm";
+        const decisionName = creator?.decisionName || "Dịch vụ";
+
+        // 2️⃣ Lấy danh sách email từ decisionVoteDetails
+        const emailList =
+          voters
+            ?.map((detail: any) => detail?.groupMember?.users?.email)
+            .filter((email: string | undefined) => email) || [];
+
+        console.log("✅ Email list:", emailList);
+
+        // 3️⃣ Nếu không có email nào → cảnh báo
+        if (emailList.length === 0) {
+          console.warn("Không tìm thấy email co-owner trong voters:", voters);
+        }
+
+        // 4️⃣ Tạo danh sách payload để gửi email
+        const emailPayloads = emailList.map((email: string) => ({
+          email,
+          subject: `Yêu cầu xác nhận thanh toán dịch vụ: ${decisionName}`,
+          url: `${window.location.origin}/vote/${creator.id}`,
+          template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${creator.id} để xác nhận thanh toán.`,
+        }));
+
+        // 5️⃣ Gửi email song song (Promise.allSettled để không ngắt khi lỗi 1 phần)
+        const sendResults = await Promise.allSettled(
+          emailPayloads.map((payload) => axiosClient.post("/email/send", payload))
         );
 
-        if (res.status === 201 || res.status === 200) {
+        const failed = sendResults.filter((r) => r.status === "rejected");
+
+        if (failed.length > 0) {
+          console.error(`${failed.length} email gửi thất bại`, failed);
           toast({
-            title: "Đăng ký thành công",
-            description: "Dịch vụ đã được gửi lên hệ thống.",
+            title: "Gửi email",
+            description: `${emailList.length - failed.length} / ${emailList.length} email đã được gửi.`,
+            variant: failed.length === emailList.length ? "destructive" : undefined,
           });
-          navigate("/group");
         } else {
-          throw new Error("Lỗi không xác định khi gửi dữ liệu");
+          toast({
+            title: "Đăng ký dịch vụ thành công",
+            description: `Đã gửi thông báo biểu quyết đến ${emailList.length} thành viên trong nhóm.`,
+          });
         }
+
+        // ✅ Cuối cùng: điều hướng về trang nhóm
+        navigate("/group");
       } catch (error) {
-        console.error(error);
+        console.error("Lỗi khi tạo decision hoặc gửi email:", error);
         toast({
           title: "Lỗi",
-          description: "Không thể gửi thông tin dịch vụ.",
+          description: "Không thể khởi tạo quyết định hoặc gửi email.",
           variant: "destructive",
         });
       } finally {
