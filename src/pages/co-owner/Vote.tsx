@@ -72,7 +72,7 @@ export default function PaymentConfirmation() {
         serviceId: serviId,
         vote: voteValue,
       };
-      const res = await axios.patch(`/groupMember/decision`, payload, {
+      const res = await axios.patch(`http://localhost:8080/groupMember/decision`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
