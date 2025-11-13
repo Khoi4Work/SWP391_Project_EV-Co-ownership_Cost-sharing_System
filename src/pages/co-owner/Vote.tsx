@@ -41,7 +41,7 @@ export default function PaymentConfirmation() {
   useEffect(() => {
     const fetchDecisionVoteDetail = async () => {
       try {
-        const res = await axiosClient.get(`/decision/vote/detail/${id}`);
+        const res = await axiosClient.get(`groupMember/decision/vote/detail/${id}`);
         if (res.status !== 200) throw new Error("Không thể tải chi tiết bỏ phiếu");
         setServices(res.data.services || []);
         const data = res.data; // Mảng DecisionVoteDetail[]
