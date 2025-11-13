@@ -129,7 +129,7 @@ export default function ServiceDetail() {
         const emailPayloads = emailList.map((email: string) => ({
           email,
           subject: `Yêu cầu xác nhận thanh toán dịch vụ`,
-          url: `${window.location.origin}/vote/${groupId}`,
+          url: `/vote/${groupId}`,
           template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${creator.id} để xác nhận thanh toán.`,
         }));
 
@@ -155,7 +155,7 @@ export default function ServiceDetail() {
         }
 
         // ✅ Cuối cùng: điều hướng về trang nhóm
-        navigate("/group");
+        navigate("/co-owner/dashboard");
       } catch (error) {
         console.error("Lỗi khi tạo decision hoặc gửi email:", error);
         toast({
