@@ -77,17 +77,16 @@ export default function Register() {
     // check uniqueness API backend host:http://localhost:8080/users/check?${field}=${value} 
 
     useEffect(() => {
-        if (location.state?.registerError) {
+        if (location.state?.registorError) {
             toast({
                 title: "Đăng ký thất bại",
-                description: location.state.registerError,
+                description: location.state.registorError,
                 variant: "destructive",
             });
-
-            // Xóa state sau khi hiển thị để tránh toast lặp lại khi refresh
-            navigate(location.pathname, { replace: true, state: {} });
+            // reset state để không hiển thị lại khi F5
+            window.history.replaceState({}, document.title);
         }
-    }, [location.state, toast, navigate]);
+    }, [location.state]);
     // OCR CCCD
     const handleUploadCccd = async (e: React.ChangeEvent<HTMLInputElement>, setFieldValue: (field: string, value: any) => void) => {
         const file = e.target.files?.[0];
@@ -189,8 +188,8 @@ export default function Register() {
                             acceptTerms: false,
                         }}
                         validationSchema={validationSchema}
-                        validateOnChange={true}
-                        validateOnBlur={true}
+                        validateOnChange={false}
+                        validateOnBlur={false}
                         onSubmit={async (values, { setSubmitting }) => {
                             const userObject = {
                                 hovaTen: values.hovaTen,

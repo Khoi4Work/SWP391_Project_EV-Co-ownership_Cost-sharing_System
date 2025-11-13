@@ -227,7 +227,7 @@ export default function MyGroups() {
             {groups.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center py-12 text-center space-y-4">
                 <p className="text-lg text-muted-foreground">
-                  Bạn đang không ở trong nhóm nào. Xin vui lòng tạo nhóm bằng nút "Đăng ký hợp đồng" ở màn hình chính hoặc bấm vào nút dưới đây.
+                  Bạn đang không ở trong nhóm nào. Xin vui lòng tạo nhóm bằng nút "Đăng ký nhóm" ở màn hình chính hoặc bấm vào nút dưới đây.
                 </p>
                 <Button
                   variant="default"

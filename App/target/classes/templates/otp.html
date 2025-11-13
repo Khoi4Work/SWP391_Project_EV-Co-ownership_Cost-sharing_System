@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>One-time Password (OTP)</title>
+    <style>
+        /* Đặt style đơn giản, inline-friendly */
+        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f6f8; }
+        .container { max-width:600px; margin:30px auto; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+        .header { background:#0d6efd; color:#fff; padding:20px; text-align:center; }
+        .content { padding:24px; color:#333; line-height:1.5; }
+        .otp { display:block; margin:18px auto; font-size:28px; letter-spacing:6px; font-weight:700; padding:12px 18px; border-radius:6px; background:#f1f5ff; text-align:center; width:fit-content; }
+        .btn { display:inline-block; padding:10px 16px; border-radius:6px; text-decoration:none; background:#0d6efd; color:#fff; margin-top:12px; }
+        .footer { background:#f8f9fb; color:#666; font-size:13px; padding:16px; text-align:center; }
+        .muted { color:#6c757d; font-size:13px; }
+        @media (max-width:480px){ .container { margin:12px; } .otp { font-size:22px; letter-spacing:4px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2 th:text="${appName} ?: 'Tên Ứng Dụng'">Tên Ứng Dụng</h2>
+    </div>
+
+    <div class="content">
+        <p>Xin chào <strong th:text="${name} ?: 'Người dùng'">Người dùng</strong>,</p>
+
+        <p>Bạn (hoặc ai đó) đã yêu cầu mã xác thực (OTP). Vui lòng sử dụng mã sau để xác minh:</p>
+
+        <div class="otp" th:text="${otp}">123456</div>
+
+        <p>Mã sẽ hết hạn sau <strong th:text="${expiryMinutes} ?: 5">5</strong> phút.</p>
+
+        <p>Nếu bạn không yêu cầu mã này, bạn có thể bỏ qua email này hoặc liên hệ hỗ trợ.</p>
+
+        <p>
+            <a th:href="${loginUrl}" class="btn" th:if="${loginUrl}">Đăng nhập / Xác thực</a>
+        </p>
+
+        <p class="muted">Lưu ý: Không chia sẻ mã này với bất kỳ ai. Chúng tôi sẽ không yêu cầu bạn gửi lại mã qua tin nhắn hoặc gọi điện.</p>
+    </div>
+
+    <div class="footer">
+        <div>Hỗ trợ: <span th:text="${supportEmail} ?: 'support@example.com'">support@example.com</span></div>
+        <div style="margin-top:6px; color:#999; font-size:12px;">© <span th:text="${year} ?: ${#dates.format(#dates.createNow(), 'yyyy')}">2025</span> <span th:text="${appName} ?: 'Ứng Dụng'">Ứng Dụng</span>. All rights reserved.</div>
+    </div>
+</div>
+</body>
+</html>

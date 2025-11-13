@@ -55,6 +55,7 @@ export default function VehicleRegistration() {
   });
   const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
   const [emailMessage, setEmailMessage] = useState(""); // 👈 state hiển thị thông báo
+  const [isFileConfirmed, setIsFileConfirmed] = useState(false);
   const [step, setStep] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleInfo | null>(null);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -88,6 +89,7 @@ export default function VehicleRegistration() {
       });
       return;
     }
+    setIsFileConfirmed(true);
     setStep(1); // qua bước nhập thông tin xe
   };
   const handleNextFromStep3 = () => {
@@ -165,6 +167,7 @@ export default function VehicleRegistration() {
           image: v.imageUrl || "/default-car.jpg",
           price: `${v.price?.toLocaleString()} VND`,
         }));
+        console.log("Fetched vehicles:", mappedVehicles);
         setVehicles(mappedVehicles);
       } catch (error) {
         console.error("Lỗi khi tải danh sách xe:", error);
@@ -206,8 +209,7 @@ export default function VehicleRegistration() {
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
       case 0:
-        // Step 0 có thể là bước khởi tạo. Ví dụ, kiểm tra xem form có được mở chưa
-        return true; // Nếu bước này không cần điều kiện đặc biệt
+        return isFileConfirmed; // Nếu bước này không cần điều kiện đặc biệt
       case 1:
         return selectedVehicle !== null; // Xe đã được chọn chưa
       case 2:
