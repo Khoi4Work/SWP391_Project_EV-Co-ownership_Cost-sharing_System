@@ -24,26 +24,25 @@ export default function PaymentConfirmation() {
   const [submitting, setSubmitting] = useState(false);
   const [payerName, setPayerName] = useState("");
   const [services, setServices] = useState<Service[]>([]);
-  const [groupMemberCount, setGroupMemberCount] = useState(1);
+  const [groupMemberCount, setGroupMemberCount] = useState(3);
   const [decisionDetails, setDecisionDetails] = useState([]);
-  const totalAmount = services.reduce((sum, s) => sum + s.price, 0);
-  const amountPerPerson = Math.floor(totalAmount / groupMemberCount);
-
+  const deciId = localStorage.getItem("decisionId");
+  const serviId = localStorage.getItem("serviceId");
+  console.log("Decision ID from localStorage:", deciId);
+  const name = localStorage.getItem("creatorName");
+  console.log("Name from localStorage:", name);
+  const totalAmount = localStorage.getItem("totalAmount");
+  const amountPerPerson = Math.floor(Number(totalAmount) / groupMemberCount);
+  console.log("Total Amount from localStorage:", totalAmount);
   useEffect(() => {
     const fetchDecisionVoteDetail = async () => {
       try {
         const res = await axiosClient.get(`/decision/vote/detail/${id}`);
         if (res.status !== 200) throw new Error("Không thể tải chi tiết bỏ phiếu");
-        const totalAmount = localStorage.getItem("totalAmount");
-        console.log("Total Amount from localStorage:", totalAmount);
         setServices(res.data.services || []);
         const data = res.data; // Mảng DecisionVoteDetail[]
         setDecisionDetails(data); // Lưu vào state để hiển thị
-        const name = localStorage.getItem("creatorName");
-        console.log("Name from localStorage:", name);
         setPayerName(name || "Thành viên");
-
-
       } catch (err) {
         console.error(err);
         toast({
@@ -60,14 +59,24 @@ export default function PaymentConfirmation() {
   }, [id]);
 
 
-  const handleConfirmPayment = async () => {
+  const handleConfirm = async (voteValue: number) => {
     try {
       setSubmitting(true);
-      // ⚠️ Gửi xác nhận thanh toán
-      await axiosClient.post(`/groupMember/payment/confirm/${id}`);
+      const payload = {
+        decisionId: deciId,
+        groupId: id,
+        serviceId: serviId,
+        vote: voteValue,
+      };
+      const res = await axiosClient.patch(`/groupMember/decision`, payload);
+      if (res.status !== 200) {
+        throw new Error("Không thể gửi vote");
+      }
       toast({
-        title: "Xác nhận thành công",
-        description: "Bạn đã xác nhận trả tiền cho các dịch vụ.",
+        title: voteValue === 1 ? "Đồng ý trả tiền" : "Không đồng ý trả tiền",
+        description: voteValue === 1
+          ? "Bạn đã xác nhận đồng ý trả tiền cho các dịch vụ."
+          : "Bạn đã xác nhận không đồng ý trả tiền.",
       });
     } catch (err) {
       console.error(err);
@@ -118,12 +127,8 @@ export default function PaymentConfirmation() {
             <p className="text-sm">
               Tổng chi phí:{" "}
               <span className="font-bold">
-                {totalAmount.toLocaleString("vi-VN")}₫
+                {Number(totalAmount).toLocaleString("vi-VN")}₫
               </span>
-            </p>
-            <p className="text-sm">
-              Số thành viên:{" "}
-              <span className="font-bold">{groupMemberCount}</span>
             </p>
             <p className="text-lg font-bold text-primary">
               Mỗi người trả: {amountPerPerson.toLocaleString("vi-VN")}₫
@@ -134,10 +139,19 @@ export default function PaymentConfirmation() {
         <CardFooter className="flex justify-center">
           <Button
             className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={handleConfirmPayment}
+            onClick={() => handleConfirm(1)} // 1: Đồng ý
             disabled={submitting}
           >
             {submitting ? "Đang xác nhận..." : "Xác nhận trả tiền"}
+          </Button>
+
+          {/* Nút "Không đồng ý trả tiền" */}
+          <Button
+            className="bg-red-600 hover:bg-red-700 text-white"
+            onClick={() => handleConfirm(0)} // 0: Không đồng ý
+            disabled={submitting}
+          >
+            {submitting ? "Đang xác nhận..." : "Không đồng ý trả tiền"}
           </Button>
         </CardFooter>
       </Card>
