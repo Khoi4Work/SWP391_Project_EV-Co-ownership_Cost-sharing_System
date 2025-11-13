@@ -106,6 +106,7 @@ export default function ServiceDetail() {
         const groupNameFromRes = creator?.createdBy?.group?.groupName || "Nhóm";
         const decisionName = creator?.decisionName || "Dịch vụ";
         const decisionId = res.data.creator.id;
+        const groupId = res.data.groupMember.id;
         console.log("decisionId:", decisionId);
         localStorage.setItem("decisionId", decisionId);
         localStorage.setItem("creatorName", creatorName);
