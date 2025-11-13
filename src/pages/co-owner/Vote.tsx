@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ interface PaymentDetailResponse {
 }
 
 export default function PaymentConfirmation() {
+  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
   console.log("Token từ query string:", token);
@@ -39,6 +41,15 @@ export default function PaymentConfirmation() {
   const amountPerPerson = Math.floor(Number(totalAmount) / groupMemberCount);
   console.log("Total Amount from localStorage:", totalAmount);
   useEffect(() => {
+    if (!token) {
+      toast({
+        title: "Lỗi",
+        description: "Token không hợp lệ hoặc hết hạn.",
+        variant: "destructive",
+      });
+      navigate("/error"); // hoặc "/home" hoặc bất kỳ trang nào bạn muốn
+      return;
+    }
     const fetchDecisionVoteDetail = async () => {
       try {
         const res = await axiosClient.get(`groupMember/decision/vote/detail/${id}`);
