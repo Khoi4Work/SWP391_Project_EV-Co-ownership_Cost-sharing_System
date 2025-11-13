@@ -891,36 +891,37 @@ export default function VehicleRegistration() {
                   {/* ✅ Chỉ giữ lại Email */}
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
-                    <Field name="email">
-                      {({ field }: any) => (
-                        <Input
-                          {...field}
-                          id="email"
-                          type="email"
-                          placeholder="Nhập email"
-                          onBlur={async (e) => {
-                            field.onBlur(e);
-                            const user = await fetchUserByEmail(e.target.value);
-                            if (user) {
-                              formik.setValues((prev: any) => ({
-                                ...prev,
-                                id: user.id || prev.id,
-                                name: user.name || prev.name,
-                                phone: user.phone || prev.phone,
-                                idNumber: user.idNumber || prev.idNumber,
-                                address: user.address || prev.address,
-                                email: user.email || prev.email,
-                              }));
-                              setEmailMessage("✅ Tự động điền thông tin thành công"); // 👈 hiện thông báo màu xanh
-                            } else {
-                              setEmailMessage("");
-                            }
-                          }}
-                        />
-                      )}
-                    </Field>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Nhập email"
+                      value={formik.values.email}
+                      onChange={formik.handleChange}
+                      onBlur={async (e) => {
+                        formik.handleBlur(e); // 👈 bắt buộc gọi
+                        const user = await fetchUserByEmail(e.target.value);
+                        if (user) {
+                          formik.setValues((prev: any) => ({
+                            ...prev,
+                            id: user.id || prev.id,
+                            name: user.name || prev.name,
+                            phone: user.phone || prev.phone,
+                            idNumber: user.idNumber || prev.idNumber,
+                            address: user.address || prev.address,
+                            email: user.email || prev.email,
+                          }));
+                          setEmailMessage("✅ Tự động điền thông tin thành công");
+                          setTimeout(() => {
+                            setEmailMessage("");
+                          }, 1000);
+                        } else {
+                          setEmailMessage("");
+                        }
+                      }}
+                    />
                     <ErrorMessage name="email" component="div"
                       className="text-red-500 text-sm" />
+                    <div className="text-sm text-green-500 mt-1">{emailMessage}</div> {/* 👈 thêm dòng này */}
                   </div>
 
                   {/* ✅ Chỉ giữ lại Ownership */}
