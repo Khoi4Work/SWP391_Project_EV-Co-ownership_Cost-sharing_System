@@ -176,6 +176,8 @@ public class GroupMemberService implements IGroupMemberService {
             iDecisionVoteDetailRepository.save(voteDetail);
         }
 
+
+
         res.setVoters(iDecisionVoteDetailRepository.getAllByDecisionVote(createdDecisionVote));
 
         return res;
@@ -201,6 +203,8 @@ public class GroupMemberService implements IGroupMemberService {
             case 1:
                 voteDetail.setOptionDecisionVote(OptionDecisionVoteDetail.ACCEPTED);
                 break;
+            case 2:
+                voteDetail.setOptionDecisionVote(OptionDecisionVoteDetail.ABSENT);
             default:
                 throw new UndefinedChoiceException("Choice is invalid!");
         }
@@ -246,8 +250,12 @@ public class GroupMemberService implements IGroupMemberService {
 
 
             if (voteDetails.stream()
-                    .filter(decisionVoteDetail -> decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
-                    .anyMatch(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
+                    .filter(
+                            decisionVoteDetail ->
+                                    decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
+                    .anyMatch(
+                            v ->
+                                    v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
 
                 totalRejected += voteDetails
                         .stream()
@@ -277,6 +285,11 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public List<DecisionVoteDetail> getAllDecisionVoteDetailByDecisionVote(DecisionVote decisionVote) {
         return iDecisionVoteDetailRepository.findAllByDecisionVote(decisionVote);
+    }
+
+    @Override
+    public DecisionVoteDetail getDecisionVoteDetailByGroupMemberAndDecision(GroupMember groupMember, long decisionId) {
+        return iDecisionVoteDetailRepository.findByGroupMemberAndDecisionVote_Id(groupMember, decisionId);
     }
 
 

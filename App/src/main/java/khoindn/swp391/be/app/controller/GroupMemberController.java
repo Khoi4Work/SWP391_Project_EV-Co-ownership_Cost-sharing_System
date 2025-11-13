@@ -9,10 +9,8 @@ import khoindn.swp391.be.app.model.Request.VotingRequest;
 import khoindn.swp391.be.app.model.Response.DecisionVoteRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberResponse;
-import khoindn.swp391.be.app.pojo.DecisionVote;
-import khoindn.swp391.be.app.pojo.Group;
-import khoindn.swp391.be.app.pojo.GroupMember;
-import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.OptionDecisionVoteDetail;
 import khoindn.swp391.be.app.repository.IDecisionVoteDetailRepository;
 import khoindn.swp391.be.app.repository.IDecisionVoteRepository;
 import khoindn.swp391.be.app.service.AuthenticationService;
@@ -127,13 +125,23 @@ public class GroupMemberController {
     @PatchMapping("/decision")
     public ResponseEntity setDecision(@RequestBody VotingRequest votingRequest) {
         Users user = authenticationService.getCurrentAccount();
+        System.out.println(user);
         if (user == null) {
             return ResponseEntity.status(403).body("Unauthorized");
         }
+
+
+        System.out.println(votingRequest.getGroupId());
         GroupMember groupMember = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(votingRequest.getGroupId(), user.getId());
         if (groupMember == null) {
             throw new GroupMemberNotFoundException("Member is not in Group!");
         }
+        DecisionVoteDetail voter = iGroupMemberService.getDecisionVoteDetailByGroupMemberAndDecision(groupMember, votingRequest.getDecisionId())
+        if (!voter.getOptionDecisionVote().equals(OptionDecisionVoteDetail.ABSENT)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("You have already voted for this decision.");
+        }
+
         DecisionVote vote = iGroupMemberService.setDecision(
                 votingRequest.getVote(),
                 votingRequest.getDecisionId(),

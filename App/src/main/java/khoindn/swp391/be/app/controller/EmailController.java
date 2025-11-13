@@ -3,11 +3,13 @@ package khoindn.swp391.be.app.controller;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.EmailDetailReq;
 import khoindn.swp391.be.app.model.Request.SendBulkEmailReq;
-import khoindn.swp391.be.app.service.IEmailService;
+import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.thymeleaf.context.Context;
 
 @RestController
 @RequestMapping("/email")
@@ -16,6 +18,14 @@ public class EmailController {
 
     @Autowired
     private IEmailService  iEmailService;
+    @Autowired
+    private ContractService contractService;
+    @Autowired
+    private AuthenticationService authenticationService;
+    @Autowired
+    private TokenService tokenService;
+    @Autowired
+    private IUserService iUserService;
 
     @PostMapping("/send-otp")
     public ResponseEntity sendOtpViaEmail(@RequestBody EmailDetailReq contentSender) {
@@ -27,6 +37,24 @@ public class EmailController {
     @PostMapping("/send")
     public ResponseEntity sendEmail(@RequestBody EmailDetailReq contentSender) {
         System.out.println(contentSender);
+        iEmailService.sendEmail(contentSender);
+        return  ResponseEntity.ok().body("Send email successfully");
+    }
+
+    @PostMapping("/send/vote/decision")
+    public ResponseEntity sendEmailVoteDecisision(@RequestBody EmailDetailReq contentSender) {
+        System.out.println(contentSender);
+        Users user =  iUserService.getUserByEmail(contentSender.getEmail());
+        System.out.println(user);
+        String tokenVote = tokenService.generateToken(user);
+        contentSender.setUrl(contentSender.getUrl() + "?token=" + tokenVote);
+
+        Context context = new  Context();
+        context.setVariable("confirmUrl",contentSender.getUrl());
+        context.setVariable("userName", user.getHovaTen());
+
+        contentSender.setContext(context);
+        contentSender.setTemplate("voting-notification");
         iEmailService.sendEmail(contentSender);
         return  ResponseEntity.ok().body("Send email successfully");
     }

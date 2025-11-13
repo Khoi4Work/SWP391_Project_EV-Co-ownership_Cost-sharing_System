@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.ContractNotExistedException;
+import khoindn.swp391.be.app.exception.exceptions.PrivateNotMatchesException;
 import khoindn.swp391.be.app.exception.exceptions.UndefinedChoiceException;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
@@ -127,7 +128,7 @@ public class ContractService implements IContractService {
                 verifier.update(contractBytes);
                 boolean isVerified = verifier.verify(signatureBytes);
                 if (!isVerified) {
-                    throw new IllegalArgumentException("Private key does not match public key");
+                    throw new PrivateNotMatchesException("Private key does not match public key");
                 }
                 System.out.println("✅ Private key matches public key.");
 

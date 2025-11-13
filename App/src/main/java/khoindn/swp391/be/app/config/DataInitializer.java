@@ -193,6 +193,11 @@ public class DataInitializer implements CommandLineRunner {
             batteryCheckService.setServiceName("Battery Check");
             batteryCheckService.setDescription("Check and optimize battery performance");
             iVehicleService.addVehicleService(batteryCheckService);
+
+            MenuVehicleService othersService = new MenuVehicleService();
+            othersService.setServiceName("Others Service");
+            othersService.setDescription("Other services by user's given data");
+            iVehicleService.addVehicleService(othersService);
         }
 
     }

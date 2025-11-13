@@ -77,8 +77,14 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(UndefinedChoiceException.class)
     public ResponseEntity handleUndefinedChoiceException(UndefinedChoiceException ex) {
-        return ResponseEntity.status(404).body("Choice is undefined!"); // 404 Not Found
+        return ResponseEntity.status(400).body("Choice is undefined!"); // 404 Not Found
     }
+
+    @ExceptionHandler(PrivateNotMatchesException.class)
+    public ResponseEntity handlePrivateNotMatchesException(PrivateNotMatchesException ex) {
+        return ResponseEntity.status(400).body("Private key does not match public key!"); // 400 Not Found
+    }
+
 
     // ==========================
     // Vehicle-related Exceptions
