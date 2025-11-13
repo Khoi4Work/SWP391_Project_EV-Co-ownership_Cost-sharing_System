@@ -135,7 +135,7 @@ export default function ServiceDetail() {
 
         // 5️⃣ Gửi email song song (Promise.allSettled để không ngắt khi lỗi 1 phần)
         const sendResults = await Promise.allSettled(
-          emailPayloads.map((payload) => axiosClient.post("/email/send", payload))
+          emailPayloads.map((payload) => axiosClient.post("/email/send/vote/decision", payload))
         );
 
         const failed = sendResults.filter((r) => r.status === "rejected");

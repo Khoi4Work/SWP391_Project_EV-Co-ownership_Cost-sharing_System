@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import axiosClient from "@/api/axiosClient";
+import axios from "axios";
 
 interface Service {
   id: number;
@@ -19,6 +20,9 @@ interface PaymentDetailResponse {
 }
 
 export default function PaymentConfirmation() {
+  const queryParams = new URLSearchParams(location.search);
+  const token = queryParams.get("token");
+  console.log("Token từ query string:", token);
   const { id } = useParams(); // id của nhóm hoặc quyết định, tuỳ BE
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -68,7 +72,13 @@ export default function PaymentConfirmation() {
         serviceId: serviId,
         vote: voteValue,
       };
-      const res = await axiosClient.patch(`/groupMember/decision`, payload);
+      const res = await axios.patch(`/groupMember/decision`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       if (res.status !== 200) {
         throw new Error("Không thể gửi vote");
       }
