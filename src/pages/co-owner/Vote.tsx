@@ -119,71 +119,55 @@ export default function PaymentConfirmation() {
   if (loading) return <p className="text-center py-10">Đang tải dữ liệu...</p>;
 
   return (
-    <div className="flex justify-center py-10">
-      <Card className="w-full max-w-2xl shadow-md">
+    <div className="flex justify-center py-12 bg-gray-50 min-h-screen">
+      <Card className="w-full max-w-2xl shadow-lg rounded-xl border border-gray-200">
+
         <CardHeader>
-          <h2 className="text-xl font-bold text-center">
+          <h2 className="text-2xl font-extrabold text-center text-gray-800">
             Thành viên {payerName} đã đăng ký các dịch vụ
           </h2>
         </CardHeader>
 
-        <CardContent>
-
+        <CardContent className="px-6 py-4">
           {/* HIỂN THỊ DECISION NAME */}
-          <div className="mb-5">
-            <h3 className="text-lg font-bold">Chi tiết dịch vụ:</h3>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">
+              Chi tiết dịch vụ:
+            </h3>
+            <ul className="list-disc pl-6 space-y-2">
               {decisionNameList.map((name, idx) => (
-                <li key={idx} className="text-primary font-medium">
-                  Tên dịch vụ:{name}
+                <li key={idx} className="text-gray-900 text-lg">
+                  <span className="font-bold">Tên dịch vụ:</span> {name}
                 </li>
               ))}
             </ul>
           </div>
 
           {/* HIỂN THỊ SERVICE DETAILS */}
-          {/*<ul className="space-y-3">*/}
-          {/*  {services.map((s) => (*/}
-          {/*    <li*/}
-          {/*      key={s.id}*/}
-          {/*      className="flex justify-between items-center border-b pb-2"*/}
-          {/*    >*/}
-          {/*      <div>*/}
-          {/*        <p className="font-medium">{s.serviceName}</p>*/}
-          {/*        <p className="text-sm text-muted-foreground">*/}
-          {/*          Giá: {s.price.toLocaleString("vi-VN")}₫*/}
-          {/*        </p>*/}
-          {/*      </div>*/}
-
-          {/*    </li>*/}
-          {/*  ))}*/}
-          {/*</ul>*/}
-
-          <div className="mt-6 border-t pt-4 space-y-2">
-            <p className="text-sm">
+          <div className="mt-6 border-t border-gray-300 pt-4 space-y-3">
+            <p className="text-base text-gray-700">
               Tổng chi phí:{" "}
-              <span className="font-bold">
+              <span className="font-bold text-gray-900">
                 {Number(totalAmount).toLocaleString("vi-VN")}₫
               </span>
             </p>
-            <p className="text-lg font-bold text-primary">
+            <p className="text-lg font-bold text-green-600">
               Mỗi người trả: {amountPerPerson.toLocaleString("vi-VN")}₫
             </p>
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex justify-center gap-4 py-4">
           <Button
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md transition duration-200"
             onClick={() => handleConfirm(1)} // 1: Đồng ý
             disabled={submitting}
           >
             {submitting ? "Đang xác nhận..." : "Xác nhận trả tiền"}
           </Button>
 
-          {/* Nút "Không đồng ý trả tiền" */}
           <Button
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition duration-200"
             onClick={() => handleConfirm(0)} // 0: Không đồng ý
             disabled={submitting}
           >

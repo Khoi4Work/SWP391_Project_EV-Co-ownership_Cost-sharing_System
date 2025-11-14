@@ -752,9 +752,7 @@ export default function ScheduleCards() {
             alert("Không tìm thấy lịch thuê xe");
             return;
         }
-
         const isMine = isBookingOfCurrentUser(booking);
-
         if (!isMine) {
             alert("Bạn chỉ có thể check-out những xe mà bạn đăng ký");
             return;
