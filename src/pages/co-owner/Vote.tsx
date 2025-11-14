@@ -142,22 +142,22 @@ export default function PaymentConfirmation() {
           </div>
 
           {/* HIỂN THỊ SERVICE DETAILS */}
-          <ul className="space-y-3">
-            {services.map((s) => (
-              <li
-                key={s.id}
-                className="flex justify-between items-center border-b pb-2"
-              >
-                <div>
-                  <p className="font-medium">{s.serviceName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Giá: {s.price.toLocaleString("vi-VN")}₫
-                  </p>
-                </div>
+          {/*<ul className="space-y-3">*/}
+          {/*  {services.map((s) => (*/}
+          {/*    <li*/}
+          {/*      key={s.id}*/}
+          {/*      className="flex justify-between items-center border-b pb-2"*/}
+          {/*    >*/}
+          {/*      <div>*/}
+          {/*        <p className="font-medium">{s.serviceName}</p>*/}
+          {/*        <p className="text-sm text-muted-foreground">*/}
+          {/*          Giá: {s.price.toLocaleString("vi-VN")}₫*/}
+          {/*        </p>*/}
+          {/*      </div>*/}
 
-              </li>
-            ))}
-          </ul>
+          {/*    </li>*/}
+          {/*  ))}*/}
+          {/*</ul>*/}
 
           <div className="mt-6 border-t pt-4 space-y-2">
             <p className="text-sm">
