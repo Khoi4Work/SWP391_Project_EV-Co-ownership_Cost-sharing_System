@@ -32,6 +32,7 @@ export default function PaymentConfirmation() {
   const [services, setServices] = useState<Service[]>([]);
   const [groupMemberCount, setGroupMemberCount] = useState(3);
   const [decisionDetails, setDecisionDetails] = useState([]);
+  const [decisionNameList, setDecisionNameList] = useState<string[]>([]);
   const deciId = localStorage.getItem("decisionId");
   const serviId = localStorage.getItem("serviceId");
   console.log("Decision ID from localStorage:", deciId);
@@ -52,9 +53,11 @@ export default function PaymentConfirmation() {
     }
     const fetchDecisionVoteDetail = async () => {
       try {
-        const res = await axiosClient.get(`groupMember/decision/vote/detail/${id}`);
+        const res = await axiosClient.get(`groupMember/decision/${deciId}`);
         if (res.status !== 200) throw new Error("Không thể tải chi tiết bỏ phiếu");
-        setServices(res.data.services || []);
+        const decisionName = res.data.decisionName ?? [];
+        setDecisionNameList(decisionName);
+        setServices(res.data);
         const data = res.data; // Mảng DecisionVoteDetail[]
         setDecisionDetails(data); // Lưu vào state để hiển thị
         setPayerName(name || "Thành viên");
@@ -123,6 +126,20 @@ export default function PaymentConfirmation() {
         </CardHeader>
 
         <CardContent>
+
+          {/* HIỂN THỊ DECISION NAME */}
+          <div className="mb-5">
+            <h3 className="text-lg font-bold">Chi tiết dịch vụ:</h3>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              {decisionNameList.map((name, idx) => (
+                <li key={idx} className="text-primary font-medium">
+                  Tên dịch vụ:{name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* HIỂN THỊ SERVICE DETAILS */}
           <ul className="space-y-3">
             {services.map((s) => (
               <li
@@ -135,6 +152,7 @@ export default function PaymentConfirmation() {
                     Giá: {s.price.toLocaleString("vi-VN")}₫
                   </p>
                 </div>
+
                 <img
                   src={s.receiptImageUrl}
                   alt="Phiếu thanh toán"
