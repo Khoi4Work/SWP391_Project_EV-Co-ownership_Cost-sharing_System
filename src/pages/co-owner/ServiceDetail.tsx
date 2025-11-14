@@ -100,11 +100,21 @@ export default function ServiceDetail() {
         console.log("✅ Full decisionVote:", res.data);
         const voters = res.data.voters;
         const creator = res.data.creator;
+        const totalMembers = 1 + (voters?.length || 0);
+        console.log("Tổng thành viên trong nhóm:", totalMembers);
 
+        // Lưu vào localStorage để dùng ở component khác
+        localStorage.setItem("groupMemberCount", totalMembers.toString());
         // 1️⃣ Creator name & group name
         const creatorName = creator?.createdBy?.users?.hovaTen || "Một thành viên";
         const groupNameFromRes = creator?.createdBy?.group?.groupName || "Nhóm";
         const decisionName = creator?.decisionName || "Dịch vụ";
+        const decisionId = res.data.creator.id;
+        const groupId = res.data.creator.createdBy.group.groupId;
+        console.log("decisionId:", decisionId);
+        localStorage.setItem("decisionId", decisionId);
+        localStorage.setItem("creatorName", creatorName);
+        localStorage.setItem("totalAmount", totalAmount.toString());
 
         // 2️⃣ Lấy danh sách email từ decisionVoteDetails
         const emailList =
@@ -122,14 +132,14 @@ export default function ServiceDetail() {
         // 4️⃣ Tạo danh sách payload để gửi email
         const emailPayloads = emailList.map((email: string) => ({
           email,
-          subject: `Yêu cầu xác nhận thanh toán dịch vụ: ${decisionName}`,
-          url: `${window.location.origin}/vote/${creator.id}`,
+          subject: `Yêu cầu xác nhận thanh toán dịch vụ`,
+          url: `${window.location.origin}/vote/${groupId}`,
           template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${creator.id} để xác nhận thanh toán.`,
         }));
 
         // 5️⃣ Gửi email song song (Promise.allSettled để không ngắt khi lỗi 1 phần)
         const sendResults = await Promise.allSettled(
-          emailPayloads.map((payload) => axiosClient.post("/email/send", payload))
+          emailPayloads.map((payload) => axiosClient.post("/email/send/vote/decision", payload))
         );
 
         const failed = sendResults.filter((r) => r.status === "rejected");
@@ -149,7 +159,7 @@ export default function ServiceDetail() {
         }
 
         // ✅ Cuối cùng: điều hướng về trang nhóm
-        navigate("/group");
+        navigate("/co-owner/dashboard");
       } catch (error) {
         console.error("Lỗi khi tạo decision hoặc gửi email:", error);
         toast({

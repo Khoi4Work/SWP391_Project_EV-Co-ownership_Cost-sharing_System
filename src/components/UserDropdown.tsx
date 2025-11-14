@@ -6,22 +6,17 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function UserDropdown() {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        // Navigate back to homepage for login/register
+        localStorage.removeItem("accessToken");
         navigate("/");
+        window.location.reload();
     };
-
-    const handleSettings = () => {
-        // Navigate to settings page - can be implemented later
-        console.log("Settings clicked");
-    };
-
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -190,8 +190,6 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                 });
         }
     }, [open]);
-
-    const CREATE_DECISION = import.meta.env.VITE_PATCH_CREATE_DECISION_PATH;
     const idGroup = Number(localStorage.getItem("groupId"));
     const handleRegister = async () => {
         if (!selectedService) {
@@ -202,6 +200,17 @@ function RegisterVehicleServiceModal({ open, onClose }) {
             });
             return;
         }
+        const selectedServiceData = vehicleServices.find(service => service.serviceName === selectedService);
+        if (!selectedServiceData) {
+            toast({
+                title: "Dịch vụ không tìm thấy",
+                description: `Không tìm thấy dịch vụ: ${selectedService}`,
+                variant: "destructive",
+            });
+            return;
+        }
+        const serviceId = selectedServiceData.id;
+        localStorage.setItem("serviceId", serviceId);
         navigate("/service-detail", { state: { selectedService } });
         // try {
         //     // 1. tạo DecisionVote
@@ -473,7 +482,7 @@ export default function ScheduleCards() {
         setLoading(true);
         setError(null);
         try {
-            const groupId = currentGroupId || Number(localStorage.getItem("groupId")) ;
+            const groupId = currentGroupId || Number(localStorage.getItem("groupId"));
             const token = localStorage.getItem("accessToken");
             const headers = {
                 "Accept": "application/json",
@@ -657,7 +666,7 @@ export default function ScheduleCards() {
             }
         } else {
             // Fallback: load cho groupId hiện tại
-            const groupId = Number(localStorage.getItem("groupId")) ;
+            const groupId = Number(localStorage.getItem("groupId"));
             checkOverdueFee(groupId);
         }
     }, []);

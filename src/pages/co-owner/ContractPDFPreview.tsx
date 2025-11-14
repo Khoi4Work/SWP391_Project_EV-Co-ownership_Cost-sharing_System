@@ -76,7 +76,7 @@ const ContractView = forwardRef<HTMLDivElement, ContractViewProps>(
                 left: 0,
                 top: "40%",
                 transform: "translateY(-50%)",
-                height: "35px",
+                height: "25px",
                 objectFit: "contain",
               }}
             />

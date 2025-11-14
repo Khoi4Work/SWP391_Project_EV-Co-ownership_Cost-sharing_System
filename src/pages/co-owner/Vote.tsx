@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import axiosClient from "@/api/axiosClient";
+import axios from "axios";
 
 interface Service {
   id: number;
@@ -19,27 +21,47 @@ interface PaymentDetailResponse {
 }
 
 export default function PaymentConfirmation() {
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+  const token = queryParams.get("token");
+  console.log("Token từ query string:", token);
   const { id } = useParams(); // id của nhóm hoặc quyết định, tuỳ BE
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [payerName, setPayerName] = useState("");
   const [services, setServices] = useState<Service[]>([]);
-  const [groupMemberCount, setGroupMemberCount] = useState(1);
   const [decisionDetails, setDecisionDetails] = useState([]);
-  const totalAmount = services.reduce((sum, s) => sum + s.price, 0);
-  const amountPerPerson = Math.floor(totalAmount / groupMemberCount);
-
+  const [decisionNameList, setDecisionNameList] = useState<string[]>([]);
+  const deciId = localStorage.getItem("decisionId");
+  const serviId = localStorage.getItem("serviceId");
+  console.log("Decision ID from localStorage:", deciId);
+  const name = localStorage.getItem("creatorName");
+  console.log("Name from localStorage:", name);
+  const groupMemberCount = localStorage.getItem("groupMemberCount");
+  const totalAmount = localStorage.getItem("totalAmount");
+  const amountPerPerson = Math.floor(Number(totalAmount) / Number(groupMemberCount));
+  console.log("Total Amount from localStorage:", totalAmount);
   useEffect(() => {
+    if (!token) {
+      toast({
+        title: "Lỗi",
+        description: "Token không hợp lệ hoặc hết hạn.",
+        variant: "destructive",
+      });
+      navigate("/co-owner/dashboard"); // hoặc "/home" hoặc bất kỳ trang nào bạn muốn
+      return;
+    }
     const fetchDecisionVoteDetail = async () => {
       try {
-        const res = await axiosClient.get(`/decision/vote/detail/${id}`);
+        const res = await axiosClient.get(`groupMember/decision/${deciId}`);
         if (res.status !== 200) throw new Error("Không thể tải chi tiết bỏ phiếu");
-
-        const data = res.data; // Mảng DecisionVoteDetail[]
-        setDecisionDetails(data); // Lưu vào state để hiển thị
-        setPayerName(data.createdBy.user.hovaTen);
-
-
+        const decisionName = res.data.decisionName ?? [];
+        setDecisionNameList(decisionName);
+        setServices(res.data);
+        console.log("res data", res.data);
+        const data = res.data;
+        // setDecisionDetails(data); // Lưu vào state để hiển thị
+        setPayerName(name || "Thành viên");
       } catch (err) {
         console.error(err);
         toast({
@@ -53,18 +75,35 @@ export default function PaymentConfirmation() {
     };
 
     fetchDecisionVoteDetail();
-  }, [id]);
+  }, [token, id, navigate]);
 
 
-  const handleConfirmPayment = async () => {
+  const handleConfirm = async (voteValue: number) => {
     try {
       setSubmitting(true);
-      // ⚠️ Gửi xác nhận thanh toán
-      await axiosClient.post(`/groupMember/payment/confirm/${id}`);
-      toast({
-        title: "Xác nhận thành công",
-        description: "Bạn đã xác nhận trả tiền cho các dịch vụ.",
+      const payload = {
+        decisionId: deciId,
+        groupId: id,
+        serviceId: serviId,
+        vote: voteValue,
+      };
+      const res = await axios.patch(`http://localhost:8080/groupMember/decision`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
+
+      if (res.status !== 200) {
+        throw new Error("Không thể gửi vote");
+      }
+      toast({
+        title: voteValue === 1 ? "Đồng ý trả tiền" : "Không đồng ý trả tiền",
+        description: voteValue === 1
+          ? "Bạn đã xác nhận đồng ý trả tiền cho các dịch vụ."
+          : "Bạn đã xác nhận không đồng ý trả tiền.",
+      });
+      navigate("/co-owner/dashboard");
     } catch (err) {
       console.error(err);
       toast({
@@ -89,37 +128,43 @@ export default function PaymentConfirmation() {
         </CardHeader>
 
         <CardContent>
-          <ul className="space-y-3">
-            {services.map((s) => (
-              <li
-                key={s.id}
-                className="flex justify-between items-center border-b pb-2"
-              >
-                <div>
-                  <p className="font-medium">{s.serviceName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Giá: {s.price.toLocaleString("vi-VN")}₫
-                  </p>
-                </div>
-                <img
-                  src={s.receiptImageUrl}
-                  alt="Phiếu thanh toán"
-                  className="w-20 h-20 object-cover rounded"
-                />
-              </li>
-            ))}
-          </ul>
+
+          {/* HIỂN THỊ DECISION NAME */}
+          <div className="mb-5">
+            <h3 className="text-lg font-bold">Chi tiết dịch vụ:</h3>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              {decisionNameList.map((name, idx) => (
+                <li key={idx} className="text-primary font-medium">
+                  Tên dịch vụ:{name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* HIỂN THỊ SERVICE DETAILS */}
+          {/*<ul className="space-y-3">*/}
+          {/*  {services.map((s) => (*/}
+          {/*    <li*/}
+          {/*      key={s.id}*/}
+          {/*      className="flex justify-between items-center border-b pb-2"*/}
+          {/*    >*/}
+          {/*      <div>*/}
+          {/*        <p className="font-medium">{s.serviceName}</p>*/}
+          {/*        <p className="text-sm text-muted-foreground">*/}
+          {/*          Giá: {s.price.toLocaleString("vi-VN")}₫*/}
+          {/*        </p>*/}
+          {/*      </div>*/}
+
+          {/*    </li>*/}
+          {/*  ))}*/}
+          {/*</ul>*/}
 
           <div className="mt-6 border-t pt-4 space-y-2">
             <p className="text-sm">
               Tổng chi phí:{" "}
               <span className="font-bold">
-                {totalAmount.toLocaleString("vi-VN")}₫
+                {Number(totalAmount).toLocaleString("vi-VN")}₫
               </span>
-            </p>
-            <p className="text-sm">
-              Số thành viên:{" "}
-              <span className="font-bold">{groupMemberCount}</span>
             </p>
             <p className="text-lg font-bold text-primary">
               Mỗi người trả: {amountPerPerson.toLocaleString("vi-VN")}₫
@@ -130,10 +175,19 @@ export default function PaymentConfirmation() {
         <CardFooter className="flex justify-center">
           <Button
             className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={handleConfirmPayment}
+            onClick={() => handleConfirm(1)} // 1: Đồng ý
             disabled={submitting}
           >
             {submitting ? "Đang xác nhận..." : "Xác nhận trả tiền"}
+          </Button>
+
+          {/* Nút "Không đồng ý trả tiền" */}
+          <Button
+            className="bg-red-600 hover:bg-red-700 text-white"
+            onClick={() => handleConfirm(0)} // 0: Không đồng ý
+            disabled={submitting}
+          >
+            {submitting ? "Đang xác nhận..." : "Không đồng ý trả tiền"}
           </Button>
         </CardFooter>
       </Card>

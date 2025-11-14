@@ -158,7 +158,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
             const SET_CONTRACT = import.meta.env.VITE_SET_CONTRACT_PATH;
             const res = await axiosClient.post(SET_CONTRACT, formData, {
                 headers: {
-                    Authorization: `Bearer ${accessToken}`,
+                    Authorization: `Bearer ${token}`,
                     "Content-Type": "multipart/form-data",
                 },
             });
@@ -239,7 +239,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
 
             // 5) Gọi create group
             const groupRes = await axiosClient.post("/group/create", groupPayload, {
-                headers: { Authorization: `Bearer ${accessToken}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (groupRes.status === 201) {
@@ -259,6 +259,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
             }
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
+            console.log("lỗi", err?.response?.data?.message);
             toast({
                 title: "Lỗi hệ thống",
                 description: err?.response?.data?.message || "Không thể hoàn tất yêu cầu. Vui lòng thử lại.",
