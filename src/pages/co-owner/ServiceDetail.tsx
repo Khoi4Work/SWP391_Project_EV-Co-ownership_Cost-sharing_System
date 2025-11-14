@@ -132,7 +132,7 @@ export default function ServiceDetail() {
         // 4️⃣ Tạo danh sách payload để gửi email
         const emailPayloads = emailList.map((email: string) => ({
           email,
-          subject: `Yêu cầu xác nhận thanh toán dịch vụ`,
+          subject: `[Ecoshare System] Yêu cầu xác nhận thanh toán dịch vụ`,
           url: `${window.location.origin}/vote/${groupId}`,
           template: `Nhóm ${groupNameFromRes} - thành viên ${creatorName} tạo yêu cầu ${decisionName}. Xin vui lòng vào link này ${window.location.origin}/vote/${creator.id} để xác nhận thanh toán.`,
         }));
