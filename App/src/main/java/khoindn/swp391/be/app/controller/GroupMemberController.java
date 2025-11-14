@@ -136,7 +136,8 @@ public class GroupMemberController {
         if (groupMember == null) {
             throw new GroupMemberNotFoundException("Member is not in Group!");
         }
-        DecisionVoteDetail voter = iGroupMemberService.getDecisionVoteDetailByGroupMemberAndDecision(groupMember, votingRequest.getDecisionId())
+        DecisionVoteDetail voter = iGroupMemberService
+                .getDecisionVoteDetailByGroupMemberAndDecision(groupMember, votingRequest.getDecisionId());
         if (!voter.getOptionDecisionVote().equals(OptionDecisionVoteDetail.ABSENT)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("You have already voted for this decision.");

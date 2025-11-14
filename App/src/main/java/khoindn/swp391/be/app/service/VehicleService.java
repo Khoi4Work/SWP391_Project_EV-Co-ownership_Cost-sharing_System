@@ -83,7 +83,6 @@ public class VehicleService implements IVehicleService {
         RequestVehicleService vehicleService = new RequestVehicleService();
         vehicleService.setGroupMember(gm);
         vehicleService.setVehicle(iVehicleRepository.getVehiclesByGroup(gm.getGroup()));
-        vehicleService.setRequestVehicleServiceDetail(new RequestVehicleServiceDetail());
         iRequestVehicleServiceRepository.save(vehicleService);
 
         return vehicleService;
