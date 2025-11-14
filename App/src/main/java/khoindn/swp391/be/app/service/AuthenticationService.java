@@ -48,6 +48,36 @@ public class AuthenticationService implements UserDetailsService {
     @Autowired
     private TemplateEngine templateEngine;
 
+    public Users checkDataRegister(RegisterUserReq data) {
+        // Kiểm tra email
+        if (iAuthenticationRepository.existsByEmail((data.getEmail()))) {
+            throw new EmailDuplicatedException("Email đã được sử dụng");
+        }
+
+        // Kiểm tra CCCD
+        if (iAuthenticationRepository.existsByCccd((data.getCccd()))) {
+            throw new CCCDDuplicatedException("CCCD đã được sử dụng");
+        }
+
+        // Kiểm tra GPLX
+        if (iAuthenticationRepository.existsByGplx((data.getGplx()))) {
+            throw new GPLXDuplicatedException("GPLX đã được sử dụng");
+        }
+
+        // Kiểm tra phone
+        if (iAuthenticationRepository.existsByPhone((data.getPhone()))) {
+            throw new PhoneDuplicatedException("Số điện thoại đã được sử dụng");
+
+        }
+
+        if (!iUserRoleRepository.existsUserRoleByRoleId((data.getRoleId()))) {
+            System.out.println(data.getRoleId());
+            throw new RoleIsNotExistedException("Vai trò ko tồn tại");
+        }
+
+        return null;
+    }
+
 
     public Users register(RegisterUserReq users) {
         // (Phần kiểm tra (validation) giữ nguyên)
