@@ -58,8 +58,9 @@ export default function PaymentConfirmation() {
         const decisionName = res.data.decisionName ?? [];
         setDecisionNameList(decisionName);
         setServices(res.data);
-        const data = res.data; // Mảng DecisionVoteDetail[]
-        setDecisionDetails(data); // Lưu vào state để hiển thị
+        console.log("res data", res.data);
+        const data = res.data;
+        // setDecisionDetails(data); // Lưu vào state để hiển thị
         setPayerName(name || "Thành viên");
       } catch (err) {
         console.error(err);
@@ -154,11 +155,6 @@ export default function PaymentConfirmation() {
                   </p>
                 </div>
 
-                <img
-                  src={s.receiptImageUrl}
-                  alt="Phiếu thanh toán"
-                  className="w-20 h-20 object-cover rounded"
-                />
               </li>
             ))}
           </ul>
