@@ -30,7 +30,6 @@ export default function PaymentConfirmation() {
   const [submitting, setSubmitting] = useState(false);
   const [payerName, setPayerName] = useState("");
   const [services, setServices] = useState<Service[]>([]);
-  const [groupMemberCount, setGroupMemberCount] = useState(3);
   const [decisionDetails, setDecisionDetails] = useState([]);
   const [decisionNameList, setDecisionNameList] = useState<string[]>([]);
   const deciId = localStorage.getItem("decisionId");
@@ -38,8 +37,9 @@ export default function PaymentConfirmation() {
   console.log("Decision ID from localStorage:", deciId);
   const name = localStorage.getItem("creatorName");
   console.log("Name from localStorage:", name);
+  const groupMemberCount = localStorage.getItem("groupMemberCount");
   const totalAmount = localStorage.getItem("totalAmount");
-  const amountPerPerson = Math.floor(Number(totalAmount) / groupMemberCount);
+  const amountPerPerson = Math.floor(Number(totalAmount) / Number(groupMemberCount));
   console.log("Total Amount from localStorage:", totalAmount);
   useEffect(() => {
     if (!token) {
@@ -102,6 +102,7 @@ export default function PaymentConfirmation() {
           ? "Bạn đã xác nhận đồng ý trả tiền cho các dịch vụ."
           : "Bạn đã xác nhận không đồng ý trả tiền.",
       });
+      navigate("/co-owner/dashboard");
     } catch (err) {
       console.error(err);
       toast({

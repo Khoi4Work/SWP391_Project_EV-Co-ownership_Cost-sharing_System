@@ -100,7 +100,11 @@ export default function ServiceDetail() {
         console.log("✅ Full decisionVote:", res.data);
         const voters = res.data.voters;
         const creator = res.data.creator;
+        const totalMembers = 1 + (voters?.length || 0);
+        console.log("Tổng thành viên trong nhóm:", totalMembers);
 
+        // Lưu vào localStorage để dùng ở component khác
+        localStorage.setItem("groupMemberCount", totalMembers.toString());
         // 1️⃣ Creator name & group name
         const creatorName = creator?.createdBy?.users?.hovaTen || "Một thành viên";
         const groupNameFromRes = creator?.createdBy?.group?.groupName || "Nhóm";
