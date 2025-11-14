@@ -36,7 +36,7 @@ public class DecisionVote{
     @JoinColumn(name = "created_by")
     private GroupMember createdBy;
 
-    @OneToOne
+    @OneToOne(mappedBy = "")
     RequestVehicleService requestVehicleService;
 
     @OneToMany(mappedBy = "decisionVote", cascade = CascadeType.ALL)

@@ -30,6 +30,10 @@ public class EmailService implements IEmailService {
 
     @Override
     public void sendEmail(EmailDetailReq contentSender) {
+
+        if (contentSender.getContext()!= null){
+            contentSender.setTemplate(templateEngine.process(contentSender.getTemplate(), contentSender.getContext()));
+        }
         try {
             // MimeMessage cho phép gửi HTML + file đính kèm
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();

@@ -36,4 +36,6 @@ public interface IGroupMemberService {
     DecisionVote getDecisionVoteById(long id);
 
     List<DecisionVoteDetail> getAllDecisionVoteDetailByDecisionVote(DecisionVote decisionVote);
+
+    DecisionVoteDetail getDecisionVoteDetailByGroupMemberAndDecision(GroupMember groupMember, long decisionId);
 }
