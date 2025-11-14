@@ -31,7 +31,7 @@ public class StaffService implements IStaffService{
         }
         // Update status of GroupMember
         GroupMember user_leaving = requestProcessing.getGroupMember();
-        user_leaving.setStatus(StatusGroupMember.LEAVED);
+        user_leaving.setStatus(StatusGroupMember.LEFT);
         iGroupMemberRepository.save(user_leaving);
         // Update status of Group
         Group group = user_leaving.getGroup();
