@@ -48,7 +48,7 @@ export default function PaymentConfirmation() {
         description: "Token không hợp lệ hoặc hết hạn.",
         variant: "destructive",
       });
-      navigate("//co-owner/dashboard"); // hoặc "/home" hoặc bất kỳ trang nào bạn muốn
+      navigate("/co-owner/dashboard"); // hoặc "/home" hoặc bất kỳ trang nào bạn muốn
       return;
     }
     const fetchDecisionVoteDetail = async () => {
