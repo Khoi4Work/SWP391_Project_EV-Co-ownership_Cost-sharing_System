@@ -259,6 +259,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
             }
         } catch (err: any) {
             console.error("Chi tiết lỗi:", err?.response || err);
+            console.log("lỗi", err?.response?.data?.message);
             toast({
                 title: "Lỗi hệ thống",
                 description: err?.response?.data?.message || "Không thể hoàn tất yêu cầu. Vui lòng thử lại.",

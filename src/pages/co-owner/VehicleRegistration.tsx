@@ -814,11 +814,11 @@ export default function VehicleRegistration() {
                         />
 
                         {/* Hiển thị lỗi duy nhất */}
-                        {vehicleFormik.errors.plateNo && (
+                        {/* {vehicleFormik.errors.plateNo && (
                           <p className="text-red-500 text-sm mt-1">
                             {vehicleFormik.errors.plateNo}
                           </p>
-                        )}
+                        )} */}
                       </>
                     ) : field.id === "color" ? (
                       <div className="flex items-center space-x-3">
