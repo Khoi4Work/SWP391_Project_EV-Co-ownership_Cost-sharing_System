@@ -75,6 +75,7 @@ export default function VerifyOTP() {
             toast({
                 title: "Đã gửi mã OTP",
                 description: `Vui lòng kiểm tra email: ${userData.email}`,
+                variant: "default",
             });
         } catch (error) {
             console.error(error);
@@ -112,19 +113,16 @@ export default function VerifyOTP() {
             toast({
                 title: "Xác thực thành công",
                 description: "Tài khoản đã được tạo!",
+                variant: "default",
             });
             setTimeout(() => navigate("/login"), 1000);
         } catch (error: any) {
             console.error("Error creating user:", error);
-            const errorMessage = error.response?.data?.message ||
-                error.response?.data || "Vui lòng kiểm tra lại thông tin.";
-            navigate("/register", { state: { registorError: errorMessage } })
         }
         finally {
             setIsVerifying(false);
         }
     };
-
     return (
         <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
             <Card className="w-full max-w-md shadow-glow border-0">
