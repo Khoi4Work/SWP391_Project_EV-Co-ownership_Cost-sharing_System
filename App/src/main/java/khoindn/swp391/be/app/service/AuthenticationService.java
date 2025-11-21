@@ -104,9 +104,9 @@ public class AuthenticationService implements UserDetailsService {
 
         }
 
-        if (users.getPassword() == null) {
-            throw new PasswordNullException("Mật khẩu không được để trống");
-        }
+//        if (users.getPassword() == null) {
+//            throw new PasswordNullException("Mật khẩu không được để trống");
+//        }
 
         if (!iUserRoleRepository.existsUserRoleByRoleId((users.getRoleId()))) {
             System.out.println(users.getRoleId());

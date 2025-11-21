@@ -21,4 +21,8 @@ public interface IScheduleRepository extends JpaRepository<Schedule, Integer> {
 
     List<Schedule> findByStatusAndCreatedAtBefore(StatusSchedule status, LocalDateTime beforeDate);
 
+    List<Schedule> findByGroupMember_Users_Id(int userId);
+
+    List<Schedule> findByGroupMember_Users_IdAndStatusNotIn(int userId, List<StatusSchedule> statuses);
+
 }
