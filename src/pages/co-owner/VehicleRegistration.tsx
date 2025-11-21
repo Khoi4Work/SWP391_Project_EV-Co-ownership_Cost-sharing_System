@@ -120,7 +120,6 @@ export default function VehicleRegistration() {
   const GET_USERS = import.meta.env.VITE_USERS_GET;
   const fetchUserByEmail = async (email: string) => {
     try {
-      // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
       const res = await axiosClient.get(GET_USERS, {
         params: { email }
       });

@@ -24,7 +24,6 @@ import ChatBox from "@/components/ChatBox";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { groups as initialGroups } from "@/data/mockGroups";
 import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
@@ -35,7 +34,6 @@ export default function StaffDashboard() {
     const [selectedApp, setSelectedApp] = useState<any>(null);
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
-    const [groups, setGroups] = useState(initialGroups);
     const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
     const LEAVE_GROUP = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const stats = [
