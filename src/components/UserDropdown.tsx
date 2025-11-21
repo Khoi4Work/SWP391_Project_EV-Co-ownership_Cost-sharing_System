@@ -25,11 +25,6 @@ export default function UserDropdown() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-                {/* <DropdownMenuItem onClick={handleSettings} className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4"/>
-                    Cài đặt
-                </DropdownMenuItem> */}
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     Đăng xuất

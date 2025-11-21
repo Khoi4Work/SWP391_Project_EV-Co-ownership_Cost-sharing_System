@@ -68,6 +68,8 @@ async function preprocessWithOpenCV(file: File): Promise<string> {
 }
 
 export default function Register() {
+    const BASE_URL = import.meta.env.VITE_API_URL;
+    const CHECK_DUPLICATE = import.meta.env.VITE_CHECK_DUPLICATE_FIELD;
     const location = useLocation();
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -187,9 +189,7 @@ export default function Register() {
                             acceptTerms: false,
                         }}
                         validationSchema={validationSchema}
-                        validateOnChange={true}
-                        validateOnBlur={false}
-                        validateOnMount={false}
+                        validateOnChange={false}
                         onSubmit={async (values, { setSubmitting }) => {
                             const userObject = {
                                 hovaTen: values.hovaTen,
@@ -202,8 +202,14 @@ export default function Register() {
                             };
                             console.log("User Object:", userObject);
                             try {
-                                const response = await axios.get("http://localhost:8080/exception/check/register", {
-                                    params: userObject,
+                                const payload = {
+                                    email: values.email,
+                                    phone: values.phone,
+                                    cccd: values.cccd,
+                                    gplx: values.gplx,
+                                }
+                                const response = await axios.get(`${BASE_URL}/${CHECK_DUPLICATE}`, {
+                                    params: payload,
                                 });
                                 // Nếu không lỗi → navigate
                                 if (response.status === 200) {
@@ -226,20 +232,6 @@ export default function Register() {
                                 setSubmitting(false);
                             }
                         }}
-                        validate={(values) => {
-                            try {
-                                validationSchema.validateSync(values, { abortEarly: false });
-                                return {};
-                            } catch (err: any) {
-                                const errors: { [key: string]: string } = {};
-                                if (err.inner) {
-                                    err.inner.forEach((e: any) => {
-                                        errors[e.path] = e.message;
-                                    });
-                                }
-                                return errors;
-                            }
-                        }}
                     >
                         {({ isSubmitting, setFieldValue }) => (
                             <Form className="space-y-4">
@@ -256,7 +248,7 @@ export default function Register() {
                                                     placeholder="Nhập họ và tên đầy đủ"
                                                     onChange={(e) => {
                                                         form.setFieldValue("hovaTen", e.target.value);
-                                                        form.setFieldError("hovaTen", undefined);
+                                                        form.setFieldError("hovaTen", "");
                                                     }}
                                                     onBlur={() => form.validateField("hovaTen")}
                                                 />
@@ -281,7 +273,7 @@ export default function Register() {
                                                     placeholder="Nhập email của bạn"
                                                     onChange={(e) => {
                                                         form.setFieldValue("email", e.target.value);
-                                                        form.setFieldError("email", undefined);
+                                                        form.setFieldError("email", "");
                                                     }}
                                                     onBlur={() => form.validateField("email")}
                                                 />
@@ -306,7 +298,7 @@ export default function Register() {
                                                         placeholder="Số CCCD"
                                                         onChange={(e) => {
                                                             form.setFieldValue("cccd", e.target.value);
-                                                            form.setFieldError("cccd", undefined);
+                                                            form.setFieldError("cccd", "");
                                                         }}
                                                         onBlur={() => form.validateField("cccd")}
                                                     />
@@ -342,7 +334,7 @@ export default function Register() {
                                                         placeholder="số GPLX"
                                                         onChange={(e) => {
                                                             form.setFieldValue("gplx", e.target.value);
-                                                            form.setFieldError("gplx", undefined);
+                                                            form.setFieldError("gplx", "");
                                                         }}
                                                         onBlur={() => form.validateField("gplx")}
                                                     />
@@ -378,7 +370,7 @@ export default function Register() {
                                                     placeholder="Nhập số điện thoại"
                                                     onChange={(e) => {
                                                         form.setFieldValue("phone", e.target.value);
-                                                        form.setFieldError("phone", undefined);
+                                                        form.setFieldError("phone", "");
                                                     }}
                                                     onBlur={() => form.validateField("phone")}
                                                 />
@@ -403,7 +395,7 @@ export default function Register() {
                                                     placeholder="Nhập mật khẩu"
                                                     onChange={(e) => {
                                                         form.setFieldValue("password", e.target.value);
-                                                        form.setFieldError("password", undefined);
+                                                        form.setFieldError("password", "");
                                                     }}
                                                     onBlur={() => form.validateField("password")}
                                                 />
@@ -428,7 +420,7 @@ export default function Register() {
                                                     placeholder="Nhập lại mật khẩu"
                                                     onChange={(e) => {
                                                         form.setFieldValue("confirmPassword", e.target.value);
-                                                        form.setFieldError("confirmPassword", undefined);
+                                                        form.setFieldError("confirmPassword", "");
                                                     }}
                                                     onBlur={() => form.validateField("confirmPassword")}
                                                 />

@@ -168,6 +168,7 @@ export default function Login() {
             toast({
                 title: "Đăng nhập thành công",
                 description: `Chào mừng ${hovaten} đến với EcoShare!`,
+                variant: "success",
             });
 
             console.log("Role from backend:", role);
@@ -212,7 +213,7 @@ export default function Login() {
                     </div>
                     <CardTitle className="text-2xl font-bold">Login</CardTitle>
                     <CardDescription>
-                        Đăng nhập để truy cập hệ thống quản lý xe điện
+                        Đăng nhập để truy cập hệ thống đồng quản lý xe điện
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

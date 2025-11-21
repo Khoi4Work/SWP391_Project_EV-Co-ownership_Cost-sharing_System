@@ -75,7 +75,7 @@ export default function VerifyOTP() {
             toast({
                 title: "Đã gửi mã OTP",
                 description: `Vui lòng kiểm tra email: ${userData.email}`,
-                variant: "default",
+                variant: "success",
             });
         } catch (error) {
             console.error(error);
@@ -113,7 +113,7 @@ export default function VerifyOTP() {
             toast({
                 title: "Xác thực thành công",
                 description: "Tài khoản đã được tạo!",
-                variant: "default",
+                variant: "success",
             });
             setTimeout(() => navigate("/login"), 1000);
         } catch (error: any) {
