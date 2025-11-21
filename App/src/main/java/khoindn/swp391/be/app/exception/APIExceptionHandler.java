@@ -293,4 +293,9 @@ public class APIExceptionHandler {
     public ResponseEntity handleUserAlreadyHasActiveCheckInException(UserAlreadyHasActiveCheckInException ex) {
         return ResponseEntity.status(409).body(ex.getMessage());
     }
+
+    @ExceptionHandler
+    public ResponseEntity handleCheckInTooEarlyException(CheckInTooEarlyException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage());
+    }
 }
