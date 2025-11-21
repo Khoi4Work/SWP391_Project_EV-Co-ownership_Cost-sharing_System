@@ -210,7 +210,7 @@ export default function Register() {
                                     roleId: 1,
                                     hovaTen: values.hovaTen,
                                 }
-                                const response = await axios.get(`${BASE_URL}/${CHECK_DUPLICATE}`, {
+                                const response = await axios.get(`${BASE_URL}${CHECK_DUPLICATE}`, {
                                     params: payload,
                                 });
                                 // Nếu không lỗi → navigate

@@ -40,6 +40,7 @@ interface VehicleInfo {
   color: string;
   batteryCapacity: string;
   price: number;
+  imageFile: File | null;
 }
 
 export default function VehicleRegistration() {
@@ -151,32 +152,6 @@ export default function VehicleRegistration() {
     }
   };
   const VEHICLES = import.meta.env.VITE_VEHICLES;
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await axiosClient.get(VEHICLES);
-        // ⚙️ Map lại dữ liệu backend cho phù hợp UI
-        const mappedVehicles = response.data.map((v) => ({
-          id: v.vehicleId,
-          name: `${v.brand} ${v.model}`,
-          brand: v.brand,
-          model: v.model,
-          plateNo: v.plateNo,
-          color: v.color,
-          batteryCapacity: v.batteryCapacity,
-          image: v.imageUrl || "/default-car.jpg",
-          price: `${v.price?.toLocaleString()} VND`,
-        }));
-        console.log("Fetched vehicles:", mappedVehicles);
-        setVehicles(mappedVehicles);
-      } catch (error) {
-        console.error("Lỗi khi tải danh sách xe:", error);
-
-
-      }
-    };
-    fetchVehicles();
-  }, []);
   const formik = useFormik<CoOwner>({
     initialValues: ownerInfo,
     enableReinitialize: true,
@@ -250,10 +225,6 @@ export default function VehicleRegistration() {
   const getOwnershipAmount = (percentage: number) => {
     const price = getVehiclePrice();
     return Math.round(price * (percentage / 100));
-  };
-  const handleSelectVehicle = (vehicle: VehicleInfo) => {
-    setSelectedVehicle(vehicle);
-    localStorage.setItem("selectedVehicle", JSON.stringify(vehicle));
   };
   const addCoOwner = () => {
     // Maximum 5 people total (including primary owner)
@@ -375,7 +346,8 @@ export default function VehicleRegistration() {
       .required("Vui lòng nhập dung lượng pin"),
     price: Yup.string()
       .required("Vui lòng nhập giá xe")
-      .matches(/^\d{1,3}(,\d{3})*(\.\d+)?$|^\d+$/, "Giá phải là số hợp lệ")
+      .matches(/^\d{1,3}(,\d{3})*(\.\d+)?$|^\d+$/, "Giá phải là số hợp lệ"),
+    imageFile: Yup.mixed().required("Cần có ảnh xe")
   });
   const vehicleFormik = useFormik({
     initialValues: {
@@ -385,6 +357,8 @@ export default function VehicleRegistration() {
       color: "",
       batteryCapacity: "",
       price: 0,
+      imageUrl: null,
+      imageFile: null,
     },
     validationSchema: VehicleSchema,
     onSubmit: async (values) => {
@@ -523,7 +497,7 @@ export default function VehicleRegistration() {
     formData.append("color", selectedVehicle.color);
     formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
     formData.append("price", String(selectedVehicle.price));
-
+    formData.append("imageUrl", selectedVehicle.imageFile);
     // ⚙️ userId là danh sách => cần append từng phần tử
     coOwners.forEach(owner => {
       formData.append("idUsers", owner.id.toString());
@@ -680,7 +654,7 @@ export default function VehicleRegistration() {
             <Progress value={getProgress()} className="mb-4" />
 
             <div className="grid grid-cols-5 text-center text-xs">
-              {["Nhập hợp đồng", "Chọn xe", "Chủ sở hữu", "Đồng sở hữu", "Xác nhận"].map(
+              {["Nhập hợp đồng", "Nhập thông tin xe", "Chủ sở hữu chính", "Các Đồng sở hữu", "Xác nhận"].map(
                 (label, index) => (
                   <span
                     key={index}
@@ -867,8 +841,39 @@ export default function VehicleRegistration() {
                     )}
                   </div>
                 ))}
-              </div>
+                <div className="flex flex-col">
+                  <Label htmlFor="vehicleImage" className="font-medium text-gray-700 mb-1">
+                    Ảnh xe
+                  </Label>
 
+                  <input
+                    type="file"
+                    id="vehicleImage"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // lưu file vào Formik
+                        vehicleFormik.setFieldValue("imageFile", file);
+                        // tạo URL tạm để preview
+                        vehicleFormik.setFieldValue("imageUrl", URL.createObjectURL(file));
+                      }
+                    }}
+                    className="border rounded-md p-2"
+                  />
+
+                  {vehicleFormik.values.imageUrl && (
+                    <img
+                      src={vehicleFormik.values.imageUrl}
+                      alt="Preview xe"
+                      className="mt-2 w-32 h-32 object-cover rounded-md border"
+                    />
+                  )}
+                  {/* {showErrors && vehicleFormik.errors?.imageFile && (
+                    <p className="text-red-500 text-sm mt-1">{vehicleFormik.errors.imageFile}</p>
+                  )} */}
+                </div>
+              </div>
               <div className="flex justify-end">
                 <Button
                   type="submit"
