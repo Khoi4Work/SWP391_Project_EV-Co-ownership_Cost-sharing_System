@@ -33,26 +33,28 @@ public class Filter extends OncePerRequestFilter {
     TokenService tokenService;
 
     private final List<String> PUBLIC_API = List.of(
-            "GET:/exception/check/register",
+            // Public APIs
             "POST:/api/chat",
             "POST:/auth/register",
             "POST:/auth/login/**",
             "POST:/email/send-otp",
-            "POST:/Schedule/**",
+            "POST:/schedule/**",
+            "GET:/exception/**",
+
+            // Swagger
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
             "GET:/swagger-resources/**",
             "GET:/api/fund-payment/success/**",
-            "GET:/api/fund-fee/**"
-            );
+            "GET:/api/fund-fee/**");
 
     public boolean isPublicAPI(String uri, String method) {
         AntPathMatcher matcher = new AntPathMatcher();
 
-
         return PUBLIC_API.stream().anyMatch(pattern -> {
             String[] parts = pattern.split(":", 2);
-            if (parts.length != 2) return false;
+            if (parts.length != 2)
+                return false;
 
             String allowedMethod = parts[0];
             String allowedUri = parts[1];
@@ -60,7 +62,6 @@ public class Filter extends OncePerRequestFilter {
             return matcher.match(allowedUri, uri);
         });
     }
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -71,12 +72,12 @@ public class Filter extends OncePerRequestFilter {
         String method = request.getMethod();
         System.out.println(method + "-" + uri);
         if (isPublicAPI(uri, method)) {
-            //Api public => access
+            // Api public => access
             System.out.println("This is a public API");
             filterChain.doFilter(request, response);
         } else {
             Users user = null;
-            //Api private (theo role)=> check token
+            // Api private (theo role)=> check token
             String token = getToken(request);
 
             if (token != null) {
@@ -85,17 +86,15 @@ public class Filter extends OncePerRequestFilter {
                 resolver.resolveException(request, response, null, new AuthenticationException("Token is missing"));
             }
 
-            //Luu thong tin nguoi dang request
-            //Luu session lai
+            // Luu thong tin nguoi dang request
+            // Luu session lai
 
-            UsernamePasswordAuthenticationToken
-                    authenToken =
-                    new UsernamePasswordAuthenticationToken(user, token, user.getAuthorities());
+            UsernamePasswordAuthenticationToken authenToken = new UsernamePasswordAuthenticationToken(user, token,
+                    user.getAuthorities());
 
             authenToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authenToken);
-
 
             // Co token
             // Nen phai verify lại token
@@ -117,7 +116,8 @@ public class Filter extends OncePerRequestFilter {
 
     public String getToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
-        if (authHeader == null) return null;
+        if (authHeader == null)
+            return null;
         return authHeader.substring(7);
     }
 
