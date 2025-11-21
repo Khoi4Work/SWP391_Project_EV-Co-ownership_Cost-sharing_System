@@ -1,7 +1,10 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
-import khoindn.swp391.be.app.exception.exceptions.*;
+import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.GroupNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotRegisteredException;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
@@ -16,7 +19,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
