@@ -2,13 +2,12 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
-import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
-import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
-import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo.Group;
+import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.AuthenticationService;
 import khoindn.swp391.be.app.service.IGroupMemberService;
 import khoindn.swp391.be.app.service.IGroupService;

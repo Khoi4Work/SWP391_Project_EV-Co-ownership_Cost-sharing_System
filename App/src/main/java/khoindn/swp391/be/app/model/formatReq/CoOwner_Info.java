@@ -1,7 +1,8 @@
 package khoindn.swp391.be.app.model.formatReq;
 
-import jakarta.persistence.Id;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

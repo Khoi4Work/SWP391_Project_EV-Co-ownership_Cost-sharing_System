@@ -6,7 +6,6 @@ import khoindn.swp391.be.app.model.Response.GroupFeeResponse;
 import khoindn.swp391.be.app.pojo.FundDetail;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo._enum.StatusFundDetail;
-import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import khoindn.swp391.be.app.repository.IFundDetailRepository;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
 import khoindn.swp391.be.app.repository.IGroupRepository;
