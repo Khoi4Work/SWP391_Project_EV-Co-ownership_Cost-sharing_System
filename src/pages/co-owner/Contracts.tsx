@@ -329,12 +329,13 @@ export default function Contracts() {
   const [errorContract, setErrorContract] = useState<string>("");
   const [contracts, setContracts] = useState<any[]>([]);
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
+  const ALL_CONTRACTS = import.meta.env.VITE_GET_ALL_CONTRACTS;
   const fetchContractFromBE = async (contractId: string) => {
     setLoadingContract(true);
     setErrorContract("");
 
     try {
-      const res = await axiosClient.get(`/contract/preview`, { params: { contractId } });
+      const res = await axiosClient.get(PREVIEW_PATH, { params: { contractId } });
 
       const newStamps: Record<string, string> = {};
       await Promise.all(res.data.contracts.map(async (signer) => {
@@ -367,10 +368,40 @@ export default function Contracts() {
       setLoadingContract(false);
     }
   };
+  const downloadContract = async (contractId: string) => {
+    try {
+      // 1️⃣ Lấy HTML và dữ liệu dấu mộc từ backend
+      const result = await fetchContractFromBE(contractId);
+      if (!result) return;
+
+      // 2️⃣ Tạo container tạm (không append vào DOM để không hiển thị preview)
+      const container = document.createElement("div");
+      container.innerHTML = result.htmlString;
+      container.style.width = "800px";
+      container.style.padding = "10px";
+
+      // 3️⃣ Render dấu mộc trực tiếp lên container
+      renderContractWithStamps(container as any, result.stamps);
+
+      // 4️⃣ Tạo PDF và download trực tiếp
+      await html2pdf()
+        .from(container as any) // ép kiểu cho TS
+        .set({
+          filename: `HopDong_${contractId}.pdf`,
+          margin: 10,
+          html2canvas: { scale: 2 }, // tăng scale để nét hơn
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .save(); // 🔹 chỉ download, không append vào DOM
+    } catch (err) {
+      console.error("Tải hợp đồng thất bại", err);
+    }
+  };
+
   useEffect(() => {
     const fetchContracts = async () => {
       try {
-        const res = await axiosClient.get("/contract/history");
+        const res = await axiosClient.get(ALL_CONTRACTS);
 
         // Nếu backend không trả về hoặc trả rỗng thì set mảng trống
         if (!res || !res.data || !Array.isArray(res.data)) {
@@ -485,12 +516,14 @@ export default function Contracts() {
 
                       {/* Nút hành động */}
                       <div className="flex flex-col space-y-2 ml-4">
-                        <a href="/path/to/file.pdf" download>
-                          <Button size="sm" className="flex items-center space-x-2">
-                            <Download className="h-4 w-4" />
-                            <span>Tải xuống</span>
-                          </Button>
-                        </a>
+                        <Button
+                          size="sm"
+                          className="flex items-center space-x-2"
+                          onClick={() => downloadContract(contract.contractId)}
+                        >
+                          <Download className="h-4 w-4" />
+                          <span>Tải xuống</span>
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

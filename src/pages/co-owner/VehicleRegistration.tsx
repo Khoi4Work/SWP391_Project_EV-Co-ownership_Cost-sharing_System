@@ -563,7 +563,7 @@ export default function VehicleRegistration() {
     formData.append("color", selectedVehicle.color);
     formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
     formData.append("price", String(selectedVehicle.price));
-    formData.append("imageUrl", selectedVehicle.imageFile);
+    formData.append("vehicleImage", selectedVehicle.imageFile);
     // ⚙️ userId là danh sách => cần append từng phần tử
     coOwners.forEach(owner => {
       formData.append("idUsers", owner.id.toString());
@@ -950,6 +950,10 @@ export default function VehicleRegistration() {
                 </div>
               </div>
               <div className="flex justify-end">
+                <Button type="button" variant="outline" onClick={() => setStep(0)}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Quay lại
+                </Button>
                 <Button
                   type="submit"
                   className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2 rounded-md hover:shadow-md transition-all duration-300"
