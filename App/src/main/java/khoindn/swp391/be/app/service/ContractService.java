@@ -71,6 +71,17 @@ public class ContractService implements IContractService {
         return contract;
     }
 
+    @Override
+    public List<Contract> searchContractsByGroupName(String groupName) {
+        if (groupName == null || groupName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Group name cannot be null or empty");
+        }
+
+        List<Contract> contracts = iContractRepository.findByGroup_GroupNameContainingIgnoreCase(groupName);
+
+        return contracts;
+    }
+
 
     @Override
     public ContractSigner setContract(ContractDecisionReq req)

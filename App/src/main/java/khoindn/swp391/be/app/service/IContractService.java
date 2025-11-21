@@ -13,6 +13,8 @@ import java.util.List;
 public interface IContractService {
     Contract getContractByContractId(int id);
 
+    List<Contract> searchContractsByGroupName(String groupName);
+
     ContractSigner setContract(ContractDecisionReq req)
             throws
             Exception;
