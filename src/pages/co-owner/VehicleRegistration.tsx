@@ -56,7 +56,6 @@ export default function VehicleRegistration() {
         address: "",
         ownership: 0,
     });
-<<<<<<< HEAD
     const CREATE_CONTRACT = import.meta.env.VITE_CONTRACT_CREATE;
     const [emailMessage, setEmailMessage] = useState(""); // 👈 state hiển thị thông báo
     const [isFileConfirmed, setIsFileConfirmed] = useState(false);
@@ -76,61 +75,59 @@ export default function VehicleRegistration() {
         const {file, uploadType} = data;
         setContractFile(file);
         setFileType(uploadType); // PDF / IMAGE
-=======
-  };
-  const handleConfirmFile = () => {
-    if (!contractFile) return;
-
-    // fileType là "pdf" hoặc "image" đã được set trong handleFileImport
-    if (fileType !== "PDF" && fileType !== "IMAGE") {
-      toast({
-        title: "File không hợp lệ",
-        description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
-        variant: "destructive",
-      });
-      return;
-    }
-    setIsFileConfirmed(true);
-    setStep(1); // qua bước nhập thông tin xe
-  };
-  const handleNextFromStep3 = () => {
-    // 1) kiểm tra mỗi coOwner không vượt main owner
-    const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
-    if (invalid) {
-      toast({
-        title: "Lỗi",
-        description: `Đồng sở hữu ${invalid.name || invalid.email || invalid.id} có tỷ lệ lớn hơn chủ sở hữu chính (${mainOwnership}%).`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // 2) kiểm tra tổng = 100
-    if (totalOwnership !== 100) {
-      toast({
-        title: "Lỗi",
-        description: `Tổng tỷ lệ sở hữu phải bằng 100% (hiện tại ${totalOwnership}%).`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setStep(4);
-  };
-  const GET_USERS = import.meta.env.VITE_USERS_GET;
-  const fetchUserByEmail = async (email: string) => {
-    try {
-      const res = await axiosClient.get(GET_USERS, {
-        params: { email }
-      });
-      const user = res.data;
-      if (!user) {
->>>>>>> f5f454e8877ad35e032d172eb89ad93e85d8137a
-        toast({
-            title: "Đã nhận file hợp đồng",
-            description: `Loại file: ${uploadType}`,
-        });
     };
+    // const handleConfirmFile = () => {
+    //   if (!contractFile) return;
+    //
+    //   // fileType là "pdf" hoặc "image" đã được set trong handleFileImport
+    //   if (fileType !== "PDF" && fileType !== "IMAGE") {
+    //     toast({
+    //       title: "File không hợp lệ",
+    //       description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
+    //       variant: "destructive",
+    //     });
+    //     return;
+    //   }
+    //   setIsFileConfirmed(true);
+    //   setStep(1); // qua bước nhập thông tin xe
+    // };
+    // const handleNextFromStep3 = () => {
+    //   // 1) kiểm tra mỗi coOwner không vượt main owner
+    //   const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
+    //   if (invalid) {
+    //     toast({
+    //       title: "Lỗi",
+    //       description: `Đồng sở hữu ${invalid.name || invalid.email || invalid.id} có tỷ lệ lớn hơn chủ sở hữu chính (${mainOwnership}%).`,
+    //       variant: "destructive"
+    //     });
+    //     return;
+    //   }
+    //
+    //   // 2) kiểm tra tổng = 100
+    //   if (totalOwnership !== 100) {
+    //     toast({
+    //       title: "Lỗi",
+    //       description: `Tổng tỷ lệ sở hữu phải bằng 100% (hiện tại ${totalOwnership}%).`,
+    //       variant: "destructive"
+    //     });
+    //     return;
+    //   }
+    //
+    //   setStep(4);
+    // };
+    // const GET_USERS = import.meta.env.VITE_USERS_GET;
+    // const fetchUserByEmail = async (email: string) => {
+    // try {
+    //   const res = await axiosClient.get(GET_USERS, {
+    //     params: { email }
+    //   });
+    //   const user = res.data;
+    //   if (!user) {
+    //     toast({
+    //         title: "Đã nhận file hợp đồng",
+    //         description: `Loại file: ${uploadType}`,
+    //     });
+    // };
     const handleConfirmFile = () => {
         if (!contractFile) return;
 
@@ -185,7 +182,7 @@ export default function VehicleRegistration() {
                     variant: "destructive"
                 })
             }
-            ;
+            
             // toast({
             //   title: "Thành công",
             //   description: `Tự động điền thông tin thành công`,
