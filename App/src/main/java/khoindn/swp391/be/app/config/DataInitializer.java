@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.config;
 
+import khoindn.swp391.be.app.exception.exceptions.PasswordNullException;
 import khoindn.swp391.be.app.model.Request.RegisterUserReq;
 import khoindn.swp391.be.app.pojo.MenuVehicleService;
 import khoindn.swp391.be.app.pojo.UserRole;
@@ -155,7 +156,11 @@ public class DataInitializer implements CommandLineRunner {
             RegisterUserReq urstaff = modelMapper.map(staff, RegisterUserReq.class);
             urstaff.setRoleId(roleStaff.getRoleId());
 
-            authenticationService.register(urstaff);
+            try {
+                authenticationService.register(urstaff);
+            } catch (PasswordNullException e) {
+                throw new RuntimeException(e);
+            }
 
 
         }

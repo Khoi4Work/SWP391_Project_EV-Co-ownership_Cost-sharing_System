@@ -34,6 +34,7 @@ public class Filter extends OncePerRequestFilter {
 
     private final List<String> PUBLIC_API = List.of(
             // Public APIs
+            "GET:/auth/check/register",
             "POST:/api/chat",
             "POST:/auth/register",
             "POST:/auth/login/**",
