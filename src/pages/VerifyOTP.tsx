@@ -9,6 +9,7 @@ import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import axiosClient from "@/api/axiosClient";
 export default function VerifyOTP() {
+    const [canResend, setCanResend] = useState(true);
     const [isVerifying, setIsVerifying] = useState(false);
     const [otp, setOtp] = useState("");
     const [isResending, setIsResending] = useState(false);
@@ -29,18 +30,19 @@ export default function VerifyOTP() {
             navigate("/register");
             return;
         }
-        sendOtpEmail(); // Gọi gửi OTP khi vào trang
+        sendOtpEmail();         // Không để canResend = true trước khi startTimer
     }, [userData]);
-
     // 🔹 Frontend tạo OTP và gửi tới backend để backend gửi mail
     const SEND_OTP = import.meta.env.VITE_SEND_EMAIL_OTP_PATH;
     const startTimer = () => {
         if (timerRef.current) clearInterval(timerRef.current);
+        setTime(60);
+        setExpired(false);
         timerRef.current = setInterval(() => {
             setTime((prev) => {
                 if (prev <= 1) {
                     clearInterval(timerRef.current!);
-                    setExpired(true);
+                    setCanResend(true);
                     return 0;
                 }
                 return prev - 1;
@@ -53,13 +55,12 @@ export default function VerifyOTP() {
         };
     }, []);
     const sendOtpEmail = async () => {
+        // Dừng timer cũ
+        if (timerRef.current) clearInterval(timerRef.current);
+
         const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
         setOtp(randomOtp);
-        console.log("OTP (debug):", randomOtp);
-        console.log("Sẽ gửi lên backend:", {
-            email: userData.email,
-            otp: randomOtp,
-        });
+
         try {
             await axiosClient.post(SEND_OTP, {
                 email: userData.email,
@@ -67,21 +68,17 @@ export default function VerifyOTP() {
                 template: "",
                 subject: "",
                 name: userData.hovaTen,
-
             });
-            setExpired(false);
-            setTime(60);
-            startTimer();
+            startTimer(); // ⬅️ Quan trọng
             toast({
                 title: "Đã gửi mã OTP",
                 description: `Vui lòng kiểm tra email: ${userData.email}`,
                 variant: "success",
             });
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
             toast({
-                title: "Lỗi khi gửi OTP",
-                description: "Không thể gửi mã xác thực tới email.",
+                title: "Gửi OTP thất bại",
+                description: "Không thể gửi email xác thực.",
                 variant: "destructive",
             });
         }
@@ -99,10 +96,20 @@ export default function VerifyOTP() {
     });
 
     const handleResendOTP = async () => {
-        setIsResending(true);
-        await sendOtpEmail();
-        setIsResending(false);
+        if (!canResend) return;
+        setIsResending(true); // 🔥 bật trạng thái loading
+
+        try {
+            await sendOtpEmail();
+            setCanResend(false)
+            startTimer();          // disable nút + 60s đếm ngược
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsResending(false); // 🔥 tắt loading sau khi xong
+        }
     };
+
     const REGISTER = import.meta.env.VITE_AUTH_REGISTER;
     // 🔹 Chỉ gọi 1 lần API tạo tài khoản khi OTP đúng
     const handleVerify = async () => {
@@ -154,10 +161,9 @@ export default function VerifyOTP() {
                             } else {
                                 toast({
                                     title: "Mã OTP không đúng",
-                                    description: "Vui lòng kiểm tra lại mã",
+                                    description: "Mã OTP bạn nhập không khớp. Vui lòng thử lại.",
                                     variant: "destructive",
                                 });
-                                startTimer();
                             }
                         }}
                     >
@@ -195,25 +201,30 @@ export default function VerifyOTP() {
                         )}
                     </Formik>
 
-                    <div className="text-center space-y-2">
-                        <p className="text-sm text-muted-foreground">Không nhận được mã?</p>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={handleResendOTP}
-                            disabled={!expired || isResending}
-                            className="text-primary hover:text-primary/80"
-                        >
-                            {isResending ? (
-                                <>
-                                    <Clock className="h-4 w-4 mr-2 animate-spin" /> Đang gửi lại...
-                                </>
-                            ) : (
-                                "Gửi lại mã OTP"
-                            )}
-                        </Button>
-                    </div>
+                    <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground text-center">
+                            Không nhận được mã?
+                        </p>
 
+                        <div className="flex justify-center w-full">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={handleResendOTP}
+                                disabled={!canResend || isResending}
+                                className="text-primary hover:text-primary/80"
+                            >
+                                {isResending ? (
+                                    "Đang xử lý..."
+                                ) : canResend ? (
+                                    "Gửi lại mã OTP"
+                                ) : (
+                                    <>Gửi lại mã OTP ({time}s)</>
+                                )}
+                            </Button>
+
+                        </div>
+                    </div>
                     <div className="mt-6">
                         <Link
                             to="/register"

@@ -1,11 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   FileText,
   Download,
-  Search,
   ArrowLeft,
   Calendar,
   Users,
@@ -329,9 +327,7 @@ export default function Contracts() {
   const [stamps, setStamps] = useState<Record<string, string>>({}); // { signerId: base64 image }
   const [loadingContract, setLoadingContract] = useState<boolean>(true);
   const [errorContract, setErrorContract] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [contracts, setContracts] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
   const fetchContractFromBE = async (contractId: string) => {
     setLoadingContract(true);
@@ -385,8 +381,6 @@ export default function Contracts() {
       } catch (error) {
         console.error("Lỗi khi tải hợp đồng:", error);
         setContracts([]); // Đảm bảo vẫn có giao diện
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -432,38 +426,13 @@ export default function Contracts() {
         </div>
       </header>
       <div className="container mx-auto p-6 space-y-6">
-        {/* Search and Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-            <Card className="shadow-elegant">
-              <CardHeader>
-                <CardTitle>Tìm kiếm hợp đồng</CardTitle>
-                <CardDescription>
-                  Tra cứu hợp đồng theo tên nhóm hoặc mã hợp đồng
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Nhập tên nhóm hoặc mã hợp đồng..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="shadow-elegant">
-            <CardHeader className="text-center">
-              <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
-              <CardTitle>{contracts.length}</CardTitle>
-              <CardDescription>Tổng số hợp đồng</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        <Card className="shadow-elegant w-full max-w-sm">
+          <CardHeader className="text-center">
+            <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
+            <CardTitle>{contracts.length}</CardTitle>
+            <CardDescription>Tổng số hợp đồng</CardDescription>
+          </CardHeader>
+        </Card>
 
         {/* Contracts List */}
         <Card className="shadow-elegant">
