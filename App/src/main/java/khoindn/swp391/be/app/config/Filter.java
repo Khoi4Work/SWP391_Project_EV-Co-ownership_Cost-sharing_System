@@ -33,6 +33,7 @@ public class Filter extends OncePerRequestFilter {
     TokenService tokenService;
 
     private final List<String> PUBLIC_API = List.of(
+            "GET:/exception/check/register",
             "POST:/api/chat",
             "POST:/auth/register",
             "POST:/auth/login/**",
