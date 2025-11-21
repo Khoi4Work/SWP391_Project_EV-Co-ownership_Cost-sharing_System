@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.time.LocalDate;
+
 @Service
 @Transactional
 public class EmailService implements IEmailService {
@@ -27,7 +29,7 @@ public class EmailService implements IEmailService {
     @Override
     public void sendEmail(EmailDetailReq contentSender) {
 
-        if (contentSender.getContext()!= null){
+        if (contentSender.getContext() != null) {
             contentSender.setTemplate(templateEngine.process(contentSender.getTemplate(), contentSender.getContext()));
         }
         try {
@@ -40,7 +42,6 @@ public class EmailService implements IEmailService {
             helper.setTo(contentSender.getEmail());
             helper.setSubject(contentSender.getSubject());
             helper.setText(contentSender.getTemplate(), true); // true = nội dung HTML
-
 
             javaMailSender.send(mimeMessage);
             System.out.println("✅ Email sent successfully to " + contentSender.getEmail());
@@ -71,14 +72,17 @@ public class EmailService implements IEmailService {
 
     @Override
     public void sendOtpViaEmail(EmailDetailReq sender) {
+
         Context context = new Context();
-        context.setVariable("loginUrl", "http://localhost:8081/login");
         context.setVariable("name", sender.getName());
         context.setVariable("appName", "EcoShare");
         context.setVariable("email", sender.getEmail());
         context.setVariable("otp", sender.getContent());
+        context.setVariable("year", LocalDate.now().getYear());
+
         sender.setTemplate("otp");
         sender.setContext(context);
+
         sender.setSubject("[EcoShare System] Verify Account");
         sendEmail(sender);
     }
@@ -91,6 +95,5 @@ public class EmailService implements IEmailService {
         req.setTemplate(template);
         sendEmail(req);
     }
-
 
 }

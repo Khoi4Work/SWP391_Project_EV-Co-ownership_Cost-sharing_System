@@ -58,5 +58,5 @@ public class GroupMember {
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
     @ToString.Exclude
-    private List<RequestVehicleService> requestVehicleServices = new ArrayList<>();
+    private List<VehicleService> vehicleServices = new ArrayList<>();
 }

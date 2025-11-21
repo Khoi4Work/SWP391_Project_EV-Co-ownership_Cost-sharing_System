@@ -12,4 +12,6 @@ public interface IContractRepository extends JpaRepository<Contract, Integer> {
     Contract findContractByGroup_GroupId(int groupGroupId);
 
     List<Contract> getContractsByStatus(StatusContract status);
+
+    List<Contract> findByGroup_GroupNameContainingIgnoreCase(String groupName);
 }

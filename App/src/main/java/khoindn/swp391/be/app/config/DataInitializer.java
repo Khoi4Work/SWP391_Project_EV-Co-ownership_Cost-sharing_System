@@ -17,9 +17,6 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private UserRoleService userRoleService;
-
-    @Autowired
-    private VehicleService vehicleService;
     @Autowired
     private UserService userService;
     @Autowired
@@ -27,14 +24,11 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
-    private IMenuVehicleServiceRepository iMenuVehicleServiceRepository;
-    @Autowired
     private IVehicleService iVehicleService;
 
     @Override
     public void run(String... args) throws Exception {
-// test again and again
-// test again and again 
+
         if (!userRoleService.existsByRoleName("user") ||
                 !userRoleService.existsByRoleName("co-owner") ||
                 !userRoleService.existsByRoleName("admin") ||
@@ -63,31 +57,31 @@ public class DataInitializer implements CommandLineRunner {
             UserRole role = userRoleService.findUserRoleByRoleId(1); // roleId = 1 như JSON của bạn
             UserRole roleStaff = userRoleService.findUserRoleByRoleId(3); // roleId = 1 như JSON của bạn
 
-//            Users u1 = new Users();
-//            u1.setHovaTen("Ndnk");
-//            u1.setEmail("khoimapu8@gmail.com");
-//            u1.setPassword("12341234"); // mã hóa mật khẩu
-//            u1.setCccd("12341234");
-//            u1.setGplx("12341234");
-//            u1.setPhone("0918842699");
-//            u1.setRole(role);
-//
-//            RegisterUserReq ur1 = modelMapper.map(u1, RegisterUserReq.class);
-//            ur1.setRoleId(role.getRoleId());
-//            authenticationService.register(ur1);
-//
-//            Users u2 = new Users();
-//            u2.setHovaTen("NguyenKhoi");
-//            u2.setEmail("khoimapu2k5@gmail.com");
-//            u2.setPassword("123123"); // mã hóa mật khẩu
-//            u2.setCccd("123123123");
-//            u2.setGplx("123123123");
-//            u2.setPhone("0966893655");
-//            u2.setRole(role);
-//
-//            RegisterUserReq ur2 = modelMapper.map(u2, RegisterUserReq.class);
-//            ur2.setRoleId(role.getRoleId());
-//            authenticationService.register(ur2);
+            Users u1 = new Users();
+            u1.setHovaTen("Ndnk");
+            u1.setEmail("khoimapu8@gmail.com");
+            u1.setPassword("12341234"); // mã hóa mật khẩu
+            u1.setCccd("012340123401");
+            u1.setGplx("012340123401");
+            u1.setPhone("0918842699");
+            u1.setRole(role);
+
+            RegisterUserReq ur1 = modelMapper.map(u1, RegisterUserReq.class);
+            ur1.setRoleId(role.getRoleId());
+            authenticationService.register(ur1);
+
+            Users u2 = new Users();
+            u2.setHovaTen("NguyenKhoi");
+            u2.setEmail("khoimapu2k5@gmail.com");
+            u2.setPassword("123123"); // mã hóa mật khẩu
+            u2.setCccd("012301230123");
+            u2.setGplx("012301230123");
+            u2.setPhone("0966893655");
+            u2.setRole(role);
+
+            RegisterUserReq ur2 = modelMapper.map(u2, RegisterUserReq.class);
+            ur2.setRoleId(role.getRoleId());
+            authenticationService.register(ur2);
 
 
 //            Users u3 = new Users();
@@ -148,8 +142,8 @@ public class DataInitializer implements CommandLineRunner {
             staff.setHovaTen("staff");
             staff.setEmail("staff@gmail.com");
             staff.setPassword("1234"); // mã hóa mật khẩu
-            staff.setCccd("123123");
-            staff.setGplx("123123");
+            staff.setCccd("012012012012");
+            staff.setGplx("012012012012");
             staff.setPhone("0966893650");
             staff.setRole(roleStaff);
 

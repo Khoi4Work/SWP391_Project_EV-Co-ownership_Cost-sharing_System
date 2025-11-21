@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@OpenAPIDefinition(info = @Info(title = "Pet Care API", version = "1.0", description = "Information"))
+@OpenAPIDefinition(info = @Info(title = "Ecoshare System", version = "1.0", description = "Information"))
 @SecurityScheme(name = "api", scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
 @EnableScheduling
 @Enabled

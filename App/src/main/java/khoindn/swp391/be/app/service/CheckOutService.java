@@ -15,6 +15,7 @@ import khoindn.swp391.be.app.repository.IVehicleRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.time.Duration;
 
 import java.time.LocalDateTime;
 
@@ -30,6 +31,7 @@ public class CheckOutService implements ICheckOutService {
     IVehicleRepository iVehicleRepository;
     @Autowired
     ICheckInRepository iCheckInRepository;
+
 
     @Override
     public CheckOutResponse processCheckOut(int scheduleId, CheckOutRequest req) {

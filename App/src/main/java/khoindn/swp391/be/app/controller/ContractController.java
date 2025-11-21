@@ -40,6 +40,31 @@ public class ContractController {
     @Autowired
     private ISupabaseService iSupabaseService;
 
+
+    // search contract
+    @GetMapping("/search")
+    public ResponseEntity<List<Contract>> searchContractsByGroupName(
+            @RequestParam("groupName") String groupName) {
+
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            List<Contract> contracts = iContractService.searchContractsByGroupName(groupName);
+
+            if (contracts.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(contracts);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
     // Lấy contract
     @GetMapping("/{id}")
     public ResponseEntity<Contract> getContractByContractId(@PathVariable int id) {
@@ -62,7 +87,6 @@ public class ContractController {
         }
         return ResponseEntity.status(HttpStatus.OK).body(contractResult);
     }
-
 
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -213,8 +237,6 @@ public class ContractController {
     public ResponseEntity getFileByName(String fileName) {
         return ResponseEntity.status(200).body(iSupabaseService.getFileUrl(fileName));
     }
-
-
 
 
 }

@@ -29,7 +29,7 @@ public class SupabaseService implements ISupabaseService {
         String fileName = file.getOriginalFilename(); // giữ tên file gốc
         System.out.println(fileName);
         if (isFileExist(fileName)) {
-            throw new RuntimeException("file is existed! and now Deleted!");
+            return  getFileUrl(fileName);
         }
         URL url = new URL(SUPABASE_URL + fileName);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();

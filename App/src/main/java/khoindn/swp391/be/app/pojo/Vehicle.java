@@ -44,7 +44,7 @@ public class Vehicle {
     @Column(name="price", length = 32)
     private float price;
 
-    @Column(name="image",length=32)
+    @Column(name="image")
     private String imageUrl;
 
     // Relationships
@@ -58,7 +58,7 @@ public class Vehicle {
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<RequestVehicleService> requestVehicleServices = new ArrayList<>();
+    private List<VehicleService> vehicleServices = new ArrayList<>();
 
 
 }

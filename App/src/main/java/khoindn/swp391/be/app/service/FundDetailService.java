@@ -40,11 +40,11 @@ public class FundDetailService implements IFundDetailService {
     private IGroupRepository groupRepository;
 
     private static final BigDecimal DEFAULT_MONTHLY_FEE = new BigDecimal("1000000");
-    private static final String TNM_CODE = "32AYQ5SY";
-    private static final String SECRET_KEY = "8AE7U9X2Y8C26AHOM9NEVELW2MFCU7YR";
+    private static final String TNM_CODE = "B26JFUX3";
+    private static final String SECRET_KEY = "V50FO0TVAI3ISTADEKB5EA9BFN7O885J";
     private static final String VNP_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     private static final String RETURN_URL = "http://localhost:8080/api/fund-fee/payment-return";
-    private static final int PAYMENT_DEADLINE_DAYS = 14; // days to pay before marking overdue
+    private static final int PAYMENT_DEADLINE_DAYS = 15; // days to pay before marking overdue
 
     //auto create monthly fee
     @Override
