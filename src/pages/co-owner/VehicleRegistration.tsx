@@ -81,8 +81,8 @@ export default function VehicleRegistration() {
   const handleConfirmFile = () => {
     if (!contractFile) return;
 
-    // fileType là "pdf" hoặc "image" đã được set trong handleFileImport
-    if (fileType !== "PDF" && fileType !== "IMAGE") {
+    const upperType = fileType?.toUpperCase();
+    if (upperType !== "PDF" && upperType !== "IMAGE") {
       toast({
         title: "File không hợp lệ",
         description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
@@ -90,8 +90,10 @@ export default function VehicleRegistration() {
       });
       return;
     }
+
+    // ✅ Cập nhật state
     setIsFileConfirmed(true);
-    setStep(1); // qua bước nhập thông tin xe
+    setTimeout(() => setStep(1), 0); // đảm bảo React render lại với state mới
   };
   const handleNextFromStep3 = () => {
     // 1) kiểm tra mỗi coOwner không vượt main owner
