@@ -1,19 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   FileText,
   Download,
-  Search,
   ArrowLeft,
   Calendar,
   Users,
   Car
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axiosClient from "@/api/axiosClient.ts";
+import { useEffect } from "react";
 import html2pdf from "html2pdf.js";
 interface ContractSigner {
   id: number;
@@ -328,12 +327,7 @@ export default function Contracts() {
   const [stamps, setStamps] = useState<Record<string, string>>({}); // { signerId: base64 image }
   const [loadingContract, setLoadingContract] = useState<boolean>(true);
   const [errorContract, setErrorContract] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [contracts, setContracts] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchResults, setSearchResults] = useState<any[] | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState("");
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
   const fetchContractFromBE = async (contractId: string) => {
     setLoadingContract(true);
@@ -387,54 +381,11 @@ export default function Contracts() {
       } catch (error) {
         console.error("Lỗi khi tải hợp đồng:", error);
         setContracts([]); // Đảm bảo vẫn có giao diện
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchContracts();
   }, []);
-  useEffect(() => {
-    const trimmed = searchTerm.trim();
-    if (!trimmed) {
-      setSearchResults(null);
-      setIsSearching(false);
-      setSearchError("");
-      return;
-    }
-
-    const controller = new AbortController();
-    setIsSearching(true);
-    setSearchError("");
-
-    const debounceId = window.setTimeout(async () => {
-      try {
-        const res = await axiosClient.get("/contract/search", {
-          params: { groupName: trimmed },
-          signal: controller.signal
-        });
-        const data = Array.isArray(res?.data) ? res.data : [];
-        setSearchResults(data);
-        if (data.length === 0) {
-          setSearchError("Không tìm thấy hợp đồng phù hợp với từ khóa.");
-        }
-      } catch (error: any) {
-        if (controller.signal.aborted) return;
-        console.error("Lỗi tìm kiếm hợp đồng:", error);
-        setSearchResults([]);
-        setSearchError(error?.response?.data?.message || "Không thể tìm kiếm hợp đồng.");
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsSearching(false);
-        }
-      }
-    }, 500);
-
-    return () => {
-      controller.abort();
-      clearTimeout(debounceId);
-    };
-  }, [searchTerm]);
   const getStatusColor = (status: string) => {
     switch (status) {
       case "CONFIRMED": return "default";
@@ -452,56 +403,6 @@ export default function Contracts() {
       default: return "Không xác định";
     }
   };
-  const formatDateDisplay = (value?: string | Date | null) => {
-    if (!value) return "-";
-    const parsedValue = typeof value === "string" ? value : value.toString();
-    const date = new Date(parsedValue);
-    return isNaN(date.getTime()) ? parsedValue : date.toLocaleDateString("vi-VN");
-  };
-
-  const normalizeContract = (contract: any) => {
-    const rawId = contract?.contractId ?? contract?.id ?? contract?.contractID ?? contract?.code;
-    const vehicleName =
-      contract?.vehicleName ??
-      contract?.vehicle?.vehicleName ??
-      contract?.vehicle?.name ??
-      contract?.group?.vehicle?.vehicleName ??
-      contract?.group?.vehicle?.model ??
-      contract?.group?.vehicleName ??
-      contract?.vehicleModel ??
-      "Chưa cập nhật";
-    const signedAtRaw =
-      contract?.signedAt ??
-      contract?.startDate ??
-      contract?.createdAt ??
-      contract?.updatedAt ??
-      contract?.signDate ??
-      contract?.dateSigned;
-    const ownershipRaw =
-      contract?.ownership ??
-      contract?.ownerShip ??
-      contract?.ownershipPercentage ??
-      contract?.groupMember?.ownershipPercentage ??
-      contract?.group?.ownershipPercentage;
-    const parsedOwnership =
-      ownershipRaw === null || ownershipRaw === undefined || ownershipRaw === ""
-        ? null
-        : Number(ownershipRaw);
-    const normalizedOwnership =
-      typeof parsedOwnership === "number" && Number.isFinite(parsedOwnership) ? parsedOwnership : null;
-    return {
-      raw: contract,
-      contractId: rawId ? String(rawId) : "",
-      vehicleName,
-      status: contract?.status ?? contract?.contractStatus ?? "PENDING_REVIEW",
-      signedAt: formatDateDisplay(signedAtRaw),
-      ownership: normalizedOwnership,
-      groupName: contract?.groupName ?? contract?.group?.groupName ?? contract?.group?.name ?? ""
-    };
-  };
-
-  const visibleContracts = (searchResults ?? contracts) ?? [];
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -525,49 +426,13 @@ export default function Contracts() {
         </div>
       </header>
       <div className="container mx-auto p-6 space-y-6">
-        {/* Search and Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-            <Card className="shadow-elegant">
-              <CardHeader>
-                <CardTitle>Tìm kiếm hợp đồng</CardTitle>
-                <CardDescription>
-                  Tra cứu hợp đồng theo tên nhóm hoặc mã hợp đồng
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Nhập tên nhóm hoặc mã hợp đồng..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                  {isSearching && (
-                    <p className="text-xs text-muted-foreground mt-2">Đang tìm kiếm...</p>
-                  )}
-                  {searchError && (
-                    <p className="text-xs text-destructive mt-2">{searchError}</p>
-                  )}
-                  {!isSearching && searchResults && !searchError && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {`Tìm thấy ${searchResults.length} hợp đồng cho "${searchTerm.trim()}"`}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="shadow-elegant">
-            <CardHeader className="text-center">
-              <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
-              <CardTitle>{contracts.length}</CardTitle>
-              <CardDescription>Tổng số hợp đồng</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        <Card className="shadow-elegant w-full max-w-sm">
+          <CardHeader className="text-center">
+            <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
+            <CardTitle>{contracts.length}</CardTitle>
+            <CardDescription>Tổng số hợp đồng</CardDescription>
+          </CardHeader>
+        </Card>
 
         {/* Contracts List */}
         <Card className="shadow-elegant">
@@ -579,22 +444,10 @@ export default function Contracts() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {visibleContracts.length > 0 ? (
-                visibleContracts.map((contract) => {
-                  const normalized = normalizeContract(contract);
-                  const hasContractId = Boolean(normalized.contractId);
-                  const downloadUrl =
-                    contract?.urlContract ??
-                    contract?.url ??
-                    contract?.contractUrl ??
-                    contract?.fileUrl ??
-                    contract?.documentUrl ??
-                    normalized.raw?.urlContract ??
-                    undefined;
-
-                  return (
+              {contracts.length > 0 ? (
+                contracts.map((contract) => (
                   <div
-                    key={normalized.contractId || contract.contractId || contract.id}
+                    key={contract.contractId}
                     className="border rounded-lg p-6 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between">
@@ -602,66 +455,48 @@ export default function Contracts() {
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="text-lg font-semibold">
-                            Hợp đồng - {normalized.vehicleName}
+                            Hợp đồng - {contract.vehicleName}
                           </h3>
-                          <Badge variant={getStatusColor(normalized.status)}>
-                            {getStatusText(normalized.status)}
+                          <Badge variant={getStatusColor(contract.status)}>
+                            {getStatusText(contract.status)}
                           </Badge>
                         </div>
-                        {normalized.groupName && (
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Nhóm: {normalized.groupName}
-                          </p>
-                        )}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-4">
                           <div className="flex items-center space-x-2">
                             <Calendar className="h-4 w-4" />
-                            <span>Ngày ký: {normalized.signedAt}</span>
+                            <span>Ngày ký: {contract.signedAt}</span>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Users className="h-4 w-4" />
-                            <span>Sở hữu: {normalized.ownership != null ? `${normalized.ownership}%` : "Chưa cập nhật"}</span>
+                            <span>Sở hữu: {contract.ownership}%</span>
                           </div>
 
                           <div className="flex items-center space-x-2">
                             <Car className="h-4 w-4" />
-                            <span>Xe: {normalized.vehicleName}</span>
+                            <span>Xe: {contract.vehicleName}</span>
                           </div>
                         </div>
 
                         <div className="text-sm">
                           <span className="font-medium">Mã hợp đồng:</span>{" "}
-                          {normalized.contractId || "Không xác định"}
+                          {contract.contractId}
                         </div>
                       </div>
 
                       {/* Nút hành động */}
                       <div className="flex flex-col space-y-2 ml-4">
-                        {downloadUrl ? (
-                          <Button
-                            size="sm"
-                            className="flex items-center space-x-2"
-                            asChild
-                          >
-                            <a href={downloadUrl} download target="_blank" rel="noopener noreferrer">
-                              <Download className="h-4 w-4" />
-                              <span>Tải xuống</span>
-                            </a>
-                          </Button>
-                        ) : (
-                          <Button size="sm" className="flex items-center space-x-2" disabled>
+                        <a href="/path/to/file.pdf" download>
+                          <Button size="sm" className="flex items-center space-x-2">
                             <Download className="h-4 w-4" />
                             <span>Tải xuống</span>
                           </Button>
-                        )}
+                        </a>
                         <Button
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          disabled={!hasContractId || loadingContract}
                           onClick={async () => {
-                            if (!hasContractId) return;
-                            const result = await fetchContractFromBE(normalized.contractId);
+                            const result = await fetchContractFromBE(contract.contractId);
                             if (result) {
                               await renderContractWithStamps(result.htmlString, result.stamps);
                             }
@@ -672,16 +507,11 @@ export default function Contracts() {
                       </div>
                     </div>
                   </div>
-                  );
-                })
+                ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>
-                    {searchResults
-                      ? "Không có hợp đồng nào phù hợp với tìm kiếm."
-                      : "Không có hợp đồng nào."}
-                  </p>
+                  <p>Không có hợp đồng nào.</p>
                 </div>
               )}
             </div>
