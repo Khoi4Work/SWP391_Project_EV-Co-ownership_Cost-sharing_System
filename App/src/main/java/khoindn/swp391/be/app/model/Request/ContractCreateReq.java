@@ -47,7 +47,7 @@ public class ContractCreateReq {
 
     @Digits(integer = Integer.MAX_VALUE, fraction = 2, message = "Price must be a valid number with up to 2 decimal places")
     private float price;
-
+    @NotNull
     private MultipartFile vehicleImage;
 
 }

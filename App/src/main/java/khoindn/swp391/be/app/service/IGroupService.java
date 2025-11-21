@@ -4,7 +4,7 @@ import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.pojo.Group;
-import khoindn.swp391.be.app.pojo.RequestVehicleService;
+import khoindn.swp391.be.app.pojo.VehicleService;
 import khoindn.swp391.be.app.pojo.Users;
 
 public interface IGroupService {
@@ -16,5 +16,5 @@ public interface IGroupService {
 
     public Group getGroupById(int groupId);
 
-    RequestVehicleService getAllVehicleServiceByGroupId( int groupId);
+    VehicleService getAllVehicleServiceByGroupId(int groupId);
 }

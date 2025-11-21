@@ -12,6 +12,7 @@ import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo.RequestGroupService;
+import khoindn.swp391.be.app.pojo.VehicleService;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
 import khoindn.swp391.be.app.repository.*;
@@ -177,7 +178,7 @@ public class GroupService implements IGroupService {
     }
 
     @Override
-    public RequestVehicleService getAllVehicleServiceByGroupId(int groupId) {
+    public VehicleService getAllVehicleServiceByGroupId(int groupId) {
         return iRequestVehicleServiceRepository.getAllByGroupMember_Group(iGroupService.getGroupById(groupId));
     }
 

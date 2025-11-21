@@ -217,6 +217,7 @@ public class ContractService implements IContractService {
         //TAO VEHICLE
         Vehicle vehicle = modelMapper.map(req, Vehicle.class);
         vehicle.setContract(contract);
+        vehicle.setImageUrl(supabaseService.uploadFile(req.getVehicleImage()));
         iVehicleRepository.save(vehicle);
         iContractRepository.save(contract);
 

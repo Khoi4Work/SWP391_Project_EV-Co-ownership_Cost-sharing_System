@@ -13,7 +13,7 @@ public class ModelMapperConfig {
         ModelMapper mapper = new ModelMapper();
         mapper.getConfiguration()
                 .setPropertyCondition(Conditions.isNotNull())
-                .setMatchingStrategy(MatchingStrategies.STRICT); // 🔥 chỉ map khi tên trùng 100%
+                .setMatchingStrategy(MatchingStrategies.STRICT); // chỉ map khi tên trùng 100%
         return mapper;
     }
 
