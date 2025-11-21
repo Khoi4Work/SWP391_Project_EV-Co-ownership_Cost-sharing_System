@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.time.LocalDate;
+
 @Service
 @Transactional
 public class EmailService implements IEmailService {
@@ -71,15 +73,17 @@ public class EmailService implements IEmailService {
 
     @Override
     public void sendOtpViaEmail(EmailDetailReq sender) {
+
         Context context = new Context();
-        context.setVariable("loginUrl", "http://localhost:8081/login");
         context.setVariable("name", sender.getName());
         context.setVariable("appName", "EcoShare");
         context.setVariable("email", sender.getEmail());
         context.setVariable("otp", sender.getContent());
-        String template = templateEngine.process("otp", context);
-        sender.setTemplate(template);
+        context.setVariable("year", LocalDate.now().getYear());
+
+        sender.setTemplate("otp");
         sender.setContext(context);
+
         sender.setSubject("[EcoShare System] Verify Account");
         sendEmail(sender);
     }
