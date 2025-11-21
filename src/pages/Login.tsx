@@ -28,8 +28,8 @@ export default function Login() {
         }
 
         const roleMap: Record<string, number> = {
-            "admin": 3,
-            "staff": 4,
+            "admin": 2,
+            "staff": 3,
             "co-owner": 1,
             "user": 1
         };

@@ -182,7 +182,7 @@ export default function VehicleRegistration() {
                     variant: "destructive"
                 })
             }
-            
+
             // toast({
             //   title: "Thành công",
             //   description: `Tự động điền thông tin thành công`,
@@ -564,7 +564,7 @@ export default function VehicleRegistration() {
         formData.append("color", selectedVehicle.color);
         formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
         formData.append("price", String(selectedVehicle.price));
-        formData.append("imageUrl", selectedVehicle.imageFile);
+        formData.append("vehicleImage", selectedVehicle.imageFile);
         // ⚙️ userId là danh sách => cần append từng phần tử
         coOwners.forEach(owner => {
             formData.append("idUsers", owner.id.toString());
