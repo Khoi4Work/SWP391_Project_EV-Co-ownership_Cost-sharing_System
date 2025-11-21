@@ -81,8 +81,7 @@ public class EmailService implements IEmailService {
         context.setVariable("appName", "EcoShare");
         context.setVariable("email", sender.getEmail());
         context.setVariable("otp", sender.getContent());
-        String template = templateEngine.process("otp", context);
-        sender.setTemplate(template);
+        sender.setTemplate("otp");
         sender.setContext(context);
         sender.setSubject("[EcoShare System] Verify Account");
         sendEmail(sender);
