@@ -207,6 +207,8 @@ export default function Register() {
                                     phone: values.phone,
                                     cccd: values.cccd,
                                     gplx: values.gplx,
+                                    roleId: 1,
+                                    hovaTen: values.hovaTen,
                                 }
                                 const response = await axios.get(`${BASE_URL}/${CHECK_DUPLICATE}`, {
                                     params: payload,
