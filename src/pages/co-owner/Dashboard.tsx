@@ -16,10 +16,12 @@ import VehicleBooking from "@/components/VehicleBooking";
 import ScheduleCards from "@/components/ScheduleCards";
 import { useEffect, useState } from "react";
 import axiosClient from "@/api/axiosClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CoOwnerDashboard() {
     const HISTORY_CONTRACT = import.meta.env.VITE_CONTRACT_HISTORY_PATH
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [registrations, setRegistrations] = useState([]);
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -33,6 +35,22 @@ export default function CoOwnerDashboard() {
                 return "outline";
         }
     };
+    const CURRENT_USER = import.meta.env.VITE_AUTH_CURRENT
+
+    useEffect(() => {
+        axiosClient.get(CURRENT_USER).then(
+            (res) => {
+                if (res.data.role.roleName !== "co-owner") {
+                    toast({
+                        title: "Không có quyền truy cập",
+                        description: "Bạn không có quyền truy cập trang này.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                }
+            }
+        );
+    }, []);
     useEffect(() => {
         const fetchData = async () => {
             try {

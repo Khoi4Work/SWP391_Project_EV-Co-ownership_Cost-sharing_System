@@ -101,7 +101,7 @@ export default function AdminDashboard() {
     useEffect(() => {
         axiosClient.get(CURRENT_USER).then(
             (res) => {
-                if (res.data.role.roleName !== "ADMIN") {
+                if (res.data.role.roleName !== "admin") {
                     toast({
                         title: "Không có quyền truy cập",
                         description: "Bạn không có quyền truy cập trang này.",

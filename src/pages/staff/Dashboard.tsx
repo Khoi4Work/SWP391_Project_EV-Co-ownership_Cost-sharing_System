@@ -58,7 +58,7 @@ export default function StaffDashboard() {
     useEffect(() => {
         axiosClient.get(CURRENT_USER).then(
             (res) => {
-                if (res.data.role.roleName !== "STAFF") {
+                if (res.data.role.roleName !== "staff") {
                     toast({
                         title: "Không có quyền truy cập",
                         description: "Bạn không có quyền truy cập trang này.",
