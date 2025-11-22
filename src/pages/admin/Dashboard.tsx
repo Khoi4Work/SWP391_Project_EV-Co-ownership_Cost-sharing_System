@@ -23,7 +23,8 @@ import {
     Download,
     Eye,
     CheckCircle,
-    Trash2
+    Trash2,
+    Receipt
 } from "lucide-react";
 import ChatBox from "@/components/ChatBox";
 import { useEffect, useState } from "react";
@@ -69,6 +70,12 @@ export default function AdminDashboard() {
     const [loadingBlockedUsers, setLoadingBlockedUsers] = useState(false);
     const { toast } = useToast();
     const CREATE_STAFF = import.meta.env.VITE_POST_CREATE_STAFF_PATH;
+    
+    // Monthly fee history states
+    const [fundFees, setFundFees] = useState<any[]>([]);
+    const [loadingFundFees, setLoadingFundFees] = useState(false);
+    const [feeSearchTerm, setFeeSearchTerm] = useState("");
+    const [feeStatusFilter, setFeeStatusFilter] = useState<string>("all"); // "all", "PENDING", "COMPLETED"
     const displayedStaff = searchTerm.trim()
         ? filteredStaff
         : staffList;
@@ -167,6 +174,29 @@ export default function AdminDashboard() {
         };
 
         fetchBlockedUsers();
+    }, []);
+
+    // Fetch monthly fee history
+    useEffect(() => {
+        const fetchFundFees = async () => {
+            setLoadingFundFees(true);
+            try {
+                const res = await axiosClient.get("/api/fund-fee/get-all");
+                setFundFees(Array.isArray(res.data) ? res.data : []);
+            } catch (err: any) {
+                console.error("Lỗi khi lấy lịch sử phí hàng tháng:", err);
+                toast({
+                    title: "Lỗi",
+                    description: "Không thể tải lịch sử giao dịch phí hàng tháng",
+                    variant: "destructive"
+                });
+                setFundFees([]);
+            } finally {
+                setLoadingFundFees(false);
+            }
+        };
+
+        fetchFundFees();
     }, []);
 
     // Handle unblock user
@@ -403,6 +433,13 @@ export default function AdminDashboard() {
                     onClick={() => setActiveTab('history')}>
                     <Car className="h-4 w-4" />
                     <span>Lịch sử xe</span>
+                </button>
+
+                <button
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${activeTab === 'fee-history' ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
+                    onClick={() => setActiveTab('fee-history')}>
+                    <Receipt className="h-4 w-4" />
+                    <span>Lịch sử phí hàng tháng</span>
                 </button>
 
             </nav>
@@ -1108,6 +1145,190 @@ export default function AdminDashboard() {
                                         </div>)}
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Monthly Fee History */}
+                    <TabsContent value="fee-history">
+                        <Card className="shadow-elegant">
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <Receipt className="h-5 w-5" />
+                                    <span>Lịch sử giao dịch phí hàng tháng</span>
+                                </CardTitle>
+                                <CardDescription>
+                                    Theo dõi toàn bộ lịch sử thanh toán phí dịch vụ hàng tháng của các nhóm
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {/* Stats Overview */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                    <Card>
+                                        <CardContent className="p-4 text-center">
+                                            <p className="text-2xl font-bold text-primary">{fundFees.length}</p>
+                                            <p className="text-sm text-muted-foreground">Tổng giao dịch</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card>
+                                        <CardContent className="p-4 text-center">
+                                            <p className="text-2xl font-bold text-success">
+                                                {fundFees.filter((f: any) => f.status === "COMPLETED").length}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">Đã thanh toán</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card>
+                                        <CardContent className="p-4 text-center">
+                                            <p className="text-2xl font-bold text-warning">
+                                                {fundFees.filter((f: any) => f.status === "PENDING").length}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">Chưa thanh toán</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card>
+                                        <CardContent className="p-4 text-center">
+                                            <p className="text-2xl font-bold text-destructive">
+                                                {fundFees.filter((f: any) => f.isOverdue).length}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">Quá hạn</p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                {/* Filters */}
+                                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                                    <div className="relative flex-1">
+                                        <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Tìm kiếm theo tên thành viên..."
+                                            className="pl-9"
+                                            value={feeSearchTerm}
+                                            onChange={(e) => setFeeSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant={feeStatusFilter === "all" ? "default" : "outline"}
+                                            onClick={() => setFeeStatusFilter("all")}
+                                        >
+                                            Tất cả
+                                        </Button>
+                                        <Button
+                                            variant={feeStatusFilter === "COMPLETED" ? "default" : "outline"}
+                                            onClick={() => setFeeStatusFilter("COMPLETED")}
+                                        >
+                                            Đã thanh toán
+                                        </Button>
+                                        <Button
+                                            variant={feeStatusFilter === "PENDING" ? "default" : "outline"}
+                                            onClick={() => setFeeStatusFilter("PENDING")}
+                                        >
+                                            Chưa thanh toán
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Table */}
+                                {loadingFundFees ? (
+                                    <div className="text-center py-8 text-muted-foreground">Đang tải dữ liệu...</div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full border-collapse">
+                                            <thead>
+                                                <tr className="border-b">
+                                                    <th className="text-left p-3 font-semibold">ID</th>
+                                                    <th className="text-left p-3 font-semibold">Thành viên</th>
+                                                    <th className="text-left p-3 font-semibold">Tháng/Năm</th>
+                                                    <th className="text-left p-3 font-semibold">Số tiền</th>
+                                                    <th className="text-left p-3 font-semibold">Trạng thái</th>
+                                                    <th className="text-left p-3 font-semibold">Hạn thanh toán</th>
+                                                    <th className="text-left p-3 font-semibold">Ngày tạo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {fundFees
+                                                    .filter((fee: any) => {
+                                                        const matchesSearch = feeSearchTerm === "" || 
+                                                            (fee.userName && fee.userName.toLowerCase().includes(feeSearchTerm.toLowerCase()));
+                                                        const matchesStatus = feeStatusFilter === "all" || fee.status === feeStatusFilter;
+                                                        return matchesSearch && matchesStatus;
+                                                    })
+                                                    .map((fee: any) => {
+                                                        const formatDate = (dateString: string) => {
+                                                            if (!dateString) return "N/A";
+                                                            const date = new Date(dateString);
+                                                            return date.toLocaleDateString("vi-VN", {
+                                                                day: "2-digit",
+                                                                month: "2-digit",
+                                                                year: "numeric"
+                                                            });
+                                                        };
+
+                                                        const formatMonthYear = (monthYear: string) => {
+                                                            if (!monthYear) return "N/A";
+                                                            const [year, month] = monthYear.split("-");
+                                                            return `${month}/${year}`;
+                                                        };
+
+                                                        const isPending = fee.status === "PENDING";
+                                                        const isOverdue = fee.isOverdue;
+
+                                                        return (
+                                                            <tr key={fee.fundDetailId} className="border-b hover:bg-muted/50">
+                                                                <td className="p-3 text-sm">{fee.fundDetailId}</td>
+                                                                <td className="p-3">
+                                                                    <div>
+                                                                        <p className="font-medium">{fee.userName || "N/A"}</p>
+                                                                        <p className="text-xs text-muted-foreground">User ID: {fee.userId}</p>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-3 text-sm">{formatMonthYear(fee.monthYear)}</td>
+                                                                <td className="p-3">
+                                                                    <span className="font-semibold text-success">
+                                                                        {fee.amount ? fee.amount.toLocaleString("vi-VN") : "0"} VND
+                                                                    </span>
+                                                                </td>
+                                                                <td className="p-3">
+                                                                    <Badge
+                                                                        className={
+                                                                            isPending
+                                                                                ? isOverdue
+                                                                                    ? "bg-red-100 text-red-700 border-red-200"
+                                                                                    : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                                                                : "bg-green-100 text-green-700 border-green-200"
+                                                                        }
+                                                                    >
+                                                                        {isPending ? (
+                                                                            isOverdue ? "⚠️ Quá hạn" : "⌛ Chưa thanh toán"
+                                                                        ) : (
+                                                                            "✅ Đã thanh toán"
+                                                                        )}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="p-3 text-sm">
+                                                                    {fee.dueDate ? formatDate(fee.dueDate) : "N/A"}
+                                                                </td>
+                                                                <td className="p-3 text-sm">
+                                                                    {fee.createdAt ? formatDate(fee.createdAt) : "N/A"}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                            </tbody>
+                                        </table>
+                                        {fundFees.filter((fee: any) => {
+                                            const matchesSearch = feeSearchTerm === "" || 
+                                                (fee.userName && fee.userName.toLowerCase().includes(feeSearchTerm.toLowerCase()));
+                                            const matchesStatus = feeStatusFilter === "all" || fee.status === feeStatusFilter;
+                                            return matchesSearch && matchesStatus;
+                                        }).length === 0 && (
+                                            <div className="text-center py-8 text-muted-foreground">
+                                                Không tìm thấy giao dịch nào
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
