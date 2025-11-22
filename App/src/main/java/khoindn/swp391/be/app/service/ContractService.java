@@ -263,7 +263,8 @@ public class ContractService implements IContractService {
             if (contract.getGroup() != null) {
                 Group group = iGroupRepository.findGroupByGroupId(contract.getGroup().getGroupId());
                 if (group != null) {
-                    GroupMember gm = iGroupMemberRepository.findByUsersAndGroup_GroupId(member.getUser(), contract.getGroup().getGroupId());
+                    GroupMember gm = iGroupMemberRepository
+                            .findByUsersAndGroup_GroupId(member.getUser(), contract.getGroup().getGroupId());
                     contractHistoryRes.setOwnership(gm.getOwnershipPercentage());
                 }
             } else {
