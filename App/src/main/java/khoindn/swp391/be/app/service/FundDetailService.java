@@ -268,4 +268,13 @@ public class FundDetailService implements IFundDetailService {
     public FundDetail addFund(FundDetail fundDetail) {
         return fundDetailRepository.save(fundDetail);
     }
+
+    @Override
+    public List<FundFeeResponse> getAll() {
+        List<FundDetail> fees = fundDetailRepository.findAll();
+        return fees.stream()
+                .map(this::toFundFeeResponse)
+                .collect(Collectors.toList());
+    }
+
 }

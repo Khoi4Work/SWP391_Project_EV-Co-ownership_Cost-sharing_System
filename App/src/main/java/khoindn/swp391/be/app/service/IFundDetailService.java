@@ -25,5 +25,7 @@ public interface IFundDetailService {
 
     FundDetail addFund(FundDetail fundDetail);
 
+    List<FundFeeResponse> getAll();
+
 
 }
