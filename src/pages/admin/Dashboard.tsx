@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/api/axiosClient";
+import {toast} from "../../hooks/use-toast";
 export default function AdminDashboard() {
     const navigate = useNavigate();
     const [staffList, setStaffList] = useState([]);
@@ -95,6 +96,22 @@ export default function AdminDashboard() {
                 return "Không xác định";
         }
     };
+    const CURRENT_USER = import.meta.env.VITE_AUTH_CURRENT
+
+    useEffect(() => {
+        axiosClient.get(CURRENT_USER).then(
+            (res) => {
+                if (res.data.role.roleName !== "ADMIN") {
+                    toast({
+                        title: "Không có quyền truy cập",
+                        description: "Bạn không có quyền truy cập trang này.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                }
+            }
+        );
+    }, []);
     useEffect(() => {
         const fetchStaffList = async () => {
             try {
