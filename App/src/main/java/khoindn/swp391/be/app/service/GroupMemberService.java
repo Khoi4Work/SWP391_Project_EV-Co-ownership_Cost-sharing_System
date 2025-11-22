@@ -3,16 +3,13 @@ package khoindn.swp391.be.app.service;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
-import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.model.Response.DecisionVoteRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
 import khoindn.swp391.be.app.pojo.*;
-import khoindn.swp391.be.app.pojo.RequestGroupService;
 import khoindn.swp391.be.app.pojo._enum.OptionDecisionVoteDetail;
 import khoindn.swp391.be.app.pojo._enum.StatusDecisionVote;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
-import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,17 +85,22 @@ public class GroupMemberService implements IGroupMemberService {
 
     @Override
     public List<AllGroupsOfMember> getAllGroupsOfMember(Users user) {
-        List<GroupMember> gm = iGroupMemberRepository.findAllByUsersId(user.getId());
+        List<GroupMember> gm = iGroupMemberRepository.findAllByUsersId(user.getId())
+                .stream()
+                .filter(groupMember -> groupMember.getGroup().getStatus().equals(StatusGroup.ACTIVE))
+                .toList();
 
 
         List<AllGroupsOfMember> res = new ArrayList<>();
         for (GroupMember each : gm) {
             AllGroupsOfMember agm = modelMapper.map(each, AllGroupsOfMember.class);
+
             agm.setMembers(iGroupMemberRepository.findAllByGroup_GroupId(each.getGroup().getGroupId())
                     .stream()
                     .filter(groupMember ->
                             !user.getId().equals(groupMember.getUsers().getId()))
                     .toList());
+
             res.add(agm);
         }
         return res;
@@ -109,42 +111,42 @@ public class GroupMemberService implements IGroupMemberService {
         return iGroupMemberRepository.findGroupMembersByUsers_IdAndGroup_GroupId(userId, groupId);
     }
 
-    // ---------------------- NEW CODE: Add member to group ----------------------
-    @Override
-    @Transactional
-    public GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage) {
-        Group group = iGroupRepository.findById(groupId)
-                .orElseThrow(() -> new GroupNotFoundException("GROUP_NOT_FOUND"));
-
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
-
-        // Check duplicate
-        iGroupMemberRepository.findByGroupAndUsers(group, user).ifPresent(gm -> {
-            throw new IllegalStateException("ALREADY_IN_GROUP");
-        });
-        double addPct = ownershipPercentage == null ? 0.0 : ownershipPercentage.doubleValue();
-
-// Khóa để tránh 2 request đồng thời vượt 100%
-        iGroupMemberRepository.lockAllByGroupId(groupId);
-
-// Lấy tổng hiện tại
-        float currentTotal = iGroupMemberRepository.sumOwnershipByGroupId(groupId);
-
-// Epsilon để tránh sai số số thực
-        final float EPS = 0.0001f;
-        if (currentTotal + addPct > 100.0f + EPS) {
-            throw new IllegalStateException("OWNERSHIP_TOTAL_EXCEEDS_100");
-        }
-        GroupMember gm = new GroupMember();
-        gm.setGroup(group);
-        gm.setUsers(user);
-        gm.setRoleInGroup((roleInGroup == null || roleInGroup.isBlank()) ? "MEMBER" : roleInGroup.trim());
-        gm.setCreatedAt(LocalDateTime.now());
-        gm.setOwnershipPercentage(ownershipPercentage == null ? 0f : ownershipPercentage);
-
-        return iGroupMemberRepository.save(gm);
-    }
+//    // ---------------------- NEW CODE: Add member to group ----------------------
+//    @Override
+//    @Transactional
+//    public GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage) {
+//        Group group = iGroupRepository.findById(groupId)
+//                .orElseThrow(() -> new GroupNotFoundException("GROUP_NOT_FOUND"));
+//
+//        Users user = userRepository.findById(userId)
+//                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
+//
+//        // Check duplicate
+//        iGroupMemberRepository.findByGroupAndUsers(group, user).ifPresent(gm -> {
+//            throw new IllegalStateException("ALREADY_IN_GROUP");
+//        });
+//        double addPct = ownershipPercentage == null ? 0.0 : ownershipPercentage.doubleValue();
+//
+//// Khóa để tránh 2 request đồng thời vượt 100%
+//        iGroupMemberRepository.lockAllByGroupId(groupId);
+//
+//// Lấy tổng hiện tại
+//        float currentTotal = iGroupMemberRepository.sumOwnershipByGroupId(groupId);
+//
+//// Epsilon để tránh sai số số thực
+//        final float EPS = 0.0001f;
+//        if (currentTotal + addPct > 100.0f + EPS) {
+//            throw new IllegalStateException("OWNERSHIP_TOTAL_EXCEEDS_100");
+//        }
+//        GroupMember gm = new GroupMember();
+//        gm.setGroup(group);
+//        gm.setUsers(user);
+//        gm.setRoleInGroup((roleInGroup == null || roleInGroup.isBlank()) ? "MEMBER" : roleInGroup.trim());
+//        gm.setCreatedAt(LocalDateTime.now());
+//        gm.setOwnershipPercentage(ownershipPercentage == null ? 0f : ownershipPercentage);
+//
+//        return iGroupMemberRepository.save(gm);
+//    }
 
 
     @Override

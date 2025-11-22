@@ -2,7 +2,6 @@ package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.CheckOutRequest;
-import khoindn.swp391.be.app.model.Response.CheckInResponse;
 import khoindn.swp391.be.app.model.Response.CheckOutResponse;
 import khoindn.swp391.be.app.pojo.CheckIn;
 import khoindn.swp391.be.app.pojo.CheckOut;
@@ -16,6 +15,8 @@ import khoindn.swp391.be.app.repository.IVehicleRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 import java.time.LocalDateTime;
 
@@ -31,6 +32,7 @@ public class CheckOutService implements ICheckOutService {
     IVehicleRepository iVehicleRepository;
     @Autowired
     ICheckInRepository iCheckInRepository;
+
 
     @Override
     public CheckOutResponse processCheckOut(int scheduleId, CheckOutRequest req) {
@@ -70,6 +72,21 @@ public class CheckOutService implements ICheckOutService {
                     "Chưa check-in cho Schedule ID: " + scheduleId
             );
         }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime scheduleEndTime = schedule.getEndTime();
+        String lateWarning = null;
+
+        if (now.isAfter(scheduleEndTime)) {
+            long minutesLate = Duration.between(scheduleEndTime, now).toMinutes();
+            long hoursLate = minutesLate / 60;
+            long remainingMinutes = minutesLate % 60;
+
+            if (hoursLate > 0) {
+                lateWarning = String.format("⚠️ Trả xe trễ %d giờ %d phút", hoursLate, remainingMinutes);
+            } else {
+                lateWarning = String.format("⚠️ Trả xe trễ %d phút", minutesLate);
+            }
+        }
         CheckOut checkOut = new CheckOut();
         checkOut.setSchedule(schedule);
         checkOut.setCondition(req.getCondition());
@@ -92,6 +109,7 @@ public class CheckOutService implements ICheckOutService {
         res.setScheduleStartTime(schedule.getStartTime());
         res.setScheduleEndTime(schedule.getEndTime());
         res.setScheduleStatus(schedule.getStatus().name());
+        res.setLateWarning(lateWarning);
         // vehicle
         Vehicle vehicle = iVehicleRepository.findByGroup(schedule.getGroupMember().getGroup());
         if (vehicle != null) {

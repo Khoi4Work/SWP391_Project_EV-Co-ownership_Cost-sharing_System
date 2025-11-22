@@ -19,6 +19,7 @@ public class RequestGroupServiceDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Enumerated(EnumType.STRING)
     private StatusRequestGroupDetail status = StatusRequestGroupDetail.PENDING; // pending, approved, rejected
     private LocalDateTime solvedAt;
 
@@ -28,7 +29,7 @@ public class RequestGroupServiceDetail {
     private Users staff;
 
     @OneToOne
-    @JoinColumn(name = "request_group_id")
+    @JoinColumn(name = "request_group_service_id")
     @JsonIgnore
     private RequestGroupService requestGroupService;
 

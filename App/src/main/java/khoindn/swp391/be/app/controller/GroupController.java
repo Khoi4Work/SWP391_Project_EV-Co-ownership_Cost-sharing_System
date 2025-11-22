@@ -2,13 +2,12 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
-import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
-import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
-import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo.Group;
+import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.AuthenticationService;
 import khoindn.swp391.be.app.service.IGroupMemberService;
 import khoindn.swp391.be.app.service.IGroupService;
@@ -50,7 +49,7 @@ public class GroupController {
     }
 
     @PostMapping("/request")
-    public ResponseEntity createRequestGroup(@Valid GroupRequest request) {
+    public ResponseEntity createRequestGroup(@Valid @RequestBody GroupRequest request) {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -62,6 +61,11 @@ public class GroupController {
         }
 
         return ResponseEntity.status(201).body("Created Request Successfully");
+    }
+
+    @GetMapping("/requests")
+    public ResponseEntity getAllRequestGroups() {
+        return ResponseEntity.status(200).body(iGroupService.getAllRequestGroups());
     }
 
     @GetMapping("/service/{groupId}")

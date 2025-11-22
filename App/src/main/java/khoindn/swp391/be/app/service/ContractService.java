@@ -19,7 +19,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
-import java.security.*;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDate;
@@ -66,6 +69,17 @@ public class ContractService implements IContractService {
 
         if (contract == null) throw new ContractNotExistedException("Contract cannot found!");
         return contract;
+    }
+
+    @Override
+    public List<Contract> searchContractsByGroupName(String groupName) {
+        if (groupName == null || groupName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Group name cannot be null or empty");
+        }
+
+        List<Contract> contracts = iContractRepository.findByGroup_GroupNameContainingIgnoreCase(groupName);
+
+        return contracts;
     }
 
 
@@ -203,6 +217,7 @@ public class ContractService implements IContractService {
         //TAO VEHICLE
         Vehicle vehicle = modelMapper.map(req, Vehicle.class);
         vehicle.setContract(contract);
+        vehicle.setImageUrl(supabaseService.uploadFile(req.getVehicleImage()));
         iVehicleRepository.save(vehicle);
         iContractRepository.save(contract);
 
@@ -248,7 +263,8 @@ public class ContractService implements IContractService {
             if (contract.getGroup() != null) {
                 Group group = iGroupRepository.findGroupByGroupId(contract.getGroup().getGroupId());
                 if (group != null) {
-                    GroupMember gm = iGroupMemberRepository.findByUsersAndGroup_GroupId(member.getUser(), contract.getGroup().getGroupId());
+                    GroupMember gm = iGroupMemberRepository
+                            .findByUsersAndGroup_GroupId(member.getUser(), contract.getGroup().getGroupId());
                     contractHistoryRes.setOwnership(gm.getOwnershipPercentage());
                 }
             } else {

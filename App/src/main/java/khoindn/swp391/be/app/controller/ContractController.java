@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
-import khoindn.swp391.be.app.model.Request.SendBulkEmailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
 import khoindn.swp391.be.app.model.Response.RenderContractRes;
 import khoindn.swp391.be.app.pojo.*;
@@ -14,13 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
 
 
 @RestController
@@ -45,6 +40,31 @@ public class ContractController {
     @Autowired
     private ISupabaseService iSupabaseService;
 
+
+    // search contract
+    @GetMapping("/search")
+    public ResponseEntity<List<Contract>> searchContractsByGroupName(
+            @RequestParam("groupName") String groupName) {
+
+        Users user = authenticationService.getCurrentAccount();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            List<Contract> contracts = iContractService.searchContractsByGroupName(groupName);
+
+            if (contracts.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(contracts);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
     // Lấy contract
     @GetMapping("/{id}")
     public ResponseEntity<Contract> getContractByContractId(@PathVariable int id) {
@@ -67,7 +87,6 @@ public class ContractController {
         }
         return ResponseEntity.status(HttpStatus.OK).body(contractResult);
     }
-
 
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -218,8 +237,6 @@ public class ContractController {
     public ResponseEntity getFileByName(String fileName) {
         return ResponseEntity.status(200).body(iSupabaseService.getFileUrl(fileName));
     }
-
-
 
 
 }

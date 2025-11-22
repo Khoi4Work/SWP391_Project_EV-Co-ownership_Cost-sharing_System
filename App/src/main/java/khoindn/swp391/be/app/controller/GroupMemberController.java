@@ -57,32 +57,32 @@ public class GroupMemberController {
         return ResponseEntity.ok(groupIds);
     }
 
-    // ---------------------- NEW CODE: Add member to group ----------------------
-    @PostMapping("/add")
-    public ResponseEntity<GroupMemberResponse> addMember(
-            @RequestParam("groupId") int groupId,
-            @Valid @RequestBody AddMemberRequest req) {
-
-        GroupMember saved = iGroupMemberService.addMemberToGroup(
-                groupId, req.getUserId(), req.getRoleInGroup(), req.getOwnershipPercentage());
-        if (saved == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        GroupMemberResponse body = new GroupMemberResponse(
-                saved.getId(),
-                saved.getGroup(),
-                saved.getUsers(),
-                saved.getRoleInGroup(),
-                saved.getStatus().name(),
-                saved.getCreatedAt(),
-                saved.getOwnershipPercentage()
-        );
-        if (body == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(body);
-    }
+//    // ---------------------- NEW CODE: Add member to group ----------------------
+//    @PostMapping("/add")
+//    public ResponseEntity<GroupMemberResponse> addMember(
+//            @RequestParam("groupId") int groupId,
+//            @Valid @RequestBody AddMemberRequest req) {
+//
+//        GroupMember saved = iGroupMemberService.addMemberToGroup(
+//                groupId, req.getUserId(), req.getRoleInGroup(), req.getOwnershipPercentage());
+//        if (saved == null) {
+//            return ResponseEntity.badRequest().build();
+//        }
+//        GroupMemberResponse body = new GroupMemberResponse(
+//                saved.getId(),
+//                saved.getGroup(),
+//                saved.getUsers(),
+//                saved.getRoleInGroup(),
+//                saved.getStatus().name(),
+//                saved.getCreatedAt(),
+//                saved.getOwnershipPercentage()
+//        );
+//        if (body == null) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+//        }
+//
+//        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+//    }
 
 
     @GetMapping("/members/{groupId}")
@@ -100,15 +100,18 @@ public class GroupMemberController {
 
     @PostMapping(value = "/decision/group/{idGroup}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity createDecision(@PathVariable int idGroup, @ModelAttribute @Valid DecisionVoteReq request) {
+        // Get current user
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(403).body("Unauthorized");
         }
+        // Check if user is member of group
         System.out.println(user.getId()+"-"+idGroup);
         GroupMember gm = iGroupMemberService.getGroupOwnerByGroupIdAndUserId(idGroup, user.getId());
         if (gm == null) {
             throw new GroupMemberNotFoundException("Member is not in Group!");
         }
+        // Create decision
         DecisionVoteRes res = iGroupMemberService.createDecision(request, gm);
         if (res == null) {
             return ResponseEntity.status(500).body("INTERNAL SERVER ERROR");

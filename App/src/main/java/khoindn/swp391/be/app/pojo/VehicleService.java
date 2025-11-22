@@ -5,7 +5,6 @@ import khoindn.swp391.be.app.pojo._enum.StatusRequestService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class RequestVehicleService {
+public class VehicleService {
 
     //attributes
     @Id

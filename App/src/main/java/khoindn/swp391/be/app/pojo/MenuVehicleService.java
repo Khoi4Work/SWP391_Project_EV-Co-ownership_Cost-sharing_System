@@ -25,6 +25,6 @@ public class MenuVehicleService {
     // Relationships
     @OneToMany(mappedBy = "menuVehicleService", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<RequestVehicleService> requestVehicleServices;
+    private List<VehicleService> vehicleServices;
 
 }

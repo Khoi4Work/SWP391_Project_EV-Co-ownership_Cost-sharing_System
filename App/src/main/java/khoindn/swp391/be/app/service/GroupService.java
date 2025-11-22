@@ -1,7 +1,10 @@
 package khoindn.swp391.be.app.service;
 
 import jakarta.transaction.Transactional;
-import khoindn.swp391.be.app.exception.exceptions.*;
+import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.GroupNotFoundException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
+import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotRegisteredException;
 import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
@@ -9,14 +12,15 @@ import khoindn.swp391.be.app.model.formatReq.CoOwner_Info;
 import khoindn.swp391.be.app.model.formatReq.ResponseVehicleRegisteration;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo.RequestGroupService;
+import khoindn.swp391.be.app.pojo.VehicleService;
 import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
+import khoindn.swp391.be.app.pojo._enum.StatusVehicle;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,16 +58,18 @@ public class GroupService implements IGroupService {
     public RegisterVehicleRes addMemberToGroupByContract(GroupCreateReq request) {
         System.out.println(request);
 
+        Contract contract = iContractRepository.findContractByContractId(request.getContractId());
+
 
         // 3. Tạo group mới
         Group group = new Group();
-        group.setGroupName("Group-" + new Random().nextInt(10000));
-        group.setDescription("This group was created when registering vehicle ");
+        group.setGroupName("Group-" + contract.getContractId());
+        group.setDescription("This group was created at " + LocalDateTime.now() + " for contract ID: " + contract.getContractId());
+        group.setStatus(StatusGroup.ACTIVE);
         group.setCreatedAt(LocalDateTime.now());
         iGroupRepository.save(group);
 
 
-        Contract contract = iContractRepository.findContractByContractId(request.getContractId());
         contract.setGroup(group);
         iContractRepository.save(contract);
         // Tim vehicle
@@ -115,17 +121,23 @@ public class GroupService implements IGroupService {
     public void deleteGroup(int groupId) {
         Group group = iGroupRepository.findGroupByGroupId(groupId);
         if (group != null) {
+            // find vehicle by group
             Vehicle vehicle = iVehicleRepository.findVehicleByGroup(group);
             if (vehicle != null) {
+                // take all members in group
                 List<GroupMember> members = iGroupMemberRepository.findAllByGroup_GroupId(groupId);
                 if (members != null) {
+                    // set status deleted for all members
                     members.forEach(member -> {
                         member.setStatus(StatusGroupMember.DELETED);
                         iGroupMemberRepository.save(member);
                     });
+                    // set vehicle unavailable and delete group status
                     vehicle.setGroup(null);
-                    iVehicleRepository.save(vehicle);
+                    vehicle.setStatusVehicle(StatusVehicle.UNAVAILABLE);
                     group.setStatus(StatusGroup.DELETED);
+                    // save changes
+                    iVehicleRepository.save(vehicle);
                     iGroupRepository.save(group);
                 } else {
                     throw new GroupMemberNotFoundException("No members found in the group");
@@ -175,8 +187,13 @@ public class GroupService implements IGroupService {
     }
 
     @Override
-    public RequestVehicleService getAllVehicleServiceByGroupId(int groupId) {
+    public VehicleService getAllVehicleServiceByGroupId(int groupId) {
         return iRequestVehicleServiceRepository.getAllByGroupMember_Group(iGroupService.getGroupById(groupId));
+    }
+
+    @Override
+    public List<RequestGroupService> getAllRequestGroups() {
+        return iRequestGroupServiceRepository.findAll();
     }
 
 

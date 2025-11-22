@@ -15,6 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -46,6 +47,24 @@ public class CheckInService implements ICheckInService {
         if (iCheckInRepository.existsBySchedule_ScheduleId(scheduleId)) {
             throw new AlreadyCheckedInException(
                     "Schedule này đã được check-in rồi. Không thể check-in lần nữa."
+            );
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime scheduleStartTime = schedule.getStartTime();
+        LocalDateTime earliestCheckInTime = scheduleStartTime.minusHours(1); // 1 tiếng trước
+
+        if (now.isBefore(earliestCheckInTime)) {
+            long minutesUntilAllowed = Duration.between(now, earliestCheckInTime).toMinutes();
+            throw new CheckInTooEarlyException(
+                    String.format(
+                            "Không thể check-in sớm hơn 1 tiếng so với thời gian bắt đầu. " +
+                                    "Thời gian bắt đầu: %s. " +
+                                    "Bạn có thể check-in từ: %s. " +
+                                    "Vui lòng đợi thêm %d phút.",
+                            scheduleStartTime.toString(),
+                            earliestCheckInTime.toString(),
+                            minutesUntilAllowed
+                    )
             );
         }
         List<CheckIn> userCheckIn = iCheckInRepository.findBySchedule_GroupMember_Users_Id(req.getUserId());

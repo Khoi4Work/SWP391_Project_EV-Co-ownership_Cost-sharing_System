@@ -1,7 +1,6 @@
 package khoindn.swp391.be.app.service;
 
 import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
-import khoindn.swp391.be.app.exception.exceptions.NoVehicleInGroupException;
 import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
@@ -74,13 +73,13 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public RequestVehicleService requestVehicleService(int groupId, int serviceId) {
+    public khoindn.swp391.be.app.pojo.VehicleService requestVehicleService(int groupId, int serviceId) {
         Users user = authenticationService.getCurrentAccount();
         GroupMember gm = iGroupMemberRepository.findGroupMembersByUsers_IdAndGroup_GroupId(user.getId(), groupId);
         if (gm == null) {
             throw new GroupMemberNotFoundException("GROUP_NOT_FOUND");
         }
-        RequestVehicleService vehicleService = new RequestVehicleService();
+        khoindn.swp391.be.app.pojo.VehicleService vehicleService = new khoindn.swp391.be.app.pojo.VehicleService();
         vehicleService.setGroupMember(gm);
         vehicleService.setVehicle(iVehicleRepository.getVehiclesByGroup(gm.getGroup()));
         iRequestVehicleServiceRepository.save(vehicleService);
@@ -89,7 +88,7 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<RequestVehicleService> getAllRequestVehicleSerive() {
+    public List<khoindn.swp391.be.app.pojo.VehicleService> getAllRequestVehicleSerive() {
         return iRequestVehicleServiceRepository.findAll();
     }
 

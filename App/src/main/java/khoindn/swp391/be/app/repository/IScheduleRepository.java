@@ -1,6 +1,5 @@
 package khoindn.swp391.be.app.repository;
 
-import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.pojo.Schedule;
 import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,5 +20,9 @@ public interface IScheduleRepository extends JpaRepository<Schedule, Integer> {
     List<Schedule> findByGroupMember_Group_GroupIdAndStatus(int groupId, StatusSchedule status);
 
     List<Schedule> findByStatusAndCreatedAtBefore(StatusSchedule status, LocalDateTime beforeDate);
+
+    List<Schedule> findByGroupMember_Users_Id(int userId);
+
+    List<Schedule> findByGroupMember_Users_IdAndStatusNotIn(int userId, List<StatusSchedule> statuses);
 
 }

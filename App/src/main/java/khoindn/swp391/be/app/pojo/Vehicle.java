@@ -2,6 +2,7 @@ package khoindn.swp391.be.app.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import khoindn.swp391.be.app.pojo._enum.StatusVehicle;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -44,7 +45,11 @@ public class Vehicle {
     @Column(name="price", length = 32)
     private float price;
 
-    @Column(name="image",length=32)
+    @Column(name = "status", length = 16)
+    @Enumerated(EnumType.STRING)
+    private StatusVehicle statusVehicle = StatusVehicle.AVAILABLE;
+
+    @Column(name="image")
     private String imageUrl;
 
     // Relationships
@@ -58,7 +63,7 @@ public class Vehicle {
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL)
     @JsonIgnore
-    private List<RequestVehicleService> requestVehicleServices = new ArrayList<>();
+    private List<VehicleService> vehicleServices = new ArrayList<>();
 
 
 }

@@ -3,7 +3,10 @@ package khoindn.swp391.be.app.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,6 +26,7 @@ public class GroupMember {
     @Column(name = "role_in_group")
     private String roleInGroup;
     @Column(name = "status")
+    @Enumerated(EnumType.STRING)
     private StatusGroupMember status = StatusGroupMember.ACTIVE;
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -55,5 +59,5 @@ public class GroupMember {
     @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
     @JsonIgnore
     @ToString.Exclude
-    private List<RequestVehicleService> requestVehicleServices = new ArrayList<>();
+    private List<VehicleService> vehicleServices = new ArrayList<>();
 }

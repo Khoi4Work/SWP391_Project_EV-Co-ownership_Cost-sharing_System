@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import khoindn.swp391.be.app.exception.exceptions.AuthenticationException;
+import khoindn.swp391.be.app.exception.exceptions.UserNotFoundException;
 import khoindn.swp391.be.app.pojo.Users;
 import khoindn.swp391.be.app.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +34,16 @@ public class Filter extends OncePerRequestFilter {
     TokenService tokenService;
 
     private final List<String> PUBLIC_API = List.of(
+            // Public APIs
             "POST:/api/chat",
+            "POST:/auth/check/register",
             "POST:/auth/register",
             "POST:/auth/login/**",
             "POST:/email/send-otp",
-            "POST:/Schedule/**",
+            "POST:/schedule/**",
+            "GET:/exception/**",
+
+            // Swagger
             "GET:/swagger-ui/**",
             "GET:/v3/api-docs/**",
             "GET:/swagger-resources/**",
@@ -86,6 +92,10 @@ public class Filter extends OncePerRequestFilter {
 
             //Luu thong tin nguoi dang request
             //Luu session lai
+
+            if (user == null){
+                throw new UserNotFoundException("User is not found");
+            }
 
             UsernamePasswordAuthenticationToken
                     authenToken =

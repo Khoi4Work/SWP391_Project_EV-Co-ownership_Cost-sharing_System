@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class APIExceptionHandler {
@@ -40,22 +39,22 @@ public class APIExceptionHandler {
 
     @ExceptionHandler(RoleIsNotExistedException.class)
     public ResponseEntity handleRoleIsNotExistedException(RoleIsNotExistedException exception) {
-        return ResponseEntity.status(401).body("Role is not existed!"); // 401
+        return ResponseEntity.status(404).body("Role is not existed!");
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity handleAuthenticationException(AuthenticationException exception) {
-        return ResponseEntity.status(401).body(exception.getMessage()); // 401
+        return ResponseEntity.status(401).body(exception.getMessage());
     }
 
     @ExceptionHandler(InternalAuthenticationServiceException.class)
     public ResponseEntity handleInternalAuthenticationServiceException(InternalAuthenticationServiceException exception) {
-        return ResponseEntity.status(401).body("Username or password invalid!"); // 401
+        return ResponseEntity.status(401).body("Username or password invalid!");
     }
 
     @ExceptionHandler(UserIsExistedException.class)
     public ResponseEntity handleUserIsExistedException(UserIsExistedException exception) {
-        return ResponseEntity.status(401).body("Username is existed!"); // 401
+        return ResponseEntity.status(409).body("Username is existed!");
     }
 
     @ExceptionHandler(DisabledException.class)
@@ -65,6 +64,12 @@ public class APIExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
+
+    @ExceptionHandler(PasswordNullException.class)
+    public ResponseEntity handlePasswordNullException(PasswordNullException exception) {
+        return ResponseEntity.status(400).body("Password is null!");
+    }
+
 
     // ==========================
     // Common Runtime Exceptions
@@ -287,5 +292,10 @@ public class APIExceptionHandler {
     @ExceptionHandler(UserAlreadyHasActiveCheckInException.class)
     public ResponseEntity handleUserAlreadyHasActiveCheckInException(UserAlreadyHasActiveCheckInException ex) {
         return ResponseEntity.status(409).body(ex.getMessage());
+    }
+
+    @ExceptionHandler
+    public ResponseEntity handleCheckInTooEarlyException(CheckInTooEarlyException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage());
     }
 }

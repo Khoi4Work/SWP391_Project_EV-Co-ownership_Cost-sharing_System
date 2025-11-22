@@ -104,13 +104,15 @@ public class AuthenticationService implements UserDetailsService {
 
         }
 
+
         if (!iUserRoleRepository.existsUserRoleByRoleId((users.getRoleId()))) {
             System.out.println(users.getRoleId());
             throw new RoleIsNotExistedException("Vai trò ko tồn tại");
         }
-        // ... (các hàm kiểm tra cccd, phone, role...)
 
         users.setPassword(passwordEncoder.encode(users.getPassword()));
+        users.setGplx(passwordEncoder.encode(users.getGplx()));
+        users.setCccd(passwordEncoder.encode(users.getCccd()));
         Users user = modelMapper.map(users, Users.class);
         user.setId(null);
         user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId()));
@@ -158,7 +160,6 @@ public class AuthenticationService implements UserDetailsService {
     }
 
     public UsersResponse login(LoginUser loginUser) {
-        // (Logic đăng nhập của bạn giữ nguyên)
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginUser.getEmail(),
@@ -170,6 +171,7 @@ public class AuthenticationService implements UserDetailsService {
         usersResponse.setToken(token);
         System.out.println(usersResponse);
         return usersResponse;
+
     }
 
     public Users getCurrentAccount() {

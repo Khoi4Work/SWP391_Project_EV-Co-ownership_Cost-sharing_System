@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
+<html lang="vi"
       xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
@@ -31,13 +31,11 @@
 
         <div class="otp" th:text="${otp}">123456</div>
 
-        <p>Mã sẽ hết hạn sau <strong th:text="${expiryMinutes} ?: 5">5</strong> phút.</p>
+        <p>Mã sẽ hết hạn sau <strong>1</strong> phút.</p>
 
         <p>Nếu bạn không yêu cầu mã này, bạn có thể bỏ qua email này hoặc liên hệ hỗ trợ.</p>
 
-        <p>
-            <a th:href="${loginUrl}" class="btn" th:if="${loginUrl}">Đăng nhập / Xác thực</a>
-        </p>
+
 
         <p class="muted">Lưu ý: Không chia sẻ mã này với bất kỳ ai. Chúng tôi sẽ không yêu cầu bạn gửi lại mã qua tin nhắn hoặc gọi điện.</p>
     </div>
