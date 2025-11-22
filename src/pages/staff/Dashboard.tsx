@@ -28,10 +28,11 @@ import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
 
-    const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
+    const GET_CONTRACT_PENDING = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
     const GET_VEHICLES = import.meta.env.VITE_VEHICLES
     const LEAVE_GROUP = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const GET_ALL_GROUPS = import.meta.env.VITE_GET_ALL_GROUPS_PATH
+    const GET_CONTRACT_CONFIRMED = import.meta.env.VITE_GET_CONFIRMED_CONTRACT_PATH
 
     const USE_MOCK = false; // Bật DB ảo
     const [showChat, setShowChat] = useState(false);
@@ -61,7 +62,7 @@ export default function StaffDashboard() {
         }
         // Request
         setDonChoDuyet(0);
-        axiosClient.get(GET_REQUESTS)
+        axiosClient.get(GET_CONTRACT_PENDING)
             .then(res => {
                 if (res.status === 200 && Array.isArray(res.data)) {
                     // Lưu toàn bộ danh sách ContractPendingRes vào state
@@ -90,7 +91,7 @@ export default function StaffDashboard() {
                 setServices([]);
                 toast({
                     title: "Lỗi kết nối Backend",
-                    description: "Không thể tải danh sách hợp đồng.",
+                    description: "Không thể tải danh sách hợp đồng chờ duyệt.",
                     variant: "destructive",
                 });
             });
@@ -125,7 +126,7 @@ export default function StaffDashboard() {
                 setServices([]);
                 toast({
                     title: "Lỗi kết nối Backend",
-                    description: "Không thể tải danh sách hợp đồng.",
+                    description: "Không thể tải danh sách xe.",
                     variant: "destructive",
                 });
             });
@@ -160,7 +161,42 @@ export default function StaffDashboard() {
                 setServices([]);
                 toast({
                     title: "Lỗi kết nối Backend",
-                    description: "Không thể tải danh sách hợp đồng.",
+                    description: "Không thể tải danh sách nhóm.",
+                    variant: "destructive",
+                });
+            });
+
+        // Request
+        setDonDaDuyet(0);
+        axiosClient.get(GET_CONTRACT_CONFIRMED)
+            .then(res => {
+                if (res.status === 200 && Array.isArray(res.data)) {
+                    // Lưu toàn bộ danh sách ContractPendingRes vào state
+                    // setServices(res.data);
+
+                    // **Lọc và đếm theo trạng thái**
+                    const confirmedContracts = res.data.length;
+                    console.log("confirmedContracts :" + confirmedContracts);
+                    // Cập nhật State (sử dụng callback để cộng dồn nếu cần tổng hợp nhiều API)
+                    setDonDaDuyet(prevState => prevState + confirmedContracts);
+
+                } else if (res.status === 204) {
+                    // Không có hợp đồng chờ duyệt
+                    setServices([]);
+                    toast({
+                        title: "Không có đơn đã duyệt nào",
+                        description: "Hiện tại không có đơn đã duyệt nào trong hệ thống.",
+                    });
+                } else {
+                    console.warn("Phản hồi BE không mong đợi:", res);
+                }
+            })
+            .catch(err => {
+                console.error("Không kết nối được BE:", err.message);
+                setServices([]);
+                toast({
+                    title: "Lỗi kết nối Backend",
+                    description: "Không thể tải danh sách hợp đồng đã duyệt.",
                     variant: "destructive",
                 });
             });
