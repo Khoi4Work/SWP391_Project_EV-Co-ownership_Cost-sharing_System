@@ -29,6 +29,8 @@ interface BookingSlot {
     groupId: number;
     status: string;
     ownershipPercentage: number;
+    hasCheckIn?: boolean;
+    hasCheckOut?: boolean;
 }
 
 interface Vehicle {
@@ -292,7 +294,25 @@ export default function VehicleBooking() {
                     const vehicle = vehicles.find(v => v.vehicleId === item.vehicleId);
                     if (!vehicle) return null;
 
-                    return {
+                    // Kiểm tra check in từ nhiều nguồn
+                    const checkInObj = item.checkIn ?? item.checkin ?? item.check_in;
+                    const checkInTime = item.checkInTime ?? item.checkinTime ?? item.check_in_time ?? 
+                                       checkInObj?.checkInTime ?? checkInObj?.time ?? checkInObj?.createdAt;
+                    const hasCheckInFlag = item.hasCheckIn ?? item.hasCheckin ?? item.has_check_in;
+                    const hasCheckIn = hasCheckInFlag !== undefined ? Boolean(hasCheckInFlag) : 
+                                      ((checkInObj != null && typeof checkInObj === 'object') ||
+                                      (checkInTime != null && checkInTime !== ""));
+
+                    // Kiểm tra check out từ nhiều nguồn
+                    const checkOutObj = item.checkOut ?? item.checkout ?? item.check_out;
+                    const checkOutTime = item.checkOutTime ?? item.checkoutTime ?? item.check_out_time ?? 
+                                         checkOutObj?.checkOutTime ?? checkOutObj?.time ?? checkOutObj?.createdAt;
+                    const hasCheckOutFlag = item.hasCheckOut ?? item.hasCheckout ?? item.has_check_out;
+                    const hasCheckOut = hasCheckOutFlag !== undefined ? Boolean(hasCheckOutFlag) : 
+                                       ((checkOutObj != null && typeof checkOutObj === 'object') ||
+                                       (checkOutTime != null && checkOutTime !== ""));
+
+                    const bookingSlot: BookingSlot = {
                         scheduleId: item.scheduleId,
                         time: `${startTime}-${endTime}`,
                         date,
@@ -304,7 +324,10 @@ export default function VehicleBooking() {
                         groupId: item.groupId,
                         status: item.status || "BOOKED",
                         ownershipPercentage: item.ownershipPercentage || 0,
+                        hasCheckIn: Boolean(hasCheckIn),
+                        hasCheckOut: Boolean(hasCheckOut),
                     };
+                    return bookingSlot;
                 })
                 .filter((item): item is BookingSlot => item !== null);
 
@@ -590,6 +613,19 @@ export default function VehicleBooking() {
         if (vehicles && vehicles.length > 0) loadBookings();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [vehicles, statusFilter]);
+
+    // Listen for schedule updates (e.g., after check in/out)
+    useEffect(() => {
+        const handleScheduleUpdate = () => {
+            if (vehicles && vehicles.length > 0) {
+                loadBookings();
+            }
+        };
+        window.addEventListener('schedules-updated', handleScheduleUpdate);
+        return () => {
+            window.removeEventListener('schedules-updated', handleScheduleUpdate);
+        };
+    }, [vehicles]);
 
     useEffect(() => {
         const calculateDays = (date: string) => {
@@ -1197,7 +1233,7 @@ export default function VehicleBooking() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                {booking.userId === currentUserId && (String(booking.status).toUpperCase() === "BOOKED") && (
+                                                {booking.userId === currentUserId && (String(booking.status).toUpperCase() === "BOOKED") && !booking.hasCheckIn && !booking.hasCheckOut && (
                                                     <>
                                                         <Button size="sm" variant="outline"
                                                             onClick={() => handleEditBooking(booking.scheduleId)}

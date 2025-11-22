@@ -203,7 +203,7 @@ export default function GroupDetail() {
                         distance: null,
                     };
                 });
-                setVehicleUsages(mapped);
+                setVehicleUsages(mapped);//Lưu danh sách đã xử lý vào state để hiển thị lên màn hình
             })
             .catch(err => {
                 console.warn("⚠️ Cannot load usage history:", err?.message || err);
@@ -425,14 +425,6 @@ export default function GroupDetail() {
                     })),
                     transactions: []
                 };
-
-                console.log("=== GROUP DETAIL LOADED ===");
-                console.log("Group ID:", gid);
-                console.log("Group Name:", groupName);
-                console.log("Members:", members.length);
-                console.log("Vehicles:", vehicles.length);
-                console.log("Owner ID:", members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId);
-                console.log("===========================");
 
                 setGroup(mappedGroup);
             } catch (err: any) {
