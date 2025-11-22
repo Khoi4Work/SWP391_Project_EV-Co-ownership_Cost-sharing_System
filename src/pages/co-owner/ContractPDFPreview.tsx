@@ -74,9 +74,9 @@ const ContractView = forwardRef<HTMLDivElement, ContractViewProps>(
               style={{
                 position: "absolute",
                 left: 0,
-                top: "40%",
+                top: "10%",
                 transform: "translateY(-50%)",
-                height: "25px",
+                height: "37px",
                 objectFit: "contain",
               }}
             />
@@ -90,8 +90,6 @@ const ContractView = forwardRef<HTMLDivElement, ContractViewProps>(
             >
               THỎA THUẬN ĐỒNG SỞ HỮU XE (DỰA TRÊN HỢP ĐỒNG BÊN NGOÀI)
             </h1>
-
-            <h3>Hợp đồng này được lập ra với mục đích</h3>
             <p style={{ fontStyle: "italic", marginTop: "0.5rem" }}>
               Hợp đồng này được lập ra nhằm thể hiện sự tin tưởng và cam kết của các bên đối với nền tảng,
               đảm bảo mọi hoạt động, giao dịch và thỏa thuận được thực hiện minh bạch, công bằng và đúng quy định.
