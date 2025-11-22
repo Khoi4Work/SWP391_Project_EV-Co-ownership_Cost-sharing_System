@@ -70,64 +70,13 @@ export default function VehicleRegistration() {
   const navigate = useNavigate();
   const [contractFile, setContractFile] = useState<File | null>(null);
   const [vehicles, setVehicles] = useState([]);
+  const GET_ALL_VEHICLES = import.meta.env.VITE_VEHICLES;
   const { toast } = useToast();
   const handleFileImport = (data) => {
     const { file, uploadType } = data;
     setContractFile(file);
     setFileType(uploadType); // PDF / IMAGE
   };
-  // const handleConfirmFile = () => {
-  //   if (!contractFile) return;
-  //
-  //   // fileType là "pdf" hoặc "image" đã được set trong handleFileImport
-  //   if (fileType !== "PDF" && fileType !== "IMAGE") {
-  //     toast({
-  //       title: "File không hợp lệ",
-  //       description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-  //   setIsFileConfirmed(true);
-  //   setStep(1); // qua bước nhập thông tin xe
-  // };
-  // const handleNextFromStep3 = () => {
-  //   // 1) kiểm tra mỗi coOwner không vượt main owner
-  //   const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
-  //   if (invalid) {
-  //     toast({
-  //       title: "Lỗi",
-  //       description: `Đồng sở hữu ${invalid.name || invalid.email || invalid.id} có tỷ lệ lớn hơn chủ sở hữu chính (${mainOwnership}%).`,
-  //       variant: "destructive"
-  //     });
-  //     return;
-  //   }
-  //
-  //   // 2) kiểm tra tổng = 100
-  //   if (totalOwnership !== 100) {
-  //     toast({
-  //       title: "Lỗi",
-  //       description: `Tổng tỷ lệ sở hữu phải bằng 100% (hiện tại ${totalOwnership}%).`,
-  //       variant: "destructive"
-  //     });
-  //     return;
-  //   }
-  //
-  //   setStep(4);
-  // };
-  // const GET_USERS = import.meta.env.VITE_USERS_GET;
-  // const fetchUserByEmail = async (email: string) => {
-  // try {
-  //   const res = await axiosClient.get(GET_USERS, {
-  //     params: { email }
-  //   });
-  //   const user = res.data;
-  //   if (!user) {
-  //     toast({
-  //         title: "Đã nhận file hợp đồng",
-  //         description: `Loại file: ${uploadType}`,
-  //     });
-  // };
   const handleConfirmFile = () => {
     if (!contractFile) return;
 
@@ -170,7 +119,6 @@ export default function VehicleRegistration() {
   const GET_USERS = import.meta.env.VITE_USERS_GET;
   const fetchUserByEmail = async (email: string) => {
     try {
-      // const res = await fetch(`https://68ca27d4430c4476c34861d4.mockapi.io/user?email=${encodeURIComponent(email)}`);
       const res = await axiosClient.get(GET_USERS, {
         params: { email }
       });
@@ -430,25 +378,22 @@ export default function VehicleRegistration() {
     onSubmit: async (values) => {
       // Validate toàn bộ form trước khi tiếp tục
       const errors = await vehicleFormik.validateForm();
-
+      vehicleFormik.setErrors(errors);
       // Kiểm tra lỗi nếu có
       if (Object.keys(errors).length > 0) {
         alert("Vui lòng sửa các lỗi trước khi tiếp tục.");
         return;
       }
-
-      // Kiểm tra trống biển số
-      if (!values.plateNo.trim()) {
-        alert("Vui lòng nhập biển số xe trước khi tiếp tục.");
-        return;
-      }
-
       // Kiểm tra biển số xe có bị trùng trong hệ thống không
       const isDuplicate = vehicles.some(
         (vehicle) => vehicle.plateNo.toUpperCase() === values.plateNo.trim().toUpperCase()
       );
       if (isDuplicate) {
-        alert("Biển số xe đã tồn tại trong hệ thống. Vui lòng chọn biển số khác.");
+        toast({
+          title: "Lỗi",
+          description: "Biển số xe đã tồn tại trong hệ thống!",
+          variant: "destructive",
+        })
         return;
       }
 
@@ -471,89 +416,33 @@ export default function VehicleRegistration() {
       }
     }
   }, []);
+  // useEffect(() => {
+  //   // khi người dùng chọn xe mới → reset đồng sở hữu
+  //   setCoOwners([]);
+  //   localStorage.removeItem("coOwners");
+  // }, [selectedVehicle]);
   useEffect(() => {
-    // khi người dùng chọn xe mới → reset đồng sở hữu
-    setCoOwners([]);
-    localStorage.removeItem("coOwners");
-  }, [selectedVehicle]);
+    const getVehicles = async () => {
+      try {
+        const res = await axiosClient.get(GET_ALL_VEHICLES);
+        console.log("Vehicles fetched:", res.data);
+        setVehicles(res.data); // res.data là List<> từ BE
+      } catch (err) {
+        console.error("Không thể lấy Backend:", err);
+      }
+    };
+
+    getVehicles();
+  }, []);
   const removeCoOwner = (id: number) => {
     const updated = coOwners.filter(co => co.id !== id);
     setCoOwners(updated);
     if (updated.length === 0) localStorage.removeItem("coOwners");
     else localStorage.setItem("coOwners", JSON.stringify(updated));
   };
-  // const handleSubmit = async () => {
-  //   if (totalOwnership !== 100) {
-  //     toast({
-  //       title: "Lỗi",
-  //       description: "Tổng tỷ lệ sở hữu phải bằng 100%",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   setPdfUrl(pdfUrl);
-
-  //   const invalid = coOwners.find((co) => Number(co.ownership) > mainOwnership);
-  //   if (invalid) {
-  //     toast({
-  //       title: "Lỗi",
-  //       description: `Đồng sở hữu ${invalid.name || invalid.email} có tỷ lệ lớn hơn chủ sở hữu chính`,
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   setIsSubmitted(true);
-
-  //   // ✅ Payload group
-  //   const payload = {
-  //     vehicleId: selectedVehicle,
-  //     member: [
-  //       {
-  //         email: ownerInfo.email,
-  //         ownershipPercentage: mainOwnership,
-  //       },
-  //       ...coOwners.map((co) => ({
-  //         email: co.email,
-  //         ownershipPercentage: co.ownership,
-  //       })),
-  //     ],
-  //     documentUrl: pdfUrl,
-  //     contractType: "Vehicle Registration",
-  //   };
-  var documentUrl = `${window.location.origin}/contract/preview/`;
-  //   // ✅ Payload contract
-  //   const contract = {
-  //     documentUrl,
-  //     contractType: "VEHICLE REGISTRATION",
-  //     userId: [
-  //       Number(ownerInfo.id),
-  //       ...coOwners.filter(co => co.id).map(co => Number(co.id))
-  //     ]
-  //   };
-
-  //   console.log("📦 Payload gửi backend:", payload);
-  //   console.log("📨 Payload gửi createContract:", contract);
-  //   try {
-
-  //     const resData = await axiosClient.post(CREATE_CONTRACT, contract);
-  //     localStorage.removeItem("address");
-  //     resData.data.forEach((user) => {
-  //       const key = `contractId_${user.user.id}`;
-  //       localStorage.setItem(key, user.contract.contractId);
-  //       const get = localStorage.getItem(key)
-  //       console.log("Contract Id duoc luu: " + get);
-  //       console.log("key duoc set: " + key);
-  //       console.log("✅ Gửi contract thành công");
-  //     });
-  //   } catch (err) {
-  //     console.error("❌ Lỗi khi gọi createContract:", err);
-  //   }
-  // };
   const handleSubmit = async () => {
     const formData = new FormData();
-
+    var documentUrl = `${window.location.origin}/contract/preview/`;
     // ⚙️ Gửi đúng tên field giống backend
     formData.append("documentUrl", documentUrl); // nếu có link hợp đồng thì truyền vào
     formData.append("contractType", "CO_OWNER"); // ví dụ: "CO_OWNER" hoặc "LEASE"

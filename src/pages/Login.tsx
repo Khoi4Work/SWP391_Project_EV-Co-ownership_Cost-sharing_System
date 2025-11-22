@@ -10,7 +10,9 @@ import { Car, ArrowLeft } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 
 export default function Login() {
+    const CHECK_OVERDUE = import.meta.env.VITE_CHECK_OVERDUE;
     const [email, setEmail] = useState("");
+    const GET_GROUPID = import.meta.env.VITE_GET_GROUP_ID;
     const [password, setPassword] = useState("");
     const [userTypes, setUserTypes] = useState<string[]>([]);
     const navigate = useNavigate();
@@ -69,7 +71,7 @@ export default function Login() {
 
                 try {
                     // Lấy danh sách groupIds của user
-                    const groupIdsRes = await axiosClient.get("/groupMember/getGroupIdsByUserId", {
+                    const groupIdsRes = await axiosClient.get(GET_GROUPID, {
                         params: { userId },
                         headers: { Authorization: `Bearer ${token}` }
                     });
@@ -78,7 +80,7 @@ export default function Login() {
                     // Kiểm tra quá hạn thanh toán trong tất cả các nhóm
                     for (const groupId of groupIds) {
                         try {
-                            const feeRes = await axiosClient.get(`/api/fund-fee/group/${groupId}/current-month`, {
+                            const feeRes = await axiosClient.get(`${CHECK_OVERDUE}/${groupId}/current-month`, {
                                 headers: { Authorization: `Bearer ${token}` }
                             });
                             const fees = feeRes.data?.fees || [];
@@ -140,12 +142,7 @@ export default function Login() {
                 variant: "destructive",
             });
         }
-        // ✅ BỎ finally block
-        // finally {
-        //     navigate("/co-owner/dashboard")
-        // }
     };
-
 
     return (
         <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
@@ -226,9 +223,6 @@ export default function Login() {
                             Đăng nhập
                         </button>
 
-                        {/*<Button type="submit" className="w-full bg-gradient-primary hover:shadow-glow">*/}
-                        {/*    Đăng nhập*/}
-                        {/*</Button>*/}
                     </form>
 
                     <div className="mt-4 text-center text-sm">

@@ -43,9 +43,18 @@ export default function PaymentConfirmation() {
   console.log("Total Amount from localStorage:", totalAmount);
 
 
-    useEffect(() => {
+  useEffect(() => {
+    const hasVoted = localStorage.getItem(`voted_${deciId}_${token}`);
 
-    }, []);
+    if (hasVoted) {
+      toast({
+        title: "Bạn đã thực hiện vote rồi",
+        description: "Đường dẫn này đã được sử dụng.",
+        variant: "destructive",
+      });
+      navigate("/co-owner/dashboard");
+    }
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -83,7 +92,8 @@ export default function PaymentConfirmation() {
     fetchDecisionVoteDetail();
   }, [token, id, navigate]);
 
-
+  const DECISION_PATH = import.meta.env.VITE_SET_DECISION_PATH;
+  const BASE_URL = import.meta.env.VITE_API_URL;
   const handleConfirm = async (voteValue: number) => {
     try {
       setSubmitting(true);
@@ -93,7 +103,7 @@ export default function PaymentConfirmation() {
         serviceId: serviId,
         vote: voteValue,
       };
-      const res = await axios.patch(`http://localhost:8080/groupMember/decision`, payload, {
+      const res = await axios.patch(`${BASE_URL}${DECISION_PATH}`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -109,6 +119,7 @@ export default function PaymentConfirmation() {
           ? "Bạn đã xác nhận đồng ý trả tiền cho các dịch vụ."
           : "Bạn đã xác nhận không đồng ý trả tiền.",
       });
+      localStorage.setItem(`voted_${deciId}_${token}`, "true");
       navigate("/co-owner/dashboard");
     } catch (err) {
       console.error(err);
