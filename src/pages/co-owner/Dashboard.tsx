@@ -7,12 +7,10 @@ import {
     Users,
     Calendar,
     Download,
-    MessageCircle,
     Bell,
     Plus
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import ChatBox from "@/components/ChatBox";
 import UserDropdown from "@/components/UserDropdown";
 import VehicleBooking from "@/components/VehicleBooking";
 import ScheduleCards from "@/components/ScheduleCards";
@@ -21,7 +19,6 @@ import axiosClient from "@/api/axiosClient";
 
 export default function CoOwnerDashboard() {
     const HISTORY_CONTRACT = import.meta.env.VITE_CONTRACT_HISTORY_PATH
-    const [showChat, setShowChat] = useState(false);
     const navigate = useNavigate();
     const [registrations, setRegistrations] = useState([]);
     const getStatusColor = (status: string) => {
@@ -168,26 +165,6 @@ export default function CoOwnerDashboard() {
                     </CardContent>
                 </Card>
 
-                {/* AI Chat Button */}
-                <div className="fixed bottom-6 right-6">
-                    <Button
-                        onClick={() => setShowChat(true)}
-                        size="lg"
-                        className="rounded-full bg-gradient-primary hover:shadow-glow shadow-lg"
-                    >
-                        <MessageCircle className="h-5 w-5 mr-2" />
-                        Hỗ trợ AI
-                    </Button>
-                </div>
-
-                {/* Chat Box */}
-                {showChat && (
-                    <ChatBox
-                        isOpen={showChat}
-                        onClose={() => setShowChat(false)}
-                        userType="co-owner"
-                    />
-                )}
             </div>
         </div>
     );
