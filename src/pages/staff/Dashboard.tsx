@@ -28,6 +28,7 @@ import axiosClient from "@/api/axiosClient";
 
 export default function StaffDashboard() {
     const GET_REQUESTS = import.meta.env.VITE_GET_PENDING_CONTRACT_PATH;
+
     const USE_MOCK = false; // Bật DB ảo
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
@@ -35,12 +36,18 @@ export default function StaffDashboard() {
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const navigate = useNavigate();
     const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+    const [donChoDuyet, setDonChoDuyet] = useState(0)
+    const [donDaDuyet, setDonDaDuyet] = useState(0)
+    const [nhomQuanLy, setNhomQuanLy] = useState(0)
+    const [xeHoatDong, setXeHoatDong] = useState(0)
+    const [refreshKey, setRefreshKey] = useState(0);
+
     const LEAVE_GROUP = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const stats = [
-        { label: "Đơn chờ duyệt", value: 12, icon: Clock, color: "warning" },
-        { label: "Đơn đã duyệt", value: 45, icon: CheckCircle, color: "success" },
-        { label: "Nhóm quản lý", value: 8, icon: Users, color: "primary" },
-        { label: "Xe hoạt động", value: 24, icon: Car, color: "primary" }
+        { label: "Đơn chờ duyệt", value: donChoDuyet, icon: Clock, color: "warning" },
+        { label: "Đơn đã duyệt", value: donDaDuyet, icon: CheckCircle, color: "success" },
+        { label: "Nhóm quản lý", value: nhomQuanLy, icon: Users, color: "primary" },
+        { label: "Xe hoạt động", value: xeHoatDong, icon: Car, color: "primary" }
     ];
     useEffect(() => {
         if (USE_MOCK) {
@@ -48,11 +55,19 @@ export default function StaffDashboard() {
             setServices([]);
             return;
         }
+        setDonChoDuyet(0);
         axiosClient.get(GET_REQUESTS)
             .then(res => {
                 if (res.status === 200 && Array.isArray(res.data)) {
                     // Lưu toàn bộ danh sách ContractPendingRes vào state
                     setServices(res.data);
+
+                    // **Lọc và đếm theo trạng thái**
+                    const pendingContracts = res.data.length;
+                    console.log("pendingContracts:"+ pendingContracts);
+                    // Cập nhật State (sử dụng callback để cộng dồn nếu cần tổng hợp nhiều API)
+                    setDonChoDuyet(prevState => prevState + pendingContracts);
+
                     console.log("endDate", res.data[0].contract.endDate);
                 } else if (res.status === 204) {
                     // Không có hợp đồng chờ duyệt
@@ -74,7 +89,7 @@ export default function StaffDashboard() {
                     variant: "destructive",
                 });
             });
-    }, []);
+    }, [refreshKey]);
     useEffect(() => {
         const fetchLeaveRequests = async () => {
             try {
@@ -82,6 +97,12 @@ export default function StaffDashboard() {
 
                 if (Array.isArray(res.data)) {
                     setLeaveRequests(res.data);
+
+
+                    console.log("leaveRequests: " + res.data.length);
+                    setDonChoDuyet(prevState => prevState + res.data.length);
+
+
                     console.log("📦 Leave Requests fetched:", res.data);
                 } else if (res.status === 204 || res.data === null) {
                     setLeaveRequests([]);
@@ -102,7 +123,8 @@ export default function StaffDashboard() {
         };
 
         fetchLeaveRequests();
-    }, [LEAVE_GROUP]);
+    }, [LEAVE_GROUP, refreshKey]);
+
     // const handleApprove = async (appId: number) => {
     //     const request = leaveRequests.find((r) => r.id === appId);
     //     if (!request) {
@@ -176,6 +198,8 @@ export default function StaffDashboard() {
                 });
                 // Cập nhật lại UI
                 setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
+
+                setRefreshKey(prev => prev - (donChoDuyet-(donChoDuyet-1)) );
             }
         } catch (err) {
             toast({
@@ -211,6 +235,8 @@ export default function StaffDashboard() {
 
                 // Cập nhật lại danh sách hợp đồng trên FE
                 setServices(prev => prev.filter(item => item.contract.contractId !== contractId));
+
+                setRefreshKey(prev => prev - (donChoDuyet-(donChoDuyet-1)));
             }
         } catch (err) {
             toast({

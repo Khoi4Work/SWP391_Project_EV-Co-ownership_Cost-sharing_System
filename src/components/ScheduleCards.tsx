@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Car, Clock, User, AlertCircle } from "lucide-react";
+import {useCallback, useEffect, useMemo, useState} from "react";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {Textarea} from "@/components/ui/textarea";
+import {Car, Clock, User, AlertCircle} from "lucide-react";
 import axiosClient from "@/api/axiosClient";
-import { useToast } from "@/hooks/use-toast";
-import { Input } from "./ui/input";
-import { useNavigate } from "react-router-dom";
+import {useToast} from "@/hooks/use-toast";
+import {Input} from "./ui/input";
+import {useNavigate} from "react-router-dom";
+
 type ScheduleItem = {
     scheduleId: number;
     startTime: string; // ISO
@@ -165,12 +166,12 @@ function normalizeScheduleItem(raw: any): ScheduleItem | null {
     } as ScheduleItem;
 }
 
-function RegisterVehicleServiceModal({ open, onClose }) {
+function RegisterVehicleServiceModal({open, onClose}) {
     const navigate = useNavigate();
     const [vehicleServices, setVehicleServices] = useState([]);
     const [selectedService, setSelectedService] = useState("");
     const [customService, setCustomService] = useState("");
-    const { toast } = useToast();
+    const {toast} = useToast();
     // ✅ Gọi API lấy danh sách dịch vụ
     useEffect(() => {
         if (open) {
@@ -211,7 +212,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
         }
         const serviceId = selectedServiceData.id;
         localStorage.setItem("serviceId", serviceId);
-        navigate("/service-detail", { state: { selectedService } });
+        navigate("/service-detail", {state: {selectedService}});
         // try {
         //     // 1. tạo DecisionVote
         //     const decisionReq = {
@@ -316,7 +317,7 @@ function RegisterVehicleServiceModal({ open, onClose }) {
                     <label className="text-sm font-medium">Chọn dịch vụ</label>
                     <Select onValueChange={setSelectedService}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Chọn một dịch vụ" />
+                            <SelectValue placeholder="Chọn một dịch vụ"/>
                         </SelectTrigger>
                         <SelectContent>
                             {vehicleServices.map(service => (
@@ -364,8 +365,8 @@ export default function ScheduleCards() {
     const [openDetail, setOpenDetail] = useState(false);
     const [activeId, setActiveId] = useState<number | null>(null);
 
-    const [checkInForm, setCheckInForm] = useState<CheckInForm>({ condition: "GOOD", notes: "", images: [] });
-    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({ condition: "GOOD", notes: "", images: [] });
+    const [checkInForm, setCheckInForm] = useState<CheckInForm>({condition: "GOOD", notes: "", images: []});
+    const [checkOutForm, setCheckOutForm] = useState<CheckOutForm>({condition: "GOOD", notes: "", images: []});
     const currentUserId = useMemo(() => Number(localStorage.getItem("userId")) || 2, []);
     const currentUserName = useMemo(() => String(localStorage.getItem("userName") || ""), []);
     const normalizedCurrentUserName = useMemo(() => normalizeText(currentUserName), [currentUserName]);
@@ -398,7 +399,7 @@ export default function ScheduleCards() {
     }, [currentUserEmail, currentUserId, normalizedCurrentUserName]);
     const [overdueByGroup, setOverdueByGroup] = useState<Map<number, boolean>>(new Map());
     const [currentGroupId, setCurrentGroupId] = useState<number | null>(null)
-    const { toast } = useToast();
+    const {toast} = useToast();
 
     useEffect(() => {
         const handleGroupChange = (event: any) => {
@@ -442,7 +443,7 @@ export default function ScheduleCards() {
             const res = await fetch(`${beBaseUrl}/api/fund-fee/group/${groupId}/current-month`, {
                 headers: {
                     "Accept": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
             });
@@ -486,7 +487,7 @@ export default function ScheduleCards() {
             const token = localStorage.getItem("accessToken");
             const headers = {
                 "Accept": "application/json",
-                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                ...(token ? {"Authorization": `Bearer ${token}`} : {})
             };
 
             // Fetch schedules và vehicles song song
@@ -557,7 +558,7 @@ export default function ScheduleCards() {
                                 method: "GET",
                                 headers: {
                                     "Accept": "application/json",
-                                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                                 },
                                 credentials: "include",
                             });
@@ -697,7 +698,7 @@ export default function ScheduleCards() {
                 method: "GET",
                 headers: {
                     "Accept": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
             });
@@ -741,7 +742,7 @@ export default function ScheduleCards() {
         }
 
         setActiveId(id);
-        setCheckInForm({ condition: "GOOD", notes: "", images: [] });
+        setCheckInForm({condition: "GOOD", notes: "", images: []});
         setOpenCheckIn(true);
     };
 
@@ -773,7 +774,7 @@ export default function ScheduleCards() {
         }
 
         setActiveId(id);
-        setCheckOutForm({ condition: "GOOD", notes: "", images: [] });
+        setCheckOutForm({condition: "GOOD", notes: "", images: []});
         setOpenCheckOut(true);
     };
 
@@ -807,7 +808,7 @@ export default function ScheduleCards() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                ...(token ? {"Authorization": `Bearer ${token}`} : {})
             },
             credentials: "include",
             body: JSON.stringify(payload)
@@ -854,7 +855,7 @@ export default function ScheduleCards() {
                 method: "GET",
                 headers: {
                     "Accept": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
             });
@@ -916,7 +917,7 @@ export default function ScheduleCards() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                ...(token ? {"Authorization": `Bearer ${token}`} : {})
             },
             credentials: "include",
             body: JSON.stringify(payload)
@@ -936,6 +937,9 @@ export default function ScheduleCards() {
                 checkOutResult?.checkOut?.checkOutTime ??
                 checkOutResult?.time ??
                 new Date().toISOString(); // Fallback: dùng thời gian hiện tại
+            if (checkOutResult?.lateWarning) {
+                alert(checkOutResult.lateWarning);
+            }
         } catch (e) {
             // Response có thể không có body, dùng thời gian hiện tại
             checkOutTimeFromResponse = new Date().toISOString();
@@ -963,7 +967,7 @@ export default function ScheduleCards() {
                 method: "GET",
                 headers: {
                     "Accept": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+                    ...(token ? {"Authorization": `Bearer ${token}`} : {})
                 },
                 credentials: "include",
             });
@@ -1024,7 +1028,7 @@ export default function ScheduleCards() {
                     return (
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                             <div className="flex items-start space-x-2">
-                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5"/>
                                 <div className="flex-1">
                                     <p className="font-medium text-red-900">
                                         Tài khoản quá hạn thanh toán
@@ -1040,9 +1044,6 @@ export default function ScheduleCards() {
                 })()}
 
 
-
-
-
                 {loading ? (
                     <div className="text-muted-foreground">Đang tải...</div>
                 ) : error ? (
@@ -1052,9 +1053,9 @@ export default function ScheduleCards() {
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {items.map(it => {
-                            const statusBadge = !it.hasCheckIn ? { text: "Chờ nhận xe", style: "bg-blue-600" }
-                                : it.hasCheckIn && !it.hasCheckOut ? { text: "Đang sử dụng", style: "bg-orange-500" }
-                                    : { text: "Đã trả xe", style: "bg-green-600" };
+                            const statusBadge = !it.hasCheckIn ? {text: "Chờ nhận xe", style: "bg-blue-600"}
+                                : it.hasCheckIn && !it.hasCheckOut ? {text: "Đang sử dụng", style: "bg-orange-500"}
+                                    : {text: "Đã trả xe", style: "bg-green-600"};
 
                             const isMyBooking = isBookingOfCurrentUser(it);
 
@@ -1077,11 +1078,11 @@ export default function ScheduleCards() {
                                     <div className="text-sm text-muted-foreground mt-1">Biển
                                         số: {it.vehiclePlate || "-"}</div>
                                     <div className="mt-3 space-y-1 text-sm">
-                                        <div className="flex items-center gap-2"><User className="h-4 w-4" />Người
+                                        <div className="flex items-center gap-2"><User className="h-4 w-4"/>Người
                                             thuê: {it.userName || "-"}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Bắt
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4"/>Bắt
                                             đầu: {formatDateTime(it.startTime)}</div>
-                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Kết
+                                        <div className="flex items-center gap-2"><Clock className="h-4 w-4"/>Kết
                                             thúc: {formatDateTime(it.endTime)}</div>
                                     </div>
                                     <div className="mt-3 flex gap-2">
@@ -1146,8 +1147,8 @@ export default function ScheduleCards() {
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
                                 <Select value={checkInForm.condition}
-                                    onValueChange={(v) => setCheckInForm(prev => ({ ...prev, condition: v }))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
+                                        onValueChange={(v) => setCheckInForm(prev => ({...prev, condition: v}))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng"/></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
                                         <SelectItem value="NORMAL">Bình thường</SelectItem>
@@ -1158,15 +1159,15 @@ export default function ScheduleCards() {
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
                                 <Textarea value={checkInForm.notes}
-                                    onChange={(e) => setCheckInForm(prev => ({ ...prev, notes: e.target.value }))}
-                                    placeholder="Ghi chú..." />
+                                          onChange={(e) => setCheckInForm(prev => ({...prev, notes: e.target.value}))}
+                                          placeholder="Ghi chú..."/>
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
                                 <input type="file" multiple onChange={async (e) => {
                                     const imgs = await fileListToBase64(e.target.files);
-                                    setCheckInForm(prev => ({ ...prev, images: imgs }));
-                                }} />
+                                    setCheckInForm(prev => ({...prev, images: imgs}));
+                                }}/>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckIn}>Xác nhận</Button>
@@ -1189,8 +1190,8 @@ export default function ScheduleCards() {
                             <div>
                                 <div className="text-sm mb-1">Tình trạng xe</div>
                                 <Select value={checkOutForm.condition}
-                                    onValueChange={(v) => setCheckOutForm(prev => ({ ...prev, condition: v }))}>
-                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng" /></SelectTrigger>
+                                        onValueChange={(v) => setCheckOutForm(prev => ({...prev, condition: v}))}>
+                                    <SelectTrigger><SelectValue placeholder="Chọn tình trạng"/></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="GOOD">Tốt</SelectItem>
                                         <SelectItem value="NORMAL">Bình thường</SelectItem>
@@ -1201,15 +1202,15 @@ export default function ScheduleCards() {
                             <div>
                                 <div className="text-sm mb-1">Ghi chú</div>
                                 <Textarea value={checkOutForm.notes}
-                                    onChange={(e) => setCheckOutForm(prev => ({ ...prev, notes: e.target.value }))}
-                                    placeholder="Ghi chú..." />
+                                          onChange={(e) => setCheckOutForm(prev => ({...prev, notes: e.target.value}))}
+                                          placeholder="Ghi chú..."/>
                             </div>
                             <div>
                                 <div className="text-sm mb-1">Hình ảnh</div>
                                 <input type="file" multiple onChange={async (e) => {
                                     const imgs = await fileListToBase64(e.target.files);
-                                    setCheckOutForm(prev => ({ ...prev, images: imgs }));
-                                }} />
+                                    setCheckOutForm(prev => ({...prev, images: imgs}));
+                                }}/>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button onClick={submitCheckOut}>Xác nhận</Button>
@@ -1264,7 +1265,7 @@ export default function ScheduleCards() {
                                             <div>Ghi chú: {detail.checkIn.notes || '-'}</div>
                                             {detail.checkIn.images && (
                                                 <img src={detail.checkIn.images} alt="checkin"
-                                                    className="mt-2 max-h-48 object-contain" />
+                                                     className="mt-2 max-h-48 object-contain"/>
                                             )}
                                             <Button
                                                 variant="default"
@@ -1287,7 +1288,7 @@ export default function ScheduleCards() {
                                             <div>Ghi chú: {detail.checkOut.notes || '-'}</div>
                                             {detail.checkOut.images && (
                                                 <img src={detail.checkOut.images} alt="checkout"
-                                                    className="mt-2 max-h-48 object-contain" />
+                                                     className="mt-2 max-h-48 object-contain"/>
                                             )}
                                         </div>
                                     ) : (

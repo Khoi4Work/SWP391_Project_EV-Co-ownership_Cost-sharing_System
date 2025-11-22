@@ -16,6 +16,7 @@ import { Users, ArrowLeft, LogOut, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSEO } from "@/hooks/useSEO";
 import axiosClient from "@/api/axiosClient";
+
 export default function MyGroups() {
   useSEO({
     title: "Nhóm của tôi | EcoShare",
@@ -101,7 +102,7 @@ export default function MyGroups() {
         // userId: currentUserId,
       });
 
-      await axiosClient.post("/group/request", {
+      const data = await axiosClient.post("/group/request", {
         groupId: group.group.groupId,
         // userId: currentUserId,
         nameRequestGroup: `Yêu cầu rời nhóm`,
@@ -237,7 +238,8 @@ export default function MyGroups() {
                         <div className="flex -space-x-2">
                           {otherMembers.slice(0, 5).map((m) => (
                             <Avatar key={m.id} className="border">
-                              <AvatarImage src={m.avatar} alt={`Avatar ${m.name}`} loading="lazy" />
+                              <AvatarImage src={m.avatar} alt={`Avatar ${m.name}`}
+                                loading="lazy" />
                               <AvatarFallback>{m.name?.charAt(0) || "?"}</AvatarFallback>
                             </Avatar>
                           ))}
