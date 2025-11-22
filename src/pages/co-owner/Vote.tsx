@@ -41,6 +41,12 @@ export default function PaymentConfirmation() {
   const totalAmount = localStorage.getItem("totalAmount");
   const amountPerPerson = Math.floor(Number(totalAmount) / Number(groupMemberCount));
   console.log("Total Amount from localStorage:", totalAmount);
+
+
+    useEffect(() => {
+
+    }, []);
+
   useEffect(() => {
     if (!token) {
       toast({

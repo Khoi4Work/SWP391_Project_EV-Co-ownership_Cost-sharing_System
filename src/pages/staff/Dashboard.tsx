@@ -33,6 +33,7 @@ export default function StaffDashboard() {
     const LEAVE_GROUP = import.meta.env.VITE_GET_ALL_GROUP_REQUEST_PATH;
     const GET_ALL_GROUPS = import.meta.env.VITE_GET_ALL_GROUPS_PATH
     const GET_CONTRACT_CONFIRMED = import.meta.env.VITE_GET_CONFIRMED_CONTRACT_PATH
+    const CURRENT_USER = import.meta.env.VITE_AUTH_CURRENT
 
     const USE_MOCK = false; // Bật DB ảo
     const [showChat, setShowChat] = useState(false);
@@ -55,6 +56,18 @@ export default function StaffDashboard() {
         {label: "Xe hoạt động", value: xeHoatDong, icon: Car, color: "primary"}
     ];
     useEffect(() => {
+        axiosClient.get(CURRENT_USER).then(
+            (res) => {
+                if (res.data.role.roleName !== "STAFF") {
+                    toast({
+                        title: "Không có quyền truy cập",
+                        description: "Bạn không có quyền truy cập trang này.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                }
+            }
+        );
         if (USE_MOCK) {
             // Mock data cho hợp đồng chờ duyệt
             setServices([]);
