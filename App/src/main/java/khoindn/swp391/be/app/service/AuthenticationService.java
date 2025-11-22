@@ -139,7 +139,7 @@ public class AuthenticationService implements UserDetailsService {
             Context context = new Context();
             context.setVariable("fullName", user.getHovaTen());
             context.setVariable("systemName", "EcoShare Management"); // (Bạn có thể đổi tên này)
-            context.setVariable("privateKeyBase64", privateKeyString);
+//            context.setVariable("privateKeyBase64", privateKeyString);
             context.setVariable("noteAttachment", "Đính kèm file: "+fileName);
 
 
