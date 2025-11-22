@@ -104,9 +104,6 @@ public class AuthenticationService implements UserDetailsService {
 
         }
 
-//        if (users.getPassword() == null) {
-//            throw new PasswordNullException("Mật khẩu không được để trống");
-//        }
 
         if (!iUserRoleRepository.existsUserRoleByRoleId((users.getRoleId()))) {
             System.out.println(users.getRoleId());
@@ -114,6 +111,8 @@ public class AuthenticationService implements UserDetailsService {
         }
 
         users.setPassword(passwordEncoder.encode(users.getPassword()));
+        users.setGplx(passwordEncoder.encode(users.getGplx()));
+        users.setCccd(passwordEncoder.encode(users.getCccd()));
         Users user = modelMapper.map(users, Users.class);
         user.setId(null);
         user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId()));

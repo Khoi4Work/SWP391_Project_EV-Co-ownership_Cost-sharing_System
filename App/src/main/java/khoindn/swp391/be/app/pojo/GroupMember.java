@@ -26,6 +26,7 @@ public class GroupMember {
     @Column(name = "role_in_group")
     private String roleInGroup;
     @Column(name = "status")
+    @Enumerated(EnumType.STRING)
     private StatusGroupMember status = StatusGroupMember.ACTIVE;
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();

@@ -49,7 +49,7 @@ public class GroupController {
     }
 
     @PostMapping("/request")
-    public ResponseEntity createRequestGroup(@Valid GroupRequest request) {
+    public ResponseEntity createRequestGroup(@Valid @RequestBody GroupRequest request) {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -61,6 +61,11 @@ public class GroupController {
         }
 
         return ResponseEntity.status(201).body("Created Request Successfully");
+    }
+
+    @GetMapping("/requests")
+    public ResponseEntity getAllRequestGroups() {
+        return ResponseEntity.status(200).body(iGroupService.getAllRequestGroups());
     }
 
     @GetMapping("/service/{groupId}")

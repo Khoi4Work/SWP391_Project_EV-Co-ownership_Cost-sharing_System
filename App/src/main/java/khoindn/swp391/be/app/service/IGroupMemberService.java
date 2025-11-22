@@ -26,7 +26,7 @@ public interface IGroupMemberService {
     List<AllGroupsOfMember> getAllGroupsOfMember(Users user);
 
     // ---------------------- NEW METHOD ----------------------
-    GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage);
+//    GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage);
 
 
     DecisionVoteRes createDecision(DecisionVoteReq request, GroupMember gm);
