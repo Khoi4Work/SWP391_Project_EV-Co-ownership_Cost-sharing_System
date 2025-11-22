@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.model.Request.UpdateRequestGroup;
-import khoindn.swp391.be.app.model.Response.ContractPendingRes;
+import khoindn.swp391.be.app.model.Response.ContractPreviewRes;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.RequestGroupService;
 import khoindn.swp391.be.app.pojo.Users;
@@ -84,7 +84,20 @@ public class StaffController {
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
             return ResponseEntity.status(403).body("Unauthorized");
         }
-        List<ContractPendingRes> res = iContractService.getPendingContracts();
+        List<ContractPreviewRes> res = iContractService.getPendingContracts();
+        if (res.isEmpty()) {
+            return ResponseEntity.status(204).body("No Content");
+        }
+        return ResponseEntity.status(200).body(res);
+    }
+
+    @GetMapping("/contract/confirmed")
+    public ResponseEntity getConfirmedContractRequests() {
+        Users staff = authenticationService.getCurrentAccount();
+        if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
+            return ResponseEntity.status(403).body("Unauthorized");
+        }
+        List<ContractPreviewRes> res = iContractService.getConfirmedContracts();
         if (res.isEmpty()) {
             return ResponseEntity.status(204).body("No Content");
         }

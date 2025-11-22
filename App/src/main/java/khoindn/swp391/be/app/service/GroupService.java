@@ -196,5 +196,10 @@ public class GroupService implements IGroupService {
         return iRequestGroupServiceRepository.findAll();
     }
 
+    @Override
+    public List<Group> getAllGroups() {
+        return iGroupRepository.findAll();
+    }
+
 
 }

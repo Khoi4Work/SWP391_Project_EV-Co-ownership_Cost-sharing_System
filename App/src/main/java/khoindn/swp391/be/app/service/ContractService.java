@@ -8,7 +8,7 @@ import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Request.EmailDetailReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
-import khoindn.swp391.be.app.model.Response.ContractPendingRes;
+import khoindn.swp391.be.app.model.Response.ContractPreviewRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo._enum.DecisionContractSigner;
 import khoindn.swp391.be.app.pojo._enum.StatusContract;
@@ -294,12 +294,12 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public List<ContractPendingRes> getPendingContracts() {
-        List<ContractPendingRes> contractPendingRes = new ArrayList<>();
+    public List<ContractPreviewRes> getPendingContracts() {
+        List<ContractPreviewRes> contractPreviewRes = new ArrayList<>();
         List<Contract> pendingContracts = iContractRepository.getContractsByStatus(StatusContract.PENDING_REVIEW);
         for (Contract contract : pendingContracts) {
             List<ContractSigner> signerList = iContractSignerRepository.findAllByContract_ContractId(contract.getContractId());
-            ContractPendingRes pendingRes = new ContractPendingRes();
+            ContractPreviewRes pendingRes = new ContractPreviewRes();
             pendingRes.setContract(contract);
             pendingRes.setContractSignerList(
                     signerList
@@ -307,9 +307,9 @@ public class ContractService implements IContractService {
                             .map(ContractSigner::getUser)
                             .toList()
             );
-            contractPendingRes.add(pendingRes);
+            contractPreviewRes.add(pendingRes);
         }
-        return contractPendingRes;
+        return contractPreviewRes;
     }
 
     @Override
@@ -383,6 +383,25 @@ public class ContractService implements IContractService {
         } else {
             throw new UndefinedChoiceException("Invalid decision value");
         }
+    }
+
+    @Override
+    public List<ContractPreviewRes> getConfirmedContracts() {
+        List<ContractPreviewRes> contractConfirmedRes = new ArrayList<>();
+        List<Contract> confirmedContracts = iContractRepository.getContractsByStatus(StatusContract.CONFIRMED);
+        for (Contract contract : confirmedContracts) {
+            List<ContractSigner> signerList = iContractSignerRepository.findAllByContract_ContractId(contract.getContractId());
+            ContractPreviewRes confirmedRes = new ContractPreviewRes();
+            confirmedRes.setContract(contract);
+            confirmedRes.setContractSignerList(
+                    signerList
+                            .stream()
+                            .map(ContractSigner::getUser)
+                            .toList()
+            );
+            contractConfirmedRes.add(confirmedRes);
+        }
+        return contractConfirmedRes;
     }
 
     public static String cleanKey(String key) {

@@ -3,7 +3,7 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.model.Request.ContractCreateReq;
 import khoindn.swp391.be.app.model.Request.ContractDecisionReq;
 import khoindn.swp391.be.app.model.Response.ContractHistoryRes;
-import khoindn.swp391.be.app.model.Response.ContractPendingRes;
+import khoindn.swp391.be.app.model.Response.ContractPreviewRes;
 import khoindn.swp391.be.app.pojo.Contract;
 import khoindn.swp391.be.app.pojo.ContractSigner;
 import khoindn.swp391.be.app.pojo.Users;
@@ -28,12 +28,14 @@ public interface IContractService {
 
     List<ContractSigner> getContractSignerByContractId(int id);
 
-    List<ContractPendingRes> getPendingContracts();
+    List<ContractPreviewRes> getPendingContracts();
 
     void SendWaitingConfirmedContract(int contractId);
 
     void sendDeclinedContractNotification(int contractId) throws Exception;
 
     void verifyContract(int contractId, int decision, Users staff, String declinedContractLink) throws Exception;
+
+    List<ContractPreviewRes> getConfirmedContracts();
 
 }
