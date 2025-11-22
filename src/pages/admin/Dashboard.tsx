@@ -24,7 +24,6 @@ import {
     Trash2,
     Receipt
 } from "lucide-react";
-import ChatBox from "@/components/ChatBox";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -34,7 +33,6 @@ export default function AdminDashboard() {
     const navigate = useNavigate();
     const [staffList, setStaffList] = useState([]);
     const GET_STAFFS = import.meta.env.VITE_GET_GET_ALL_STAFF_PATH;
-    const [showChat, setShowChat] = useState(false);
     const [showAddStaffModal, setShowAddStaffModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showEditStaffModal, setShowEditStaffModal] = useState(false);
@@ -364,12 +362,6 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex items-center space-x-4">
                         <button
-                            className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/90 hover:text-white transition-colors">
-                            <Settings className="h-4 w-4" />
-                            <span>Cài đặt</span>
-                        </button>
-
-                        <button
                             className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/90 hover:text-white transition-colors"
                             onClick={() => navigate('/login')}>
                             <LogOut className="h-4 w-4" />
@@ -644,16 +636,6 @@ export default function AdminDashboard() {
                     </TabsContent>
                 </Tabs>
 
-                {/* AI Chat Button */}
-                <div className="fixed bottom-6 right-6">
-                    <Button onClick={() => setShowChat(true)} size="lg"
-                        className="rounded-full bg-gradient-primary hover:shadow-glow shadow-lg">
-                        Phân tích AI
-                    </Button>
-                </div>
-
-                {/* Chat Box */}
-                {showChat && <ChatBox isOpen={showChat} onClose={() => setShowChat(false)} userType="admin" />}
 
                 {/* Add Staff Modal */}
                 {showAddStaffModal &&
