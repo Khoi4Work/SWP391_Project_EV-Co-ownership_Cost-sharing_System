@@ -134,7 +134,7 @@ public class AuthenticationService implements UserDetailsService {
 
             byte[] attachmentDataToSend = privateKeyString.getBytes(StandardCharsets.UTF_8);
             // 3. Chuẩn bị nội dung email
-            String fileName = "private_key_" + user.getId() + ".txt";
+            String fileName = "private_key_" + user.getHovaTen() + ".txt";
 
             Context context = new Context();
             context.setVariable("fullName", user.getHovaTen());
