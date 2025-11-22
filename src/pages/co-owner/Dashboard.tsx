@@ -7,22 +7,21 @@ import {
     Users,
     Calendar,
     Download,
-    MessageCircle,
     Bell,
     Plus
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import ChatBox from "@/components/ChatBox";
 import UserDropdown from "@/components/UserDropdown";
 import VehicleBooking from "@/components/VehicleBooking";
 import ScheduleCards from "@/components/ScheduleCards";
 import { useEffect, useState } from "react";
 import axiosClient from "@/api/axiosClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CoOwnerDashboard() {
     const HISTORY_CONTRACT = import.meta.env.VITE_CONTRACT_HISTORY_PATH
-    const [showChat, setShowChat] = useState(false);
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [registrations, setRegistrations] = useState([]);
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -36,6 +35,22 @@ export default function CoOwnerDashboard() {
                 return "outline";
         }
     };
+    const CURRENT_USER = import.meta.env.VITE_AUTH_CURRENT
+
+    useEffect(() => {
+        axiosClient.get(CURRENT_USER).then(
+            (res) => {
+                if (res.data.role.roleName !== "co-owner") {
+                    toast({
+                        title: "Không có quyền truy cập",
+                        description: "Bạn không có quyền truy cập trang này.",
+                        variant: "destructive",
+                    });
+                    navigate("/login");
+                }
+            }
+        );
+    }, []);
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -132,62 +147,8 @@ export default function CoOwnerDashboard() {
                 {/* Schedule list + Check-in/out */}
                 <ScheduleCards />
 
-                {/* Registration History */}
-                <Card className="shadow-elegant">
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Calendar className="h-5 w-5" />
-                            <span>Lịch sử đăng ký xe</span>
-                        </CardTitle>
-                        <CardDescription>
-                            Theo dõi trạng thái các đơn đăng ký xe điện
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {registrations.map((reg) => (
-                                <div key={reg.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-3">
-                                            <h3 className="font-semibold">{reg.vehicle}</h3>
-                                            <Badge variant={getStatusColor(reg.status) as any}>
-                                                {getStatusText(reg.status)}
-                                            </Badge>
-                                        </div>
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            <span>Mã: {reg.id}</span>
-                                            <span className="mx-2">•</span>
-                                            <span>Tỷ lệ sở hữu: {reg.ownership}</span>
-                                            <span className="mx-2">•</span>
-                                            <span>Ngày đăng ký: {reg.date}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
 
-                {/* AI Chat Button */}
-                <div className="fixed bottom-6 right-6">
-                    <Button
-                        onClick={() => setShowChat(true)}
-                        size="lg"
-                        className="rounded-full bg-gradient-primary hover:shadow-glow shadow-lg"
-                    >
-                        <MessageCircle className="h-5 w-5 mr-2" />
-                        Hỗ trợ AI
-                    </Button>
-                </div>
 
-                {/* Chat Box */}
-                {showChat && (
-                    <ChatBox
-                        isOpen={showChat}
-                        onClose={() => setShowChat(false)}
-                        userType="co-owner"
-                    />
-                )}
             </div>
         </div>
     );

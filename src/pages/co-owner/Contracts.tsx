@@ -1,13 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   FileText,
   Download,
   ArrowLeft,
   Calendar,
   Users,
-  Car
+  Car,
+  Search
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -233,13 +235,7 @@ async function sha256(message: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
-async function renderContractWithStamps(contractHtml: string, stamps: Record<string, string>) {
-  // Tạo container tạm
-  const container = document.createElement("div");
-  container.innerHTML = contractHtml;
-  container.style.position = "relative";
-  container.style.padding = "20px";
-
+async function renderContractWithStamps(container: HTMLElement, stamps: Record<string, string>) {
   const signerIds = Object.keys(stamps);
   const totalSigners = signerIds.length;
 
@@ -273,22 +269,8 @@ async function renderContractWithStamps(contractHtml: string, stamps: Record<str
     img.style.bottom = `${bottom + pageOffset}px`;
 
     img.style.right = "50px";
+    container.appendChild(img);
   });
-
-  // Xuất PDF
-  const opt = {
-    margin: 10,
-    filename: `HopDong.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-  } as const;
-
-  const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-
-  // Mở tab mới để xem PDF
-  window.open(pdfUrl, '_blank');
 }
 function createStampCanvas(hash: string, size: number = 80): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
@@ -328,6 +310,7 @@ export default function Contracts() {
   const [loadingContract, setLoadingContract] = useState<boolean>(true);
   const [errorContract, setErrorContract] = useState<string>("");
   const [contracts, setContracts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
   const ALL_CONTRACTS = import.meta.env.VITE_GET_ALL_CONTRACTS;
   const fetchContractFromBE = async (contractId: string) => {
@@ -368,6 +351,27 @@ export default function Contracts() {
       setLoadingContract(false);
     }
   };
+  const viewContractInNewTab = async (contractId: string) => {
+    const result = await fetchContractFromBE(contractId);
+    if (!result) return;
+
+    // Tạo container PDF
+    const container = document.createElement("div");
+    container.innerHTML = result.htmlString;
+    container.style.position = "relative";
+    const pdfBlob = await html2pdf()
+      .from(container)
+      .set({
+        margin: 10,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      })
+      .outputPdf("blob");
+
+    // Mở PDF ở tab mới
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url, "_blank");
+  };
   const downloadContract = async (contractId: string) => {
     try {
       // 1️⃣ Lấy HTML và dữ liệu dấu mộc từ backend
@@ -377,12 +381,9 @@ export default function Contracts() {
       // 2️⃣ Tạo container tạm (không append vào DOM để không hiển thị preview)
       const container = document.createElement("div");
       container.innerHTML = result.htmlString;
+      container.style.position = "relative";
       container.style.width = "800px";
       container.style.padding = "10px";
-
-      // 3️⃣ Render dấu mộc trực tiếp lên container
-      renderContractWithStamps(container as any, result.stamps);
-
       // 4️⃣ Tạo PDF và download trực tiếp
       await html2pdf()
         .from(container as any) // ép kiểu cho TS
@@ -434,6 +435,17 @@ export default function Contracts() {
       default: return "Không xác định";
     }
   };
+
+  // Filter contracts based on search term
+  const filteredContracts = contracts.filter((contract) => {
+    if (!searchTerm.trim()) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      contract.vehicleName?.toLowerCase().includes(searchLower) ||
+      contract.contractId?.toString().includes(searchTerm)
+    );
+  });
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -474,9 +486,23 @@ export default function Contracts() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Search Bar */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên xe hoặc mã hợp đồng..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
             <div className="space-y-4">
-              {contracts.length > 0 ? (
-                contracts.map((contract) => (
+              {filteredContracts.length > 0 ? (
+                filteredContracts.map((contract) => (
                   <div
                     key={contract.contractId}
                     className="border rounded-lg p-6 hover:shadow-md transition-shadow"
@@ -528,12 +554,7 @@ export default function Contracts() {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={async () => {
-                            const result = await fetchContractFromBE(contract.contractId);
-                            if (result) {
-                              await renderContractWithStamps(result.htmlString, result.stamps);
-                            }
-                          }}
+                          onClick={() => viewContractInNewTab(contract.contractId)}
                         >
                           Xem hợp đồng
                         </Button>
@@ -541,6 +562,19 @@ export default function Contracts() {
                     </div>
                   </div>
                 ))
+              ) : searchTerm.trim() ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Không tìm thấy hợp đồng nào phù hợp với "{searchTerm}".</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchTerm("")}
+                    className="mt-4"
+                  >
+                    Xóa bộ lọc
+                  </Button>
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />

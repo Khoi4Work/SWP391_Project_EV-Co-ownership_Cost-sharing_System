@@ -4,10 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axiosClient from "@/api/axiosClient";
 import { fetchUsageHistoryDetail, fetchUsageHistoryList } from "@/api/usageHistory";
-import QRCode from "react-qr-code";
 
 // Interface cho GroupMember response từ BE
 interface GroupMemberDetailRes {
@@ -92,13 +90,12 @@ interface GroupFeeResponse {
     paidCount: number;
     fees: FundFeeResponse[];
 }
-
-const API_BASE_URL = "http://localhost:8080";
 const GET_GROUP = import.meta.env.VITE_GET_GROUP_BY_ID_PATH as string | undefined;
 
 
 export default function GroupDetail() {
     const { groupId } = useParams<{ groupId: string }>();
+    console.log("DEBUG groupId:", groupId);
     const navigate = useNavigate();
 
     // States
@@ -112,9 +109,6 @@ export default function GroupDetail() {
     const [feeDetailOpen, setFeeDetailOpen] = useState(false);
     const [selectedFee, setSelectedFee] = useState<FundFeeResponse | null>(null);
     const [processingPayment, setProcessingPayment] = useState<number | null>(null);
-    const [paymentQRUrl, setPaymentQRUrl] = useState<string | null>(null);
-    const [loadingQR, setLoadingQR] = useState(false);
-
     // Load lịch sử sử dụng xe từ BE
     useEffect(() => {
         const userIdStr = localStorage.getItem("userId");
@@ -209,7 +203,7 @@ export default function GroupDetail() {
                         distance: null,
                     };
                 });
-                setVehicleUsages(mapped);
+                setVehicleUsages(mapped);//Lưu danh sách đã xử lý vào state để hiển thị lên màn hình
             })
             .catch(err => {
                 console.warn("⚠️ Cannot load usage history:", err?.message || err);
@@ -223,6 +217,7 @@ export default function GroupDetail() {
         async function fetchMonthlyFees() {
             try {
                 const token = localStorage.getItem("accessToken");
+                console.log("DEBUG token:", token);
                 const res = await axiosClient.get<GroupFeeResponse>(
                     `/api/fund-fee/group/${groupId}/current-month`,
                     {
@@ -253,7 +248,7 @@ export default function GroupDetail() {
 
                 const token = localStorage.getItem("accessToken");
                 const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
-                
+
                 const res = await axiosClient.get(endpoint, {
                     params: { userId },
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -293,7 +288,7 @@ export default function GroupDetail() {
                 // Improved fallback function with better logging
                 const getWithFallback = async <T,>(paths: string[]): Promise<T> => {
                     let lastError: any = null;
-                    
+
                     for (const path of paths) {
                         try {
                             console.log(`🔍 Trying endpoint: ${path}`);
@@ -306,7 +301,7 @@ export default function GroupDetail() {
                             lastError = err;
                             const status = err?.response?.status;
                             console.warn(`❌ Failed endpoint ${path}:`, status || err.message);
-                            
+
                             // Nếu không phải 404, có thể là lỗi khác (401, 403, 500) - nên dừng thử
                             if (status && status !== 404) {
                                 console.error(`🛑 Stopping fallback attempts due to ${status} error`);
@@ -314,7 +309,7 @@ export default function GroupDetail() {
                             }
                         }
                     }
-                    
+
                     throw lastError || new Error("All endpoints failed");
                 };
 
@@ -343,10 +338,10 @@ export default function GroupDetail() {
                                 break;
                             }
                         }
-                        
+
                         // Nếu vẫn không tìm thấy, tìm bất kỳ array nào
                         if (members.length === 0) {
-                            const firstArrayKey = Object.keys(membersResponse).find(key => 
+                            const firstArrayKey = Object.keys(membersResponse).find(key =>
                                 Array.isArray(membersResponse[key])
                             );
                             if (firstArrayKey) {
@@ -377,14 +372,14 @@ export default function GroupDetail() {
                         `/api/groups/${gid}`,
                         `/groups/${gid}`
                     ]);
-                    
+
                     // Xử lý nhiều format response khác nhau
-                    groupName = groupInfo?.data?.name || 
-                                groupInfo?.data?.groupName || 
-                                groupInfo?.name || 
-                                groupInfo?.groupName || 
-                                "Nhóm";
-                    
+                    groupName = groupInfo?.data?.name ||
+                        groupInfo?.data?.groupName ||
+                        groupInfo?.name ||
+                        groupInfo?.groupName ||
+                        "Nhóm";
+
                     console.log("✅ Group info loaded:", groupInfo);
                 } catch (err: any) {
                     console.warn("⚠️ Group info not found, using default name:", err.message);
@@ -398,8 +393,9 @@ export default function GroupDetail() {
                     const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`, {
                         headers: token ? { Authorization: `Bearer ${token}` } : {}
                     });
+                    console.log("DEBUG API response:", res);
                     vehicles = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
-                    console.log("✅ Vehicles loaded:", vehicles.length, "vehicles");
+                    console.log("✅ Vehicles loaded:", vehicles.length, vehicles);
                 } catch (err: any) {
                     console.warn("⚠️ Vehicles not found:", err.message);
                 }
@@ -425,18 +421,10 @@ export default function GroupDetail() {
                         name: `${v.plateNo || ""} ${v.brand || ""} ${v.model || ""}`.trim() || "Không có tên",
                         info: v.model || "",
                         status: "available",
-                        imageUrl: v.imageUrl
+                        imageUrl: v.imageUrl,
                     })),
                     transactions: []
                 };
-
-                console.log("=== GROUP DETAIL LOADED ===");
-                console.log("Group ID:", gid);
-                console.log("Group Name:", groupName);
-                console.log("Members:", members.length);
-                console.log("Vehicles:", vehicles.length);
-                console.log("Owner ID:", members.find(m => m.roleInGroup?.toLowerCase() === "admin")?.userId);
-                console.log("===========================");
 
                 setGroup(mappedGroup);
             } catch (err: any) {
