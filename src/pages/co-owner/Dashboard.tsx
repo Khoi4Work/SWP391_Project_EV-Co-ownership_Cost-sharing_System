@@ -147,41 +147,7 @@ export default function CoOwnerDashboard() {
                 {/* Schedule list + Check-in/out */}
                 <ScheduleCards />
 
-                {/* Registration History */}
-                <Card className="shadow-elegant">
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2">
-                            <Calendar className="h-5 w-5" />
-                            <span>Lịch sử đăng ký xe</span>
-                        </CardTitle>
-                        <CardDescription>
-                            Theo dõi trạng thái các đơn đăng ký xe điện
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {registrations.map((reg) => (
-                                <div key={reg.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-3">
-                                            <h3 className="font-semibold">{reg.vehicle}</h3>
-                                            <Badge variant={getStatusColor(reg.status) as any}>
-                                                {getStatusText(reg.status)}
-                                            </Badge>
-                                        </div>
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            <span>Mã: {reg.id}</span>
-                                            <span className="mx-2">•</span>
-                                            <span>Tỷ lệ sở hữu: {reg.ownership}</span>
-                                            <span className="mx-2">•</span>
-                                            <span>Ngày đăng ký: {reg.date}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+
 
             </div>
         </div>
