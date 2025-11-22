@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import Tesseract from "tesseract.js";
 import { waitForCvReady } from "@/lib/opencvHelpers";
 import { useLocation } from "react-router-dom";
-
+import axios from "axios";
 async function preprocessWithOpenCV(file: File): Promise<string> {
     await waitForCvReady(); // helper ở trên
     const cv = (window as any).cv;
@@ -68,6 +68,8 @@ async function preprocessWithOpenCV(file: File): Promise<string> {
 }
 
 export default function Register() {
+    const BASE_URL = import.meta.env.VITE_API_URL;
+    const CHECK_DUPLICATE = import.meta.env.VITE_CHECK_DUPLICATE_FIELD;
     const location = useLocation();
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -135,7 +137,6 @@ export default function Register() {
             setOcrLoadingGplx(false);
         }
     };
-
     const validationSchema = Yup.object({
         hovaTen: Yup.string()
             .required("Vui lòng nhập họ và tên")
@@ -189,7 +190,6 @@ export default function Register() {
                         }}
                         validationSchema={validationSchema}
                         validateOnChange={false}
-                        validateOnBlur={false}
                         onSubmit={async (values, { setSubmitting }) => {
                             const userObject = {
                                 hovaTen: values.hovaTen,
@@ -200,139 +200,246 @@ export default function Register() {
                                 password: values.password,
                                 roleId: 1
                             };
-
-                            console.log("Dữ liệu đăng ký:", userObject);
-
-                            // ❌ Không gọi API ở đây
-                            // ✅ Chỉ chuyển dữ liệu qua VerifyOTP
-                            navigate("/verify-otp", { state: { userObject } });
-
-                            toast({
-                                title: "Thông tin hợp lệ",
-                                description: "Vui lòng xác thực tài khoản bằng mã OTP",
-                            });
-
-                            setSubmitting(false);
-                        }}
-
-                        validate={(values) => {
+                            console.log("User Object:", userObject);
                             try {
-                                validationSchema.validateSync(values, { abortEarly: false });
-                                return {};
-                            } catch (err: any) {
-                                const errors: { [key: string]: string } = {};
-                                if (err.inner) {
-                                    err.inner.forEach((e: any) => {
-                                        errors[e.path] = e.message;
-                                    });
+                                const payload = {
+                                    email: values.email,
+                                    phone: values.phone,
+                                    cccd: values.cccd,
+                                    gplx: values.gplx,
+                                    roleId: 1,
+                                    hovaTen: values.hovaTen,
                                 }
-                                return errors;
+                                const response = await axios.get(`${BASE_URL}${CHECK_DUPLICATE}`, {
+                                    params: payload,
+                                });
+                                // Nếu không lỗi → navigate
+                                if (response.status === 200) {
+                                    toast({
+                                        title: "Thông tin hợp lệ",
+                                        description: "Vui lòng xác thực tài khoản bằng mã OTP",
+                                    });
+                                    navigate("/verify-otp", { state: { userObject } });
+                                }
+                            } catch (error: any) {
+                                console.log("ERROR:", error);
+                                // BE trả về lỗi → hiển thị cho người dùng
+                                toast({
+                                    title: "Lỗi đăng ký",
+                                    description: error.response?.data || "Đã xảy ra lỗi",
+                                    variant: "destructive"
+                                });
+                            }
+                            finally {
+                                setSubmitting(false);
                             }
                         }}
                     >
                         {({ isSubmitting, setFieldValue }) => (
                             <Form className="space-y-4">
+
+                                {/* Họ và tên */}
                                 <div className="space-y-2">
                                     <Label htmlFor="hovaTen">Họ và tên*</Label>
-                                    <Field
-                                        as={Input}
-                                        id="hovaTen"
-                                        name="hovaTen"
-                                        type="text"
-                                        placeholder="Nhập họ và tên đầy đủ"
-                                    />
-                                    <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="hovaTen" />}
-                                    </div>
+                                    <Field name="hovaTen">
+                                        {({ field, form }) => (
+                                            <>
+                                                <Input
+                                                    {...field}
+                                                    id="hovaTen"
+                                                    placeholder="Nhập họ và tên đầy đủ"
+                                                    onChange={(e) => {
+                                                        form.setFieldValue("hovaTen", e.target.value);
+                                                        form.setFieldError("hovaTen", "");
+                                                    }}
+                                                    onBlur={() => form.validateField("hovaTen")}
+                                                />
+                                                {form.touched.hovaTen && form.errors.hovaTen && (
+                                                    <div className="text-red-500 text-xs">{form.errors.hovaTen}</div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Field>
                                 </div>
 
+                                {/* Email */}
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email*</Label>
-                                    <Field
-                                        as={Input}
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        placeholder="Nhập email của bạn"
-                                    />
-                                    <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="email" />}
-                                    </div>
+                                    <Field name="email">
+                                        {({ field, form }) => (
+                                            <>
+                                                <Input
+                                                    {...field}
+                                                    id="email"
+                                                    type="email"
+                                                    placeholder="Nhập email của bạn"
+                                                    onChange={(e) => {
+                                                        form.setFieldValue("email", e.target.value);
+                                                        form.setFieldError("email", "");
+                                                    }}
+                                                    onBlur={() => form.validateField("email")}
+                                                />
+                                                {form.touched.email && form.errors.email && (
+                                                    <div className="text-red-500 text-xs">{form.errors.email}</div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Field>
                                 </div>
+
+                                {/* CCCD */}
                                 <div className="space-y-2 relative">
                                     <Label htmlFor="cccd">CCCD*</Label>
-                                    <div className="relative">
-                                        <Field as={Input} id="cccd" name="cccd" type="text"
-                                            placeholder="Chỉ upload ảnh để điền CCCD" />
-                                        <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
-                                            {ocrLoadingCccd ? "⏳" : "📷"}
-                                            <input type="file" accept="image/*" className="hidden"
-                                                onChange={(e) => handleUploadCccd(e, setFieldValue)} />
-                                        </label>
-                                    </div>
-                                    <div className="text-red-500 text-xs">{<ErrorMessage name="cccd" />}</div>
+                                    <Field name="cccd">
+                                        {({ field, form }) => (
+                                            <>
+                                                <div className="relative">
+                                                    <Input
+                                                        {...field}
+                                                        id="cccd"
+                                                        placeholder="Số CCCD"
+                                                        onChange={(e) => {
+                                                            form.setFieldValue("cccd", e.target.value);
+                                                            form.setFieldError("cccd", "");
+                                                        }}
+                                                        onBlur={() => form.validateField("cccd")}
+                                                    />
+                                                    <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
+                                                        {ocrLoadingCccd ? "⏳" : "📷"}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => handleUploadCccd(e, setFieldValue)}
+                                                        />
+                                                    </label>
+                                                </div>
+
+                                                {form.touched.cccd && form.errors.cccd && (
+                                                    <div className="text-red-500 text-xs">{form.errors.cccd}</div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Field>
                                 </div>
+
+                                {/* GPLX */}
                                 <div className="space-y-2 relative">
                                     <Label htmlFor="gplx">Giấy phép lái xe*</Label>
-                                    <div className="relative">
-                                        <Field as={Input} id="gplx" name="gplx" type="text"
-                                            placeholder="Chỉ upload ảnh để điền GPLX" />
-                                        <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
-                                            {ocrLoadingGplx ? "⏳" : "📷"}
-                                            <input type="file" accept="image/*" className="hidden"
-                                                onChange={(e) => handleUploadGplx(e, setFieldValue)} />
-                                        </label>
-                                    </div>
-                                    <div className="text-red-500 text-xs">{<ErrorMessage name="gplx" />}</div>
+                                    <Field name="gplx">
+                                        {({ field, form }) => (
+                                            <>
+                                                <div className="relative">
+                                                    <Input
+                                                        {...field}
+                                                        id="gplx"
+                                                        placeholder="số GPLX"
+                                                        onChange={(e) => {
+                                                            form.setFieldValue("gplx", e.target.value);
+                                                            form.setFieldError("gplx", "");
+                                                        }}
+                                                        onBlur={() => form.validateField("gplx")}
+                                                    />
+                                                    <label className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer">
+                                                        {ocrLoadingGplx ? "⏳" : "📷"}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={(e) => handleUploadGplx(e, setFieldValue)}
+                                                        />
+                                                    </label>
+                                                </div>
+
+                                                {form.touched.gplx && form.errors.gplx && (
+                                                    <div className="text-red-500 text-xs">{form.errors.gplx}</div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Field>
                                 </div>
+
+                                {/* Phone */}
                                 <div className="space-y-2">
                                     <Label htmlFor="phone">Số điện thoại*</Label>
-                                    <Field
-                                        as={Input}
-                                        id="phone"
-                                        name="phone"
-                                        type="tel"
-                                        placeholder="Nhập số điện thoại"
-                                    />
-                                    <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="phone" />}
-                                    </div>
+                                    <Field name="phone">
+                                        {({ field, form }) => (
+                                            <>
+                                                <Input
+                                                    {...field}
+                                                    id="phone"
+                                                    type="tel"
+                                                    placeholder="Nhập số điện thoại"
+                                                    onChange={(e) => {
+                                                        form.setFieldValue("phone", e.target.value);
+                                                        form.setFieldError("phone", "");
+                                                    }}
+                                                    onBlur={() => form.validateField("phone")}
+                                                />
+                                                {form.touched.phone && form.errors.phone && (
+                                                    <div className="text-red-500 text-xs">{form.errors.phone}</div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Field>
                                 </div>
 
+                                {/* Password */}
                                 <div className="space-y-2">
                                     <Label htmlFor="password">Mật khẩu*</Label>
-                                    <Field
-                                        as={Input}
-                                        id="password"
-                                        name="password"
-                                        type="password"
-                                        placeholder="Nhập mật khẩu"
-                                    />
-                                    <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="password" />}
-                                    </div>
+                                    <Field name="password">
+                                        {({ field, form }) => (
+                                            <>
+                                                <Input
+                                                    {...field}
+                                                    id="password"
+                                                    type="password"
+                                                    placeholder="Nhập mật khẩu"
+                                                    onChange={(e) => {
+                                                        form.setFieldValue("password", e.target.value);
+                                                        form.setFieldError("password", "");
+                                                    }}
+                                                    onBlur={() => form.validateField("password")}
+                                                />
+                                                {form.touched.password && form.errors.password && (
+                                                    <div className="text-red-500 text-xs">{form.errors.password}</div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Field>
                                 </div>
 
+                                {/* Confirm Password */}
                                 <div className="space-y-2">
                                     <Label htmlFor="confirmPassword">Xác nhận mật khẩu*</Label>
-                                    <Field
-                                        as={Input}
-                                        id="confirmPassword"
-                                        name="confirmPassword"
-                                        type="password"
-                                        placeholder="Nhập lại mật khẩu"
-                                    />
-                                    <div className="text-red-500 text-xs">
-                                        {<ErrorMessage name="confirmPassword" />}
-                                    </div>
+                                    <Field name="confirmPassword">
+                                        {({ field, form }) => (
+                                            <>
+                                                <Input
+                                                    {...field}
+                                                    id="confirmPassword"
+                                                    type="password"
+                                                    placeholder="Nhập lại mật khẩu"
+                                                    onChange={(e) => {
+                                                        form.setFieldValue("confirmPassword", e.target.value);
+                                                        form.setFieldError("confirmPassword", "");
+                                                    }}
+                                                    onBlur={() => form.validateField("confirmPassword")}
+                                                />
+                                                {form.touched.confirmPassword &&
+                                                    form.errors.confirmPassword && (
+                                                        <div className="text-red-500 text-xs">
+                                                            {form.errors.confirmPassword}
+                                                        </div>
+                                                    )}
+                                            </>
+                                        )}
+                                    </Field>
                                 </div>
-                                <div style={{ height: 5 }} />
+
+                                {/* Checkbox giữ nguyên */}
                                 <div className="flex items-center space-x-2">
-                                    <Field
-                                        type="checkbox"
-                                        id="acceptTerms"
-                                        name="acceptTerms"
-                                    />
+                                    <Field type="checkbox" id="acceptTerms" name="acceptTerms" />
                                     <Label htmlFor="acceptTerms" className="mb-0">
                                         Tôi đồng ý với{" "}
                                         <button
@@ -344,9 +451,13 @@ export default function Register() {
                                         </button>
                                     </Label>
                                 </div>
-                                <div className="text-red-500 text-xs">
-                                    {<ErrorMessage name="acceptTerms" />}
-                                </div>
+
+                                <ErrorMessage
+                                    name="acceptTerms"
+                                    component="div"
+                                    className="text-red-500 text-xs"
+                                />
+
                                 <Button
                                     type="submit"
                                     className="w-full bg-gradient-primary hover:shadow-glow"
@@ -354,7 +465,6 @@ export default function Register() {
                                 >
                                     Đăng ký
                                 </Button>
-
                             </Form>
                         )}
                     </Formik>
@@ -369,31 +479,43 @@ export default function Register() {
                                     ×
                                 </button>
                                 <h2 className="text-lg font-bold mb-2">Điều khoản và Điều kiện</h2>
-                                <div className="max-h-80 overflow-y-auto text-sm text-gray-700 space-y-2">
+                                <div className="max-h-80 overflow-y-auto text-sm text-gray-700 space-y-3">
+
                                     <p>
-                                        <strong>1. Đăng ký tài khoản:</strong> Bạn phải cung cấp thông tin chính xác và
-                                        chịu trách nhiệm về thông tin đã đăng ký.
+                                        <strong>1. Thông tin đăng ký:</strong> Người dùng cam kết cung cấp thông tin chính xác, đầy đủ và chịu trách nhiệm
+                                        đối với toàn bộ dữ liệu đã cung cấp trên hệ thống EcoShare.
                                     </p>
+
                                     <p>
-                                        <strong>2. Bảo mật:</strong> Bạn có trách nhiệm bảo mật thông tin tài khoản và
-                                        không chia sẻ với người khác.
+                                        <strong>2. Bảo mật tài khoản:</strong> Người dùng có trách nhiệm bảo vệ thông tin đăng nhập. EcoShare không chịu
+                                        trách nhiệm đối với các thiệt hại phát sinh từ việc chia sẻ tài khoản hoặc sử dụng sai mục đích.
                                     </p>
+
                                     <p>
-                                        <strong>3. Quyền sử dụng:</strong> Tài khoản chỉ được sử dụng cho mục đích hợp
-                                        pháp liên quan đến dịch vụ EcoShare.
+                                        <strong>3. Quyền và nghĩa vụ của người dùng:</strong> Tài khoản chỉ được sử dụng cho mục đích hợp pháp và theo đúng
+                                        các quy định của EcoShare. Các hành vi gian lận, cung cấp thông tin giả, lạm dụng dịch vụ đều bị nghiêm cấm.
                                     </p>
+
                                     <p>
-                                        <strong>4. Quyền thay đổi:</strong> Chúng tôi có quyền thay đổi, cập nhật điều
-                                        khoản bất kỳ lúc nào mà không cần báo trước.
+                                        <strong>4. Quyền và trách nhiệm của EcoShare:</strong> EcoShare có quyền cập nhật hoặc thay đổi nội dung dịch vụ,
+                                        điều khoản sử dụng và các chính sách liên quan khi cần thiết, đồng thời sẽ thông báo cho người dùng theo quy định.
                                     </p>
+
                                     <p>
-                                        <strong>5. Giới hạn trách nhiệm:</strong> Chúng tôi không chịu trách nhiệm với
-                                        các thiệt hại phát sinh do việc sử dụng sai mục đích hoặc vi phạm điều khoản.
+                                        <strong>5. Xử lý vi phạm:</strong> EcoShare có quyền tạm khóa, hạn chế hoặc chấm dứt tài khoản nếu phát hiện người
+                                        dùng vi phạm điều khoản, gây ảnh hưởng đến hệ thống hoặc quyền lợi của người khác.
                                     </p>
+
                                     <p>
-                                        <strong>6. Liên hệ:</strong> Nếu có thắc mắc, vui lòng liên hệ bộ phận hỗ trợ
-                                        của EcoShare.
+                                        <strong>6. Miễn trừ trách nhiệm:</strong> EcoShare không chịu trách nhiệm đối với các sự cố phát sinh ngoài khả năng
+                                        kiểm soát như lỗi mạng, sự cố kỹ thuật từ phía nhà cung cấp thứ ba hoặc hành vi cố ý của người dùng.
                                     </p>
+
+                                    <p>
+                                        <strong>7. Hỗ trợ và liên hệ:</strong> Mọi thắc mắc hoặc yêu cầu hỗ trợ, người dùng có thể liên hệ trung tâm trợ giúp
+                                        của EcoShare để được giải đáp kịp thời.
+                                    </p>
+
                                 </div>
                                 <div className="mt-4 text-right">
                                     <Button type="button" onClick={() => setShowTerms(false)}>

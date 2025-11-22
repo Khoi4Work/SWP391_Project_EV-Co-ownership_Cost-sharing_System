@@ -76,7 +76,7 @@ export default function CoOwnerDashboard() {
                         <Car className="h-8 w-8" />
                         <div>
                             <h1 className="text-2xl font-bold">EcoShare</h1>
-                            <p className="text-sm opacity-90">Bảng điều khiển chủ sở hữu</p>
+                            <p className="text-sm opacity-90">Màn hình chính chủ sở hữu</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -86,9 +86,6 @@ export default function CoOwnerDashboard() {
                                 Đăng ký nhóm
                             </Button>
                         </Link>
-                        <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                            <Bell className="h-4 w-4" />
-                        </Button>
                         <UserDropdown />
                     </div>
                 </div>

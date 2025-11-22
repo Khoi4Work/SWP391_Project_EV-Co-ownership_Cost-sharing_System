@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFormik, Form, ErrorMessage, Field, FormikProvider } from "formik";
 import * as Yup from "yup";
 import CoOwnerForm from "./AddingCoOwners";
+
 interface CoOwner {
   id: number;
   name: string;
@@ -33,6 +34,7 @@ interface CoOwner {
   idNumber: string;
   address: string;
 }
+
 interface VehicleInfo {
   plateNo: string;
   brand: string;
@@ -40,6 +42,7 @@ interface VehicleInfo {
   color: string;
   batteryCapacity: string;
   price: number;
+  imageFile: File | null;
 }
 
 export default function VehicleRegistration() {
@@ -72,11 +75,59 @@ export default function VehicleRegistration() {
     const { file, uploadType } = data;
     setContractFile(file);
     setFileType(uploadType); // PDF / IMAGE
-    toast({
-      title: "Đã nhận file hợp đồng",
-      description: `Loại file: ${uploadType}`,
-    });
   };
+  // const handleConfirmFile = () => {
+  //   if (!contractFile) return;
+  //
+  //   // fileType là "pdf" hoặc "image" đã được set trong handleFileImport
+  //   if (fileType !== "PDF" && fileType !== "IMAGE") {
+  //     toast({
+  //       title: "File không hợp lệ",
+  //       description: "Chỉ hỗ trợ PDF hoặc hình ảnh",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+  //   setIsFileConfirmed(true);
+  //   setStep(1); // qua bước nhập thông tin xe
+  // };
+  // const handleNextFromStep3 = () => {
+  //   // 1) kiểm tra mỗi coOwner không vượt main owner
+  //   const invalid = coOwners.find(c => Number(c.ownership) > mainOwnership);
+  //   if (invalid) {
+  //     toast({
+  //       title: "Lỗi",
+  //       description: `Đồng sở hữu ${invalid.name || invalid.email || invalid.id} có tỷ lệ lớn hơn chủ sở hữu chính (${mainOwnership}%).`,
+  //       variant: "destructive"
+  //     });
+  //     return;
+  //   }
+  //
+  //   // 2) kiểm tra tổng = 100
+  //   if (totalOwnership !== 100) {
+  //     toast({
+  //       title: "Lỗi",
+  //       description: `Tổng tỷ lệ sở hữu phải bằng 100% (hiện tại ${totalOwnership}%).`,
+  //       variant: "destructive"
+  //     });
+  //     return;
+  //   }
+  //
+  //   setStep(4);
+  // };
+  // const GET_USERS = import.meta.env.VITE_USERS_GET;
+  // const fetchUserByEmail = async (email: string) => {
+  // try {
+  //   const res = await axiosClient.get(GET_USERS, {
+  //     params: { email }
+  //   });
+  //   const user = res.data;
+  //   if (!user) {
+  //     toast({
+  //         title: "Đã nhận file hợp đồng",
+  //         description: `Loại file: ${uploadType}`,
+  //     });
+  // };
   const handleConfirmFile = () => {
     if (!contractFile) return;
 
@@ -130,7 +181,8 @@ export default function VehicleRegistration() {
           description: `Không tìm thấy người dùng với email ${email}. Vui lòng nhập thông tin thủ công.`,
           variant: "destructive"
         })
-      };
+      }
+
       // toast({
       //   title: "Thành công",
       //   description: `Tự động điền thông tin thành công`,
@@ -150,33 +202,6 @@ export default function VehicleRegistration() {
       return null;
     }
   };
-  const VEHICLES = import.meta.env.VITE_VEHICLES;
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await axiosClient.get(VEHICLES);
-        // ⚙️ Map lại dữ liệu backend cho phù hợp UI
-        const mappedVehicles = response.data.map((v) => ({
-          id: v.vehicleId,
-          name: `${v.brand} ${v.model}`,
-          brand: v.brand,
-          model: v.model,
-          plateNo: v.plateNo,
-          color: v.color,
-          batteryCapacity: v.batteryCapacity,
-          image: v.imageUrl || "/default-car.jpg",
-          price: `${v.price?.toLocaleString()} VND`,
-        }));
-        console.log("Fetched vehicles:", mappedVehicles);
-        setVehicles(mappedVehicles);
-      } catch (error) {
-        console.error("Lỗi khi tải danh sách xe:", error);
-
-
-      }
-    };
-    fetchVehicles();
-  }, []);
   const formik = useFormik<CoOwner>({
     initialValues: ownerInfo,
     enableReinitialize: true,
@@ -195,20 +220,36 @@ export default function VehicleRegistration() {
   });
   const mainOwnership = Number(formik.values.ownership) || 0;
   const totalOwnership = mainOwnership + coOwners.reduce((sum, co) => sum + (Number(co.ownership) || 0), 0);
+  // useEffect(() => {
+  //   let completed = 0;
+  //   for (let i = 0; i <= 4; i++) {
+  //     if (isStepCompleted(i)) completed++;
+  //     else break;
+  //   }
+  //   console.log("✅ completedSteps:", completed, ownerInfo);
+  //   setCompletedSteps(completed);
+  // }, [selectedVehicle, coOwners, ownerInfo]);
+
   useEffect(() => {
     let completed = 0;
+    // Bỏ qua bước cuối cùng (Xác nhận) nếu bạn không muốn nó ảnh hưởng đến %
+    // Hoặc giữ nguyên 0 <= i <= 4 nếu muốn xác nhận là bước cuối cùng
     for (let i = 0; i <= 4; i++) {
       if (isStepCompleted(i)) completed++;
       else break;
     }
     console.log("✅ completedSteps:", completed, ownerInfo);
-    setCompletedSteps(completed);
-  }, [selectedVehicle, coOwners, ownerInfo]);
+    // ✅ Cập nhật chỉ khi số bước hoàn thành thay đổi
+    if (completed !== completedSteps) {
+      setCompletedSteps(completed);
+    }
+  }, [selectedVehicle, coOwners, ownerInfo, isFileConfirmed, step]);
 
   // Helper function to check if a step is completed
   const isStepCompleted = (stepNumber: number) => {
     switch (stepNumber) {
       case 0:
+        console.log(stepNumber + ": ", isFileConfirmed);
         return isFileConfirmed; // Nếu bước này không cần điều kiện đặc biệt
       case 1:
         return selectedVehicle !== null; // Xe đã được chọn chưa
@@ -250,10 +291,6 @@ export default function VehicleRegistration() {
   const getOwnershipAmount = (percentage: number) => {
     const price = getVehiclePrice();
     return Math.round(price * (percentage / 100));
-  };
-  const handleSelectVehicle = (vehicle: VehicleInfo) => {
-    setSelectedVehicle(vehicle);
-    localStorage.setItem("selectedVehicle", JSON.stringify(vehicle));
   };
   const addCoOwner = () => {
     // Maximum 5 people total (including primary owner)
@@ -365,7 +402,7 @@ export default function VehicleRegistration() {
         /^[0-9]{2}[A-Z]{1,2}-\d{3,4}\.\d{2}$/,
         "Biển số xe không hợp lệ (ví dụ: 51H-123.45)"
       ),
-    brand: Yup.string().required("Vui lòng nhập hãng xe"),
+    brand: Yup.string().required("Vui lòng nhập hãng xe").matches(/^[a-zA-Z\s]+$/, "Hãng xe chỉ có thể chứa chữ"),
     model: Yup.string().required("Vui lòng nhập mẫu xe"),
     color: Yup.string().required("Vui lòng nhập màu xe"),
     batteryCapacity: Yup.number()
@@ -375,7 +412,8 @@ export default function VehicleRegistration() {
       .required("Vui lòng nhập dung lượng pin"),
     price: Yup.string()
       .required("Vui lòng nhập giá xe")
-      .matches(/^\d{1,3}(,\d{3})*(\.\d+)?$|^\d+$/, "Giá phải là số hợp lệ")
+      .matches(/^\d{1,3}(,\d{3})*(\.\d+)?$|^\d+$/, "Giá phải là số hợp lệ"),
+    imageFile: Yup.mixed().required("Cần có ảnh xe")
   });
   const vehicleFormik = useFormik({
     initialValues: {
@@ -385,6 +423,8 @@ export default function VehicleRegistration() {
       color: "",
       batteryCapacity: "",
       price: 0,
+      imageUrl: null,
+      imageFile: null,
     },
     validationSchema: VehicleSchema,
     onSubmit: async (values) => {
@@ -523,7 +563,7 @@ export default function VehicleRegistration() {
     formData.append("color", selectedVehicle.color);
     formData.append("batteryCapacity", selectedVehicle.batteryCapacity);
     formData.append("price", String(selectedVehicle.price));
-
+    formData.append("vehicleImage", selectedVehicle.imageFile);
     // ⚙️ userId là danh sách => cần append từng phần tử
     coOwners.forEach(owner => {
       formData.append("idUsers", owner.id.toString());
@@ -680,7 +720,7 @@ export default function VehicleRegistration() {
             <Progress value={getProgress()} className="mb-4" />
 
             <div className="grid grid-cols-5 text-center text-xs">
-              {["Nhập hợp đồng", "Chọn xe", "Chủ sở hữu", "Đồng sở hữu", "Xác nhận"].map(
+              {["Nhập hợp đồng", "Nhập thông tin xe", "Chủ sở hữu chính", "Các Đồng sở hữu", "Xác nhận"].map(
                 (label, index) => (
                   <span
                     key={index}
@@ -737,7 +777,8 @@ export default function VehicleRegistration() {
       </div>
       {/* Step 1: Vehicle Selection */}
       {step === 1 && (
-        <Card className="shadow-lg border border-gray-100 rounded-xl bg-white/80 backdrop-blur-md transition-all duration-300 hover:shadow-xl">
+        <Card
+          className="shadow-lg border border-gray-100 rounded-xl bg-white/80 backdrop-blur-md transition-all duration-300 hover:shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
               <Car className="h-5 w-5 text-primary" />
@@ -759,11 +800,19 @@ export default function VehicleRegistration() {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
-                  { id: "plateNo", label: "Biển số xe(VD: 51H-123.45)", placeholder: "Nhập biển số xe" },
+                  {
+                    id: "plateNo",
+                    label: "Biển số xe(VD: 51H-123.45)",
+                    placeholder: "Nhập biển số xe"
+                  },
                   { id: "brand", label: "Hãng xe(Vd: Vinfast)", placeholder: "Nhập hãng xe" },
                   { id: "model", label: "Mẫu xe(vd: vf8)", placeholder: "Nhập mẫu xe" },
                   { id: "color", label: "Màu xe", placeholder: "Chọn hoặc nhập mã màu" },
-                  { id: "batteryCapacity", label: "Dung tích pin (kWh)", placeholder: "Nhập dung tích pin" },
+                  {
+                    id: "batteryCapacity",
+                    label: "Dung tích pin (kWh)",
+                    placeholder: "Nhập dung tích pin"
+                  },
                   { id: "price", label: "Giá xe (VNĐ)", placeholder: "Nhập giá xe" },
                 ].map((field) => (
                   <div key={field.id} className="flex flex-col">
@@ -867,9 +916,44 @@ export default function VehicleRegistration() {
                     )}
                   </div>
                 ))}
-              </div>
+                <div className="flex flex-col">
+                  <Label htmlFor="vehicleImage" className="font-medium text-gray-700 mb-1">
+                    Ảnh xe
+                  </Label>
 
+                  <input
+                    type="file"
+                    id="vehicleImage"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // lưu file vào Formik
+                        vehicleFormik.setFieldValue("imageFile", file);
+                        // tạo URL tạm để preview
+                        vehicleFormik.setFieldValue("imageUrl", URL.createObjectURL(file));
+                      }
+                    }}
+                    className="border rounded-md p-2"
+                  />
+
+                  {vehicleFormik.values.imageUrl && (
+                    <img
+                      src={vehicleFormik.values.imageUrl}
+                      alt="Preview xe"
+                      className="mt-2 w-32 h-32 object-cover rounded-md border"
+                    />
+                  )}
+                  {/* {showErrors && vehicleFormik.errors?.imageFile && (
+                    <p className="text-red-500 text-sm mt-1">{vehicleFormik.errors.imageFile}</p>
+                  )} */}
+                </div>
+              </div>
               <div className="flex justify-end">
+                <Button type="button" variant="outline" onClick={() => setStep(0)}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Quay lại
+                </Button>
                 <Button
                   type="submit"
                   className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2 rounded-md hover:shadow-md transition-all duration-300"
@@ -922,10 +1006,10 @@ export default function VehicleRegistration() {
                             address: user.address || prev.address,
                             email: user.email || prev.email,
                           }));
-                          setEmailMessage("✅ Tự động điền thông tin thành công");
+                          setEmailMessage("✅ Xác thực thông tin thành công");
                           setTimeout(() => {
                             setEmailMessage("");
-                          }, 1000);
+                          }, 3000);
                         } else {
                           setEmailMessage("");
                         }
@@ -933,7 +1017,8 @@ export default function VehicleRegistration() {
                     />
                     <ErrorMessage name="email" component="div"
                       className="text-red-500 text-sm" />
-                    <div className="text-sm text-green-500 mt-1">{emailMessage}</div> {/* 👈 thêm dòng này */}
+                    <div className="text-sm text-green-500 mt-1">{emailMessage}</div>
+                    {/* 👈 thêm dòng này */}
                   </div>
 
                   {/* ✅ Chỉ giữ lại Ownership */}
@@ -973,23 +1058,6 @@ export default function VehicleRegistration() {
                       className="text-red-500 text-sm" />
                   </div>
                 </div>
-
-                {/* ✅ Chỉ giữ lại Address */}
-                <div className="space-y-2">
-                  <Label htmlFor="address">Địa chỉ</Label>
-                  <Field
-                    as={Textarea}
-                    id="address"
-                    name="address"
-                    placeholder="Nhập địa chỉ đầy đủ"
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                      const v = e.target.value;
-                      formik.setFieldValue("address", v);
-                    }}
-                  />
-                  <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
-                </div>
-
                 <div className="flex justify-between mt-6">
                   <Button type="button" variant="outline" onClick={() => setStep(1)}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1076,7 +1144,7 @@ export default function VehicleRegistration() {
       {step === 4 && (
         <>
           {console.log("Co-owners at step 4:", coOwners)}
-          < Card className="shadow-elegant">
+          < Card className="shadow-elegant" style={{ paddingLeft: "30px", paddingRight: "30px" }}>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileCheck className="h-5 w-5" />
@@ -1089,26 +1157,44 @@ export default function VehicleRegistration() {
             <CardContent className="space-y-6">
               {/* Vehicle Info */}
               <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Xe đã chọn</h3>
+                <h1 className="font-semibold mb-4" style={{ fontSize: "20px" }}>THÔNG TIN XE</h1>
 
                 {selectedVehicle ? (
-                  <div className="space-y-1 text-gray-700">
-                    <p><span className="font-medium">Biển số xe:</span> {selectedVehicle.plateNo}</p>
-                    <p><span className="font-medium">Hãng xe:</span> {selectedVehicle.brand}</p>
-                    <p><span className="font-medium">Mẫu xe:</span> {selectedVehicle.model}</p>
-                    <p className="flex items-center space-x-2">
-                      <span className="font-medium">Màu xe:</span>
-                      <span
-                        className="inline-block w-5 h-5 rounded-full border"
-                        style={{ backgroundColor: selectedVehicle.color }}
-                      ></span>
-                      <span>{selectedVehicle.color}</span>
-                    </p>
-                    <p><span className="font-medium">Dung tích pin:</span> {selectedVehicle.batteryCapacity} kWh</p>
-                    <p>
-                      <span className="font-medium">Giá xe:</span>{" "}
-                      {Number(selectedVehicle.price).toLocaleString("vi-VN")} VNĐ
-                    </p>
+                  <div className="flex flex-col md:flex-row md:items-start md:space-x-6 text-gray-700">
+                    {/* Cột thông tin */}
+                    <div className="flex-1 space-y-2">
+                      <p><span className="font-medium">Biển số xe:</span> {selectedVehicle.plateNo}</p>
+                      <p><span className="font-medium">Hãng xe:</span> {selectedVehicle.brand}</p>
+                      <p><span className="font-medium">Mẫu xe:</span> {selectedVehicle.model}</p>
+                      <p className="flex items-center space-x-2">
+                        <span className="font-medium">Màu xe:</span>
+                        <span
+                          className="inline-block w-5 h-5 rounded-full border"
+                          style={{ backgroundColor: selectedVehicle.color }}
+                        ></span>
+                        <span>{selectedVehicle.color}</span>
+                      </p>
+                      <p><span className="font-medium">Dung tích pin:</span> {selectedVehicle.batteryCapacity} kWh</p>
+                      <p><span className="font-medium">Giá xe:</span> {Number(selectedVehicle.price).toLocaleString("vi-VN")} VNĐ</p>
+                    </div>
+
+                    {/* Cột ảnh */}
+                    <div className="mt-4 md:mt-0 flex-shrink-0">
+                      {selectedVehicle.imageFile ? (
+                        <img
+                          src={URL.createObjectURL(selectedVehicle.imageFile)}
+                          alt="Ảnh xe"
+                          className="rounded-lg border shadow-sm object-cover"
+                          style={{
+                            maxHeight: "184px",
+                            width: "300px",
+                            display: "block"
+                          }}
+                        />
+                      ) : (
+                        <p className="text-gray-500 italic">Không có ảnh</p>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <p className="text-gray-500 italic">Chưa có xe nào được chọn</p>
@@ -1133,10 +1219,12 @@ export default function VehicleRegistration() {
                     <div key={coOwner.id} className="mb-2 text-sm">
                       <h3 className="font-semibold mb-2">Đồng sỡ hữu
                         ({coOwner.ownership}%)</h3>
-                      <div>Họ tên:{coOwner.name}</div>
-                      <div>Email: {coOwner.email}</div>
-                      <div>Điện thoại: {coOwner.phone}</div>
-                      <div>CCCD: {coOwner.idNumber}</div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>Họ tên:{coOwner.name}</div>
+                        <div>Email: {coOwner.email}</div>
+                        <div>Điện thoại: {coOwner.phone}</div>
+                        <div>CCCD: {coOwner.idNumber}</div>
+                      </div>
                     </div>
                   ))}
                 </div>

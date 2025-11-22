@@ -9,17 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Car, ArrowLeft } from "lucide-react";
 import axiosClient from "@/api/axiosClient";
 
-const USE_MOCK = false; // Bật DB ảo cho login
-
-const MOCK_USERS = [
-    { email: "coowner@test.com", password: "123", id: 2, hovaten: "Nguyễn Văn A", role: { roleName: "co-owner" }, token: "mock-token-coowner" },
-    { email: "coowner2@test.com", password: "123", id: 4, hovaten: "Trần Thị B", role: { roleName: "co-owner" }, token: "mock-token-coowner-2" },
-    // User có quá hạn thanh toán để test
-    { email: "overdue@test.com", password: "123", id: 5, hovaten: "Người Dùng Quá Hạn", role: { roleName: "co-owner" }, token: "mock-token-overdue", hasOverdue: true },
-    { email: "staff@test.com", password: "123", id: 3, hovaten: "Nhân viên Test", role: { roleName: "staff" }, token: "mock-token-staff" },
-    { email: "admin@test.com", password: "123", id: 1, hovaten: "Admin Test", role: { roleName: "admin" }, token: "mock-token-admin" },
-];
-
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -39,8 +28,8 @@ export default function Login() {
         }
 
         const roleMap: Record<string, number> = {
-            "admin": 3,
-            "staff": 4,
+            "admin": 2,
+            "staff": 3,
             "co-owner": 1,
             "user": 1
         };
@@ -48,41 +37,10 @@ export default function Login() {
         const roleId = roleMap[selectedType];
 
         try {
-            let response: any;
-
-            if (USE_MOCK) {
-                const mockUser = MOCK_USERS.find(u => u.email === email && u.password === password);
-
-                if (!mockUser) {
-                    toast({
-                        title: "Lỗi đăng nhập",
-                        description: "Tài khoản hoặc mật khẩu không đúng.",
-                        variant: "destructive",
-                    });
-                    return;
-                }
-
-                const roleMatch =
-                    (selectedType === "co-owner" && mockUser.role.roleName === "co-owner") ||
-                    (selectedType === "staff" && mockUser.role.roleName === "staff") ||
-                    (selectedType === "admin" && mockUser.role.roleName === "admin");
-
-                if (!roleMatch) {
-                    toast({
-                        title: "Lỗi đăng nhập",
-                        description: "Loại tài khoản không khớp. Vui lòng chọn đúng loại tài khoản.",
-                        variant: "destructive",
-                    });
-                    return;
-                }
-
-                response = { data: mockUser };
-            } else {
-                response = await axiosClient.post(`${LOGIN}/${roleId}`, {
-                    email,
-                    password,
-                });
-            }
+            const response = await axiosClient.post(`${LOGIN}/${roleId}`, {
+                email,
+                password,
+            });
 
             const hasValidData = Boolean(response?.data && (response.data.token || response.data.id));
 
@@ -109,43 +67,37 @@ export default function Login() {
             if (role.toLowerCase() === "co-owner" || role.toLowerCase() === "user") {
                 let hasOverdueFee = false;
 
-                // Mock: Kiểm tra nếu user có flag hasOverdue
-                if (USE_MOCK && response.data.hasOverdue) {
-                    hasOverdueFee = true;
-                } else if (!USE_MOCK) {
-                    // Chỉ check với BE thật khi không dùng mock
-                    try {
-                        // Lấy danh sách groupIds của user
-                        const groupIdsRes = await axiosClient.get("/groupMember/getGroupIdsByUserId", {
-                            params: { userId },
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                        const groupIds: number[] = Array.isArray(groupIdsRes.data) ? groupIdsRes.data : [];
+                try {
+                    // Lấy danh sách groupIds của user
+                    const groupIdsRes = await axiosClient.get("/groupMember/getGroupIdsByUserId", {
+                        params: { userId },
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    const groupIds: number[] = Array.isArray(groupIdsRes.data) ? groupIdsRes.data : [];
 
-                        // Kiểm tra quá hạn thanh toán trong tất cả các nhóm
-                        for (const groupId of groupIds) {
-                            try {
-                                const feeRes = await axiosClient.get(`/api/fund-fee/group/${groupId}/current-month`, {
-                                    headers: { Authorization: `Bearer ${token}` }
-                                });
-                                const fees = feeRes.data?.fees || [];
-                                const userOverdueFee = fees.find((fee: any) =>
-                                    fee.userId === userId &&
-                                    fee.status === "PENDING" &&
-                                    fee.isOverdue === true
-                                );
-                                if (userOverdueFee) {
-                                    hasOverdueFee = true;
-                                    break;
-                                }
-                            } catch (feeErr) {
-                                console.warn(`Không thể kiểm tra quá hạn cho group ${groupId}:`, feeErr);
+                    // Kiểm tra quá hạn thanh toán trong tất cả các nhóm
+                    for (const groupId of groupIds) {
+                        try {
+                            const feeRes = await axiosClient.get(`/api/fund-fee/group/${groupId}/current-month`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                            });
+                            const fees = feeRes.data?.fees || [];
+                            const userOverdueFee = fees.find((fee: any) =>
+                                fee.userId === userId &&
+                                fee.status === "PENDING" &&
+                                fee.isOverdue === true
+                            );
+                            if (userOverdueFee) {
+                                hasOverdueFee = true;
+                                break;
                             }
+                        } catch (feeErr) {
+                            console.warn(`Không thể kiểm tra quá hạn cho group ${groupId}:`, feeErr);
                         }
-                    } catch (overdueErr: any) {
-                        console.warn("Không thể kiểm tra quá hạn thanh toán:", overdueErr);
-                        // Nếu không kiểm tra được, vẫn cho đăng nhập (tránh block user do lỗi API)
                     }
+                } catch (overdueErr: any) {
+                    console.warn("Không thể kiểm tra quá hạn thanh toán:", overdueErr);
+                    // Nếu không kiểm tra được, vẫn cho đăng nhập (tránh block user do lỗi API)
                 }
                 // //
                 //                 if (hasOverdueFee) {
@@ -168,6 +120,7 @@ export default function Login() {
             toast({
                 title: "Đăng nhập thành công",
                 description: `Chào mừng ${hovaten} đến với EcoShare!`,
+                variant: "success",
             });
 
             console.log("Role from backend:", role);
@@ -198,7 +151,7 @@ export default function Login() {
         <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
             <Button
                 variant="ghost"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/")}
                 className="absolute top-4 left-4 text-white hover:bg-white/10"
             >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -212,7 +165,7 @@ export default function Login() {
                     </div>
                     <CardTitle className="text-2xl font-bold">Login</CardTitle>
                     <CardDescription>
-                        Đăng nhập để truy cập hệ thống quản lý xe điện
+                        Đăng nhập để truy cập hệ thống đồng quản lý xe điện
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -1,11 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   FileText,
   Download,
-  Search,
   ArrowLeft,
   Calendar,
   Users,
@@ -329,16 +327,15 @@ export default function Contracts() {
   const [stamps, setStamps] = useState<Record<string, string>>({}); // { signerId: base64 image }
   const [loadingContract, setLoadingContract] = useState<boolean>(true);
   const [errorContract, setErrorContract] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [contracts, setContracts] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
+  const ALL_CONTRACTS = import.meta.env.VITE_GET_ALL_CONTRACTS;
   const fetchContractFromBE = async (contractId: string) => {
     setLoadingContract(true);
     setErrorContract("");
 
     try {
-      const res = await axiosClient.get(`/contract/preview`, { params: { contractId } });
+      const res = await axiosClient.get(PREVIEW_PATH, { params: { contractId } });
 
       const newStamps: Record<string, string> = {};
       await Promise.all(res.data.contracts.map(async (signer) => {
@@ -371,10 +368,40 @@ export default function Contracts() {
       setLoadingContract(false);
     }
   };
+  const downloadContract = async (contractId: string) => {
+    try {
+      // 1️⃣ Lấy HTML và dữ liệu dấu mộc từ backend
+      const result = await fetchContractFromBE(contractId);
+      if (!result) return;
+
+      // 2️⃣ Tạo container tạm (không append vào DOM để không hiển thị preview)
+      const container = document.createElement("div");
+      container.innerHTML = result.htmlString;
+      container.style.width = "800px";
+      container.style.padding = "10px";
+
+      // 3️⃣ Render dấu mộc trực tiếp lên container
+      renderContractWithStamps(container as any, result.stamps);
+
+      // 4️⃣ Tạo PDF và download trực tiếp
+      await html2pdf()
+        .from(container as any) // ép kiểu cho TS
+        .set({
+          filename: `HopDong_${contractId}.pdf`,
+          margin: 10,
+          html2canvas: { scale: 2 }, // tăng scale để nét hơn
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .save(); // 🔹 chỉ download, không append vào DOM
+    } catch (err) {
+      console.error("Tải hợp đồng thất bại", err);
+    }
+  };
+
   useEffect(() => {
     const fetchContracts = async () => {
       try {
-        const res = await axiosClient.get("/contract/history");
+        const res = await axiosClient.get(ALL_CONTRACTS);
 
         // Nếu backend không trả về hoặc trả rỗng thì set mảng trống
         if (!res || !res.data || !Array.isArray(res.data)) {
@@ -385,8 +412,6 @@ export default function Contracts() {
       } catch (error) {
         console.error("Lỗi khi tải hợp đồng:", error);
         setContracts([]); // Đảm bảo vẫn có giao diện
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -432,38 +457,13 @@ export default function Contracts() {
         </div>
       </header>
       <div className="container mx-auto p-6 space-y-6">
-        {/* Search and Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3">
-            <Card className="shadow-elegant">
-              <CardHeader>
-                <CardTitle>Tìm kiếm hợp đồng</CardTitle>
-                <CardDescription>
-                  Tra cứu hợp đồng theo tên nhóm hoặc mã hợp đồng
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Nhập tên nhóm hoặc mã hợp đồng..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="shadow-elegant">
-            <CardHeader className="text-center">
-              <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
-              <CardTitle>{contracts.length}</CardTitle>
-              <CardDescription>Tổng số hợp đồng</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        <Card className="shadow-elegant w-full max-w-sm">
+          <CardHeader className="text-center">
+            <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
+            <CardTitle>{contracts.length}</CardTitle>
+            <CardDescription>Tổng số hợp đồng</CardDescription>
+          </CardHeader>
+        </Card>
 
         {/* Contracts List */}
         <Card className="shadow-elegant">
@@ -516,12 +516,14 @@ export default function Contracts() {
 
                       {/* Nút hành động */}
                       <div className="flex flex-col space-y-2 ml-4">
-                        <a href="/path/to/file.pdf" download>
-                          <Button size="sm" className="flex items-center space-x-2">
-                            <Download className="h-4 w-4" />
-                            <span>Tải xuống</span>
-                          </Button>
-                        </a>
+                        <Button
+                          size="sm"
+                          className="flex items-center space-x-2"
+                          onClick={() => downloadContract(contract.contractId)}
+                        >
+                          <Download className="h-4 w-4" />
+                          <span>Tải xuống</span>
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

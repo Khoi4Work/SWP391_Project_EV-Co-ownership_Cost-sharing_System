@@ -12,7 +12,6 @@ interface CoOwner {
   email: string;
   phone: string;
   idNumber: string;
-  address: string;
   ownership: number;
 }
 
@@ -126,9 +125,11 @@ export default function CoOwnerForm({
                       updateCoOwner(coOwner.id, "name", user.name);
                       updateCoOwner(coOwner.id, "phone", user.phone);
                       updateCoOwner(coOwner.id, "idNumber", user.idNumber);
-
                       // ✅ Hiển thị thông báo thành công
-                      setSuccessMessage("Tự động điền thông tin thành công 🎉");
+                      setSuccessMessage("Xác thực tài khoản thành công🎉");
+                      setTimeout(() => {
+                        setSuccessMessage("");
+                      }, 3000);
                     }
                   }}
                 />
@@ -170,13 +171,6 @@ export default function CoOwnerForm({
               )}
             </div>
             <ErrorMessage name="ownership" component="div" className="text-red-500 text-sm" />
-          </div>
-
-          {/* ✅ Address (giữ lại) */}
-          <div className="space-y-2 md:col-span-2">
-            <Label>Địa chỉ</Label>
-            <Field as={Textarea} name="address" placeholder="Nhập địa chỉ" />
-            <ErrorMessage name="address" component="div" className="text-red-500 text-sm" />
           </div>
         </Form>
       </FormikProvider>
