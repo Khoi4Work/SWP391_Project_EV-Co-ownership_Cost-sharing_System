@@ -29,6 +29,8 @@ interface BookingSlot {
     groupId: number;
     status: string;
     ownershipPercentage: number;
+    hasCheckIn?: boolean;
+    hasCheckOut?: boolean;
 }
 
 interface Vehicle {
@@ -304,6 +306,8 @@ export default function VehicleBooking() {
                         groupId: item.groupId,
                         status: item.status || "BOOKED",
                         ownershipPercentage: item.ownershipPercentage || 0,
+                        hasCheckIn: item.hasCheckIn ?? item.hasCheckin ?? item.has_check_in ?? false,
+                        hasCheckOut: item.hasCheckOut ?? item.hasCheckout ?? item.has_check_out ?? false,
                     };
                 })
                 .filter((item): item is BookingSlot => item !== null);
@@ -1197,7 +1201,7 @@ export default function VehicleBooking() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                {booking.userId === currentUserId && (String(booking.status).toUpperCase() === "BOOKED") && (
+                                                {booking.userId === currentUserId && (String(booking.status).toUpperCase() === "BOOKED") && !booking.hasCheckIn && !booking.hasCheckOut && (
                                                     <>
                                                         <Button size="sm" variant="outline"
                                                             onClick={() => handleEditBooking(booking.scheduleId)}
