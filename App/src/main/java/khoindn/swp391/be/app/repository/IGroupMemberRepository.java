@@ -4,6 +4,7 @@ import jakarta.persistence.LockModeType;
 import khoindn.swp391.be.app.pojo.Group;
 import khoindn.swp391.be.app.pojo.GroupMember;
 import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo._enum.StatusGroupMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -45,4 +46,6 @@ public interface IGroupMemberRepository extends JpaRepository<GroupMember, Integ
     GroupMember findByUsersAndGroup(Users users, Group group);
 
     GroupMember findByUsersAndGroup_GroupId(Users users, int groupGroupId);
+
+    List<GroupMember> findAllByGroupAndStatus(Group group, StatusGroupMember status);
 }

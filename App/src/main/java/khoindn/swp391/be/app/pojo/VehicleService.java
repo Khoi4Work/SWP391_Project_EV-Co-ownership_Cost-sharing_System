@@ -5,6 +5,7 @@ import khoindn.swp391.be.app.pojo._enum.StatusRequestService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@ToString(exclude = {"vehicle", "decisionVote", "groupMember", "menuVehicleService"})
 public class VehicleService {
 
     //attributes
@@ -30,7 +32,8 @@ public class VehicleService {
     @JoinColumn(name = "vehicle_id")
     private Vehicle vehicle;
 
-    @OneToOne
+    @ManyToOne
+    @JoinColumn(name = "decision_vote_id")
     private DecisionVote decisionVote;
 
     @ManyToOne

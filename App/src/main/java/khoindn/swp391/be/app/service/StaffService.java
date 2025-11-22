@@ -13,6 +13,8 @@ import khoindn.swp391.be.app.repository.IRequestGroupServiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class StaffService implements IStaffService{
 
@@ -29,10 +31,18 @@ public class StaffService implements IStaffService{
         if (requestProcessing == null) {
             throw new RequestGroupNotFoundException("REQUEST_NOT_FOUND");
         }
+
         // Update status of GroupMember
         GroupMember user_leaving = requestProcessing.getGroupMember();
         user_leaving.setStatus(StatusGroupMember.LEFT);
         iGroupMemberRepository.save(user_leaving);
+
+        List<GroupMember> members = iGroupMemberRepository.findAllByGroupAndStatus(user_leaving.getGroup(), StatusGroupMember.ACTIVE);
+        for (GroupMember member : members) {
+            member.setStatus(StatusGroupMember.INACTIVE);
+            iGroupMemberRepository.save(member);
+        }
+
         // Update status of Group
         Group group = user_leaving.getGroup();
         group.setStatus(StatusGroup.INACTIVE);
