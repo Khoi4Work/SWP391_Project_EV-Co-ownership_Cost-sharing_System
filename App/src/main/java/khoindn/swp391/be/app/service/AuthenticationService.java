@@ -111,8 +111,6 @@ public class AuthenticationService implements UserDetailsService {
         }
 
         users.setPassword(passwordEncoder.encode(users.getPassword()));
-        users.setGplx(passwordEncoder.encode(users.getGplx()));
-        users.setCccd(passwordEncoder.encode(users.getCccd()));
         Users user = modelMapper.map(users, Users.class);
         user.setId(null);
         user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId()));
