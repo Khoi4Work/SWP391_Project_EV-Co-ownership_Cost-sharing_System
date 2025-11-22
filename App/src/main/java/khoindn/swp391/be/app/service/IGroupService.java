@@ -22,4 +22,6 @@ public interface IGroupService {
     VehicleService getAllVehicleServiceByGroupId(int groupId);
 
     List<RequestGroupService> getAllRequestGroups();
+
+    List<Group> getAllGroups();
 }

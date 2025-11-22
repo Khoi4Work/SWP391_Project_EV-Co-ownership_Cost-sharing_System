@@ -36,7 +36,7 @@ public class VehicleController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity getAllVehicle() {
+    public ResponseEntity getAllVehicles() {
         return ResponseEntity.status(200).body(iVehicleService.getVehicles());
     }
 

@@ -9,4 +9,5 @@ public interface IEmailService {
     public void SendBulkEmail(SendBulkEmailReq emailReq);
     void sendOtpViaEmail(EmailDetailReq sender);
     void sendContractViaEmail(EmailDetailReq req);
+    void sendEmailWithAttachment(EmailDetailReq contentSender, byte[] attachmentData, String attachmentFileName);
 }

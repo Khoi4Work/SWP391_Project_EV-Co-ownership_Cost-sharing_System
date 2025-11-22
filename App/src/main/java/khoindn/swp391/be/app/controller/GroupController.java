@@ -79,4 +79,9 @@ public class GroupController {
         return ResponseEntity.ok(iGroupService.getGroupById(groupId));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity getAllGroups() {
+        return ResponseEntity.status(200).body(iGroupService.getAllGroups());
+    }
+
 }

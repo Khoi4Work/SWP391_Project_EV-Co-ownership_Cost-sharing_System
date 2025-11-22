@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.service;
 import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.StatusVehicle;
 import khoindn.swp391.be.app.repository.IGroupMemberRepository;
 import khoindn.swp391.be.app.repository.IMenuVehicleServiceRepository;
 import khoindn.swp391.be.app.repository.IRequestVehicleServiceRepository;
@@ -94,7 +95,11 @@ public class VehicleService implements IVehicleService {
 
     @Override
     public List<Vehicle> getVehicles() {
-        return iVehicleRepository.findAll();
+        return iVehicleRepository.findAll().stream()
+                .filter(vehicle -> vehicle
+                        .getStatusVehicle()
+                        .equals(StatusVehicle.AVAILABLE))
+                .toList();
     }
 
 

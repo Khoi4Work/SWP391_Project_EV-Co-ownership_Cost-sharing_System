@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -111,14 +112,12 @@ public class AuthenticationService implements UserDetailsService {
         }
 
         users.setPassword(passwordEncoder.encode(users.getPassword()));
-        users.setGplx(passwordEncoder.encode(users.getGplx()));
-        users.setCccd(passwordEncoder.encode(users.getCccd()));
         Users user = modelMapper.map(users, Users.class);
         user.setId(null);
         user.setRole(iUserRoleRepository.findUserRoleByRoleId(users.getRoleId()));
 
         try {
-
+            iAuthenticationRepository.save(user);
             // 1. Tạo Key Pair
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
             generator.initialize(2048);
@@ -131,13 +130,18 @@ public class AuthenticationService implements UserDetailsService {
             user.setPublicKey(publicKeyString);
 
             byte[] privateKeyBytes = keyPair.getPrivate().getEncoded();
+            String privateKeyString = Base64.getEncoder().encodeToString(privateKeyBytes);
 
+            byte[] attachmentDataToSend = privateKeyString.getBytes(StandardCharsets.UTF_8);
             // 3. Chuẩn bị nội dung email
+            String fileName = "private_key_" + user.getHovaTen() + ".txt";
+
             Context context = new Context();
             context.setVariable("fullName", user.getHovaTen());
             context.setVariable("systemName", "EcoShare Management"); // (Bạn có thể đổi tên này)
-            context.setVariable("privateKeyBase64",
-                    Base64.getEncoder().encodeToString(privateKeyBytes));
+//            context.setVariable("privateKeyBase64", privateKeyString);
+            context.setVariable("noteAttachment", "Đính kèm file: "+fileName);
+
 
             String htmlContent = templateEngine.process("sendPrivateKey", context);
 
@@ -148,15 +152,17 @@ public class AuthenticationService implements UserDetailsService {
             contentSender.setTemplate(htmlContent);
 
 
+
             // Dòng này của bạn bây giờ đã có thể chạy
-            emailService.sendEmail(contentSender);
+            emailService.sendEmailWithAttachment(contentSender,attachmentDataToSend,fileName );
 
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
         System.out.println("Req: " + users);
         System.out.println("User: " + user);
-        return iAuthenticationRepository.save(user);
+        iAuthenticationRepository.save(user);
+        return user;
     }
 
     public UsersResponse login(LoginUser loginUser) {
