@@ -1,13 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   FileText,
   Download,
   ArrowLeft,
   Calendar,
   Users,
-  Car
+  Car,
+  Search
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -308,6 +310,7 @@ export default function Contracts() {
   const [loadingContract, setLoadingContract] = useState<boolean>(true);
   const [errorContract, setErrorContract] = useState<string>("");
   const [contracts, setContracts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const PREVIEW_PATH = import.meta.env.VITE_CONTRACT_PREVIEW_PATH;
   const ALL_CONTRACTS = import.meta.env.VITE_GET_ALL_CONTRACTS;
   const fetchContractFromBE = async (contractId: string) => {
@@ -432,6 +435,17 @@ export default function Contracts() {
       default: return "Không xác định";
     }
   };
+
+  // Filter contracts based on search term
+  const filteredContracts = contracts.filter((contract) => {
+    if (!searchTerm.trim()) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      contract.vehicleName?.toLowerCase().includes(searchLower) ||
+      contract.contractId?.toString().includes(searchTerm)
+    );
+  });
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -472,9 +486,23 @@ export default function Contracts() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Search Bar */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên xe hoặc mã hợp đồng..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
             <div className="space-y-4">
-              {contracts.length > 0 ? (
-                contracts.map((contract) => (
+              {filteredContracts.length > 0 ? (
+                filteredContracts.map((contract) => (
                   <div
                     key={contract.contractId}
                     className="border rounded-lg p-6 hover:shadow-md transition-shadow"
@@ -534,6 +562,19 @@ export default function Contracts() {
                     </div>
                   </div>
                 ))
+              ) : searchTerm.trim() ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Không tìm thấy hợp đồng nào phù hợp với "{searchTerm}".</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchTerm("")}
+                    className="mt-4"
+                  >
+                    Xóa bộ lọc
+                  </Button>
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
