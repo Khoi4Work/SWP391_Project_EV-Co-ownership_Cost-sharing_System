@@ -66,8 +66,7 @@ export default function MyGroups() {
 
     fetchGroups();
   }, []);
-
-
+  const REQUEST_GROUP = import.meta.env.VITE_REQUEST_GROUP_PATH;
   const confirmRequestLeave = async () => {
     try {
       console.log("⏳ Gửi yêu cầu rời nhóm...");
@@ -102,7 +101,7 @@ export default function MyGroups() {
         // userId: currentUserId,
       });
 
-      const data = await axiosClient.post("/group/request", {
+      const data = await axiosClient.post(`${REQUEST_GROUP}`, {
         groupId: group.group.groupId,
         // userId: currentUserId,
         nameRequestGroup: `Yêu cầu rời nhóm`,

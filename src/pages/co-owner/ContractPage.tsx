@@ -13,6 +13,7 @@ interface ContractPreviewPageProps {
 export default function ContractPreviewPage({ readonly = false }: ContractPreviewPageProps) {
     const [isPrivateKey, setIsPrivateKey] = useState(false);
     const [savedPrivateKey, setSavedPrivateKey] = useState("");
+    const CREATE_GROUP = import.meta.env.VITE_GROUP_CREATE_PATH;
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
     const { toast } = useToast();
     const location = useLocation();
@@ -238,7 +239,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
             };
 
             // 5) Gọi create group
-            const groupRes = await axiosClient.post("/group/create", groupPayload, {
+            const groupRes = await axiosClient.post(CREATE_GROUP, groupPayload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
