@@ -298,4 +298,10 @@ public class APIExceptionHandler {
     public ResponseEntity handleCheckInTooEarlyException(CheckInTooEarlyException ex) {
         return ResponseEntity.status(400).body(ex.getMessage());
     }
+
+    @ExceptionHandler
+    public ResponseEntity handleInvalidOperationException(InvalidOperationException ex) {
+        return ResponseEntity.status(400).body(ex.getMessage());
+    }
 }
+
