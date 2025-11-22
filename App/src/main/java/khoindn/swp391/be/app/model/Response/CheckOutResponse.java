@@ -29,4 +29,5 @@ public class CheckOutResponse {
     private LocalDateTime scheduleStartTime;
     private LocalDateTime scheduleEndTime;
     private String scheduleStatus;
+    private String lateWarning;
 }

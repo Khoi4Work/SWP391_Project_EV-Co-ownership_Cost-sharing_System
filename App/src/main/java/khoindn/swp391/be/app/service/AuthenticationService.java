@@ -161,7 +161,6 @@ public class AuthenticationService implements UserDetailsService {
     }
 
     public UsersResponse login(LoginUser loginUser) {
-        // (Logic đăng nhập của bạn giữ nguyên)
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginUser.getEmail(),
@@ -173,6 +172,7 @@ public class AuthenticationService implements UserDetailsService {
         usersResponse.setToken(token);
         System.out.println(usersResponse);
         return usersResponse;
+
     }
 
     public Users getCurrentAccount() {
