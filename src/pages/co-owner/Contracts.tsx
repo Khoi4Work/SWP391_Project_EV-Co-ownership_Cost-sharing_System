@@ -233,13 +233,7 @@ async function sha256(message: string): Promise<string> {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
-async function renderContractWithStamps(contractHtml: string, stamps: Record<string, string>) {
-  // Tạo container tạm
-  const container = document.createElement("div");
-  container.innerHTML = contractHtml;
-  container.style.position = "relative";
-  container.style.padding = "20px";
-
+async function renderContractWithStamps(container: HTMLElement, stamps: Record<string, string>) {
   const signerIds = Object.keys(stamps);
   const totalSigners = signerIds.length;
 
@@ -273,22 +267,8 @@ async function renderContractWithStamps(contractHtml: string, stamps: Record<str
     img.style.bottom = `${bottom + pageOffset}px`;
 
     img.style.right = "50px";
+    container.appendChild(img);
   });
-
-  // Xuất PDF
-  const opt = {
-    margin: 10,
-    filename: `HopDong.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-  } as const;
-
-  const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-
-  // Mở tab mới để xem PDF
-  window.open(pdfUrl, '_blank');
 }
 function createStampCanvas(hash: string, size: number = 80): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
@@ -368,6 +348,27 @@ export default function Contracts() {
       setLoadingContract(false);
     }
   };
+  const viewContractInNewTab = async (contractId: string) => {
+    const result = await fetchContractFromBE(contractId);
+    if (!result) return;
+
+    // Tạo container PDF
+    const container = document.createElement("div");
+    container.innerHTML = result.htmlString;
+    container.style.position = "relative";
+    const pdfBlob = await html2pdf()
+      .from(container)
+      .set({
+        margin: 10,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      })
+      .outputPdf("blob");
+
+    // Mở PDF ở tab mới
+    const url = URL.createObjectURL(pdfBlob);
+    window.open(url, "_blank");
+  };
   const downloadContract = async (contractId: string) => {
     try {
       // 1️⃣ Lấy HTML và dữ liệu dấu mộc từ backend
@@ -377,12 +378,9 @@ export default function Contracts() {
       // 2️⃣ Tạo container tạm (không append vào DOM để không hiển thị preview)
       const container = document.createElement("div");
       container.innerHTML = result.htmlString;
+      container.style.position = "relative";
       container.style.width = "800px";
       container.style.padding = "10px";
-
-      // 3️⃣ Render dấu mộc trực tiếp lên container
-      renderContractWithStamps(container as any, result.stamps);
-
       // 4️⃣ Tạo PDF và download trực tiếp
       await html2pdf()
         .from(container as any) // ép kiểu cho TS
@@ -528,12 +526,7 @@ export default function Contracts() {
                           size="sm"
                           variant="outline"
                           className="w-full"
-                          onClick={async () => {
-                            const result = await fetchContractFromBE(contract.contractId);
-                            if (result) {
-                              await renderContractWithStamps(result.htmlString, result.stamps);
-                            }
-                          }}
+                          onClick={() => viewContractInNewTab(contract.contractId)}
                         >
                           Xem hợp đồng
                         </Button>

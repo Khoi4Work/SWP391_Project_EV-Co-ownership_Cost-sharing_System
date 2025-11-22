@@ -22,7 +22,7 @@ export default function MyGroups() {
     description: "Quản lý các nhóm đồng sở hữu bạn tham gia: chủ sở hữu, vai trò và thành viên.",
     canonicalPath: "/co-owner/groups",
   });
-  const tokenUser = localStorage.getItem("accessToken") || "{}";
+  const GET_GROUPS = import.meta.env.VITE_GET_BELONGED_GROUP_PATH;
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -49,17 +49,13 @@ export default function MyGroups() {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        console.log("⏳ Đang gọi API: /group/get/current...");
-        const res = await axiosClient.get("/group/get/current");
+        const res = await axiosClient.get(GET_GROUPS);
         const data = res?.data;
 
         if (!Array.isArray(data)) {
-          console.warn("⚠️ API không trả về mảng group:", data);
           setGroups([]);
           return;
         }
-
-        console.log("✅ Danh sách group nhận được:", data);
         setGroups(data);
       } catch (error) {
         console.error("❌ Lỗi khi gọi API /group/get/current:", error);
@@ -198,7 +194,14 @@ export default function MyGroups() {
                 const createdAt = g.group?.createdAt
                   ? new Date(g.group.createdAt).toLocaleDateString("vi-VN")
                   : "-";
-
+                const createdAtDate = g.group?.createdAt ? new Date(g.group.createdAt) : null;
+                const endAt = createdAtDate
+                  ? new Date(
+                    createdAtDate.getFullYear() + 3,
+                    createdAtDate.getMonth(),
+                    createdAtDate.getDate()
+                  ).toLocaleDateString("vi-VN")
+                  : "-";
                 // Lấy các member khác (trừ chính user hiện tại)
                 const otherMembers = g.members
                   ?.filter((m) => m.users.id !== currentUserId)
@@ -217,11 +220,12 @@ export default function MyGroups() {
                           <div>
                             <CardTitle className="text-base">{groupName}</CardTitle>
                             <CardDescription>
-                              Vai trò: <Badge className="ml-1">{myRole.toUpperCase()}</Badge> | Trạng thái: {status}
+                              <b>Vai trò:</b> <Badge className="ml-1">{myRole.toUpperCase()}</Badge> | Trạng thái: {status}
                             </CardDescription>
                             <CardDescription>
-                              Ngày tạo: {createdAt} | Sở hữu: {ownership}%
-                              Ngày kết thúc: { }
+                              <b>Ngày tạo:</b> {createdAt}  <br />
+                              <b>Ngày kết thúc:</b> {endAt} <br />
+                              <b>Sở hữu:</b> {ownership}%
                             </CardDescription>
                           </div>
                         </div>
@@ -244,8 +248,8 @@ export default function MyGroups() {
                           {otherMembers.length > 3 ? ` và +${otherMembers.length - 3} nữa` : ""}
                         </p>
 
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Phần trăm sở hữu của bạn:</span>
+                        <div className="flex items-center text-md">
+                          <span style={{ marginRight: "5px" }}>Phần trăm sở hữu của bạn:</span>
                           <span className="font-semibold">{ownership}%</span>
                         </div>
 
