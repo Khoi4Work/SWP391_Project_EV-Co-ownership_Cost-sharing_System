@@ -292,6 +292,7 @@ export default function StaffDashboard() {
                 toast({
                     title: "Đã duyệt yêu cầu",
                     description: "Nhân viên đã được rời khỏi nhóm thành công.",
+                    variant: "success",
                 });
             } else {
                 toast({
@@ -310,12 +311,25 @@ export default function StaffDashboard() {
         }
     }
     const handleLeaveReject = async (contractId: number) => {
+        const request = leaveRequests.find((r) => r.id === contractId);
+        if (!request) {
+            toast({
+                title: "Lỗi",
+                description: "Không tìm thấy yêu cầu.",
+                variant: "destructive",
+            });
+            return;
+        }
         setLeaveRequests(prev =>
             prev.map(r =>
                 r.id === contractId ? { ...r, status: "rejected" } : r
             )
         );
         setLeaveRequests(prev => prev.filter(r => r.id !== contractId));
+        const updateRes = await axiosClient.patch(UPDATE_REQUEST, {
+            idRequestGroup: request.id,
+            idChoice: 0
+        })
         toast({
             title: "Đã từ chối đơn",
             description: "Yêu cầu rời nhóm không được chấp nhận.",
