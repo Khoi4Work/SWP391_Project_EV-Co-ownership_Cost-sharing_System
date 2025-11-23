@@ -85,6 +85,7 @@ public class StaffController {
             return ResponseEntity.status(403).body("Unauthorized");
         }
         List<ContractPreviewRes> res = iContractService.getPendingContracts();
+        System.out.println(res);
         if (res.isEmpty()) {
             return ResponseEntity.status(204).body("No Content");
         }
