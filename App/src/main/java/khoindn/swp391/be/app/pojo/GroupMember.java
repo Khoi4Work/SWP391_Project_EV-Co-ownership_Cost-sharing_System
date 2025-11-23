@@ -56,7 +56,7 @@ public class GroupMember {
     @ToString.Exclude
     private List<FundDetail> fundDetails = new ArrayList<>();
 
-    @OneToMany(mappedBy = "groupMember")
+    @OneToMany(mappedBy = "groupMember" )
     @JsonIgnore
     @ToString.Exclude
     private List<VehicleService> vehicleServices = new ArrayList<>();

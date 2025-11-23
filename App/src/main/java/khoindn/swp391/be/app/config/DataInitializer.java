@@ -54,45 +54,46 @@ public class DataInitializer implements CommandLineRunner {
         if (userService.getAllUsers().isEmpty()) {
             UserRole role = userRoleService.findUserRoleByRoleId(1); // roleId = 1 như JSON của bạn
             UserRole roleStaff = userRoleService.findUserRoleByRoleId(3); // roleId = 1 như JSON của bạn
+            UserRole roleAdmin = userRoleService.findUserRoleByRoleId(2);
 
-//            Users u1 = new Users();
-//            u1.setHovaTen("Ndnk");
-//            u1.setEmail("khoimapu8@gmail.com");
-//            u1.setPassword("12341234"); // mã hóa mật khẩu
-//            u1.setCccd("012340123401");
-//            u1.setGplx("012340123401");
-//            u1.setPhone("0918842699");
-//            u1.setRole(role);
-//
-//            RegisterUserReq ur1 = modelMapper.map(u1, RegisterUserReq.class);
-//            ur1.setRoleId(role.getRoleId());
-//            authenticationService.register(ur1);
-//
-//            Users u2 = new Users();
-//            u2.setHovaTen("NguyenKhoi");
-//            u2.setEmail("khoimapu2k5@gmail.com");
-//            u2.setPassword("123123"); // mã hóa mật khẩu
-//            u2.setCccd("012301230123");
-//            u2.setGplx("012301230123");
-//            u2.setPhone("0966893655");
-//            u2.setRole(role);
-//
-//            RegisterUserReq ur2 = modelMapper.map(u2, RegisterUserReq.class);
-//            ur2.setRoleId(role.getRoleId());
-//            authenticationService.register(ur2);
+            Users u1 = new Users();
+            u1.setHovaTen("Ndnk");
+            u1.setEmail("khoimapu8@gmail.com");
+            u1.setPassword("12341234"); // mã hóa mật khẩu
+            u1.setCccd("012340123401");
+            u1.setGplx("012340123401");
+            u1.setPhone("0918842699");
+            u1.setRole(role);
 
-            Users u8 = new Users();
-            u8.setHovaTen("Minh Tri");
-            u8.setEmail("nguyennamminhtri@gmail.com");
-            u8.setPassword("123456"); // mã hóa mật khẩu
-            u8.setCccd("079204008663");
-            u8.setGplx("790212345678");
-            u8.setPhone("0379864870");
-            u8.setRole(role);
-
-            RegisterUserReq ur1 = modelMapper.map(u8, RegisterUserReq.class);
+            RegisterUserReq ur1 = modelMapper.map(u1, RegisterUserReq.class);
             ur1.setRoleId(role.getRoleId());
             authenticationService.register(ur1);
+
+            Users u2 = new Users();
+            u2.setHovaTen("NguyenKhoi");
+            u2.setEmail("khoimapu2k5@gmail.com");
+            u2.setPassword("123123"); // mã hóa mật khẩu
+            u2.setCccd("012301230123");
+            u2.setGplx("012301230123");
+            u2.setPhone("0966893655");
+            u2.setRole(role);
+//
+            RegisterUserReq ur2 = modelMapper.map(u2, RegisterUserReq.class);
+            ur2.setRoleId(role.getRoleId());
+            authenticationService.register(ur2);
+
+//            Users u8 = new Users();
+//            u8.setHovaTen("Minh Tri");
+//            u8.setEmail("nguyennamminhtri@gmail.com");
+//            u8.setPassword("123456"); // mã hóa mật khẩu
+//            u8.setCccd("079204008663");
+//            u8.setGplx("790212345678");
+//            u8.setPhone("0379864870");
+//            u8.setRole(role);
+//
+//            RegisterUserReq ur1 = modelMapper.map(u8, RegisterUserReq.class);
+//            ur1.setRoleId(role.getRoleId());
+//            authenticationService.register(ur1);
 
 //            Users u3 = new Users();
 //            u3.setHovaTen("lamvantuan");
@@ -159,6 +160,20 @@ public class DataInitializer implements CommandLineRunner {
 
             RegisterUserReq urstaff = modelMapper.map(staff, RegisterUserReq.class);
             urstaff.setRoleId(roleStaff.getRoleId());
+
+            Users admin = new Users();
+            admin.setHovaTen("admin");
+            admin.setEmail("admin@gmail.com");
+            admin.setPassword("12345"); // mã hóa mật khẩu
+            admin.setCccd("012012012019");
+            admin.setGplx("012012012019");
+            admin.setPhone("0966893659");
+            admin.setRole(roleAdmin);
+
+            RegisterUserReq urAdmin = modelMapper.map(admin, RegisterUserReq.class);
+            urAdmin.setRoleId(roleAdmin.getRoleId());
+            authenticationService.register(urAdmin);
+
             try {
                 authenticationService.register(urstaff);
             } catch (PasswordNullException e) {
