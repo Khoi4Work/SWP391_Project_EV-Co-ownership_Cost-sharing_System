@@ -49,7 +49,7 @@ public class GroupController {
     }
 
     @PostMapping("/request")
-    public ResponseEntity createRequestGroup(@Valid GroupRequest request) {
+    public ResponseEntity createRequestGroup(@Valid @RequestBody GroupRequest request) {
         Users user = authenticationService.getCurrentAccount();
         if (user == null) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -63,6 +63,11 @@ public class GroupController {
         return ResponseEntity.status(201).body("Created Request Successfully");
     }
 
+    @GetMapping("/requests")
+    public ResponseEntity getAllRequestGroups() {
+        return ResponseEntity.status(200).body(iGroupService.getAllRequestGroups());
+    }
+
     @GetMapping("/service/{groupId}")
     public ResponseEntity getAllVehicleServiceByGroupId(@PathVariable int groupId) {
         return ResponseEntity.status(200).body(iGroupService.getAllVehicleServiceByGroupId(groupId));
@@ -72,6 +77,11 @@ public class GroupController {
     public ResponseEntity<Group> getGroupByGroupId(
             @PathVariable int groupId) {
         return ResponseEntity.ok(iGroupService.getGroupById(groupId));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity getAllGroups() {
+        return ResponseEntity.status(200).body(iGroupService.getAllGroups());
     }
 
 }

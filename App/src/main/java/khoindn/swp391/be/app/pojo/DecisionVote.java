@@ -36,9 +36,9 @@ public class DecisionVote{
     @JoinColumn(name = "created_by")
     private GroupMember createdBy;
 
-    @OneToOne(mappedBy = "")
-    VehicleService vehicleService;
+    @OneToMany(mappedBy = "decisionVote")
+    List<VehicleService> vehicleService;
 
-    @OneToMany(mappedBy = "decisionVote", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "decisionVote")
     List<DecisionVoteDetail> decisionVoteDetails= new ArrayList<>();
 }

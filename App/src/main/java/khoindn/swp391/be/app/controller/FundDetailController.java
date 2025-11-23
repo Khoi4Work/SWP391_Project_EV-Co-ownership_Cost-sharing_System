@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -56,7 +57,8 @@ public class FundDetailController {
 
         response.sendRedirect(redirectUrl);
     }
-// test overdue
+
+    // test overdue
     @PostMapping("/set-overdue/{feeId}")
     public ResponseEntity<String> setOverdueImmediately(@PathVariable Integer feeId) {
         fundDetailRepository.findById(feeId).ifPresentOrElse(
@@ -92,5 +94,10 @@ public class FundDetailController {
     public ResponseEntity<FundFeeResponse> getFeeByGroupMemberIdCurrentMonth(@PathVariable Integer groupMemberId) {
         FundFeeResponse fee = fundDetailService.getFeeByGroupMemberIdCurrentMonth(groupMemberId);
         return ResponseEntity.ok(fee);
+    }
+    @GetMapping("get-all")
+    public ResponseEntity<List<FundFeeResponse>> getAll() {
+        List<FundFeeResponse> fees = fundDetailService.getAll();
+        return ResponseEntity.ok(fees);
     }
 }

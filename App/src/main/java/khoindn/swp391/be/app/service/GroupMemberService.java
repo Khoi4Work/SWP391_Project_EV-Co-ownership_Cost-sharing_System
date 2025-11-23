@@ -3,16 +3,20 @@ package khoindn.swp391.be.app.service;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.*;
 import khoindn.swp391.be.app.model.Request.DecisionVoteReq;
+import khoindn.swp391.be.app.model.Request.EmailDetailReq;
 import khoindn.swp391.be.app.model.Response.AllGroupsOfMember;
 import khoindn.swp391.be.app.model.Response.DecisionVoteRes;
 import khoindn.swp391.be.app.model.Response.GroupMemberDetailRes;
+import khoindn.swp391.be.app.model.formatData.VoteDetails;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo._enum.OptionDecisionVoteDetail;
 import khoindn.swp391.be.app.pojo._enum.StatusDecisionVote;
+import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,6 +46,8 @@ public class GroupMemberService implements IGroupMemberService {
     private IDecisionVoteDetailRepository iDecisionVoteDetailRepository;
     @Autowired
     private IVehicleService iVehicleService;
+    @Autowired
+    private EmailService emailService;
 
 
     // ---------------------- EXISTING CODE ----------------------
@@ -84,17 +90,22 @@ public class GroupMemberService implements IGroupMemberService {
 
     @Override
     public List<AllGroupsOfMember> getAllGroupsOfMember(Users user) {
-        List<GroupMember> gm = iGroupMemberRepository.findAllByUsersId(user.getId());
+        List<GroupMember> gm = iGroupMemberRepository.findAllByUsersId(user.getId())
+                .stream()
+                .filter(groupMember -> groupMember.getGroup().getStatus().equals(StatusGroup.ACTIVE))
+                .toList();
 
 
         List<AllGroupsOfMember> res = new ArrayList<>();
         for (GroupMember each : gm) {
             AllGroupsOfMember agm = modelMapper.map(each, AllGroupsOfMember.class);
+
             agm.setMembers(iGroupMemberRepository.findAllByGroup_GroupId(each.getGroup().getGroupId())
                     .stream()
                     .filter(groupMember ->
                             !user.getId().equals(groupMember.getUsers().getId()))
                     .toList());
+
             res.add(agm);
         }
         return res;
@@ -103,43 +114,6 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public GroupMember getGroupOwnerByGroupIdAndUserId(int groupId, int userId) {
         return iGroupMemberRepository.findGroupMembersByUsers_IdAndGroup_GroupId(userId, groupId);
-    }
-
-    // ---------------------- NEW CODE: Add member to group ----------------------
-    @Override
-    @Transactional
-    public GroupMember addMemberToGroup(int groupId, int userId, String roleInGroup, Float ownershipPercentage) {
-        Group group = iGroupRepository.findById(groupId)
-                .orElseThrow(() -> new GroupNotFoundException("GROUP_NOT_FOUND"));
-
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND"));
-
-        // Check duplicate
-        iGroupMemberRepository.findByGroupAndUsers(group, user).ifPresent(gm -> {
-            throw new IllegalStateException("ALREADY_IN_GROUP");
-        });
-        double addPct = ownershipPercentage == null ? 0.0 : ownershipPercentage.doubleValue();
-
-// Khóa để tránh 2 request đồng thời vượt 100%
-        iGroupMemberRepository.lockAllByGroupId(groupId);
-
-// Lấy tổng hiện tại
-        float currentTotal = iGroupMemberRepository.sumOwnershipByGroupId(groupId);
-
-// Epsilon để tránh sai số số thực
-        final float EPS = 0.0001f;
-        if (currentTotal + addPct > 100.0f + EPS) {
-            throw new IllegalStateException("OWNERSHIP_TOTAL_EXCEEDS_100");
-        }
-        GroupMember gm = new GroupMember();
-        gm.setGroup(group);
-        gm.setUsers(user);
-        gm.setRoleInGroup((roleInGroup == null || roleInGroup.isBlank()) ? "MEMBER" : roleInGroup.trim());
-        gm.setCreatedAt(LocalDateTime.now());
-        gm.setOwnershipPercentage(ownershipPercentage == null ? 0f : ownershipPercentage);
-
-        return iGroupMemberRepository.save(gm);
     }
 
 
@@ -173,7 +147,6 @@ public class GroupMemberService implements IGroupMemberService {
         }
 
 
-
         res.setVoters(iDecisionVoteDetailRepository.getAllByDecisionVote(createdDecisionVote));
 
         return res;
@@ -182,6 +155,7 @@ public class GroupMemberService implements IGroupMemberService {
     @Override
     public DecisionVote setDecision(int choice, long idDecision, int serviceId, GroupMember gm) {
         DecisionVote vote = iDecisionVoteRepository.getDecisionVoteById(idDecision);
+
         if (vote == null) {
             throw new DecisionVoteNotFoundException("DECISION_NOT_FOUND_OR_DECISION_NOT_EXISTS");
         }
@@ -191,6 +165,7 @@ public class GroupMemberService implements IGroupMemberService {
         if (voteDetail == null) {
             throw new DecisionVoteDetailNotFoundException("VOTER_NOT_FOUND_OR_VOTER_NOT_EXISTS");
         }
+        System.out.println(vote.getDecisionName());
 
         switch (choice) {
             case 0:
@@ -218,9 +193,44 @@ public class GroupMemberService implements IGroupMemberService {
         iDecisionVoteDetailRepository.save(voteDetail);
 
         // check voters's vote and request if vote is accepted
-        checkAllVoters(vote, gm.getGroup().getGroupId(), serviceId);
+        if (checkAllVoters(vote, gm.getGroup().getGroupId(), serviceId).getStatus().equals(StatusDecisionVote.CONFIRMED)) {
+            Context context = new Context();
+            EmailDetailReq emailDetailReq = new EmailDetailReq();
+            List<VoteDetails> voteDetails = new ArrayList<>();
+            for (DecisionVoteDetail detail : vote.getDecisionVoteDetails()) {
+                VoteDetails vd = new VoteDetails();
+                vd.setOptionDecisionVote(detail.getOptionDecisionVote().name());
+                vd.setVotedAt(detail.getVotedAt());
+                vd.setGroupMember(detail.getGroupMember());
+                voteDetails.add(vd);
+            }
 
 
+            emailDetailReq.setSubject("[EcoShare][Notification] Decision is confirmed!");
+            emailDetailReq.setTemplate("decisionConfirmation");
+            emailDetailReq.setEmail(vote.getCreatedBy().getUsers().getEmail());
+            context.setVariable("creator", vote.getCreatedBy().getUsers());
+            context.setVariable("decision", vote);
+            context.setVariable("allVoteDetails", voteDetails);
+            context.setVariable("totalApproved", voteDetails.stream().filter(
+                            voteDetails1 ->
+                                    voteDetails1
+                                            .getOptionDecisionVote()
+                                            .equals(OptionDecisionVoteDetail.ACCEPTED.name()))
+                    .count());
+
+            context.setVariable("totalReject",
+                    voteDetails
+                            .stream()
+                            .filter(
+                                    voteDetails1 ->
+                                            voteDetails1
+                                                    .getOptionDecisionVote()
+                                                    .equals(OptionDecisionVoteDetail.REJECTED.name()))
+                            .count());
+            emailDetailReq.setContext(context);
+            emailService.sendEmail(emailDetailReq);
+        }
 
         return vote;
     }
@@ -235,38 +245,18 @@ public class GroupMemberService implements IGroupMemberService {
                 voteDetails.stream().noneMatch(
                         v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
 
-            // Tính tổng tỉ lệ đồng ý và từ chối
-            long totalAccepted = voteDetails.stream()
-                    .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ACCEPTED)
-                    .count();
-
-            long totalRejected = voteDetails.stream()
-                    .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.REJECTED)
-                    .count();
-
-
-            if (voteDetails.stream()
-                    .filter(
-                            decisionVoteDetail ->
-                                    decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
-                    .anyMatch(
-                            v ->
-                                    v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
-
-                totalRejected += voteDetails
-                        .stream()
-                        .filter(decisionVoteDetail -> decisionVoteDetail.getVotedAt().isBefore(vote.getEndedAt()))
-                        .filter(v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)
-                        .count();
-
+            if (voteDetails.stream().anyMatch(
+                    v -> v.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT)) {
+                for (DecisionVoteDetail detail : voteDetails) {
+                    if (detail.getOptionDecisionVote() == OptionDecisionVoteDetail.ABSENT) {
+                        detail.setOptionDecisionVote(OptionDecisionVoteDetail.REJECTED);
+                        iDecisionVoteDetailRepository.save(detail);
+                    }
+                }
             }
+            vote.setStatus(StatusDecisionVote.CONFIRMED);
+            iVehicleService.requestVehicleService(groupId, serviceId, vote.getId());
 
-            if (totalRejected >= totalAccepted) {
-                vote.setStatus(StatusDecisionVote.REJECTED);
-            } else {
-                vote.setStatus(StatusDecisionVote.APPROVED);
-                iVehicleService.requestVehicleService(groupId, serviceId);
-            }
             iDecisionVoteRepository.save(vote);
 
         }

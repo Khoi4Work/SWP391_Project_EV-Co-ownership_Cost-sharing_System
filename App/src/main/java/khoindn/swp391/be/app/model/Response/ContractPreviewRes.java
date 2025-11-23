@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ContractPendingRes {
+public class ContractPreviewRes {
     Contract contract;
     List<Users> contractSignerList;
 }

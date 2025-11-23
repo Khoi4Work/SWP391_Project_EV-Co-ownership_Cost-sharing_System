@@ -21,6 +21,7 @@ public class RequestGroupService {
 
     private String nameRequestGroup;
     private String descriptionRequestGroup = "No description";
+    @Enumerated(EnumType.STRING)
     private StatusRequestGroup status = StatusRequestGroup.PENDING; // pending, approved, rejected
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -30,6 +31,7 @@ public class RequestGroupService {
     private GroupMember groupMember;
 
     @OneToOne(mappedBy = "requestGroupService", cascade = CascadeType.ALL)
+    @JoinColumn(name = "request_group_service_detail_id")
     private RequestGroupServiceDetail requestGroupServiceDetail;
 
 

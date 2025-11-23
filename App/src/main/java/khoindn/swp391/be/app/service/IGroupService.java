@@ -4,17 +4,24 @@ import khoindn.swp391.be.app.model.Request.GroupCreateReq;
 import khoindn.swp391.be.app.model.Request.GroupRequest;
 import khoindn.swp391.be.app.model.Response.RegisterVehicleRes;
 import khoindn.swp391.be.app.pojo.Group;
+import khoindn.swp391.be.app.pojo.RequestGroupService;
 import khoindn.swp391.be.app.pojo.VehicleService;
 import khoindn.swp391.be.app.pojo.Users;
 
+import java.util.List;
+
 public interface IGroupService {
-    public RegisterVehicleRes addMemberToGroupByContract(GroupCreateReq request);
+    RegisterVehicleRes addMemberToGroupByContract(GroupCreateReq request);
 
-    public void deleteGroup(int groupId);
+    void deleteGroup(int groupId);
 
-    public void createRequestGroup(GroupRequest request, Users user);
+    void createRequestGroup(GroupRequest request, Users user);
 
-    public Group getGroupById(int groupId);
+    Group getGroupById(int groupId);
 
     VehicleService getAllVehicleServiceByGroupId(int groupId);
+
+    List<RequestGroupService> getAllRequestGroups();
+
+    List<Group> getAllGroups();
 }

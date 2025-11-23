@@ -22,7 +22,7 @@ public interface IVehicleService {
 
     List<MenuVehicleService> getMenuVehicleServices();
 
-    VehicleService requestVehicleService(int groupId, int serviceId);
+    VehicleService requestVehicleService(int groupId, int serviceId, long voteId);
 
     List<VehicleService> getAllRequestVehicleSerive();
 

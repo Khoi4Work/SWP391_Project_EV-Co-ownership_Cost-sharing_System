@@ -19,7 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/staff") // Đường dẫn gốc
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
     @Autowired
     private IStaffManagementService staffService;

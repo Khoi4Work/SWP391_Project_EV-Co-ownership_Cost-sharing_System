@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thông báo Cập nhật Thanh toán</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+
+<div style="max-width: 650px; margin: 20px auto; padding: 25px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+
+    <h2 style="color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 10px;">
+        📢 Cập nhật Tình trạng Xác nhận Thanh toán
+    </h2>
+
+    <p>Xin chào, <b th:text="${creator.hovaTen}">[Họ và Tên người tạo]</b></p>
+
+    <p>
+        Đây là thông báo cập nhật về tình trạng xác nhận **tham gia/thanh toán** của các thành viên cho **các mục/dịch
+        vụ** sau:
+    </p>
+    <ul style="margin-left: 20px; padding-left: 0; list-style-type: disc; margin-top: 5px; margin-bottom: 5px;">
+        <li th:each="serviceName : ${decision.decisionName}" th:text="${serviceName}" style="font-weight: bold;">[Tên
+            Dịch vụ 1]
+        </li>
+    </ul>
+    <p>
+        mà bạn đã khởi tạo.
+    </p>
+    <h3 style="color: #0056b3; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 25px;">Chi tiết Tình
+        trạng Xác nhận</h3>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+        <tr style="background-color: #f2f2f2;">
+            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Thành viên</th>
+            <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Trạng thái Xác nhận</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="detail : ${allVoteDetails}">
+            <td style="padding: 10px; border: 1px solid #ddd;" th:text="${detail.groupMember.users.hovaTen}">[Tên Thành
+                viên]
+            </td>
+
+            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                        <span th:if="${#strings.equals(detail.optionDecisionVote, 'ACCEPTED')}"
+                              style="color: green; font-weight: bold;">ĐỒNG Ý THANH TOÁN</span>
+
+                <span th:if="${#strings.equals(detail.optionDecisionVote, 'REJECTED')}"
+                      style="color: red; font-weight: bold;">KHÔNG ĐỒNG Ý / TỪ CHỐI</span>
+
+                <span th:if="${#strings.equals(detail.optionDecisionVote, 'ABSENT')}"
+                      style="color: orange; font-weight: bold;">CHƯA PHẢN HỒI</span>
+
+                <span th:if="${detail.optionDecisionVote == null || #strings.isEmpty(detail.optionDecisionVote)}"
+                      style="color: gray; font-weight: bold;">CHƯA PHẢN HỒI</span>
+            </td>
+
+        </tr>
+        </tbody>
+    </table>
+
+    <div style="background-color: #f3f9ff; padding: 15px; border-radius: 5px; margin-top: 20px; border: 1px solid #cceeff;">
+        <p><strong>Tóm tắt tổng quan:</strong></p>
+        <p style="margin: 5px 0;"><strong style="color: #28a745;">Số người Đồng ý:</strong> <span
+                th:text="${totalApproved}">[X]</span></p>
+        <p style="margin: 5px 0;"><strong style="color: #dc3545;">Số người Không đồng ý:</strong> <span
+                th:text="${totalReject}">[Y]</span></p>
+    </div>
+
+
+    <p style="margin-top: 30px;">Trân trọng,</p>
+    <p style="font-size: 0.9em; color: #777;">
+        Đội ngũ EcoShare
+    </p>
+</div>
+</body>
+</html>

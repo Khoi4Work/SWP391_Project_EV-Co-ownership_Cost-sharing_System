@@ -1,7 +1,9 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.activation.DataSource;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
 import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.model.Request.EmailDetailReq;
 import khoindn.swp391.be.app.model.Request.SendBulkEmailReq;
@@ -42,6 +44,36 @@ public class EmailService implements IEmailService {
             helper.setTo(contentSender.getEmail());
             helper.setSubject(contentSender.getSubject());
             helper.setText(contentSender.getTemplate(), true); // true = nội dung HTML
+
+            javaMailSender.send(mimeMessage);
+            System.out.println("✅ Email sent successfully to " + contentSender.getEmail());
+
+        } catch (MessagingException e) {
+            e.printStackTrace();
+            System.err.println("❌ Failed to send email: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendEmailWithAttachment(EmailDetailReq contentSender, byte[] attachmentData, String attachmentFileName) {
+
+        if (contentSender.getContext()!= null){
+            contentSender.setTemplate(templateEngine.process(contentSender.getTemplate(), contentSender.getContext()));
+        }
+        try {
+            // MimeMessage cho phép gửi HTML + file đính kèm
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+
+            // true = multipart message (cho phép đính kèm file)
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setTo(contentSender.getEmail());
+            helper.setSubject(contentSender.getSubject());
+            helper.setText(contentSender.getTemplate(), true); // true = nội dung HTML
+
+            DataSource dataSource = new ByteArrayDataSource(attachmentData, "text/plain");
+            helper.addAttachment(attachmentFileName, dataSource);
+
 
             javaMailSender.send(mimeMessage);
             System.out.println("✅ Email sent successfully to " + contentSender.getEmail());
