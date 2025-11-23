@@ -9,6 +9,7 @@ import khoindn.swp391.be.app.model.Response.ScheduleRes;
 import khoindn.swp391.be.app.model.Response.VehicleRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo._enum.StatusSchedule;
+import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,8 +106,8 @@ public class ScheduleService implements IScheduleService {
 
     @Override
     public List<VehicleRes> getCarsByGroupIdAndUserId(int groupId, int userId) {
-        Users user = iUserRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        Users user = iUserRepository.findByIdAndStatus(userId, StatusUser.ACTIVE)
+                .orElseThrow(() -> new UserNotFoundException("User not found or not active"));
 
         Group group = iGroupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));

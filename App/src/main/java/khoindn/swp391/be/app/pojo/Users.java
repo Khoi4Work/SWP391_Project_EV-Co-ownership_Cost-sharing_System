@@ -57,8 +57,8 @@ public class Users implements UserDetails {
     @Column(name = "publicKey", length = 3000)
     private String publicKey;
 
-//    @Enumerated(EnumType.STRING)
-//    private StatusUser status = StatusUser.ACTIVE;
+    @Enumerated(EnumType.STRING)
+    private StatusUser status = StatusUser.ACTIVE;
 
     //relationships
     @ManyToOne
