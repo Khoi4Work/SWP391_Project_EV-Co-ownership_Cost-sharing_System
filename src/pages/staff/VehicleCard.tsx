@@ -13,7 +13,8 @@ const VehicleCard = ({ vehicle }: any) => {
         setGroupMembers(res.data);
       })
     }
-  })
+    getGroupMembers();
+  }, []);
   return (
     <Card className="shadow-md rounded-xl border p-4">
       <CardHeader>
