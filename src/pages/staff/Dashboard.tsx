@@ -245,22 +245,9 @@ export default function StaffDashboard() {
 
         fetchLeaveRequests();
     }, [LEAVE_GROUP, refreshKey]);
-
-
-    // const handleReject = (appId: string) => {
-    //     setLeaveRequests(prev =>
-    //         prev.map(r =>
-    //             r.id === appId ? { ...r, status: "rejected" } : r
-    //         )
-    //     );
-    //     setLeaveRequests(prev => prev.filter(r => r.id !== appId));
-    //     toast({
-    //         title: "Đã từ chối đơn",
-    //         description: "Yêu cầu rời nhóm không được chấp nhận.",
-    //     });
-    // };
     const PATCH_CONTRACT = import.meta.env.VITE_PATCH_VERIFY_CONTRACT_PATH;
     const HANDLE_LEAVE_GROUP = import.meta.env.VITE_PATCH_LEAVE_GROUP_PATH;
+    const UPDATE_REQUEST = import.meta.env.VITE_PATCH_GROUP_REQUEST_PATH;
     const handleLeaveApprove = async (contractId: number) => {
         const request = leaveRequests.find((r) => r.id === contractId);
         if (!request) {
@@ -274,7 +261,7 @@ export default function StaffDashboard() {
 
         try {
             // Gửi request đến BE
-            const res = await axiosClient.post(LEAVE_GROUP, {
+            const res = await axiosClient.patch(HANDLE_LEAVE_GROUP, {
                 groupId: request.groupMember?.group?.id || request.groupId,
                 requestId: request.id,
             });
@@ -282,6 +269,10 @@ export default function StaffDashboard() {
             if (res.status === 200) {
                 // Cập nhật FE
                 setLeaveRequests((prev) => prev.filter((r) => r.id !== contractId));
+                const res = await axiosClient.patch(UPDATE_REQUEST, {
+                    idRequestGroup: request.id,
+                    idChoice: 1
+                })
                 toast({
                     title: "Đã duyệt yêu cầu",
                     description: "Nhân viên đã được rời khỏi nhóm thành công.",
@@ -301,6 +292,18 @@ export default function StaffDashboard() {
                 variant: "destructive",
             });
         }
+    }
+    const handleLeaveReject = async (contractId: number) => {
+        setLeaveRequests(prev =>
+            prev.map(r =>
+                r.id === contractId ? { ...r, status: "rejected" } : r
+            )
+        );
+        setLeaveRequests(prev => prev.filter(r => r.id !== contractId));
+        toast({
+            title: "Đã từ chối đơn",
+            description: "Yêu cầu rời nhóm không được chấp nhận.",
+        });
     }
     const handleApprove = async (contractId: number) => {
         try {
@@ -509,7 +512,7 @@ export default function StaffDashboard() {
                                                             <Button
                                                                 variant="destructive"
                                                                 className="bg-red-600 hover:bg-red-700 text-white"
-                                                                onClick={() => handleReject(contract.contractId)}
+                                                                onClick={() => handleLeaveReject(contract.contractId)}
                                                             >
                                                                 Không duyệt
                                                             </Button>
