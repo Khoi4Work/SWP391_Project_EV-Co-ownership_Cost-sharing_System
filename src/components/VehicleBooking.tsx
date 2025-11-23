@@ -215,35 +215,45 @@ export default function VehicleBooking() {
     };
 
     const loadVehicles = async () => {
-        setLoadingVehicles(true);
-        setVehiclesError(null);
+        setLoadingVehicles(true)
+        setVehiclesError(null)
         try {
-            const groupIdsStr = localStorage.getItem("groupIds");
+            const groupIdsStr = localStorage.getItem('groupIds')
             if (!groupIdsStr) {
-                setVehicles([]);
-                setVehiclesError("Chưa có thông tin nhóm");
-                return;
+                setVehicles([])
+                setVehiclesError('Không tìm thấy thông tin nhóm của bạn')
+                return
             }
 
-            const groupIds: number[] = JSON.parse(groupIdsStr);
+            const groupIds: number[] = JSON.parse(groupIdsStr)
+
+            // Gọi API cho TẤT CẢ các nhóm của user
             const fetchPromises = groupIds.map(groupId =>
-                apiCall(`/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`).catch(() => null)
-            );
-            const allVehiclesData = await Promise.all(fetchPromises);
+                apiCall(`/schedule/vehicle?groupId=${groupId}&userId=${currentUserId}`) // Thêm / ở đây
+                    .catch(() => null)
+            )
+
+            const allVehiclesData = await Promise.all(fetchPromises)
+
+            // Gộp tất cả xe từ các nhóm
             const vehiclesArr = allVehiclesData
                 .filter(data => data !== null)
-                .flatMap(data => Array.isArray(data) ? data : (data ? [data] : []));
+                .flatMap(data => Array.isArray(data) ? data : data ? [data] : [])
 
-            setVehicles(vehiclesArr);
-            if (vehiclesArr.length === 0) setVehiclesError("Các nhóm chưa có xe nào");
+            setVehicles(vehiclesArr)
+
+            if (vehiclesArr.length === 0) {
+                setVehiclesError('Không có xe nào khả dụng')
+            }
         } catch (error: any) {
-            setVehicles([]);
-            setVehiclesError(error.message || "Không thể tải danh sách xe");
-            showToast("Lỗi", "Không thể tải danh sách xe", "destructive");
+            setVehicles([])
+            setVehiclesError(error.message || 'Không thể tải danh sách xe')
+            showToast('Lỗi', 'Không thể tải danh sách xe', 'destructive')
         } finally {
-            setLoadingVehicles(false);
+            setLoadingVehicles(false)
         }
-    };
+    }
+
 
     const loadBookings = async (targetGroupId?: number) => {
         setLoadingBookings(true);
@@ -611,6 +621,8 @@ export default function VehicleBooking() {
 
     useEffect(() => {
         if (vehicles && vehicles.length > 0) loadBookings();
+        const currentGroupId = Number(localStorage.getItem('groupId'))
+        loadBookings(currentGroupId)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [vehicles, statusFilter]);
 
@@ -618,7 +630,8 @@ export default function VehicleBooking() {
     useEffect(() => {
         const handleScheduleUpdate = () => {
             if (vehicles && vehicles.length > 0) {
-                loadBookings();
+                const currentGroupId = Number(localStorage.getItem('groupId'))
+                loadBookings(currentGroupId)
             }
         };
         window.addEventListener('schedules-updated', handleScheduleUpdate);
