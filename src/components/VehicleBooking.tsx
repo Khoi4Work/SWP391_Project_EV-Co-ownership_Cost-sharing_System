@@ -343,7 +343,7 @@ export default function VehicleBooking() {
 
             setExistingBookings(formattedBookings);
         } catch (e: any) {
-            showToast("Lỗi tải lịch", e.message, "destructive");
+            // showToast("Lỗi tải lịch", e.message, "destructive");
         } finally {
             setLoadingBookings(false);
         }
