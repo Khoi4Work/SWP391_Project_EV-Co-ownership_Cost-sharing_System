@@ -1,7 +1,19 @@
+import axiosClient from "@/api/axiosClient";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, Car, UserCircle } from "lucide-react";
-
+import React, { useEffect } from "react";
+import { useState } from "react";
 const VehicleCard = ({ vehicle }: any) => {
+  const [groupMembers, setGroupMembers] = useState([]);
+  useEffect(() => {
+    const getGroupMembers = () => {
+      const groupId = vehicle.group?.groupId;
+      console.log("Group ID:", groupId);
+      axiosClient.get(`/groupMember/members/${groupId}`).then((res) => {
+        setGroupMembers(res.data);
+      })
+    }
+  })
   return (
     <Card className="shadow-md rounded-xl border p-4">
       <CardHeader>
@@ -53,7 +65,7 @@ const VehicleCard = ({ vehicle }: any) => {
                 <p className="font-medium text-sm mb-1">Thành viên trong nhóm:</p>
 
                 <div className="space-y-2">
-                  {vehicle.group.groupMembers?.map((member: any) => (
+                  {groupMembers?.map((member: any) => (
                     <div
                       key={member.id}
                       className="flex items-start p-2 bg-white border rounded-md"
@@ -61,7 +73,7 @@ const VehicleCard = ({ vehicle }: any) => {
                       <UserCircle className="h-5 w-5 mr-2 text-gray-600" />
 
                       <div className="text-sm">
-                        <p><strong>Họ và tên:</strong> {member.user?.hovaTen}</p>
+                        <p><strong>Họ và tên:</strong> {member.userId?.hovaTen}</p>
                         <p><strong>Vai trò:</strong> {member.roleInGroup}</p>
                         <p><strong>Tỷ lệ sở hữu:</strong> {member.ownershipPercentage}%</p>
                       </div>
