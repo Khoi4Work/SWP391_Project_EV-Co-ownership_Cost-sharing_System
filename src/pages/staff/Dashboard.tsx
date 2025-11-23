@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import VehicleCard from "./VehicleCard";
 import {
     Users,
     FileCheck,
@@ -25,6 +26,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import axiosClient from "@/api/axiosClient";
+import { get } from "http";
 
 export default function StaffDashboard() {
 
@@ -34,8 +36,7 @@ export default function StaffDashboard() {
     const GET_ALL_GROUPS = import.meta.env.VITE_GET_ALL_GROUPS_PATH
     const GET_CONTRACT_CONFIRMED = import.meta.env.VITE_GET_CONFIRMED_CONTRACT_PATH
     const CURRENT_USER = import.meta.env.VITE_AUTH_CURRENT
-
-    const USE_MOCK = false; // Bật DB ảo
+    const [vehicles, setVehicles] = useState<any[]>([]);
     const [showChat, setShowChat] = useState(false);
     const [services, setServices] = useState<any>([]);
     const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -47,7 +48,7 @@ export default function StaffDashboard() {
     const [nhomQuanLy, setNhomQuanLy] = useState(0)
     const [xeHoatDong, setXeHoatDong] = useState(0)
     const [refreshKey, setRefreshKey] = useState(0);
-
+    const ALL_VEHICLES = import.meta.env.VITE_VEHICLES;
 
     const stats = [
         { label: "Đơn chờ duyệt", value: donChoDuyet, icon: Clock, color: "warning" },
@@ -210,7 +211,14 @@ export default function StaffDashboard() {
             });
 
     }, [refreshKey]);
-
+    useEffect(() => {
+        const getVehicles = async () => {
+            await axiosClient.get(ALL_VEHICLES).then(res => {
+                setVehicles(res.data);
+            })
+        }
+        getVehicles();
+    }, []);
     useEffect(() => {
         const fetchLeaveRequests = async () => {
             try {
@@ -430,7 +438,6 @@ export default function StaffDashboard() {
                         <TabsTrigger value="applications">Đơn đăng ký</TabsTrigger>
                         <TabsTrigger value="groups">Quản lý nhóm</TabsTrigger>
                         <TabsTrigger value="vehicles">Quản lý xe</TabsTrigger>
-                        <TabsTrigger value="reports">Báo cáo</TabsTrigger>
                     </TabsList>
 
                     {/* Applications Management */}
@@ -607,376 +614,9 @@ export default function StaffDashboard() {
                             <CardContent>
                                 {/* Vehicles by Group */}
                                 <div className="space-y-6">
-                                    <div>
-                                        <h4 className="font-medium mb-4 flex items-center space-x-2">
-                                            <Users className="h-4 w-4" />
-                                            <span>Xe theo nhóm</span>
-                                        </h4>
-                                        <div className="space-y-4">
-                                            {/* Group 1 */}
-                                            <Card>
-                                                <CardHeader className="pb-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <CardTitle className="text-lg">Nhóm HCM - Quận 1</CardTitle>
-                                                            <p className="text-sm text-muted-foreground">12 thành viên •
-                                                                Quỹ: 50,000,000 VNĐ</p>
-                                                        </div>
-                                                        <Badge variant="outline">3 xe</Badge>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                        <div className="border rounded p-3">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <Badge variant="secondary">Đang sử dụng</Badge>
-                                                                <Activity className="h-4 w-4 text-success" />
-                                                            </div>
-                                                            <h5 className="font-semibold">VinFast VF8</h5>
-                                                            <p className="text-sm text-muted-foreground">51A-123.45</p>
-                                                            <p className="text-xs mt-1">Người dùng: Nguyễn Văn A</p>
-                                                        </div>
-                                                        <div className="border rounded p-3">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <Badge variant="outline">Sẵn sàng</Badge>
-                                                                <Activity className="h-4 w-4 text-muted-foreground" />
-                                                            </div>
-                                                            <h5 className="font-semibold">Tesla Model Y</h5>
-                                                            <p className="text-sm text-muted-foreground">30A-678.90</p>
-                                                            <p className="text-xs mt-1">Pin: 85%</p>
-                                                        </div>
-                                                        <div className="border rounded p-3">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <Badge variant="destructive">Bảo trì</Badge>
-                                                                <Activity className="h-4 w-4 text-destructive" />
-                                                            </div>
-                                                            <h5 className="font-semibold">Hyundai Kona</h5>
-                                                            <p className="text-sm text-muted-foreground">29A-111.22</p>
-                                                            <p className="text-xs mt-1">Thay lốp</p>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-
-                                            {/* Group 2 */}
-                                            <Card>
-                                                <CardHeader className="pb-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <CardTitle className="text-lg">Nhóm HN - Cầu
-                                                                Giấy</CardTitle>
-                                                            <p className="text-sm text-muted-foreground">8 thành viên •
-                                                                Quỹ: 35,000,000 VNĐ</p>
-                                                        </div>
-                                                        <Badge variant="outline">2 xe</Badge>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        <div className="border rounded p-3">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <Badge variant="outline">Sẵn sàng</Badge>
-                                                                <Activity className="h-4 w-4 text-muted-foreground" />
-                                                            </div>
-                                                            <h5 className="font-semibold">BMW iX3</h5>
-                                                            <p className="text-sm text-muted-foreground">30B-456.78</p>
-                                                            <p className="text-xs mt-1">Pin: 92%</p>
-                                                        </div>
-                                                        <div className="border rounded p-3">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <Badge variant="secondary">Đang sử dụng</Badge>
-                                                                <Activity className="h-4 w-4 text-success" />
-                                                            </div>
-                                                            <h5 className="font-semibold">Audi e-tron</h5>
-                                                            <p className="text-sm text-muted-foreground">30B-789.01</p>
-                                                            <p className="text-xs mt-1">Người dùng: Lê Thị D</p>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    </div>
-
-                                    {/* Service Payment Requests */}
-                                    <div>
-                                        <h4 className="font-medium mb-4 flex items-center space-x-2">
-                                            <DollarSign className="h-4 w-4" />
-                                            <span>Yêu cầu chi trả dịch vụ</span>
-                                            <Badge variant="destructive">4 yêu cầu</Badge>
-                                        </h4>
-                                        <div className="space-y-3">
-                                            {[
-                                                {
-                                                    id: "PAY-001",
-                                                    group: "Nhóm HCM - Quận 1",
-                                                    vehicle: "VF8 - 51A-123.45",
-                                                    service: "Bảo trì định kỳ",
-                                                    amount: "2,500,000 VNĐ",
-                                                    groupFund: "50,000,000 VNĐ",
-                                                    date: "20/01/2024",
-                                                    status: "pending",
-                                                    paymentType: "group",
-                                                    description: "Bảo trì định kỳ 6 tháng theo quy định"
-                                                },
-                                                {
-                                                    id: "PAY-002",
-                                                    group: "Nhóm HN - Cầu Giấy",
-                                                    vehicle: "BMW iX3 - 30B-456.78",
-                                                    service: "Thay lốp",
-                                                    amount: "1,800,000 VNĐ",
-                                                    groupFund: "35,000,000 VNĐ",
-                                                    date: "19/01/2024",
-                                                    status: "pending",
-                                                    paymentType: "self",
-                                                    description: "Thay lốp sau do bị thủng"
-                                                },
-                                                {
-                                                    id: "PAY-003",
-                                                    group: "Nhóm HCM - Quận 1",
-                                                    vehicle: "Model Y - 30A-678.90",
-                                                    service: "Sửa chữa hệ thống điện",
-                                                    amount: "3,200,000 VNĐ",
-                                                    groupFund: "50,000,000 VNĐ",
-                                                    date: "18/01/2024",
-                                                    status: "pending",
-                                                    paymentType: "group",
-                                                    description: "Lỗi hệ thống sạc, cần thay bộ điều khiển"
-                                                },
-                                                {
-                                                    id: "PAY-004",
-                                                    group: "Nhóm HN - Cầu Giấy",
-                                                    vehicle: "Audi e-tron - 30B-789.01",
-                                                    service: "Kiểm tra pin",
-                                                    amount: "800,000 VNĐ",
-                                                    groupFund: "35,000,000 VNĐ",
-                                                    date: "17/01/2024",
-                                                    status: "pending",
-                                                    paymentType: "self",
-                                                    description: "Kiểm tra độ chai pin theo định kỳ"
-                                                }
-                                            ].map((request) => (
-                                                <Card key={request.id}>
-                                                    <CardContent className="p-4">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center space-x-3 mb-2">
-                                                                    <h5 className="font-semibold">{request.service}</h5>
-                                                                    <Badge variant="outline">{request.id}</Badge>
-                                                                    <Badge
-                                                                        variant={request.paymentType === 'group' ? 'default' : 'secondary'}
-                                                                        className="text-xs">
-                                                                        {request.paymentType === 'group' ? 'Quỹ chung' : 'Tự chi trả'}
-                                                                    </Badge>
-                                                                </div>
-                                                                <div
-                                                                    className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground mb-2">
-                                                                    <div>
-                                                                        <span
-                                                                            className="font-medium">Nhóm:</span> {request.group}
-                                                                    </div>
-                                                                    <div>
-                                                                        <span
-                                                                            className="font-medium">Xe:</span> {request.vehicle}
-                                                                    </div>
-                                                                    <div>
-                                                                        <span
-                                                                            className="font-medium">Ngày:</span> {request.date}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-sm text-muted-foreground mb-2">
-                                                                    <span
-                                                                        className="font-medium">Mô tả:</span> {request.description}
-                                                                </div>
-                                                                <div className="flex items-center space-x-4">
-                                                                    {request.paymentType === 'group' && (
-                                                                        <>
-                                                                            <div className="text-sm">
-                                                                                <span className="text-muted-foreground">Chi phí:</span>
-                                                                                <span
-                                                                                    className="font-semibold text-destructive ml-1">{request.amount}</span>
-                                                                            </div>
-                                                                            <div className="text-sm">
-                                                                                <span className="text-muted-foreground">Quỹ nhóm:</span>
-                                                                                <span
-                                                                                    className="font-semibold text-success ml-1">{request.groupFund}</span>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-                                                                    {request.paymentType === 'self' && (
-                                                                        <div className="text-sm">
-                                                                            <span className="text-muted-foreground">Hình thức:</span>
-                                                                            <span className="font-semibold ml-1">Tự lái xe thực hiện dịch vụ</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center space-x-2 ml-4">
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="text-success border-success hover:bg-success hover:text-success-foreground"
-                                                                    onClick={() => {
-                                                                        toast({
-                                                                            title: "Thanh toán thành công",
-                                                                            description: `Đã thanh toán ${request.amount} cho ${request.service} từ quỹ ${request.group}`
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <DollarSign className="h-4 w-4 mr-1" />
-                                                                    Thanh toán
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                                                    onClick={() => {
-                                                                        toast({
-                                                                            title: "Đã từ chối thanh toán",
-                                                                            description: `Yêu cầu thanh toán ${request.service} đã bị từ chối`,
-                                                                            variant: "destructive"
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <XCircle className="h-4 w-4 mr-1" />
-                                                                    Từ chối
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Reports */}
-                    <TabsContent value="reports">
-                        <Card className="shadow-elegant">
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <TrendingUp className="h-5 w-5" />
-                                    <span>Báo cáo hoạt động</span>
-                                </CardTitle>
-                                <CardDescription>
-                                    Thống kê và phân tích hoạt động hệ thống
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                    <Card>
-                                        <CardContent className="p-4 text-center">
-                                            <Calendar className="h-8 w-8 mx-auto mb-2 text-primary" />
-                                            <p className="text-2xl font-bold">142</p>
-                                            <p className="text-sm text-muted-foreground">Lượt sử dụng (tháng)</p>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardContent className="p-4 text-center">
-                                            <DollarSign className="h-8 w-8 mx-auto mb-2 text-success" />
-                                            <p className="text-2xl font-bold">25.5M</p>
-                                            <p className="text-sm text-muted-foreground">Doanh thu (tháng)</p>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardContent className="p-4 text-center">
-                                            <Users className="h-8 w-8 mx-auto mb-2 text-warning" />
-                                            <p className="text-2xl font-bold">85%</p>
-                                            <p className="text-sm text-muted-foreground">Tỷ lệ sử dụng</p>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardContent className="p-4 text-center">
-                                            <Car className="h-8 w-8 mx-auto mb-2 text-primary" />
-                                            <p className="text-2xl font-bold">24/26</p>
-                                            <p className="text-sm text-muted-foreground">Xe hoạt động</p>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-lg">Báo cáo theo nhóm</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-3">
-                                                {[
-                                                    { group: "Nhóm HCM - Q1", usage: "45 lượt", revenue: "12.5M VNĐ" },
-                                                    {
-                                                        group: "Nhóm HN - Cầu Giấy",
-                                                        usage: "32 lượt",
-                                                        revenue: "8.2M VNĐ"
-                                                    },
-                                                    { group: "Nhóm ĐN - Hải Châu", usage: "28 lượt", revenue: "4.8M VNĐ" }
-                                                ].map((item, index) => (
-                                                    <div key={index}
-                                                        className="flex justify-between items-center p-3 bg-muted/50 rounded">
-                                                        <div>
-                                                            <p className="font-medium">{item.group}</p>
-                                                            <p className="text-sm text-muted-foreground">{item.usage}</p>
-                                                        </div>
-                                                        <p className="font-medium text-success">{item.revenue}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-lg">Xu hướng sử dụng</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between">
-                                                    <span>Thứ 2</span>
-                                                    <div className="flex items-center space-x-2">
-                                                        <div className="w-24 bg-muted rounded-full h-2">
-                                                            <div className="bg-primary h-2 rounded-full"
-                                                                style={{ width: '70%' }}></div>
-                                                        </div>
-                                                        <span className="text-sm">70%</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Thứ 3</span>
-                                                    <div className="flex items-center space-x-2">
-                                                        <div className="w-24 bg-muted rounded-full h-2">
-                                                            <div className="bg-primary h-2 rounded-full"
-                                                                style={{ width: '85%' }}></div>
-                                                        </div>
-                                                        <span className="text-sm">85%</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Thứ 4</span>
-                                                    <div className="flex items-center space-x-2">
-                                                        <div className="w-24 bg-muted rounded-full h-2">
-                                                            <div className="bg-primary h-2 rounded-full"
-                                                                style={{ width: '90%' }}></div>
-                                                        </div>
-                                                        <span className="text-sm">90%</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Thứ 5</span>
-                                                    <div className="flex items-center space-x-2">
-                                                        <div className="w-24 bg-muted rounded-full h-2">
-                                                            <div className="bg-primary h-2 rounded-full"
-                                                                style={{ width: '75%' }}></div>
-                                                        </div>
-                                                        <span className="text-sm">75%</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                    {vehicles.map((vehicle) => (
+                                        <VehicleCard key={vehicle.vehicleId} vehicle={vehicle} />
+                                    ))}
                                 </div>
                             </CardContent>
                         </Card>
