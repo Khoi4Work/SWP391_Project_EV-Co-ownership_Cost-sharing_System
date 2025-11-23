@@ -264,7 +264,7 @@ export default function AdminDashboard() {
         }
         try {
             const res = await axiosClient.put(
-                `${UPDATE_STAFF}${selectedStaff.id}`,
+                `${UPDATE_STAFF}${selectedStaff}`,
                 editStaffData // body: { hovaTen, cccd, phone }
             );
 
