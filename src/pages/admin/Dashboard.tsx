@@ -264,7 +264,7 @@ export default function AdminDashboard() {
         }
         try {
             const res = await axiosClient.put(
-                `${UPDATE_STAFF}${selectedStaff}`,
+                `${UPDATE_STAFF}${selectedStaff.id}`,
                 editStaffData // body: { hovaTen, cccd, phone }
             );
 
@@ -464,7 +464,7 @@ export default function AdminDashboard() {
                                                         <div className="flex gap-3">
                                                             {/* Nút Edit */}
                                                             <button
-                                                                onClick={() => handleEditStaff(staff.id)}
+                                                                onClick={() => handleEditStaff(staff)}
                                                                 className="
                                                                flex items-center gap-1 px-3 py-1.5 text-sm 
                                                                bg-blue-100 text-blue-700 
@@ -864,39 +864,6 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="space-y-6 p-6">
-                                {/* Thông tin tài khoản (chỉ đọc) */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center space-x-2">
-                                            <Shield className="h-5 w-5" />
-                                            <span>Thông tin tài khoản</span>
-                                        </CardTitle>
-                                        <CardDescription>Thông tin này không thể chỉnh sửa</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Mã nhân viên</p>
-                                                <p className="font-medium">{selectedStaff.id}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Vai trò</p>
-                                                <p className="font-medium">{selectedStaff.role}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Trạng thái</p>
-                                                <Badge variant={getStatusColor(selectedStaff.status) as any}>
-                                                    {getStatusText(selectedStaff.status)}
-                                                </Badge>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Số nhóm quản lý</p>
-                                                <p className="font-medium">{selectedStaff.groups} nhóm</p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
                                 {/* Thông tin cá nhân (có thể chỉnh sửa) */}
                                 <Card>
                                     <CardHeader>
@@ -908,37 +875,64 @@ export default function AdminDashboard() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Họ và tên */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">Họ và tên *</label>
-                                                <Input placeholder="Nhập họ và tên đầy đủ" value={editStaffData.hovaTen}
-                                                    onChange={e => setEditStaffData({
-                                                        ...editStaffData,
-                                                        hovaTen: e.target.value
-                                                    })} />
+                                                <label className="block text-sm font-medium mb-1">Họ và tên *</label>
+                                                <Input
+                                                    placeholder="Nhập họ và tên đầy đủ"
+                                                    value={editStaffData.hovaTen || ""} // nếu null thì tránh lỗi
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            hovaTen: e.target.value,
+                                                        })
+                                                    }
+                                                />
                                             </div>
+
+                                            {/* Số điện thoại */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">Số điện thoại</label>
-                                                <Input placeholder="0123456789" value={editStaffData.phone}
-                                                    onChange={e => setEditStaffData({
-                                                        ...editStaffData,
-                                                        phone: e.target.value
-                                                    })} />
+                                                <label className="block text-sm font-medium mb-1">Số điện thoại *</label>
+                                                <Input
+                                                    placeholder="0123456789"
+                                                    value={editStaffData.phone || ""}
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            phone: e.target.value,
+                                                        })
+                                                    }
+                                                />
                                             </div>
+
+                                            {/* CCCD */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">Căn cước công dân</label>
-                                                <Input placeholder="nhập Căn cước mới" value={editStaffData.cccd}
-                                                    onChange={e => setEditStaffData({
-                                                        ...editStaffData,
-                                                        cccd: e.target.value
-                                                    })} />
+                                                <label className="block text-sm font-medium mb-1">Căn cước công dân *</label>
+                                                <Input
+                                                    placeholder="Nhập CCCD mới"
+                                                    value={editStaffData.cccd || ""}
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            cccd: e.target.value,
+                                                        })
+                                                    }
+                                                />
                                             </div>
+
+                                            {/* Giấy phép lái xe */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">Giấy phép lái xe</label>
-                                                <Input placeholder="nhập giấy phép lái xe mới" value={editStaffData.gplx}
-                                                    onChange={e => setEditStaffData({
-                                                        ...editStaffData,
-                                                        gplx: e.target.value
-                                                    })} />
+                                                <label className="block text-sm font-medium mb-1">Giấy phép lái xe *</label>
+                                                <Input
+                                                    placeholder="Nhập giấy phép lái xe mới"
+                                                    value={editStaffData.gplx || ""}
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            gplx: e.target.value,
+                                                        })
+                                                    }
+                                                />
                                             </div>
                                         </div>
 

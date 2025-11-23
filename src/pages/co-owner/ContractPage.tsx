@@ -292,18 +292,6 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
                 <Button onClick={handleConfirm} disabled={status === null || (status === 1 && !isPrivateKey)}>
                     Xác nhận hợp đồng
                 </Button>
-                <Button
-                    onClick={() => {
-                        if (contractRef.current) {
-                            generatePDF();
-                        } else {
-                            alert("Không tìm thấy nội dung hợp đồng để xuất PDF!");
-                        }
-                    }}
-                    variant="secondary"
-                >
-                    Xuất PDF
-                </Button>
                 {status !== null && (
                     <p className={status === 1 ? "text-green-600" : "text-red-600"}>
                         Bạn đã chọn: {status === 1 ? "Đồng ý" : "Không đồng ý"}
