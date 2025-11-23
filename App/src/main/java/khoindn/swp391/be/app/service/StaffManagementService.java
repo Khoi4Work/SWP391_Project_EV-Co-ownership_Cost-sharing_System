@@ -6,6 +6,7 @@ import khoindn.swp391.be.app.model.Request.UpdateStaffRequest;
 import khoindn.swp391.be.app.model.Response.StaffResponse;
 import khoindn.swp391.be.app.pojo.UserRole;
 import khoindn.swp391.be.app.pojo.Users;
+import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import khoindn.swp391.be.app.repository.IUserRepository;
 import khoindn.swp391.be.app.repository.IUserRoleRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class StaffManagementService implements IStaffManagementService {
     private final IUserRepository userRepository;
     private final IUserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
-    private static final Integer STAFF_ROLE_ID = 4;
+    private static final Integer    STAFF_ROLE_ID = 3;
 
     @Override
     public StaffResponse createStaff(CreateStaffRequest request) {
@@ -72,6 +73,7 @@ public class StaffManagementService implements IStaffManagementService {
         // Đã sửa: Dùng hàm đã fix lỗi
         List<Users> staffList = userRepository.findAllByRole_RoleId(STAFF_ROLE_ID);
         return staffList.stream()
+                .filter(users -> users.getStatusUser().equals(StatusUser.ACTIVE))
                 .map(this::mapEntityToResponse)
                 .collect(Collectors.toList());
     }
@@ -104,10 +106,12 @@ public class StaffManagementService implements IStaffManagementService {
     @Override
     public void deleteStaff(Integer staffId) {
         Users staff = userRepository.findByIdAndRole_RoleId(staffId, STAFF_ROLE_ID);
+        System.out.println("res:"+staff);
         if (staff == null) {
             throw new RuntimeException("Không tìm thấy Staff với ID: " + staffId);
         }
-        userRepository.delete(staff);
+        staff.setStatusUser(StatusUser.INACTIVE);
+        userRepository.save(staff);
     }
 
     private StaffResponse mapEntityToResponse(Users user) {
