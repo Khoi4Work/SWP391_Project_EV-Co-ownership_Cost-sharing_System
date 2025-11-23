@@ -342,13 +342,13 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void sendDeclinedContractNotification(int contractId) throws Exception {
+    public void sendRejectContractNotification(int contractId) throws Exception {
         List<ContractSigner> signerList = getContractSignerByContractId(contractId);
 
         Contract contract = getContractByContractId(contractId);
         iSupabaseService.deleteFile(contract.getImageContract());
 
-        if (contract.getStatus().equals(StatusContract.DECLINED)) {
+        if (contract.getStatus().equals(StatusContract.REJECTED)) {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
@@ -384,7 +384,7 @@ public class ContractService implements IContractService {
             contract.setStaff(staff);
             contract.setUrlContract(declinedContractLink);
             iContractRepository.save(contract);
-            sendDeclinedContractNotification(contractId);
+            sendRejectContractNotification(contractId);
         } else {
             throw new UndefinedChoiceException("Invalid decision value");
         }
