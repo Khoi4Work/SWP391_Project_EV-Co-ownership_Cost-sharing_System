@@ -245,9 +245,11 @@ export default function StaffDashboard() {
 
         fetchLeaveRequests();
     }, [LEAVE_GROUP, refreshKey]);
+
     const PATCH_CONTRACT = import.meta.env.VITE_PATCH_VERIFY_CONTRACT_PATH;
     const HANDLE_LEAVE_GROUP = import.meta.env.VITE_PATCH_LEAVE_GROUP_PATH;
     const UPDATE_REQUEST = import.meta.env.VITE_PATCH_GROUP_REQUEST_PATH;
+
     const handleLeaveApprove = async (contractId: number) => {
         const request = leaveRequests.find((r) => r.id === contractId);
         if (!request) {
@@ -261,15 +263,21 @@ export default function StaffDashboard() {
 
         try {
             // Gửi request đến BE
+            console.log("Request group ID:", request.id);
+            console.log(request.groupMember?.group?.id)
             const res = await axiosClient.patch(HANDLE_LEAVE_GROUP, {
-                groupId: request.groupMember?.group?.id || request.groupId,
+                // groupId: request.groupMember?.group?.id || request.groupId,
                 requestId: request.id,
             });
+
+
+
+            console.log(res)
 
             if (res.status === 200) {
                 // Cập nhật FE
                 setLeaveRequests((prev) => prev.filter((r) => r.id !== contractId));
-                const res = await axiosClient.patch(UPDATE_REQUEST, {
+                const updateRes = await axiosClient.patch(UPDATE_REQUEST, {
                     idRequestGroup: request.id,
                     idChoice: 1
                 })
