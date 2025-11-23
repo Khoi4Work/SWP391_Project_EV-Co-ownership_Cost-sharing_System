@@ -4,6 +4,7 @@ import khoindn.swp391.be.app.exception.exceptions.DecisionVoteNotFoundException;
 import khoindn.swp391.be.app.exception.exceptions.GroupMemberNotFoundException;
 import khoindn.swp391.be.app.exception.exceptions.VehicleIsNotExistedException;
 import khoindn.swp391.be.app.pojo.*;
+import khoindn.swp391.be.app.pojo._enum.StatusGroup;
 import khoindn.swp391.be.app.pojo._enum.StatusVehicle;
 import khoindn.swp391.be.app.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,14 +99,13 @@ public class VehicleService_ implements IVehicleService {
                 if (mvs.getServiceName().equals(decisionName)) {
                     vehicleService.setMenuVehicleService(mvs);
                     break;
-                }else if (mvs.getServiceName().equalsIgnoreCase("Others Service")) {
+                } else if (mvs.getServiceName().equalsIgnoreCase("Others Service")) {
                     vehicleService.setMenuVehicleService(mvs);
                     break;
                 }
             }
             iRequestVehicleServiceRepository.save(vehicleService);
         }
-
 
 
         return null;
@@ -122,6 +122,7 @@ public class VehicleService_ implements IVehicleService {
                 .filter(vehicle -> vehicle
                         .getStatusVehicle()
                         .equals(StatusVehicle.AVAILABLE))
+                .filter(vehicle -> vehicle.getGroup().getStatus().equals(StatusGroup.ACTIVE))
                 .toList();
     }
 

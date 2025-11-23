@@ -31,7 +31,6 @@ public class Users implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Integer id;
-    private StatusUser statusUser=StatusUser.ACTIVE;
     @NotNull
     private String hovaTen;  // Changed to match Java naming conventions
 

@@ -73,7 +73,7 @@ public class StaffManagementService implements IStaffManagementService {
         // Đã sửa: Dùng hàm đã fix lỗi
         List<Users> staffList = userRepository.findAllByRole_RoleId(STAFF_ROLE_ID);
         return staffList.stream()
-                .filter(users -> users.getStatusUser().equals(StatusUser.ACTIVE))
+                .filter(users -> users.getStatus().equals(StatusUser.ACTIVE))
                 .map(this::mapEntityToResponse)
                 .collect(Collectors.toList());
     }
@@ -110,7 +110,7 @@ public class StaffManagementService implements IStaffManagementService {
         if (staff == null) {
             throw new RuntimeException("Không tìm thấy Staff với ID: " + staffId);
         }
-        staff.setStatusUser(StatusUser.INACTIVE);
+        staff.setStatus(StatusUser.INACTIVE);
         userRepository.save(staff);
     }
 
