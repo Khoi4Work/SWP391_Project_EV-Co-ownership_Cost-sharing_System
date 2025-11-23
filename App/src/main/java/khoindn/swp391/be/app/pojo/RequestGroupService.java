@@ -26,11 +26,11 @@ public class RequestGroupService {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     //relationships
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne()
     @JoinColumn(name = "groupMember_id")
     private GroupMember groupMember;
 
-    @OneToOne(mappedBy = "requestGroupService", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "requestGroupService")
     @JoinColumn(name = "request_group_service_detail_id")
     private RequestGroupServiceDetail requestGroupServiceDetail;
 

@@ -1,5 +1,6 @@
 package khoindn.swp391.be.app.service;
 
+import jakarta.transaction.Transactional;
 import khoindn.swp391.be.app.exception.exceptions.RequestGroupNotFoundException;
 import khoindn.swp391.be.app.model.Request.LeaveGroupReq;
 import khoindn.swp391.be.app.pojo.Group;
@@ -26,26 +27,36 @@ public class StaffService implements IStaffService{
     private IGroupRepository iGroupRepository;
 
     @Override
+    @Transactional
     public GroupMember leaveGroup(LeaveGroupReq request) {
-        RequestGroupService requestProcessing = iRequestGroupServiceRepository.findRequestGroupById(request.getRequestId());
+
+        RequestGroupService requestProcessing = iRequestGroupServiceRepository.findById(request.getRequestId()).orElse(null);
         if (requestProcessing == null) {
             throw new RequestGroupNotFoundException("REQUEST_NOT_FOUND");
         }
-
         // Update status of GroupMember
         GroupMember user_leaving = requestProcessing.getGroupMember();
         user_leaving.setStatus(StatusGroupMember.LEFT);
         iGroupMemberRepository.save(user_leaving);
 
-        List<GroupMember> members = iGroupMemberRepository.findAllByGroupAndStatus(user_leaving.getGroup(), StatusGroupMember.ACTIVE);
+
+        List<GroupMember> members = iGroupMemberRepository
+                .findAllByGroupAndStatus(requestProcessing.getGroupMember().getGroup(), StatusGroupMember.ACTIVE)
+                .stream()
+                .filter(groupMember -> !groupMember.equals(user_leaving))
+                .toList();
         for (GroupMember member : members) {
             member.setStatus(StatusGroupMember.INACTIVE);
             iGroupMemberRepository.save(member);
         }
 
+
+
+
         // Update status of Group
         Group group = user_leaving.getGroup();
         group.setStatus(StatusGroup.INACTIVE);
+
         iGroupRepository.save(group);
         return user_leaving;
     }
