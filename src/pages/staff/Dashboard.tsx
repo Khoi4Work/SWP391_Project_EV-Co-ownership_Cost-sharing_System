@@ -196,11 +196,7 @@ export default function StaffDashboard() {
                 } else if (res.status === 204) {
                     // Không có hợp đồng chờ duyệt
                     setServices([]);
-                    toast({
-                        title: "Không có đơn đã duyệt nào",
-                        description: "Hiện tại không có đơn đã duyệt nào trong hệ thống.",
-                    });
-                } else {
+
                     console.warn("Phản hồi BE không mong đợi:", res);
                 }
             })

@@ -398,6 +398,7 @@ export default function VehicleRegistration() {
       }
 
       console.log("Dữ liệu: ", values);
+      localStorage.setItem("selectedVehicle", JSON.stringify(values));
       setSelectedVehicle(values); // lưu xe đã nhập
       setStep(2); // sang bước kế tiếp
     },
@@ -416,11 +417,11 @@ export default function VehicleRegistration() {
       }
     }
   }, []);
-  // useEffect(() => {
-  //   // khi người dùng chọn xe mới → reset đồng sở hữu
-  //   setCoOwners([]);
-  //   localStorage.removeItem("coOwners");
-  // }, [selectedVehicle]);
+  useEffect(() => {
+    // khi người dùng chọn xe mới → reset đồng sở hữu
+    setCoOwners([]);
+    localStorage.removeItem("coOwners");
+  }, [selectedVehicle]);
   useEffect(() => {
     const getVehicles = async () => {
       try {
