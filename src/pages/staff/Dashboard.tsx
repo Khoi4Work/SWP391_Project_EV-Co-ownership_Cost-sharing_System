@@ -504,7 +504,7 @@ export default function StaffDashboard() {
                                                             <Button
                                                                 variant="default"
                                                                 className="bg-green-600 hover:bg-green-700 text-white"
-                                                                onClick={() => handleLeaveApprove(contract.contractId)}
+                                                                onClick={() => handleApprove(contract.contractId)}
                                                             >
                                                                 Duyệt
                                                             </Button>
@@ -512,7 +512,7 @@ export default function StaffDashboard() {
                                                             <Button
                                                                 variant="destructive"
                                                                 className="bg-red-600 hover:bg-red-700 text-white"
-                                                                onClick={() => handleLeaveReject(contract.contractId)}
+                                                                onClick={() => handleReject(contract.contractId)}
                                                             >
                                                                 Không duyệt
                                                             </Button>
@@ -573,9 +573,9 @@ export default function StaffDashboard() {
                                                 </p>
                                             </div>
                                             <div className="flex space-x-2">
-                                                <Button size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>
+                                                <Button size="sm" onClick={() => handleLeaveApprove(req.id)}>Duyệt</Button>
                                                 <Button size="sm" variant="destructive"
-                                                    onClick={() => handleReject(req.id)}>Từ chối</Button>
+                                                    onClick={() => handleLeaveReject(req.id)}>Từ chối</Button>
                                             </div>
                                         </div>
                                     ))}
