@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class GroupMemberResponse {
     private int id;
-    private Group groupId;
-    private Users userId;
+    private Group group;
+    private Users users;
     private String roleInGroup;
     private String status;
     private LocalDateTime createdAt;
