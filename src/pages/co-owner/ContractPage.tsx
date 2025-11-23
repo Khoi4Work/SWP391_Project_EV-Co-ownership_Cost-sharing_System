@@ -13,6 +13,7 @@ interface ContractPreviewPageProps {
 export default function ContractPreviewPage({ readonly = false }: ContractPreviewPageProps) {
     const [isPrivateKey, setIsPrivateKey] = useState(false);
     const [savedPrivateKey, setSavedPrivateKey] = useState("");
+    const CREATE_GROUP = import.meta.env.VITE_GROUP_CREATE_PATH;
     const AUTH_CURRENT_PATH = import.meta.env.VITE_AUTH_CURRENT;
     const { toast } = useToast();
     const location = useLocation();
@@ -238,7 +239,7 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
             };
 
             // 5) Gọi create group
-            const groupRes = await axiosClient.post("/group/create", groupPayload, {
+            const groupRes = await axiosClient.post(CREATE_GROUP, groupPayload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -290,18 +291,6 @@ export default function ContractPreviewPage({ readonly = false }: ContractPrevie
             <div className="flex gap-4">
                 <Button onClick={handleConfirm} disabled={status === null || (status === 1 && !isPrivateKey)}>
                     Xác nhận hợp đồng
-                </Button>
-                <Button
-                    onClick={() => {
-                        if (contractRef.current) {
-                            generatePDF();
-                        } else {
-                            alert("Không tìm thấy nội dung hợp đồng để xuất PDF!");
-                        }
-                    }}
-                    variant="secondary"
-                >
-                    Xuất PDF
                 </Button>
                 {status !== null && (
                     <p className={status === 1 ? "text-green-600" : "text-red-600"}>

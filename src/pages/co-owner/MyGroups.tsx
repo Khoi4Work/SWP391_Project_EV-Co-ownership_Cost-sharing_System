@@ -45,6 +45,7 @@ export default function MyGroups() {
   }, []);
   const handleRequestLeave = (groupId: number) => {
     setSelectedGroup(groupId);
+    localStorage.setItem("selectedGroupId", groupId.toString());
     setLeaveRequestDialogOpen(true);
   };
   useEffect(() => {
@@ -66,8 +67,7 @@ export default function MyGroups() {
 
     fetchGroups();
   }, []);
-
-
+  const REQUEST_GROUP = import.meta.env.VITE_REQUEST_GROUP_PATH;
   const confirmRequestLeave = async () => {
     try {
       console.log("⏳ Gửi yêu cầu rời nhóm...");
@@ -99,10 +99,12 @@ export default function MyGroups() {
       // 3. Gửi request rời nhóm
       console.log("📤 Đang gửi request rời nhóm với payload:", {
         groupId: group.group.groupId,
+        nameRequestGroup: `Yêu cầu rời nhóm`,
+        descriptionRequestGroup: "Người dùng yêu cầu rời nhóm",
         // userId: currentUserId,
       });
 
-      const data = await axiosClient.post("/group/request", {
+      const data = await axiosClient.post(`${REQUEST_GROUP}`, {
         groupId: group.group.groupId,
         // userId: currentUserId,
         nameRequestGroup: `Yêu cầu rời nhóm`,
@@ -110,6 +112,7 @@ export default function MyGroups() {
         // statusRequestGroup: "pending"
       });
 
+      console.log("✅ Gửi request thành công!");
       console.log("✅ Gửi request thành công!");
 
       toast({
@@ -175,9 +178,11 @@ export default function MyGroups() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {groups.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center space-y-4">
+              <div
+                className="col-span-full flex flex-col items-center justify-center py-12 text-center space-y-4">
                 <p className="text-lg text-muted-foreground">
-                  Bạn đang không ở trong nhóm nào. Xin vui lòng tạo nhóm bằng nút "Đăng ký nhóm" ở màn hình chính hoặc bấm vào nút dưới đây.
+                  Bạn đang không ở trong nhóm nào. Xin vui lòng tạo nhóm bằng nút "Đăng ký nhóm" ở màn
+                  hình chính hoặc bấm vào nút dưới đây.
                 </p>
                 <Button
                   variant="default"
@@ -221,10 +226,12 @@ export default function MyGroups() {
                           <div>
                             <CardTitle className="text-base">{groupName}</CardTitle>
                             <CardDescription>
-                              <b>Vai trò:</b> <Badge className="ml-1">{myRole.toUpperCase()}</Badge> | Trạng thái: {status}
+                              <b>Vai trò:</b> <Badge
+                                className="ml-1">{myRole.toUpperCase()}</Badge> | Trạng
+                              thái: {status}
                             </CardDescription>
                             <CardDescription>
-                              <b>Ngày tạo:</b> {createdAt}  <br />
+                              <b>Ngày tạo:</b> {createdAt} <br />
                               <b>Ngày kết thúc:</b> {endAt} <br />
                               <b>Sở hữu:</b> {ownership}%
                             </CardDescription>

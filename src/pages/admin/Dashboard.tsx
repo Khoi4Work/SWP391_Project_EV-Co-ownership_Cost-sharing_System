@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
+    Pencil,
     Shield,
     Users,
     FileText,
@@ -28,7 +29,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/api/axiosClient";
-import {toast} from "../../hooks/use-toast";
+import { toast } from "../../hooks/use-toast";
 export default function AdminDashboard() {
     const navigate = useNavigate();
     const [staffList, setStaffList] = useState([]);
@@ -51,6 +52,7 @@ export default function AdminDashboard() {
         hovaTen: "",
         phone: "",
         cccd: "",
+        gplx: "",
     });
     const [newStaffData, setNewStaffData] = useState({
         hovaTen: "",
@@ -65,7 +67,7 @@ export default function AdminDashboard() {
     const [selectedContract, setSelectedContract] = useState<any>(null);
     const { toast } = useToast();
     const CREATE_STAFF = import.meta.env.VITE_POST_CREATE_STAFF_PATH;
-    
+
     // Monthly fee history states
     const [fundFees, setFundFees] = useState<any[]>([]);
     const [loadingFundFees, setLoadingFundFees] = useState(false);
@@ -127,6 +129,28 @@ export default function AdminDashboard() {
 
         fetchStaffList();
     }, []);
+    const DELETE_STAFF = import.meta.env.VITE_DELETE_STAFF_PATH;
+    const deleteStaff = async (staffId: number) => {
+        try {
+            const res = await axiosClient.delete(`${DELETE_STAFF}${staffId}`);
+            if (res.status === 200) {
+                toast({
+                    title: "Thành công",
+                    description: "Xóa nhân viên thành công",
+                    variant: "success",
+                });
+                // Xóa khỏi UI
+                setStaffList(prev => prev.filter(s => s.id !== staffId));
+            }
+        } catch (err) {
+            console.error(err);
+            toast({
+                title: "Lỗi",
+                description: "Xóa nhân viên thất bại",
+                variant: "destructive",
+            });
+        }
+    };
 
     // Fetch monthly fee history
     useEffect(() => {
@@ -224,7 +248,8 @@ export default function AdminDashboard() {
         setEditStaffData({
             hovaTen: staff.hovaTen,
             cccd: staff.cccd,
-            phone: staff.phone
+            phone: staff.phone,
+            gplx: staff.gplx
         });
         setShowEditStaffModal(true);
     };
@@ -424,19 +449,48 @@ export default function AdminDashboard() {
                                                         </Badge>
                                                     </div>
 
-                                                    <div className="text-sm text-muted-foreground mt-1">
-                                                        {/* 🔹 Email */}
-                                                        <span>{staff.email}</span>
+                                                    <div className="flex items-center justify-between mt-1">
 
-                                                        <span className="mx-2">•</span>
+                                                        {/* Thông tin nhân viên */}
+                                                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                                            <span>{staff.email}</span>
+                                                            <span className="mx-1">•</span>
+                                                            <span>CCCD: {staff.cccd}</span>
+                                                            <span className="mx-1">•</span>
+                                                            <span>📞 {staff.phone}</span>
+                                                        </div>
 
-                                                        {/* 🔹 CCCD */}
-                                                        <span>CCCD: {staff.cccd}</span>
+                                                        {/* Các nút */}
+                                                        <div className="flex gap-3">
+                                                            {/* Nút Edit */}
+                                                            <button
+                                                                onClick={() => handleEditStaff(staff)}
+                                                                className="
+                                                               flex items-center gap-1 px-3 py-1.5 text-sm 
+                                                               bg-blue-100 text-blue-700 
+                                                               rounded-xl border border-blue-200 
+                                                               hover:bg-blue-200 hover:shadow 
+                                                               transition-all duration-200
+                                                                "
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                                Edit
+                                                            </button>
 
-                                                        <span className="mx-2">•</span>
-
-                                                        {/* 🔹 Số điện thoại */}
-                                                        <span>📞 {staff.phone}</span>
+                                                            {/* Nút Delete */}
+                                                            <button
+                                                                onClick={() => deleteStaff(staff.id)}
+                                                                className="flex items-center gap-1 px-3 py-1.5 text-sm 
+                                                                           bg-red-100 text-red-700 
+                                                                           rounded-xl border border-red-200 
+                                                                           hover:bg-red-200 hover:shadow 
+                                                                           transition-all duration-200
+                                                                           "
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                                Delete
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -551,7 +605,7 @@ export default function AdminDashboard() {
                                             <tbody>
                                                 {fundFees
                                                     .filter((fee: any) => {
-                                                        const matchesSearch = feeSearchTerm === "" || 
+                                                        const matchesSearch = feeSearchTerm === "" ||
                                                             (fee.userName && fee.userName.toLowerCase().includes(feeSearchTerm.toLowerCase()));
                                                         const matchesStatus = feeStatusFilter === "all" || fee.status === feeStatusFilter;
                                                         return matchesSearch && matchesStatus;
@@ -620,15 +674,15 @@ export default function AdminDashboard() {
                                             </tbody>
                                         </table>
                                         {fundFees.filter((fee: any) => {
-                                            const matchesSearch = feeSearchTerm === "" || 
+                                            const matchesSearch = feeSearchTerm === "" ||
                                                 (fee.userName && fee.userName.toLowerCase().includes(feeSearchTerm.toLowerCase()));
                                             const matchesStatus = feeStatusFilter === "all" || fee.status === feeStatusFilter;
                                             return matchesSearch && matchesStatus;
                                         }).length === 0 && (
-                                            <div className="text-center py-8 text-muted-foreground">
-                                                Không tìm thấy giao dịch nào
-                                            </div>
-                                        )}
+                                                <div className="text-center py-8 text-muted-foreground">
+                                                    Không tìm thấy giao dịch nào
+                                                </div>
+                                            )}
                                     </div>
                                 )}
                             </CardContent>
@@ -689,6 +743,22 @@ export default function AdminDashboard() {
                                                         phone: e.target.value
                                                     })} />
                                             </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Căn cước công dân *</label>
+                                                <Input placeholder="Nhập căn cước" value={newStaffData.cccd}
+                                                    onChange={e => setNewStaffData({
+                                                        ...newStaffData,
+                                                        cccd: e.target.value
+                                                    })} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Giấy phép lái xe *</label>
+                                                <Input placeholder="nhập giấy phép" value={newStaffData.gplx}
+                                                    onChange={e => setNewStaffData({
+                                                        ...newStaffData,
+                                                        gplx: e.target.value
+                                                    })} />
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -726,15 +796,6 @@ export default function AdminDashboard() {
                                                     })} />
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     Nhân viên sẽ được yêu cầu thay đổi mật khẩu khi đăng nhập lần đầu
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 bg-muted/50 p-4 rounded-lg">
-                                            <h4 className="font-medium mb-2">Thông tin tài khoản sẽ tạo:</h4>
-                                            <div className="space-y-1 text-sm">
-                                                <p><span
-                                                    className="font-medium">Email:</span> {newStaffData.email || 'Chưa nhập'}
                                                 </p>
                                             </div>
                                         </div>
@@ -803,39 +864,6 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="space-y-6 p-6">
-                                {/* Thông tin tài khoản (chỉ đọc) */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center space-x-2">
-                                            <Shield className="h-5 w-5" />
-                                            <span>Thông tin tài khoản</span>
-                                        </CardTitle>
-                                        <CardDescription>Thông tin này không thể chỉnh sửa</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Mã nhân viên</p>
-                                                <p className="font-medium">{selectedStaff.id}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Vai trò</p>
-                                                <p className="font-medium">{selectedStaff.role}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Trạng thái</p>
-                                                <Badge variant={getStatusColor(selectedStaff.status) as any}>
-                                                    {getStatusText(selectedStaff.status)}
-                                                </Badge>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Số nhóm quản lý</p>
-                                                <p className="font-medium">{selectedStaff.groups} nhóm</p>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
                                 {/* Thông tin cá nhân (có thể chỉnh sửa) */}
                                 <Card>
                                     <CardHeader>
@@ -847,31 +875,67 @@ export default function AdminDashboard() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Họ và tên */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">Họ và tên *</label>
-                                                <Input placeholder="Nhập họ và tên đầy đủ" value={editStaffData.hovaTen}
-                                                    onChange={e => setEditStaffData({
-                                                        ...editStaffData,
-                                                        hovaTen: e.target.value
-                                                    })} />
+                                                <label className="block text-sm font-medium mb-1">Họ và tên *</label>
+                                                <Input
+                                                    placeholder="Nhập họ và tên đầy đủ"
+                                                    value={editStaffData.hovaTen || ""} // nếu null thì tránh lỗi
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            hovaTen: e.target.value,
+                                                        })
+                                                    }
+                                                />
                                             </div>
+
+                                            {/* Số điện thoại */}
                                             <div>
-                                                <label className="block text-sm font-medium mb-2">Số điện thoại</label>
-                                                <Input placeholder="0123456789" value={editStaffData.phone}
-                                                    onChange={e => setEditStaffData({
-                                                        ...editStaffData,
-                                                        phone: e.target.value
-                                                    })} />
+                                                <label className="block text-sm font-medium mb-1">Số điện thoại *</label>
+                                                <Input
+                                                    placeholder="0123456789"
+                                                    value={editStaffData.phone || ""}
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            phone: e.target.value,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+
+                                            {/* CCCD */}
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Căn cước công dân *</label>
+                                                <Input
+                                                    placeholder="Nhập CCCD mới"
+                                                    value={editStaffData.cccd || ""}
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            cccd: e.target.value,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+
+                                            {/* Giấy phép lái xe */}
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Giấy phép lái xe *</label>
+                                                <Input
+                                                    placeholder="Nhập giấy phép lái xe mới"
+                                                    value={editStaffData.gplx || ""}
+                                                    onChange={(e) =>
+                                                        setEditStaffData({
+                                                            ...editStaffData,
+                                                            gplx: e.target.value,
+                                                        })
+                                                    }
+                                                />
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Căn cước công dân</label>
-                                            <Input placeholder="0123456789" value={editStaffData.cccd}
-                                                onChange={e => setEditStaffData({
-                                                    ...editStaffData,
-                                                    cccd: e.target.value
-                                                })} />
-                                        </div>
+
                                     </CardContent>
                                 </Card>
                             </div>

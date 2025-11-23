@@ -209,7 +209,7 @@ export default function GroupDetail() {
                 console.warn("⚠️ Cannot load usage history:", err?.message || err);
             });
     }, [groupId]);
-
+    const GET_FEE = import.meta.env.VITE_CHECK_OVERDUE;
     // Load thanh toán quỹ tháng từ BE
     useEffect(() => {
         if (!groupId) return;
@@ -219,7 +219,7 @@ export default function GroupDetail() {
                 const token = localStorage.getItem("accessToken");
                 console.log("DEBUG token:", token);
                 const res = await axiosClient.get<GroupFeeResponse>(
-                    `/api/fund-fee/group/${groupId}/current-month`,
+                    `${GET_FEE}/${groupId}/current-month`,
                     {
                         headers: token ? { Authorization: `Bearer ${token}` } : {}
                     }
@@ -233,7 +233,7 @@ export default function GroupDetail() {
 
         fetchMonthlyFees();
     }, [groupId]);
-
+    const GET_GROUP_IDS = import.meta.env.VITE_GET_GROUP_ID;
     // EFFECT 1: Load group ID nếu chưa có
     useEffect(() => {
         if (groupId) return;
@@ -247,8 +247,7 @@ export default function GroupDetail() {
                 }
 
                 const token = localStorage.getItem("accessToken");
-                const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : "/groupMember/getGroupIdsByUserId";
-
+                const endpoint = (GET_GROUP && GET_GROUP.trim().length > 0) ? GET_GROUP : `${GET_GROUP_IDS}`;
                 const res = await axiosClient.get(endpoint, {
                     params: { userId },
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -271,6 +270,7 @@ export default function GroupDetail() {
     }, [groupId, navigate]);
 
     // EFFECT 2: Fetch thông tin group chi tiết
+    const GET_VEHICLE_GROUP = import.meta.env.VITE_GET_VEHICLE_BY_GROUP_PATH;
     useEffect(() => {
         if (!groupId) return;
 
@@ -390,7 +390,7 @@ export default function GroupDetail() {
                 console.log("Step 3: Fetching vehicles...");
                 let vehicles: any[] = [];
                 try {
-                    const res = await axiosClient.get(`/vehicle/getVehicleByGroupID/${gid}`, {
+                    const res = await axiosClient.get(`${GET_VEHICLE_GROUP}${gid}`, {
                         headers: token ? { Authorization: `Bearer ${token}` } : {}
                     });
                     console.log("DEBUG API response:", res);
@@ -437,14 +437,14 @@ export default function GroupDetail() {
 
         fetchGroupDetail();
     }, [groupId]);
-
+    const FUND_API = import.meta.env.VITE_FUND_API;
     // Handle pay quỹ tháng
     const handlePayFee = async (fundDetailId: number) => {
         setProcessingPayment(fundDetailId);
         try {
             const token = localStorage.getItem("accessToken");
             const response = await axiosClient.post<{ status: string; message: string; paymentUrl: string }>(
-                `/api/fund-fee/${fundDetailId}/create-payment`,
+                `${FUND_API}${fundDetailId}/create-payment`,
                 {},
                 {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}

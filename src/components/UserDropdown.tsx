@@ -15,7 +15,6 @@ export default function UserDropdown() {
     const handleLogout = () => {
         localStorage.removeItem("accessToken");
         navigate("/");
-        window.location.reload();
     };
     return (
         <DropdownMenu>

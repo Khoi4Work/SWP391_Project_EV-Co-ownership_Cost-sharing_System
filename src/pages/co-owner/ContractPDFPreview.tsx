@@ -16,7 +16,6 @@ export interface CoOwners {
 }
 
 export interface VehicleData {
-  vehicleType?: string;
   brand?: string;
   model?: string;
   plateNo?: string;
@@ -149,9 +148,6 @@ const ContractView = forwardRef<HTMLDivElement, ContractViewProps>(
               3. Thông tin xe sở hữu
             </h2>
 
-            <p>
-              <strong>Loại phương tiện:</strong> {vehicleData.vehicleType}
-            </p>
             <p>
               <strong>Hãng sản xuất:</strong> {vehicleData.brand}
             </p>
