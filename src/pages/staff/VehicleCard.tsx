@@ -74,7 +74,7 @@ const VehicleCard = ({ vehicle }: any) => {
                       <UserCircle className="h-5 w-5 mr-2 text-gray-600" />
 
                       <div className="text-sm">
-                        <p><strong>Họ và tên:</strong> {member.userId?.hovaTen}</p>
+                        <p><strong>Họ và tên:</strong> {member.users?.hovaTen}</p>
                         <p><strong>Vai trò:</strong> {member.roleInGroup}</p>
                         <p><strong>Tỷ lệ sở hữu:</strong> {member.ownershipPercentage}%</p>
                       </div>
