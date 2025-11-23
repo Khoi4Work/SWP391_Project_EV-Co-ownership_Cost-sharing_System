@@ -32,7 +32,7 @@ public interface IContractService {
 
     void SendWaitingConfirmedContract(int contractId);
 
-    void sendDeclinedContractNotification(int contractId) throws Exception;
+    void sendRejectContractNotification(int contractId) throws Exception;
 
     void verifyContract(int contractId, int decision, Users staff, String declinedContractLink) throws Exception;
 

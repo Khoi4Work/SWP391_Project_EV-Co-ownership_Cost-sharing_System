@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LeaveGroupReq {
-    private int groupId;
+//    private int groupId;
     private long requestId;
 }

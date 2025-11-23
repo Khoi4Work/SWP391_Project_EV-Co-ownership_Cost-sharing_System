@@ -198,7 +198,10 @@ public class GroupService implements IGroupService {
 
     @Override
     public List<Group> getAllGroups() {
-        return iGroupRepository.findAll();
+        return iGroupRepository.findAll().stream()
+                .filter(group ->
+                        group.getStatus().equals(StatusGroup.ACTIVE))
+                .toList();
     }
 
 

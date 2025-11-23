@@ -31,7 +31,7 @@ public class EmailService implements IEmailService {
     @Override
     public void sendEmail(EmailDetailReq contentSender) {
 
-        if (contentSender.getContext()!= null){
+        if (contentSender.getContext() != null) {
             contentSender.setTemplate(templateEngine.process(contentSender.getTemplate(), contentSender.getContext()));
         }
         try {
@@ -44,7 +44,6 @@ public class EmailService implements IEmailService {
             helper.setTo(contentSender.getEmail());
             helper.setSubject(contentSender.getSubject());
             helper.setText(contentSender.getTemplate(), true); // true = nội dung HTML
-
 
             javaMailSender.send(mimeMessage);
             System.out.println("✅ Email sent successfully to " + contentSender.getEmail());
@@ -128,6 +127,5 @@ public class EmailService implements IEmailService {
         req.setTemplate(template);
         sendEmail(req);
     }
-
 
 }

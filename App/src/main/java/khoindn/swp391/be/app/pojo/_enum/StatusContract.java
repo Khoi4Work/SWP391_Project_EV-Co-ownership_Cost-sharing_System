@@ -6,4 +6,5 @@ public enum StatusContract {
     WAITING_CONFIRMATION,
     CONFIRMED,
     DECLINED,
+    TERMINATED
 }

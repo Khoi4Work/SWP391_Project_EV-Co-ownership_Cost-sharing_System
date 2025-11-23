@@ -80,7 +80,7 @@ public class AuthenticationService implements UserDetailsService {
     }
 
 
-    public Users register(RegisterUserReq users) {
+    public Users register(RegisterUserReq users) throws PasswordNullException {
         // (Phần kiểm tra (validation) giữ nguyên)
 
 

@@ -88,9 +88,12 @@ public class GroupMemberController {
     @GetMapping("/members/{groupId}")
     public ResponseEntity getMembersByGroupId(@PathVariable int groupId) {
         Group group = iGroupService.getGroupById(groupId);
-        List<GroupMemberResponse> allMembers = iGroupMemberService.getMembersByGroupId(groupId).stream()
+        List<GroupMember> gm = iGroupMemberService.getMembersByGroupId(groupId);
+        List<GroupMemberResponse> allMembers = gm
+                .stream()
                 .map(groupMember -> modelMapper.map(groupMember, GroupMemberResponse.class))
                 .toList();
+        System.out.println(allMembers);
         if (allMembers.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("No members found for groupId: " + group.getGroupName());

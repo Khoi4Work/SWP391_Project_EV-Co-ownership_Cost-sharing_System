@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import khoindn.swp391.be.app.pojo._enum.StatusUser;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,6 @@ public class Users implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Integer id;
-
     @NotNull
     private String hovaTen;  // Changed to match Java naming conventions
 
@@ -56,8 +56,8 @@ public class Users implements UserDetails {
     @Column(name = "publicKey", length = 3000)
     private String publicKey;
 
-//    @Enumerated(EnumType.STRING)
-//    private StatusUser status = StatusUser.ACTIVE;
+    @Enumerated(EnumType.STRING)
+    private StatusUser status = StatusUser.ACTIVE;
 
     //relationships
     @ManyToOne

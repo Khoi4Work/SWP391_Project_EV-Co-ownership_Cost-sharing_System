@@ -46,17 +46,17 @@ public class GroupMember {
     @ToString.Exclude
     private List<DecisionVoteDetail> decisionVoteDetails = new ArrayList<>();
 
-    @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "groupMember")
     @JsonIgnore
     @ToString.Exclude
     private List<RequestGroupService> requestGroupServices = new ArrayList<>();
 
-    @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "groupMember")
     @JsonIgnore
     @ToString.Exclude
     private List<FundDetail> fundDetails = new ArrayList<>();
 
-    @OneToMany(mappedBy = "groupMember", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "groupMember" )
     @JsonIgnore
     @ToString.Exclude
     private List<VehicleService> vehicleServices = new ArrayList<>();

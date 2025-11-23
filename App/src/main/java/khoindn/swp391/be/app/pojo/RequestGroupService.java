@@ -5,6 +5,7 @@ import khoindn.swp391.be.app.pojo._enum.StatusRequestGroup;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -26,12 +27,13 @@ public class RequestGroupService {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     //relationships
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne()
     @JoinColumn(name = "groupMember_id")
     private GroupMember groupMember;
 
-    @OneToOne(mappedBy = "requestGroupService", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "requestGroupService")
     @JoinColumn(name = "request_group_service_detail_id")
+    @ToString.Exclude
     private RequestGroupServiceDetail requestGroupServiceDetail;
 
 

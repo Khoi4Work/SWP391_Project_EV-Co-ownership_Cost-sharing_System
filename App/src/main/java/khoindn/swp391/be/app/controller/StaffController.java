@@ -43,7 +43,7 @@ public class StaffController {
     // LEAVE GROUP
     
     @PatchMapping("/leave/group")
-    public ResponseEntity leaveGroup(LeaveGroupReq request) {
+    public ResponseEntity leaveGroup(@RequestBody LeaveGroupReq request) {
         Users staff = authenticationService.getCurrentAccount();
         if (!staff.getRole().getRoleName().equalsIgnoreCase("staff")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
@@ -85,6 +85,7 @@ public class StaffController {
             return ResponseEntity.status(403).body("Unauthorized");
         }
         List<ContractPreviewRes> res = iContractService.getPendingContracts();
+        System.out.println(res);
         if (res.isEmpty()) {
             return ResponseEntity.status(204).body("No Content");
         }

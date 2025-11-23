@@ -12,6 +12,7 @@ import khoindn.swp391.be.app.model.Response.ContractPreviewRes;
 import khoindn.swp391.be.app.pojo.*;
 import khoindn.swp391.be.app.pojo._enum.DecisionContractSigner;
 import khoindn.swp391.be.app.pojo._enum.StatusContract;
+import khoindn.swp391.be.app.pojo._enum.StatusVehicle;
 import khoindn.swp391.be.app.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -177,6 +178,10 @@ public class ContractService implements IContractService {
                 contract.setEndDate(LocalDate.now());
             } else if (allSigned) {
                 contract.setStatus(StatusContract.CONFIRMED);
+                Vehicle vehicle = iVehicleRepository.findVehicleByContract(contract);
+                vehicle.setStatusVehicle(StatusVehicle.AVAILABLE);
+                iVehicleRepository.save(vehicle);
+
             } else if (stillPending) {
                 contract.setStatus(StatusContract.WAITING_CONFIRMATION);
             }
@@ -337,13 +342,13 @@ public class ContractService implements IContractService {
     }
 
     @Override
-    public void sendDeclinedContractNotification(int contractId) throws Exception {
+    public void sendRejectContractNotification(int contractId) throws Exception {
         List<ContractSigner> signerList = getContractSignerByContractId(contractId);
 
         Contract contract = getContractByContractId(contractId);
         iSupabaseService.deleteFile(contract.getImageContract());
 
-        if (contract.getStatus().equals(StatusContract.DECLINED)) {
+        if (contract.getStatus().equals(StatusContract.REJECTED)) {
             for (ContractSigner signer : signerList) {
                 // ✅ TẠO TOKEN RIÊNG CHO USER
                 String token = tokenService.generateToken(signer.getUser());
@@ -379,7 +384,7 @@ public class ContractService implements IContractService {
             contract.setStaff(staff);
             contract.setUrlContract(declinedContractLink);
             iContractRepository.save(contract);
-            sendDeclinedContractNotification(contractId);
+            sendRejectContractNotification(contractId);
         } else {
             throw new UndefinedChoiceException("Invalid decision value");
         }

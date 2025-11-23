@@ -3,6 +3,7 @@ package khoindn.swp391.be.app.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import khoindn.swp391.be.app.exception.exceptions.PasswordNullException;
 import khoindn.swp391.be.app.exception.exceptions.UserIsExistedException;
 import khoindn.swp391.be.app.model.Request.LoginUser;
 import khoindn.swp391.be.app.model.Request.RegisterUserReq;
@@ -34,7 +35,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Users> register(@Valid @RequestBody RegisterUserReq users) {
+    public ResponseEntity<Users> register(@Valid @RequestBody RegisterUserReq users) throws PasswordNullException {
         // send to AuthenticationService
         Users newAccount = authenticationService.register(users);
         System.out.println(newAccount);
