@@ -47,7 +47,7 @@ public class Vehicle {
 
     @Column(name = "status", length = 16)
     @Enumerated(EnumType.STRING)
-    private StatusVehicle statusVehicle = StatusVehicle.AVAILABLE;
+    private StatusVehicle statusVehicle = StatusVehicle.UNAVAILABLE;
 
     @Column(name="image")
     private String imageUrl;

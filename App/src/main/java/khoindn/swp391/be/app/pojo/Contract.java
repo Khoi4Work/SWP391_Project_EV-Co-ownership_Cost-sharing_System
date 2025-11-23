@@ -6,6 +6,7 @@ import khoindn.swp391.be.app.pojo._enum.StatusContract;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -48,5 +49,6 @@ public class Contract {
 
     @OneToMany(mappedBy = "contract")
     @JsonIgnore
+    @ToString.Exclude
     private List<ContractSigner> signerList;
 }
